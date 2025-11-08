@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Products</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Header Section -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-gray-800"><a href="index.html">Fundamental</a></div>
+            <div class="hidden md:flex space-x-8 items-center">
+                <a href="index.html" class="text-gray-600 hover:text-indigo-600">Home</a>
+                <a href="products.html" class="text-gray-800 font-semibold">Products</a>
+                <a href="services.html" class="text-gray-600 hover:text-indigo-600">Services</a>
+                <a href="#" class="text-gray-600 hover:text-indigo-600">About</a>
+                <a href="#" class="text-gray-600 hover:text-indigo-600">Contact</a>
+            </div>
+            <div class="flex items-center space-x-5">
+                <a href="cart.html" class="text-gray-600 hover:text-indigo-600 relative">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count" class="absolute -top-2 -right-3 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                </a>
+                
+                <div id="auth-links-logged-out" class="flex items-center space-x-3">
+                    <a href="login.html" class="text-sm font-medium text-gray-700 hover:text-indigo-600">Log In</a>
+                    <a href="register.html" class="text-sm font-medium bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700">Register</a>
+                </div>
+
+                <div id="auth-links-logged-in" class="hidden">
+                    <a href="profile.html" id="user-link" class="text-gray-600 hover:text-indigo-600">
+                        <i id="user-icon" class="fas fa-user-circle text-2xl"></i>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="flex flex-col md:flex-row gap-8">
+            <!-- Filters Sidebar -->
+            <aside class="w-full md:w-1/4">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">Filters</h2>
+                    <form id="filter-form">
+                        <!-- Category Filter -->
+                        <div class="mb-6">
+                            <h3 class="font-semibold text-gray-700 mb-3">Category</h3>
+                            <div class="space-y-2">
+                                <div><label class="flex items-center"><input type="radio" name="category" value="" class="form-radio" checked> <span class="ml-2 text-gray-600">All</span></label></div>
+                                <div><label class="flex items-center"><input type="radio" name="category" value="Jersey" class="form-radio"> <span class="ml-2 text-gray-600">Jersey</span></label></div>
+                                <div><label class="flex items-center"><input type="radio" name="category" value="Shorts" class="form-radio"> <span class="ml-2 text-gray-600">Shorts</span></label></div>
+                                <div><label class="flex items-center"><input type="radio" name="category" value="Outwears" class="form-radio"> <span class="ml-2 text-gray-600">Outwears</span></label></div>
+                                <div><label class="flex items-center"><input type="radio" name="category" value="Lab Coats" class="form-radio"> <span class="ml-2 text-gray-600">Lab Coats</span></label></div>
+                                <div><label class="flex items-center"><input type="radio" name="category" value="Printing Machine" class="form-radio"> <span class="ml-2 text-gray-600">Printing Machine</span></label></div>
+                                <div><label class="flex items-center"><input type="radio" name="category" value="Banner" class="form-radio"> <span class="ml-2 text-gray-600">Banner</span></label></div>
+                            </div>
+                        </div>
+
+                        <!-- Price Range Filter -->
+                        <div class="mb-6">
+                            <h3 class="font-semibold text-gray-700 mb-3">Price Range</h3>
+                            <input type="range" id="price-range" name="price" min="0" max="50000" value="50000" class="w-full">
+                            <div class="flex justify-between text-sm text-gray-600 mt-2">
+                                <span>₱0</span>
+                                <span id="price-value">₱50,000</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 transition">Apply Filters</button>
+                    </form>
+                </div>
+            </aside>
+
+            <!-- Products Grid -->
+            <section class="w-full md:w-3/4">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold text-gray-800">All Products</h1>
+                    <div>
+                        <label for="sort-by" class="sr-only">Sort by</label>
+                        <select id="sort-by" name="sort-by" class="form-select rounded-md border-gray-300 shadow-sm">
+                            <option value="newest">Sort by Newest</option>
+                            <option value="price-asc">Price: Low to High</option>
+                            <option value="price-desc">Price: High to Low</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="products-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                     <!-- Products will be dynamically inserted here -->
+                    <p id="loading-message" class="col-span-full text-center text-gray-500">Loading products...</p>
+                </div>
+            </section>
+        </div>
+    </main>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            const productsContainer = document.getElementById('products-container');
+            const loadingMessage = document.getElementById('loading-message');
+            const filterForm = document.getElementById('filter-form');
+            const priceRange = document.getElementById('price-range');
+            const priceValue = document.getElementById('price-value');
+            const sortBy = document.getElementById('sort-by');
+            const cartCountSpan = document.getElementById('cart-count');
+
+            // NEW: Selectors for auth links
+            const authLoggedOut = document.getElementById('auth-links-logged-out');
+            const authLoggedIn = document.getElementById('auth-links-logged-in');
+
+            let allProducts = [];
+
+            // --- NEW UI Functions ---
+            function setLoggedOutUI() {
+                if (authLoggedOut) authLoggedOut.classList.remove('hidden');
+                if (authLoggedIn) authLoggedIn.classList.add('hidden');
+                if (cartCountSpan) cartCountSpan.textContent = '0';
+            }
+
+            function setLoggedInUI() {
+                if (authLoggedOut) authLoggedOut.classList.add('hidden');
+                if (authLoggedIn) authLoggedIn.classList.remove('hidden');
+            }
+
+            async function validateToken(token) {
+                if (!token) return false;
+                try {
+                    const res = await fetch('http://localhost:5000/api/auth/me', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!res.ok) return false;
+                    const json = await res.json();
+                    return json && json.success === true && json.data && json.data.role !== 'admin';
+                } catch (err) { return false; }
+            }
+            
+            // Set initial UI
+            setLoggedOutUI();
+
+            // Check token validity
+            (async () => {
+                if (!token) return;
+                const isValid = await validateToken(token);
+                if (isValid) {
+                    setLoggedInUI();
+                    await fetchCartCount(); // Fetch count only if logged in
+                } else {
+                    localStorage.removeItem('token');
+                    setLoggedOutUI();
+                }
+            })();
+            // --- End NEW UI Functions ---
+
+            async function fetchProducts() {
+                try {
+                    const response = await fetch('http://localhost:5000/api/products');
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        allProducts = result.data;
+                        applyFiltersAndSort();
+                    } else {
+                        productsContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No products found.</p>';
+                    }
+                } catch (error) {
+                    productsContainer.innerHTML = `<p class="col-span-full text-center text-red-500">Failed to load products. ${error.message}</p>`;
+                } finally {
+                    loadingMessage.style.display = 'none';
+                }
+            }
+            
+            function renderProducts(products) {
+                productsContainer.innerHTML = '';
+                if (products.length === 0) {
+                     productsContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No products match your filters.</p>';
+                     return;
+                }
+                products.forEach(product => {
+                    const imageUrl = product.imageUrl || 'https://placehold.co/400x400/e2e8f0/cccccc?text=N/A';
+                    
+                    const productCard = document.createElement('a');
+                    productCard.href = `product-detail.html?id=${product._id}`;
+                    productCard.className = 'group bg-white rounded-lg shadow-md overflow-hidden transform hover:-translate-y-2 transition-transform duration-300';
+                    
+                    productCard.innerHTML = `
+                        <div class="relative">
+                            <img src="${imageUrl}" alt="${product.name}" class="w-full h-64 object-cover">
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-800 truncate">${product.name}</h3>
+                            <p class="text-sm text-gray-500 mt-1">${product.category}</p>
+                            <p class="text-sm text-gray-600 mt-2 h-10 overflow-hidden">${product.description || 'No description available.'}</p>
+                            <div class="flex justify-between items-center mt-4">
+                                <p class="text-xl font-bold text-indigo-600">₱${product.price.toLocaleString()}</p>
+                                <span class="text-sm text-gray-500">Stock: ${product.countInStock}</span>
+                            </div>
+                        </div>
+                    `;
+                    productsContainer.appendChild(productCard);
+                });
+            }
+
+            function applyFiltersAndSort() {
+                let filteredProducts = [...allProducts];
+                const formData = new FormData(filterForm);
+                const category = formData.get('category');
+                const maxPrice = parseInt(priceRange.value, 10);
+                const sortValue = sortBy.value;
+
+                if (category) {
+                    filteredProducts = filteredProducts.filter(p => p.category === category);
+                }
+
+                filteredProducts = filteredProducts.filter(p => p.price <= maxPrice);
+
+                if (sortValue === 'price-asc') {
+                    filteredProducts.sort((a, b) => a.price - b.price);
+                } else if (sortValue === 'price-desc') {
+                    filteredProducts.sort((a, b) => b.price - a.price);
+                } else { // newest (default)
+                    filteredProducts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                }
+
+                renderProducts(filteredProducts);
+            }
+
+             async function fetchCartCount() {
+                if (!token) return;
+                try {
+                    const response = await fetch('http://localhost:5000/api/cart', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!response.ok) return;
+                    const result = await response.json();
+                    if (result.success && result.data && result.data.items) {
+                        cartCountSpan.textContent = result.data.items.length;
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch cart count:', error);
+                }
+            }
+
+            priceRange.addEventListener('input', () => {
+                priceValue.textContent = `₱${parseInt(priceRange.value, 10).toLocaleString()}`;
+            });
+
+            filterForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                applyFiltersAndSort();
+            });
+            
+            sortBy.addEventListener('change', applyFiltersAndSort);
+
+            fetchProducts();
+            // fetchCartCount(); // Tinawag na sa taas
+        });
+    </script>
+
+    <!-- Global Footer -->
+    <div id="site-footer"></div>
+    <script src="js/footer.js"></script>
+</body>
+</html>
+

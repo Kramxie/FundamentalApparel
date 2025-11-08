@@ -1,0 +1,20 @@
+# --- Server ---
+# Ignore all .env files in the server folder
+server/.env
+
+# Ignore all log files
+*.log
+
+# Ignore the massive node_modules folder
+server/node_modules/
+
+# Ignore user uploads (jersey designs, receipts)
+server/uploads/
+
+# --- Client ---
+# (If your client folder ever has its own node_modules, add 'client/node_modules/')
+
+# --- OS / IDE Files ---
+.DS_Store
+Thumbs.db
+.vscode/

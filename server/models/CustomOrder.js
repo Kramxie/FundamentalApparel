@@ -1,0 +1,64 @@
+const mongoose = require('mongoose');
+
+const CustomOrderSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    productName: {
+        type: String,
+        required: true,
+        default: 'Custom Jersey'
+    },
+    customType: {
+        type: String,
+        enum: ['Template', 'FileUpload'],
+        required: true
+    },
+    // Para sa template: "Design: Legend, Colors: ..., Text: ..."
+    designDetails: {
+        type: String
+    },
+    // Para sa file upload
+    designFileUrl: {
+        type: String
+    },
+    downPaymentReceiptUrl: {
+        type: String
+    },
+    finalPaymentReceiptUrl: {
+        type: String
+    },
+    quantity: {
+        type: Number,
+        required: [true, 'Please provide a quantity'],
+        min: 1
+    },
+    notes: {
+        type: String
+    },
+    status: {
+        type: String,
+        // --- Bago mong enum ---
+enum: ['Pending Quote', 'Quote Sent', 'Pending Downpayment', 'In Production', 'Pending Balance', 'Pending Final Verification', 'Completed', 'Cancelled'],
+        default: 'Pending Quote'
+    },
+    // I-a-update ito ng admin sa Phase 2
+    price: {
+        type: Number,
+        default: 0
+    },
+    downPaymentPaid: {
+        type: Boolean,
+        default: false
+    },
+    balancePaid: {
+        type: Boolean,
+        default: false
+    }
+}, {
+    timestamps: true
+});
+
+module.exports = mongoose.model('CustomOrder', CustomOrderSchema);

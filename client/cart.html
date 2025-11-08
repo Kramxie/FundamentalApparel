@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Shopping Cart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> 
+        body { font-family: 'Inter', sans-serif; } 
+        /* Style para sa quantity buttons */
+        .qty-btn {
+            width: 2rem; /* w-8 */
+            height: 2rem; /* h-8 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #d1d5db; /* border-gray-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            background-color: #f9fafb; /* bg-gray-50 */
+            color: #374151; /* text-gray-700 */
+        }
+        .qty-btn:hover {
+            background-color: #f3f4f6; /* hover:bg-gray-100 */
+        }
+        .qty-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-gray-800"><a href="index.html">Fundamental</a></div>
+            <div class="flex items-center space-x-5">
+                <a href="index.html" class="text-gray-600 hover:text-indigo-600"><i class="fas fa-home"></i> <span class="hidden sm:inline">Home</span></a>
+                
+                <div id="auth-links-logged-out" class="flex items-center space-x-3">
+                    <a href="login.html" class="text-sm font-medium text-gray-700 hover:text-indigo-600">Log In</a>
+                    <a href="register.html" class="text-sm font-medium bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700">Register</a>
+                </div>
+
+                <div id="auth-links-logged-in" class="hidden">
+                    <a href="profile.html" id="user-link" class="text-gray-600 hover:text-indigo-600">
+                        <i id="user-icon" class="fas fa-user-circle text-2xl"></i>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-3xl font-bold text-gray-800 mb-8">Your Shopping Cart</h1>
+            <div id="cart-container" class="bg-white rounded-lg shadow-lg">
+                <p class="p-8 text-center text-gray-500">Loading your cart...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            const cartContainer = document.getElementById('cart-container');
+            
+            // NEW: Selectors for auth links
+            const authLoggedOut = document.getElementById('auth-links-logged-out');
+            const authLoggedIn = document.getElementById('auth-links-logged-in');
+
+            let currentCartData = null;
+
+            if (!token) {
+                alert('Please log in to view your cart.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // --- NEW: Update UI because user is logged in ---
+            if (authLoggedOut) authLoggedOut.classList.add('hidden');
+            if (authLoggedIn) authLoggedIn.classList.remove('hidden');
+            // --- End NEW ---
+
+
+            async function apiRequest(path, options = {}) {
+                // ... (ang apiRequest function mo ay pareho pa rin) ...
+                options.headers = { ...options.headers, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+                const res = await fetch(`http://localhost:5000${path}`, options);
+                if (res.status === 401) {
+                    localStorage.removeItem('token');
+                    window.location.href = 'login.html';
+                    throw new Error('Unauthorized');
+                }
+                const json = await res.json();
+                if (!json.success) {
+                    throw new Error(json.msg || 'API Error');
+                }
+                return json.data;
+            }
+
+            // ... (ang natitirang JS mo ay pareho pa rin) ...
+            function getCheckedItemIds() {
+                return new Set(
+                    Array.from(document.querySelectorAll('.cart-item-checkbox:checked'))
+                         .map(cb => cb.dataset.itemId)
+                );
+            }
+            function applyCheckedState(checkedItemIds) {
+                document.querySelectorAll('.cart-item-checkbox').forEach(cb => {
+                    cb.checked = checkedItemIds.has(cb.dataset.itemId);
+                });
+                updateSubtotal();
+            }
+            async function fetchCart() {
+                try {
+                    const cartData = await apiRequest('/api/cart');
+                    currentCartData = cartData;
+                    renderCart(cartData);
+                } catch (error) {
+                    cartContainer.innerHTML = `<p class="p-8 text-center text-red-500">${error.message}</p>`;
+                }
+            }
+            function renderCart(cartData) {
+                if (!cartData || !cartData.items || cartData.items.length === 0) {
+                    cartContainer.innerHTML = `<div class="p-8 text-center"><h2 class="text-2xl font-semibold">Your cart is empty</h2><a href="index.html" class="mt-4 inline-block bg-indigo-600 text-white font-bold py-2 px-4 rounded-md">Start Shopping</a></div>`;
+                    return;
+                }
+                const itemsHtml = cartData.items.map(item => {
+                    const product = item.product;
+                    if (!product) return '';
+                    const price = item.price ?? product.price ?? 0;
+                    const quantity = item.quantity ?? 0;
+                    return `
+                        <div class="flex items-center justify-between p-4 border-b">
+                            <div class="flex items-center space-x-4">
+                                <input type="checkbox" class="cart-item-checkbox h-5 w-5 rounded" data-item-id="${item._id}" checked>
+                                <img src="${product.imageUrl}" alt="${product.name}" class="w-16 h-16 rounded-md">
+                                <div><p class="font-semibold">${product.name}</p><p class="text-sm text-gray-500">₱${price.toLocaleString()}</p></div>
+                            </div>
+                            <div class="flex items-center space-x-4 sm:space-x-6">
+                                <div class="flex items-center space-x-2">
+                                    <button class="qty-btn qty-decrease" data-item-id="${item._id}" ${quantity <= 1 ? 'disabled' : ''}>-</button>
+                                    <span class="px-2 font-medium">${quantity}</span>
+                                    <button class="qty-btn qty-increase" data-item-id="${item._id}">+</button>
+                                </div>
+                                <p class="font-semibold hidden sm:block">₱${(price * quantity).toLocaleString()}</p>
+                                <button data-item-id="${item._id}" class="remove-item-btn text-gray-400 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                cartContainer.innerHTML = `
+                    <div class="divide-y">${itemsHtml}</div>
+                    <div class="p-6 bg-gray-50">
+                        <div class="flex justify-end items-center">
+                            <span class="text-lg font-medium">Subtotal (Selected):</span>
+                            <span id="subtotal-display" class="text-2xl font-bold ml-4">₱0</span>
+                        </div>
+                        <div class="mt-6 flex justify-end">
+                            <button id="checkout-btn" class="bg-green-500 text-white font-bold py-3 px-8 rounded-md">
+                                Proceed to Checkout
+                            </button>
+                        </div>
+                    </div>
+                `;
+                updateSubtotal();
+            }
+            function updateSubtotal() {
+                const subtotalDisplay = document.getElementById('subtotal-display');
+                if (!subtotalDisplay || !currentCartData) return;
+                const checkboxes = document.querySelectorAll('.cart-item-checkbox:checked');
+                let subtotal = 0;
+                checkboxes.forEach(checkbox => {
+                    const itemId = checkbox.dataset.itemId;
+                    const item = currentCartData.items.find(i => i._id === itemId);
+                    if (item) {
+                        const price = item.price ?? item.product?.price ?? 0;
+                        const quantity = item.quantity ?? 0;
+                        subtotal += (price * quantity);
+                    }
+                });
+                subtotalDisplay.textContent = `₱${subtotal.toLocaleString()}`;
+            }
+            cartContainer.addEventListener('click', async (event) => {
+                const target = event.target;
+                const removeButton = target.closest('.remove-item-btn');
+                if (removeButton) {
+                    const itemId = removeButton.dataset.itemId;
+                    if (confirm('Are you sure you want to remove this item?')) {
+                        await handleRemoveItem(itemId);
+                    }
+                    return;
+                }
+                if (target.classList.contains('cart-item-checkbox')) {
+                    updateSubtotal();
+                    return;
+                }
+                const qtyBtn = target.closest('.qty-btn');
+                if (qtyBtn) {
+                    const itemId = qtyBtn.dataset.itemId;
+                    const item = currentCartData.items.find(i => i._id === itemId);
+                    if (!item) return;
+                    let newQuantity = item.quantity;
+                    if (qtyBtn.classList.contains('qty-decrease')) {
+                        newQuantity = Math.max(1, item.quantity - 1);
+                    } else if (qtyBtn.classList.contains('qty-increase')) {
+                        newQuantity = item.quantity + 1;
+                    }
+                    if (newQuantity !== item.quantity) {
+                        await handleUpdateQuantity(itemId, newQuantity);
+                    }
+                    return;
+                }
+                const checkoutBtn = target.closest('#checkout-btn');
+                if (checkoutBtn) {
+                    handleCheckout();
+                    return;
+                }
+            });
+            async function handleRemoveItem(itemId) {
+                const checkedIds = getCheckedItemIds();
+                try {
+                    const updatedCart = await apiRequest(`/api/cart/${itemId}`, { method: 'DELETE' });
+                    currentCartData = updatedCart;
+                    renderCart(updatedCart);
+                    applyCheckedState(checkedIds);
+                } catch (error) {
+                    alert(error.message);
+                }
+            }
+            async function handleUpdateQuantity(itemId, newQuantity) {
+                const checkedIds = getCheckedItemIds();
+                try {
+                    const updatedCart = await apiRequest(`/api/cart/${itemId}/quantity`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ newQuantity })
+                    });
+                    currentCartData = updatedCart;
+                    renderCart(updatedCart);
+                    applyCheckedState(checkedIds);
+                } catch (error) {
+                    alert(error.message);
+                }
+            }
+            function handleCheckout() {
+                const selectedCheckboxes = document.querySelectorAll('.cart-item-checkbox:checked');
+                if (selectedCheckboxes.length === 0) {
+                    alert('Please select at least one item to checkout.');
+                    return;
+                }
+                const selectedItemIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.itemId);
+                localStorage.setItem('checkoutItemIds', JSON.stringify(selectedItemIds));
+                window.location.href = 'checkout.html';
+            }
+            fetchCart();
+        });
+    </script>
+</body>
+</html>

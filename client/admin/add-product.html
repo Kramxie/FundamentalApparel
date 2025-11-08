@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Add Product</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .thumb {
+      width: 72px;
+      height: 72px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+    .thumb:hover {
+      opacity: 0.8;
+    }
+    .thumb.active {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5);
+    }
+    #main-preview {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="min-h-screen flex bg-gray-100">
+    <!-- Sidebar -->
+    <aside id="admin-sidebar" class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+      <div class="flex items-center justify-center h-16 bg-white shadow-md">
+        <span class="text-2xl font-bold text-indigo-600">Admin Panel</span>
+      </div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+          </a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
+            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
+          </a>
+          <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+          </a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
+          </a>
+          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="flex-1 flex flex-col overflow-y-auto">
+      <header class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-4 md:px-6">
+        <div class="flex items-center gap-3">
+          <button id="sidebar-toggle" class="md:hidden p-2 rounded bg-gray-100">
+            <i class="fas fa-bars"></i>
+          </button>
+          <h1 class="text-lg font-semibold">Add New Product</h1>
+        </div>
+        <div class="flex items-center gap-4">
+          <button id="logout-btn" class="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600">Logout</button>
+        </div>
+      </header>
+
+      <main class="p-4 md:p-6">
+        <div id="message" class="hidden mb-4 p-3 rounded-md"></div>
+        
+        <form id="product-form" enctype="multipart/form-data" class="max-w-7xl mx-auto">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left Column: Form Fields -->
+            <div class="lg:col-span-2 space-y-6">
+              <!-- General Information -->
+              <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">General Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Product Name</label>
+                    <input type="text" id="name" name="name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                  </div>
+                  <div>
+                    <label for="category-select" class="block text-sm font-medium text-gray-700">Category</label>
+                    <div class="flex items-center gap-2 mt-1">
+                      <select id="category-select" name="category" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"></select>
+                      <input id="new-category" placeholder="Or add new" class="border-gray-300 rounded-md shadow-sm sm:text-sm p-2 w-32">
+                      <button id="add-category-btn" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 whitespace-nowrap">Add</button>
+                    </div>
+                  </div>
+                  <div>
+                    <label for="price" class="block text-sm font-medium text-gray-700">Price (₱)</label>
+                    <input type="number" id="price" name="price" step="0.01" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                  </div>
+                  <div>
+                    <label for="stock" class="block text-sm font-medium text-gray-700">Stock Quantity</label>
+                    <input type="number" id="stock" name="countInStock" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Product Details -->
+              <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Product Details</h2>
+                <div class="space-y-4">
+                  <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700">Short Description</label>
+                    <textarea id="description" name="description" rows="4" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"></textarea>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <label for="sizes" class="block text-sm font-medium text-gray-700">Sizes</label>
+                      <input type="text" id="sizes" name="sizes" placeholder="e.g., S, M, L, XL" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                      <label for="colors" class="block text-sm font-medium text-gray-700">Colors</label>
+                      <input type="text" id="colors" name="colors" placeholder="e.g., Red, Blue, Green" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                      <label for="material" class="block text-sm font-medium text-gray-700">Material</label>
+                      <input type="text" id="material" name="material" placeholder="e.g., Cotton, Polyester" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                    </div>
+                  </div>
+                  <div>
+                    <label for="productDetails" class="block text-sm font-medium text-gray-700">Additional Details</label>
+                    <textarea id="productDetails" name="productDetails" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2" placeholder="Title::Content||Title2::Content2"></textarea>
+                     <p class="text-xs text-gray-500 mt-1">Use '::' to separate title and content, and '||' to separate entries.</p>
+                  </div>
+                  <div>
+                    <label for="faqs" class="block text-sm font-medium text-gray-700">FAQs</label>
+                    <textarea id="faqs" name="faqs" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2" placeholder="Question::Answer||Question2::Answer2"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Use '::' to separate question and answer, and '||' to separate entries.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Images -->
+            <div class="lg:col-span-1 space-y-6">
+              <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Product Images</h2>
+                
+                <!-- Main Image -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Main Image</label>
+                  <div class="w-full h-64 bg-gray-50 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
+                    <img id="main-preview" src="https://placehold.co/600x400/e2e8f0/9ca3af?text=Main+Image" alt="Main preview">
+                  </div>
+                  <div class="mt-2">
+                    <label for="image-input" class="cursor-pointer text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                      Choose main image
+                      <input id="image-input" type="file" accept="image/*" class="sr-only" />
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Gallery -->
+                <div class="mt-6">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Image Gallery</label>
+                  <div id="thumbs" class="flex gap-3 flex-wrap p-2 bg-gray-50 rounded-md border border-gray-200 min-h-[88px]">
+                    <!-- Thumbnails will be inserted here -->
+                  </div>
+                  <div class="mt-2">
+                     <label for="gallery-input" class="cursor-pointer text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                      Upload gallery images (up to 8)
+                      <input id="gallery-input" type="file" accept="image/*" multiple class="sr-only" />
+                    </label>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Click a thumbnail to set it as the main image.</p>
+                </div>
+              </div>
+              
+              <!-- Actions -->
+              <div class="bg-white p-6 rounded-lg shadow-md">
+                 <h2 class="text-lg font-semibold text-gray-800 mb-4">Actions</h2>
+                 <div class="flex flex-col gap-3">
+                    <button id="submit-btn" type="submit" class="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                      Create Product
+                    </button>
+                    <a href="manage-products.html" class="w-full text-center px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-md hover:bg-gray-300">
+                      Cancel
+                    </a>
+                 </div>
+              </div>
+            </div>
+
+          </div>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:5000';
+    const token = localStorage.getItem('adminToken');
+
+    // Auth check
+    if (!token) {
+      window.location.href = 'login.html';
+    }
+
+    // Sidebar toggle
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.getElementById('admin-sidebar');
+    sidebarToggle?.addEventListener('click', () => {
+      sidebar.classList.toggle('hidden');
+    });
+    
+    // Logout
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        localStorage.removeItem('adminToken');
+        window.location.href = 'login.html';
+    });
+
+    // DOM Elements
+    const imageInput = document.getElementById('image-input');
+    const galleryInput = document.getElementById('gallery-input');
+    const mainPreview = document.getElementById('main-preview');
+    const thumbsContainer = document.getElementById('thumbs');
+    const productForm = document.getElementById('product-form');
+    const categorySelect = document.getElementById('category-select');
+    const addCategoryBtn = document.getElementById('add-category-btn');
+    const newCategoryInput = document.getElementById('new-category');
+    const messageEl = document.getElementById('message');
+    const submitBtn = document.getElementById('submit-btn');
+
+    let galleryFiles = [];
+    let mainFile = null;
+
+    function showMessage(text, type = 'success') {
+      messageEl.textContent = text;
+      messageEl.className = `mb-4 p-3 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+      messageEl.classList.remove('hidden');
+      window.scrollTo(0, 0);
+      setTimeout(() => messageEl.classList.add('hidden'), 4000);
+    }
+
+    async function fetchCategories() {
+      try {
+        const res = await fetch(`${API}/api/categories`);
+        const json = await res.json();
+        if (json.success) {
+          const currentCategory = categorySelect.value;
+          categorySelect.innerHTML = json.data.map(c => `<option value="${c.name}" ${c.name === currentCategory ? 'selected' : ''}>${c.name}</option>`).join('');
+        }
+      } catch (err) {
+        console.error('Could not fetch categories', err);
+        showMessage('Could not load categories.', 'error');
+      }
+    }
+
+    async function addCategory(name) {
+      if (!name || !name.trim()) return null;
+      try {
+        const res = await fetch(`${API}/api/categories`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name.trim() })
+        });
+        return await res.json();
+      } catch (e) {
+        return { success: false, msg: e.message };
+      }
+    }
+
+    function createThumbnail(file, index) {
+      const url = URL.createObjectURL(file);
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = `Thumb ${index + 1}`;
+      img.className = 'thumb';
+      img.dataset.index = index;
+      
+      img.addEventListener('click', () => {
+        document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+        img.classList.add('active');
+        mainPreview.src = url;
+        mainFile = file;
+      });
+      
+      return img;
+    }
+
+    function handleMainImageChange(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      mainFile = file;
+      mainPreview.src = URL.createObjectURL(file);
+      
+      // Clear active state from gallery if a new main image is chosen directly
+      document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+    }
+
+    function handleGalleryChange(e) {
+      const files = Array.from(e.target.files).slice(0, 8);
+      galleryFiles = files;
+      thumbsContainer.innerHTML = '';
+      
+      files.forEach((file, i) => {
+        const thumb = createThumbnail(file, i);
+        thumbsContainer.appendChild(thumb);
+      });
+
+      // If no main image is set, use the first gallery image
+      if (!mainFile && files.length > 0) {
+        mainFile = files[0];
+        mainPreview.src = URL.createObjectURL(files[0]);
+        thumbsContainer.querySelector('.thumb')?.classList.add('active');
+      }
+    }
+
+    addCategoryBtn.addEventListener('click', async () => {
+      const name = newCategoryInput.value;
+      if (!name) return;
+      const res = await addCategory(name);
+      if (res && res.success) {
+        newCategoryInput.value = '';
+        await fetchCategories();
+        // Select the newly added category
+        categorySelect.value = res.data.name;
+        showMessage('Category added successfully.', 'success');
+      } else {
+        showMessage(res?.msg || 'Failed to add category.', 'error');
+      }
+    });
+
+    productForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating...';
+
+      const fd = new FormData();
+      const formElements = productForm.elements;
+      
+      // Append all form fields to FormData
+      for (const element of formElements) {
+          if (element.name) {
+              fd.append(element.name, element.value);
+          }
+      }
+
+      if (mainFile) {
+        fd.set('image', mainFile); // Use set to ensure only one main image
+      } else {
+        showMessage('Please select a main image for the product.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Product';
+        return;
+      }
+
+      // Append gallery images, excluding the one that might be the main image
+      galleryFiles.forEach((file) => {
+        if (file !== mainFile) {
+          fd.append('gallery', file);
+        }
+      });
+
+      try {
+        const res = await fetch(`${API}/api/products`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: fd
+        });
+        const json = await res.json();
+        
+        if (json.success) {
+          showMessage('Product created successfully!', 'success');
+          productForm.reset();
+          thumbsContainer.innerHTML = '';
+          mainPreview.src = 'https://placehold.co/600x400/e2e8f0/9ca3af?text=Main+Image';
+          galleryFiles = [];
+          mainFile = null;
+          fetchCategories(); // Refresh categories list
+        } else {
+          showMessage(json.msg || 'Failed to create product. Please check the fields.', 'error');
+        }
+      } catch (err) {
+        showMessage(err.message || 'An unexpected server error occurred.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Product';
+      }
+    });
+
+    // Event Listeners
+    imageInput.addEventListener('change', handleMainImageChange);
+    galleryInput.addEventListener('change', handleGalleryChange);
+
+    // Initial Load
+    (async () => {
+      await fetchCategories();
+    })();
+  </script>
+</body>
+</html>

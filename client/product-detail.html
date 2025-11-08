@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product Details</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .thumbnail-active { border: 2px solid #4f46e5; }
+    
+    
+    .tab-btn {
+        padding-bottom: 0.75rem; 
+        color: rgb(107 114 128); 
+        font-weight: 500; 
+    }
+    .tab-btn-active {
+        color: rgb(17 24 39); 
+        border-bottom-width: 2px; 
+        border-color: rgb(17 24 39); 
+    }
+   
+  </style>
+</head>
+
+<body class="bg-gray-100">
+  <!-- Header -->
+  <header class="bg-white shadow-md sticky top-0 z-50">
+    <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <div class="text-2xl font-bold text-gray-800"><a href="index.html">Fundamental</a></div>
+      <div class="hidden md:flex items-center space-x-8">
+        <a href="index.html" class="text-gray-600 hover:text-indigo-600">Home</a>
+        <a href="products.html" class="text-gray-600 hover:text-indigo-600">Products</a>
+        <a href="services.html" class="text-gray-600 hover:text-indigo-600">Services</a>
+        <a href="#" class="text-gray-600 hover:text-indigo-600">About</a>
+        <a href="#" class="text-gray-600 hover:text-indigo-600">Contact</a>
+      </div>
+      <div class="flex items-center space-x-5">
+        <a href="cart.html" class="text-gray-600 hover:text-indigo-600 relative">
+            <i class="fas fa-shopping-cart"></i>
+            </a>
+        
+        <div id="auth-links-logged-out" class="flex items-center space-x-3">
+            <a href="login.html" class="text-sm font-medium text-gray-700 hover:text-indigo-600">Log In</a>
+            <a href="register.html" class="text-sm font-medium bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700">Register</a>
+        </div>
+
+        <div id="auth-links-logged-in" class="hidden">
+            <a href="profile.html" id="user-link" class="text-gray-600 hover:text-indigo-600">
+                <i id="user-icon" class="fas fa-user-circle text-2xl"></i>
+            </a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Content will be loaded by JavaScript -->
+  <main id="main-content" class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="text-center">
+      <p class="text-lg text-gray-600">Loading product details...</p>
+    </div>
+  </main>
+
+  <script>
+    // --- NEW: Auth UI Logic ---
+    const token = localStorage.getItem('token');
+    const authLoggedOut = document.getElementById('auth-links-logged-out');
+    const authLoggedIn = document.getElementById('auth-links-logged-in');
+
+    function setLoggedOutUI() {
+        if (authLoggedOut) authLoggedOut.classList.remove('hidden');
+        if (authLoggedIn) authLoggedIn.classList.add('hidden');
+    }
+
+    function setLoggedInUI() {
+        if (authLoggedOut) authLoggedOut.classList.add('hidden');
+        if (authLoggedIn) authLoggedIn.classList.remove('hidden');
+    }
+
+    async function validateToken(token) {
+      if (!token) return false;
+      try {
+        const res = await fetch('http://localhost:5000/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return false;
+        const json = await res.json();
+        return json && json.success === true && json.data && json.data.role !== 'admin';
+      } catch (err) {
+        return false;
+      }
+    }
+    
+    // Set initial UI
+    setLoggedOutUI();
+
+    (async () => {
+      if (!token) return;
+      const ok = await validateToken(token);
+      if (ok) {
+        setLoggedInUI();
+      } else {
+        localStorage.removeItem('token');
+        setLoggedOutUI();
+      }
+    })();
+    // --- End of NEW Auth UI Logic ---
+
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const API = 'http://localhost:5000';
+  const mainContent = document.getElementById('main-content');
+  const urlParams = new URLSearchParams(window.location.search);
+  const productId = urlParams.get('id');
+
+  if (!productId) {
+    mainContent.innerHTML = `<p class="text-center text-red-500">No product ID specified.</p>`;
+    return;
+  }
+
+  // Fetch product and render
+  try {
+    const res = await fetch(`${API}/api/products/${productId}`);
+    if (!res.ok) throw new Error('Product not found.');
+    const json = await res.json();
+    if (!json.success) throw new Error(json.msg || 'Failed to fetch product');
+    renderProduct(json.data);
+  } catch (err) {
+    mainContent.innerHTML = `<p class="text-center text-red-500">${err.message}</p>`;
+  }
+
+  function renderProduct(product) {
+    // ... (ang buong renderProduct function mo ay pareho pa rin) ...
+    const galleryImages = [product.imageUrl, ...(product.gallery || [])].filter(Boolean);
+    const thumbnailsHtml = galleryImages.map((imgUrl, i) => `
+      <img src="${imgUrl}" alt="Thumbnail ${i+1}" class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 ${i===0 ? 'thumbnail-active' : 'border-transparent'}" data-full-image="${imgUrl}">
+    `).join('');
+    const sizesHtml = (product.sizes || []).map(size => `<button class="px-4 py-2 border rounded-md text-sm font-medium hover:bg-gray-200" data-size="${size}">${size}</button>`).join('');
+    const colorsHtml = (product.colors || []).map(color => `<button class="w-8 h-8 rounded-full border-2 border-transparent" style="background-color: ${color.toLowerCase()};" title="${color}" data-color="${color}"></button>`).join('');
+
+    const detailsHtml = product.productDetails ? `<p class="text-gray-700 leading-relaxed">${product.productDetails}</p>` : `<p class="text-gray-500">No details provided.</p>`;
+    const faqsHtml = product.faqs ? `<p class="text-gray-700 leading-relaxed">${product.faqs}</p>` : `<p class="text-gray-500">No FAQs yet.</p>`;
+
+    const productHtml = `
+      <div class="bg-white p-8 rounded-lg shadow-lg">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div>
+            <img id="main-product-image" src="${galleryImages[0] || ''}" class="w-full h-[420px] object-contain rounded-md bg-gray-50" alt="${product.name}">
+            <div id="thumbnail-container" class="mt-4 flex gap-3 items-center">${thumbnailsHtml}</div>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold">${product.name}</h1>
+            <div class="text-sm text-gray-500 mb-4">${product.category || ''}</div>
+            <div class="text-2xl font-bold text-indigo-600 mb-4">₱${Number(product.price||0).toLocaleString()}</div>
+            <div class="text-gray-700 mb-4">${product.description || ''}</div>
+
+            <div class="mb-4">
+              <div class="text-sm text-gray-600 mb-1">Select Color</div>
+              <div id="color-selector" class="flex gap-2">${colorsHtml}</div>
+            </div>
+
+            <div class="mb-4">
+              <div class="text-sm text-gray-600 mb-1">Choose Size</div>
+              <div id="size-selector" class="flex gap-2">${sizesHtml}</div>
+            </div>
+
+            <div class="flex items-center gap-3 mb-4">
+              <button id="decrease-qty" class="px-3 py-1 border rounded">-</button>
+              <div id="quantity-display" class="px-3 py-1 border rounded">1</div>
+              <button id="increase-qty" class="px-3 py-1 border rounded">+</button>
+              <div class="text-sm text-gray-500 ml-4">Stock: ${product.countInStock}</div>
+            </div>
+
+            <div class="mt-4">
+              <button id="add-to-cart-btn" class="w-full bg-indigo-600 text-white py-3 rounded-md">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-10 border-b">
+        <div class="flex justify-center gap-10">
+          <button data-tab="details" class="tab-btn tab-btn-active">Product Details</button>
+          <button data-tab="reviews" class="tab-btn">Rating & Reviews</button>
+          <button data-tab="faqs" class="tab-btn">FAQs</button>
+        </div>
+      </div>
+
+      <div class="mt-8">
+        <section id="tab-details">${detailsHtml}</section>
+        <section id="tab-reviews" class="hidden"><p class="text-gray-500">No reviews yet.</p></section>
+        <section id="tab-faqs" class="hidden">${faqsHtml}</section>
+      </div>
+    `;
+
+    mainContent.innerHTML = productHtml;
+    // After rendering, add event listeners:
+    addEventListeners(product);
+  }
+
+  function addEventListeners(product) {
+    // ... (ang event listeners mo ay pareho pa rin) ...
+    let selectedSize = null, selectedColor = null;
+    const thumbnailContainer = document.getElementById('thumbnail-container');
+    const mainImage = document.getElementById('main-product-image');
+    thumbnailContainer?.addEventListener('click', (e) => {
+      const img = e.target.closest('img');
+      if (!img) return;
+      thumbnailContainer.querySelectorAll('img').forEach(i => i.classList.remove('thumbnail-active'));
+      img.classList.add('thumbnail-active');
+      mainImage.src = img.dataset.fullImage;
+    });
+
+    const sizeSelector = document.getElementById('size-selector');
+    sizeSelector?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      sizeSelector.querySelectorAll('button').forEach(b => b.classList.remove('bg-indigo-600','text-white'));
+      btn.classList.add('bg-indigo-600','text-white');
+      selectedSize = btn.dataset.size;
+    });
+
+    const colorSelector = document.getElementById('color-selector');
+    colorSelector?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      colorSelector.querySelectorAll('button').forEach(b => b.classList.remove('ring','ring-2','ring-indigo-500'));
+      btn.classList.add('ring','ring-2','ring-indigo-500');
+      selectedColor = btn.dataset.color;
+    });
+
+    let quantity = 1;
+    const qtyDisplay = document.getElementById('quantity-display');
+    document.getElementById('decrease-qty')?.addEventListener('click', () => {
+      if (quantity > 1) { quantity--; qtyDisplay.textContent = quantity; }
+    });
+    document.getElementById('increase-qty')?.addEventListener('click', () => {
+      if (quantity < product.countInStock) { quantity++; qtyDisplay.textContent = quantity; }
+    });
+
+    const addToCartBtn = document.getElementById('add-to-cart-btn');
+    addToCartBtn?.addEventListener('click', async () => {
+      if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+        alert('Please select a size.');
+        return;
+      }
+      if (product.colors && product.colors.length > 0 && !selectedColor) {
+        alert('Please select a color.');
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('You must log in before adding items to cart.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          localStorage.removeItem('token');
+          alert('Session expired. Please log in again.');
+          window.location.href = 'login.html';
+          return;
+        }
+      } catch (err) {
+        localStorage.removeItem('token');
+        alert('Session expired. Please log in again.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      addToCartBtn.disabled = true;
+      const originalText = addToCartBtn.innerHTML;
+      addToCartBtn.innerHTML = 'Adding...';
+
+      try {
+        const res = await fetch(`${API}/api/cart`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ productId: product._id, quantity: 1 })
+        });
+
+        if (res.status === 401) {
+          localStorage.removeItem('token');
+          alert('Session expired. Please log in again.');
+          window.location.href = 'login.html';
+          return;
+        }
+
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.msg || 'Could not add to cart.');
+
+        alert('Product added to cart!');
+      } catch (err) {
+        alert(err.message || 'Failed to add to cart.');
+      } finally {
+        addToCartBtn.disabled = false;
+        addToCartBtn.innerHTML = originalText;
+      }
+    });
+
+    document.querySelectorAll('[data-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('tab-btn-active'));
+        btn.classList.add('tab-btn-active');
+        const key = btn.dataset.tab;
+        document.getElementById('tab-details').classList.toggle('hidden', key !== 'details');
+        document.getElementById('tab-reviews').classList.toggle('hidden', key !== 'reviews');
+        document.getElementById('tab-faqs').classList.toggle('hidden', key !== 'faqs');
+      });
+    });
+  }
+});
+  </script>
+
+  <!-- Global Footer -->
+  <div id="site-footer"></div>
+  <script src="js/footer.js"></script>
+</body>
+
+</html>

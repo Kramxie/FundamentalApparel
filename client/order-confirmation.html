@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Order Confirmed</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style> body{font-family:Inter, sans-serif} </style>
+</head>
+<body class="bg-gray-50">
+  <header class="bg-white shadow sticky top-0">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="index.html" class="text-xl font-bold">Fundamental</a>
+      <a href="profile.html" class="text-sm text-gray-600">My Profile</a>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-6 py-16">
+    <div id="content" class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow">
+      <div id="status" class="text-center">
+        <h1 class="text-2xl font-bold mb-2">Order Confirmed</h1>
+        <p class="text-gray-600 mb-6">Thank you for your purchase. Below are the details of your order.</p>
+      </div>
+
+      <div id="order-details" class="hidden">
+        <!-- populated by JS -->
+      </div>
+
+      <div id="loading" class="text-center text-gray-500">Loading order details...</div>
+
+      <div class="mt-6 text-right">
+        <a id="to-profile" href="profile.html" class="inline-block bg-indigo-600 text-white px-4 py-2 rounded">Go to My Purchases</a>
+        <a href="index.html" class="ml-3 text-gray-600">Continue shopping</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (async () => {
+      const API = 'http://localhost:5000';
+      const token = localStorage.getItem('token');
+      const url = new URL(window.location.href);
+      const id = url.searchParams.get('id');
+      const loading = document.getElementById('loading');
+      const details = document.getElementById('order-details');
+
+      if (!id) {
+        loading.textContent = 'No order specified.';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/api/orders/${id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (!json.success) {
+          loading.textContent = json.msg || 'Could not load order.';
+          return;
+        }
+        const o = json.data;
+
+        const itemsHtml = o.orderItems.map(it => `
+          <div class="flex items-center gap-4 border-b py-4">
+            <img src="${it.imageUrl}" class="w-20 h-20 object-cover rounded" alt="${it.name}">
+            <div class="flex-1">
+              <div class="font-semibold">${it.name}</div>
+              <div class="text-sm text-gray-500">Qty: ${it.quantity} · ₱${it.price.toLocaleString()}</div>
+            </div>
+            <div class="font-semibold">₱${(it.price * it.quantity).toLocaleString()}</div>
+          </div>
+        `).join('');
+
+        details.innerHTML = `
+          <div class="mb-4">
+            <div class="text-sm text-gray-600">Order ID: <span class="font-mono">${o._id}</span></div>
+            <div class="text-sm text-gray-600">Status: <strong>${o.status}</strong></div>
+            <div class="text-sm text-gray-600">Payment: <strong>${o.paymentStatus}</strong></div>
+          </div>
+          <div>${itemsHtml}</div>
+          <div class="mt-4 text-right">
+            <div class="text-gray-600">Delivery fee: ₱${Number(o.deliveryFee || 0).toLocaleString()}</div>
+            <div class="text-xl font-bold">Total: ₱${Number(o.totalPrice || 0).toLocaleString()}</div>
+          </div>
+        `;
+        loading.classList.add('hidden');
+        details.classList.remove('hidden');
+      } catch (err) {
+        loading.textContent = 'Server error.';
+      }
+    })();
+  </script>
+</body>
+</html>

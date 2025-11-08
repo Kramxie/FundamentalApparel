@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logging in...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center">
+        <h2 class="text-2xl font-bold text-gray-800">Logging you in...</h2>
+        <p class="text-gray-500 mt-2">Please wait, you are being redirected.</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            if (token) {
+                // Nahanap ang token! I-save ito sa localStorage
+                localStorage.setItem('token', token);
+                
+                // I-redirect sa profile page
+                window.location.href = 'profile.html';
+            } else {
+                // Walang token, nagka-error. Ibalik sa login.
+                console.error('OAuth failed, no token found.');
+                window.location.href = 'login.html?error=oauth_failed';
+            }
+        });
+    </script>
+</body>
+</html>

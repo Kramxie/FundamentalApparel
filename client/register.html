@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .password-toggle-btn {
+            position: absolute;
+            top: 50%;
+            right: 0.75rem;
+            transform: translateY(-50%);
+            color: #6b7280;
+            cursor: pointer;
+        }
+        #password-reqs { list-style-type: none; padding: 0; margin-top: 0.5rem; }
+        #password-reqs li { font-size: 0.875rem; color: #6b7280; transition: color 0.2s; }
+        #password-reqs li.valid { color: #10B981; }
+        #password-reqs li.valid i { color: #10B981; }
+        #password-reqs li i { width: 1.25rem; font-size: 0.75rem; }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen py-8">
+    <div class="w-full max-w-sm bg-white p-8 rounded-xl shadow-lg">
+        <div class="text-center mb-8">
+            <h2 class="text-2xl font-bold text-gray-800">Create Your Account</h2>
+        </div>
+        
+        <div id="message-container" class="hidden mb-4 p-4 rounded-md"></div>
+
+        <form id="register-form" class="space-y-4">
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                <input type="text" id="name" name="name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+            </div>
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" id="email" name="email" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+            </div>
+             <div>
+                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                <div class="relative mt-1">
+                    <input type="password" id="password" name="password" minlength="6" required class="block w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <button type="button" class="password-toggle-btn" data-target="password">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <ul id="password-reqs" class="mt-2">
+                    <li id="req-length"><i class="fas fa-times"></i> At least 8 characters</li>
+                    <li id="req-number"><i class="fas fa-times"></i> Include numbers</li>
+                    <li id="req-special"><i class="fas fa-times"></i> Include special characters (!@#$%)</li>
+                    <li id="req-nospace"><i class="fas fa-times"></i> No spaces</li>
+                </ul>
+            </div>
+             <div>
+                <label for="confirm-password" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+                <div class="relative mt-1">
+                    <input type="password" id="confirm-password" name="confirm-password" required class="block w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <button type="button" class="password-toggle-btn" data-target="confirm-password">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="pt-2">
+                <button type="submit" id="submit-btn" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">
+                    Create Account
+                </button>
+            </div>
+        </form>
+
+        <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-gray-300"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+                <span class="px-2 bg-white text-gray-500">OR</span>
+            </div>
+        </div>
+
+        <div class="space-y-3">
+            <a href="http://localhost:5000/api/auth/google" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <i class="fab fa-google text-lg mr-2"></i>
+                Sign up with Google
+            </a>
+            <a href="http://localhost:5000/api/auth/facebook" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <i class="fab fa-facebook text-lg mr-2 text-blue-600"></i>
+                Sign up with Facebook
+            </a>
+        </div>
+        <div class="text-center mt-6">
+            <p class="text-sm text-gray-600">
+                Already have an account? <a href="login.html" class="font-medium text-indigo-600 hover:text-indigo-500">Log In</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Ang script para sa validation at form submission ay pareho pa rin
+        // ... (Kopyahin ang buong script block mula sa naunang binigay ko)
+        const form = document.getElementById('register-form');
+        const messageContainer = document.getElementById('message-container');
+        const submitBtn = document.getElementById('submit-btn');
+        const passwordInput = document.getElementById('password');
+        
+        // Password validation elements
+        const reqs = {
+            length: document.getElementById('req-length'),
+            number: document.getElementById('req-number'),
+            special: document.getElementById('req-special'),
+            nospace: document.getElementById('req-nospace')
+        };
+        const validations = {
+            length: (p) => p.length >= 8,
+            number: (p) => /[0-9]/.test(p),
+            special: (p) => /[!@#$%^&*]/.test(p), // Pwede mong dagdagan pa
+            nospace: (p) => !/\s/.test(p)
+        };
+        
+        // Password toggle buttons
+        const toggleButtons = document.querySelectorAll('.password-toggle-btn');
+
+        const showMessage = (message, type) => {
+            messageContainer.textContent = message;
+            messageContainer.className = `p-4 rounded-md mb-4 text-sm ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-800'}`;
+            messageContainer.classList.remove('hidden');
+        };
+        
+        // --- Show/Hide Password Logic ---
+        toggleButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetInput = document.getElementById(btn.dataset.target);
+                const icon = btn.querySelector('i');
+                if (targetInput.type === 'password') {
+                    targetInput.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    targetInput.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        });
+        
+        // --- Real-time Password Validation Logic ---
+        passwordInput.addEventListener('input', () => {
+            const password = passwordInput.value;
+            let allValid = true;
+            
+            for (const [key, test] of Object.entries(validations)) {
+                const reqEl = reqs[key];
+                const icon = reqEl.querySelector('i');
+                if (test(password)) {
+                    reqEl.classList.add('valid');
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-check');
+                } else {
+                    reqEl.classList.remove('valid');
+                    icon.classList.remove('fa-check');
+                    icon.classList.add('fa-times');
+                    allValid = false;
+                }
+            }
+            return allValid;
+        });
+
+        // --- Form Submission Logic ---
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            const password = data.password;
+
+            // 1. Client-side validation bago i-submit
+            if (password !== data['confirm-password']) {
+                return showMessage('Passwords do not match.', 'error');
+            }
+            
+            // Check all password validations
+            const isLengthValid = validations.length(password);
+            const isNumberValid = validations.number(password);
+            const isSpecialValid = validations.special(password);
+            const isNoSpaceValid = validations.nospace(password);
+
+            if (!isLengthValid || !isNumberValid || !isSpecialValid || !isNoSpaceValid) {
+                return showMessage('Password does not meet all requirements.', 'error');
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating Account...';
+
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: data.name, email: data.email, password: data.password })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('Registration successful! Please check your email for a verification code.');
+                    window.location.href = `verify.html?email=${encodeURIComponent(data.email)}`;
+                } else {
+                    throw new Error(result.msg || 'Registration failed.');
+                }
+            } catch (error) {
+                showMessage(error.message, 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account';
+            }
+        });
+    </script>
+</body>
+</html>

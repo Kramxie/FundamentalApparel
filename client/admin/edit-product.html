@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Product</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen bg-gray-100">
+        <!-- Sidebar -->
+        <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+            <div class="flex items-center justify-center h-16 bg-white shadow-md"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
+            <div class="flex flex-col flex-grow p-4">
+                 <nav class="flex-grow space-y-2">
+                    <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+                    </a>
+                    <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
+                    </a>
+                     <a href="manage-products.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
+                        <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+                    </a>
+                    <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
+                    </a>
+                    <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+        <!-- Main content (form remains the same) -->
+        <div class="flex flex-col flex-1 overflow-y-auto">
+            <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
+                <div><h1 class="text-xl font-semibold text-gray-800">Edit Product</h1></div>
+                <button id="logout-btn" class="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md hover:bg-red-600">Logout</button>
+            </div>
+            <div class="p-6">
+                <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
+                    <div id="message-container" class="hidden mb-4 p-4 rounded-md"></div>
+                    <form id="edit-product-form">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><label for="name" class="block text-sm font-medium text-gray-700">Product Name</label><input type="text" id="name" name="name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                            <div><label for="category" class="block text-sm font-medium text-gray-700">Category</label><select id="category" name="category" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"><option>Jersey</option><option>Shorts</option><option>Outwears</option><option>Lab Coats</option><option>Printing Machine</option><option>Banner</option></select></div>
+                            <div><label for="price" class="block text-sm font-medium text-gray-700">Price</label><input type="number" id="price" name="price" required min="0" step="0.01" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                            <div><label for="countInStock" class="block text-sm font-medium text-gray-700">Stock Quantity</label><input type="number" id="countInStock" name="countInStock" required min="0" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                            <div><label for="sizes" class="block text-sm font-medium text-gray-700">Sizes (comma-separated)</label><input type="text" id="sizes" name="sizes" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                            <div><label for="colors" class="block text-sm font-medium text-gray-700">Colors (comma-separated)</label><input type="text" id="colors" name="colors" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                            <div class="md:col-span-2"><label for="material" class="block text-sm font-medium text-gray-700">Material</label><input type="text" id="material" name="material" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                            <div class="md:col-span-2"><label for="imageUrl" class="block text-sm font-medium text-gray-700">Main Image URL</label><input type="text" id="imageUrl" name="imageUrl" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                            <div class="md:col-span-2"><label for="gallery" class="block text-sm font-medium text-gray-700">Gallery Images (comma-separated URLs)</label><textarea id="gallery" name="gallery" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></textarea></div>
+                            <div class="md:col-span-2"><label for="productDetails" class="block text-sm font-medium text-gray-700">Product Details</label><textarea id="productDetails" name="productDetails" rows="4" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></textarea></div>
+                            <div class="md:col-span-2"><label for="faqs" class="block text-sm font-medium text-gray-700">FAQs</label><textarea id="faqs" name="faqs" rows="4" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></textarea></div>
+                            <div class="md:col-span-2"><label for="description" class="block text-sm font-medium text-gray-700">Short Description</label><textarea id="description" name="description" rows="3" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"></textarea></div>
+                        </div>
+                        <div class="mt-8"><button type="submit" class="w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700">Update Product</button></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('adminToken');
+            if (!token) { window.location.href = 'login.html'; return; }
+
+            const editForm = document.getElementById('edit-product-form');
+            const messageContainer = document.getElementById('message-container');
+            document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('adminToken'); window.location.href = 'login.html'; });
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('id');
+
+            if (!productId) {
+                showMessage('No product ID found. Redirecting...', 'error');
+                setTimeout(() => window.location.href = 'manage-products.html', 2000);
+                return;
+            }
+
+            const showMessage = (message, type) => {
+                messageContainer.textContent = message;
+                messageContainer.className = `p-4 rounded-md mb-4 ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+                messageContainer.classList.remove('hidden');
+            };
+
+            // Fetch product data and populate the form
+            try {
+                const response = await fetch(`http://localhost:5000/api/products/${productId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const result = await response.json();
+                if (result.success) {
+                    const product = result.data;
+                    document.getElementById('name').value = product.name;
+                    document.getElementById('category').value = product.category;
+                    document.getElementById('price').value = product.price;
+                    document.getElementById('countInStock').value = product.countInStock;
+                    document.getElementById('sizes').value = product.sizes.join(', ');
+                    document.getElementById('colors').value = product.colors.join(', ');
+                    document.getElementById('material').value = product.material || '';
+                    document.getElementById('imageUrl').value = product.imageUrl || '';
+                    document.getElementById('gallery').value = product.gallery.join(', ');
+                    document.getElementById('productDetails').value = product.productDetails || '';
+                    document.getElementById('faqs').value = product.faqs || '';
+                    document.getElementById('description').value = product.description;
+                } else { throw new Error(result.msg); }
+            } catch (error) {
+                showMessage(`Error fetching product: ${error.message}`, 'error');
+            }
+
+            // Handle form submission
+            editForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(editForm);
+                const data = Object.fromEntries(formData.entries());
+                
+                data.price = parseFloat(data.price);
+                data.countInStock = parseInt(data.countInStock, 10);
+
+                try {
+                    const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        showMessage('Product updated successfully! Redirecting...', 'success');
+                        setTimeout(() => window.location.href = 'manage-products.html', 2000);
+                    } else { throw new Error(result.msg); }
+                } catch (error) {
+                    showMessage(error.message, 'error');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
