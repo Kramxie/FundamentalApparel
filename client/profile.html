@@ -525,6 +525,39 @@
                 setTimeout(() => container.classList.add('hidden'), 3500);
             };
 
+            // --- NEW: Tracking URL Generator ---
+            function getTrackingUrl(courier, trackingCode) {
+                const courierUrls = {
+                    'Lalamove': null, // Lalamove doesn't have public tracking URL
+                    'J&T Express': `https://www.jtexpress.ph/track?billcode=${trackingCode}`,
+                    'LBC Express': `https://www.lbcexpress.com/track?tracking_no=${trackingCode}`,
+                    'Ninja Van': `https://www.ninjavan.co/en-ph/tracking?id=${trackingCode}`,
+                    'Flash Express': `https://www.flashexpress.com/tracking/?se=${trackingCode}`,
+                    'JRS Express': `https://www.jrs-express.com/track?code=${trackingCode}`,
+                    '2GO Express': `https://www.2go.com.ph/track/${trackingCode}`,
+                    'DHL': `https://www.dhl.com/ph-en/home/tracking/tracking-express.html?submit=1&tracking-id=${trackingCode}`,
+                    'FedEx': `https://www.fedex.com/fedextrack/?trknbr=${trackingCode}`,
+                };
+                return courierUrls[courier] || null;
+            }
+
+            // --- NEW: Copy to Clipboard Function ---
+            function copyToClipboard(text, btn) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    btn.classList.remove('bg-gray-100', 'hover:bg-gray-200', 'text-gray-700');
+                    btn.classList.add('bg-green-100', 'text-green-700');
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.classList.add('bg-gray-100', 'hover:bg-gray-200', 'text-gray-700');
+                        btn.classList.remove('bg-green-100', 'text-green-700');
+                    }, 2000);
+                }).catch(() => {
+                    alert('Failed to copy. Please copy manually.');
+                });
+            }
+
             async function apiRequest(path, options = {}) {
                 const isFormData = options.body instanceof FormData;
                 const headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
@@ -781,6 +814,34 @@
                         <span class="text-sm font-semibold ${statusColor}">${statusLabel}</span>
                     </div>
                     ${itemsHtml}
+                    ${order.status === 'Shipped' || order.status === 'Delivered' ? `
+                    <div class="px-4 py-3 bg-blue-50 border-t border-blue-100">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i class="fas fa-shipping-fast text-blue-600"></i>
+                            <span class="text-sm font-semibold text-gray-700">Shipping Details:</span>
+                        </div>
+                        <div class="space-y-2">
+                            ${order.shippingService ? `<p class="text-sm text-gray-700"><strong>Courier:</strong> <span class="font-semibold text-blue-700">${order.shippingService}</span></p>` : ''}
+                            ${order.trackingCode ? `
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <p class="text-sm text-gray-700"><strong>Tracking Number:</strong></p>
+                                <div class="flex items-center gap-2 bg-white px-3 py-1 rounded border border-gray-200">
+                                    <span class="font-mono font-semibold text-green-700 text-sm">${order.trackingCode}</span>
+                                    <button onclick="event.preventDefault(); copyToClipboard('${order.trackingCode}', this)" 
+                                            class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-all">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                    ${order.shippingService && getTrackingUrl(order.shippingService, order.trackingCode) ? `
+                                    <a href="${getTrackingUrl(order.shippingService, order.trackingCode)}" 
+                                       target="_blank" 
+                                       class="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs transition-all">
+                                        <i class="fas fa-external-link-alt"></i> Track Order
+                                    </a>` : ''}
+                                </div>
+                            </div>
+                            ` : '<p class="text-sm text-yellow-600">⏳ Tracking number pending...</p>'}
+                        </div>
+                    </div>` : ''}
                     <div class="p-4 bg-gray-50 flex flex-col sm:flex-row justify-end items-center gap-4">
                         <div class="text-lg">Order Total: <span class="font-bold text-indigo-700">₱${order.totalPrice.toLocaleString()}</span></div>
                         <div class="flex gap-3">${buttonsHtml}</div>

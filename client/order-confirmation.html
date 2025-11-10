@@ -50,6 +50,39 @@
         return;
       }
 
+      // --- Tracking URL Generator ---
+      function getTrackingUrl(courier, trackingCode) {
+        const courierUrls = {
+          'Lalamove': null,
+          'J&T Express': `https://www.jtexpress.ph/track?billcode=${trackingCode}`,
+          'LBC Express': `https://www.lbcexpress.com/track?tracking_no=${trackingCode}`,
+          'Ninja Van': `https://www.ninjavan.co/en-ph/tracking?id=${trackingCode}`,
+          'Flash Express': `https://www.flashexpress.com/tracking/?se=${trackingCode}`,
+          'JRS Express': `https://www.jrs-express.com/track?code=${trackingCode}`,
+          '2GO Express': `https://www.2go.com.ph/track/${trackingCode}`,
+          'DHL': `https://www.dhl.com/ph-en/home/tracking/tracking-express.html?submit=1&tracking-id=${trackingCode}`,
+          'FedEx': `https://www.fedex.com/fedextrack/?trknbr=${trackingCode}`,
+        };
+        return courierUrls[courier] || null;
+      }
+
+      // --- Copy to Clipboard ---
+      window.copyToClipboard = function(text, btn) {
+        navigator.clipboard.writeText(text).then(() => {
+          const originalText = btn.innerHTML;
+          btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+          btn.classList.remove('bg-gray-100', 'hover:bg-gray-200', 'text-gray-700');
+          btn.classList.add('bg-green-100', 'text-green-700');
+          setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.add('bg-gray-100', 'hover:bg-gray-200', 'text-gray-700');
+            btn.classList.remove('bg-green-100', 'text-green-700');
+          }, 2000);
+        }).catch(() => {
+          alert('Failed to copy. Please copy manually.');
+        });
+      };
+
       try {
         const res = await fetch(`${API}/api/orders/${id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -78,6 +111,44 @@
             <div class="text-sm text-gray-600">Status: <strong>${o.status}</strong></div>
             <div class="text-sm text-gray-600">Payment: <strong>${o.paymentStatus}</strong></div>
           </div>
+
+          ${(o.status === 'Shipped' || o.status === 'Delivered') ? `
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div class="flex items-center gap-2 mb-3">
+              <i class="fas fa-shipping-fast text-blue-600 text-lg"></i>
+              <h3 class="font-bold text-gray-800">Shipping Information</h3>
+            </div>
+            <div class="grid grid-cols-1 gap-3">
+              <div>
+                <p class="text-sm text-gray-600">Courier Service:</p>
+                <p class="font-semibold text-blue-700 text-lg">${o.shippingService || 'Not yet assigned'}</p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-600 mb-2">Tracking Number:</p>
+                ${o.trackingCode 
+                  ? `<div class="flex items-center gap-2 flex-wrap bg-white px-4 py-3 rounded border border-gray-300">
+                      <span class="font-mono font-semibold text-green-700 text-lg flex-1">${o.trackingCode}</span>
+                      <button onclick="copyToClipboard('${o.trackingCode}', this)" 
+                              class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm transition-all font-medium">
+                          <i class="fas fa-copy"></i> Copy
+                      </button>
+                      ${o.shippingService && getTrackingUrl(o.shippingService, o.trackingCode) ? `
+                      <a href="${getTrackingUrl(o.shippingService, o.trackingCode)}" 
+                         target="_blank" 
+                         class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm transition-all font-medium">
+                          <i class="fas fa-external-link-alt"></i> Track on ${o.shippingService}
+                      </a>` : ''}
+                    </div>` 
+                  : `<p class="text-yellow-600 font-medium">⏳ Tracking number pending...</p>`
+                }
+              </div>
+            </div>
+            ${o.trackingCode ? `
+            <div class="mt-3 pt-3 border-t border-blue-200">
+              <p class="text-xs text-gray-600"><i class="fas fa-info-circle"></i> <strong>Tip:</strong> Click "Track on ${o.shippingService}" to check your shipment status in real-time, or copy the tracking number to use on the courier's website or app.</p>
+            </div>` : ''}
+          </div>` : ''}
+
           <div>${itemsHtml}</div>
           <div class="mt-4 text-right">
             <div class="text-gray-600">Delivery fee: ₱${Number(o.deliveryFee || 0).toLocaleString()}</div>
