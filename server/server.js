@@ -27,7 +27,10 @@ app.use(express.json());
 
 // Enable CORS 
 app.use(cors({
-    origin: "http://127.0.0.1:5500",
+    origin: [
+        "http://127.0.0.1:5500",
+        "https://unmumbled-balloonlike-gayle.ngrok-free.dev"
+    ],
     credentials: true,
     methods: "GET,POST,PUT,DELETE"
 }));
@@ -36,6 +39,8 @@ app.use(passport.initialize());
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.use('/client', express.static(path.join(__dirname, '..', 'client')));
 
 app.get('/', (req, res) => {
   res.send('API is running...');

@@ -285,6 +285,49 @@
           <p id="custom-modal-info-text" class="text-gray-600">Waiting for user to pay 50% down payment.</p>
         </div>
 
+        <!-- NEW: Fulfillment Details Section -->
+        <div id="custom-modal-fulfillment-section" class="hidden space-y-3">
+          <hr>
+          <h4 class="font-medium text-gray-800">📦 Fulfillment Details</h4>
+          
+          <div id="custom-modal-fulfillment-info" class="text-sm bg-gray-50 p-3 rounded-md border">
+            <!-- This will be populated dynamically -->
+          </div>
+
+          <!-- Admin form to add tracking/pickup details -->
+          <div id="custom-modal-fulfillment-form" class="hidden space-y-3 p-4 bg-indigo-50 rounded-md border border-indigo-200">
+            <p class="text-sm font-medium text-indigo-900">Add Fulfillment Details:</p>
+            
+            <!-- For Delivery -->
+            <div id="fulfillment-delivery-fields" class="hidden space-y-2">
+              <div>
+                <label class="block text-sm font-medium mb-1">Tracking Number</label>
+                <input id="fulfillment-tracking" type="text" class="w-full border rounded px-3 py-2 text-sm" placeholder="Enter tracking number">
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Estimated Delivery Date</label>
+                <input id="fulfillment-delivery-date" type="date" class="w-full border rounded px-3 py-2 text-sm">
+              </div>
+            </div>
+
+            <!-- For Pickup -->
+            <div id="fulfillment-pickup-fields" class="hidden space-y-2">
+              <div>
+                <label class="block text-sm font-medium mb-1">Pickup Date</label>
+                <input id="fulfillment-pickup-date" type="date" class="w-full border rounded px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Pickup Location</label>
+                <input id="fulfillment-pickup-location" type="text" class="w-full border rounded px-3 py-2 text-sm" value="Fundamental Store - 123 Main St, Manila">
+              </div>
+            </div>
+
+            <button id="custom-modal-save-fulfillment" class="bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-2 rounded text-sm w-full">
+              Save Fulfillment Details
+            </button>
+          </div>
+        </div>
+
       </div>
       <div class="px-5 py-3 border-t flex items-center justify-between gap-3">
     <p id="custom-modal-error" class="text-sm text-red-600 mr-auto"></p> <div class="flex items-center gap-3"> <button id="custom-modal-save-quote" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded">Send Quote</button>
@@ -298,7 +341,7 @@
 </div>
   </div>
   <script>
-    const API = 'http://localhost:5000'; // O ang ngrok URL mo
+    const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev'; // O ang ngrok URL mo
 
     function peso(n) { return '₱' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function shortId(id) { return id ? id.slice(0, 8) : '-'; }
@@ -658,6 +701,55 @@
           els.customModalPriceDisplay.textContent = `₱${order.price.toLocaleString()}`;
           els.customModalInfoText.textContent = `Order is currently: ${order.status}`;
         }
+
+        // --- NEW: Handle Fulfillment Section ---
+        const fulfillmentSection = document.getElementById('custom-modal-fulfillment-section');
+        const fulfillmentInfo = document.getElementById('custom-modal-fulfillment-info');
+        const fulfillmentForm = document.getElementById('custom-modal-fulfillment-form');
+        const deliveryFields = document.getElementById('fulfillment-delivery-fields');
+        const pickupFields = document.getElementById('fulfillment-pickup-fields');
+
+        fulfillmentSection.classList.add('hidden');
+        fulfillmentForm.classList.add('hidden');
+
+        if (order.status === 'Completed' || order.status === 'Ready for Pickup/Delivery') {
+          fulfillmentSection.classList.remove('hidden');
+
+          if (order.fulfillmentMethod === 'pending' || !order.fulfillmentMethod) {
+            fulfillmentInfo.innerHTML = '<p class="text-gray-600">⏳ Customer has not chosen a fulfillment method yet.</p>';
+          } else if (order.fulfillmentMethod === 'delivery') {
+            fulfillmentInfo.innerHTML = `
+              <p class="font-semibold text-blue-900">🚚 Delivery Selected</p>
+              <p class="mt-1"><strong>Address:</strong> ${order.deliveryAddress || 'N/A'}</p>
+              ${order.trackingNumber ? `<p class="mt-1"><strong>Tracking #:</strong> <span class="font-mono text-green-700">${order.trackingNumber}</span></p>` : '<p class="mt-1 text-yellow-600">⚠️ Tracking number not set yet</p>'}
+              ${order.estimatedDeliveryDate ? `<p class="mt-1"><strong>Est. Delivery:</strong> ${new Date(order.estimatedDeliveryDate).toLocaleDateString()}</p>` : ''}
+            `;
+            
+            if (order.status === 'Ready for Pickup/Delivery') {
+              fulfillmentForm.classList.remove('hidden');
+              deliveryFields.classList.remove('hidden');
+              pickupFields.classList.add('hidden');
+              
+              document.getElementById('fulfillment-tracking').value = order.trackingNumber || '';
+              document.getElementById('fulfillment-delivery-date').value = order.estimatedDeliveryDate ? order.estimatedDeliveryDate.split('T')[0] : '';
+            }
+          } else if (order.fulfillmentMethod === 'pickup') {
+            fulfillmentInfo.innerHTML = `
+              <p class="font-semibold text-green-900">📦 Pickup Selected</p>
+              <p class="mt-1"><strong>Location:</strong> ${order.pickupLocation || 'Fundamental Store - 123 Main St, Manila'}</p>
+              ${order.pickupDate ? `<p class="mt-1"><strong>Pickup Date:</strong> ${new Date(order.pickupDate).toLocaleDateString()}</p>` : '<p class="mt-1 text-yellow-600">⚠️ Pickup date not set yet</p>'}
+            `;
+
+            if (order.status === 'Ready for Pickup/Delivery') {
+              fulfillmentForm.classList.remove('hidden');
+              pickupFields.classList.remove('hidden');
+              deliveryFields.classList.add('hidden');
+              
+              document.getElementById('fulfillment-pickup-date').value = order.pickupDate ? order.pickupDate.split('T')[0] : '';
+              document.getElementById('fulfillment-pickup-location').value = order.pickupLocation || 'Fundamental Store - 123 Main St, Manila';
+            }
+          }
+        }
       }
 
       async function saveCustomQuote() {
@@ -862,6 +954,64 @@
       els.customModalVerifyDp.addEventListener('click', verifyDownPayment); // Para sa Phase 4
       els.customModalRequestFinal.addEventListener('click', requestFinalPayment); // Para sa Phase 5.1
       els.customModalVerifyFinal.addEventListener('click', verifyFinalPayment);
+
+      // --- NEW: Save Fulfillment Details ---
+      async function saveFulfillmentDetails() {
+        if (!selectedCustomOrder) return;
+
+        const fulfillmentMethod = selectedCustomOrder.fulfillmentMethod;
+        const data = {};
+
+        if (fulfillmentMethod === 'delivery') {
+          const trackingNumber = document.getElementById('fulfillment-tracking').value.trim();
+          const deliveryDate = document.getElementById('fulfillment-delivery-date').value;
+
+          if (trackingNumber) data.trackingNumber = trackingNumber;
+          if (deliveryDate) data.estimatedDeliveryDate = deliveryDate;
+        } else if (fulfillmentMethod === 'pickup') {
+          const pickupDate = document.getElementById('fulfillment-pickup-date').value;
+          const pickupLocation = document.getElementById('fulfillment-pickup-location').value.trim();
+
+          if (pickupDate) data.pickupDate = pickupDate;
+          if (pickupLocation) data.pickupLocation = pickupLocation;
+        }
+
+        if (Object.keys(data).length === 0) {
+          alert('Please enter at least one fulfillment detail.');
+          return;
+        }
+
+        const saveBtn = document.getElementById('custom-modal-save-fulfillment');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        try {
+          const res = await fetch(`${API}/api/custom-orders/${selectedCustomOrder._id}/fulfillment-details`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+          });
+          const result = await res.json();
+          if (!res.ok || !result.success) throw new Error(result.msg || 'Failed to save fulfillment details');
+
+          alert(result.msg || 'Fulfillment details saved!');
+          
+          // Update local list
+          const idx = allCustomOrders.findIndex(o => o._id === selectedCustomOrder._id);
+          if (idx >= 0) allCustomOrders[idx] = result.data;
+          renderCustomOrders(); // Refresh the table
+
+          els.customModal.classList.add('hidden'); // Close modal
+
+        } catch (err) {
+          alert('Error: ' + err.message);
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Fulfillment Details';
+        }
+      }
+
+      document.getElementById('custom-modal-save-fulfillment').addEventListener('click', saveFulfillmentDetails);
 
       // --- Initial load ---
       loadRegularOrders();

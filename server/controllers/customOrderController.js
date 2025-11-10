@@ -314,3 +314,104 @@ exports.verifyFinalPayment = async (req, res) => {
         res.status(500).json({ success: false, msg: 'Server Error' });
     }
 };
+
+// @desc    Customer chooses fulfillment method (pickup or delivery)
+// @route   PUT /api/custom-orders/:id/fulfillment
+// @access  Private
+exports.setFulfillmentMethod = async (req, res) => {
+  try {
+    const { fulfillmentMethod, deliveryAddress } = req.body;
+    const order = await CustomOrder.findById(req.params.id);
+
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, msg: "Custom order not found" });
+    }
+
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, msg: "Not authorized" });
+    }
+
+    if (order.status !== "Completed") {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Order must be completed first" });
+    }
+
+    if (
+      !fulfillmentMethod ||
+      !["pickup", "delivery"].includes(fulfillmentMethod)
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Invalid fulfillment method" });
+    }
+
+    if (fulfillmentMethod === "delivery" && !deliveryAddress) {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Delivery address is required" });
+    }
+
+    order.fulfillmentMethod = fulfillmentMethod;
+    if (fulfillmentMethod === "delivery") {
+      order.deliveryAddress = deliveryAddress;
+    }
+    order.status = "Ready for Pickup/Delivery";
+    await order.save();
+
+    res.json({
+      success: true,
+      msg: `Fulfillment method set to ${fulfillmentMethod}`,
+      data: order,
+    });
+  } catch (err) {
+    console.error("setFulfillmentMethod error:", err);
+    res.status(500).json({ success: false, msg: "Server error" });
+  }
+};
+
+// @desc    Admin adds fulfillment details (tracking number or pickup date)
+// @route   PUT /api/custom-orders/:id/fulfillment-details
+// @access  Private/Admin
+exports.updateFulfillmentDetails = async (req, res) => {
+  try {
+    const { trackingNumber, estimatedDeliveryDate, pickupDate, pickupLocation } =
+      req.body;
+    const order = await CustomOrder.findById(req.params.id);
+
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, msg: "Custom order not found" });
+    }
+
+    if (order.status !== "Ready for Pickup/Delivery") {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Order is not ready for fulfillment" });
+    }
+
+    if (order.fulfillmentMethod === "delivery") {
+      if (trackingNumber) order.trackingNumber = trackingNumber;
+      if (estimatedDeliveryDate)
+        order.estimatedDeliveryDate = estimatedDeliveryDate;
+    } else if (order.fulfillmentMethod === "pickup") {
+      if (pickupDate) order.pickupDate = pickupDate;
+      if (pickupLocation) order.pickupLocation = pickupLocation;
+    }
+
+    await order.save();
+
+    res.json({
+      success: true,
+      msg: "Fulfillment details updated",
+      data: order,
+    });
+  } catch (err) {
+    console.error("updateFulfillmentDetails error:", err);
+    res.status(500).json({ success: false, msg: "Server error" });
+  }
+};
+

@@ -61,7 +61,7 @@
             resendBtn.disabled = true;
             resendBtn.textContent = 'Sending...';
             try {
-                const response = await fetch('http://localhost:5000/api/auth/resend-verification', {
+                const response = await fetch('https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/auth/resend-verification', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -90,7 +90,7 @@
             submitBtn.textContent = 'Verifying...';
 
             try {
-                const response = await fetch('http://localhost:5000/api/auth/verify', {
+                const response = await fetch('https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/auth/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, code })

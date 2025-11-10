@@ -90,7 +90,7 @@
 
             // Fetch product data and populate the form
             try {
-                const response = await fetch(`http://localhost:5000/api/products/${productId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const response = await fetch(`https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/products/${productId}`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const result = await response.json();
                 if (result.success) {
                     const product = result.data;
@@ -121,7 +121,7 @@
                 data.countInStock = parseInt(data.countInStock, 10);
 
                 try {
-                    const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
+                    const response = await fetch(`https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/products/${productId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify(data)

@@ -141,7 +141,7 @@
                 const data = Object.fromEntries(formData.entries());
 
                 try {
-                    const response = await fetch('http://localhost:5000/api/vouchers/assign', {
+                    const response = await fetch('https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/vouchers/assign', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

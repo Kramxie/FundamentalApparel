@@ -47,14 +47,14 @@
         </div>
 
         <div class="space-y-3">
-            <a href="http://localhost:5000/api/auth/google" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <button id="google-btn" type="button" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
                 <i class="fab fa-google text-lg mr-2"></i>
                 Continue with Google
-            </a>
-            <a href="http://localhost:5000/api/auth/facebook" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+            </button>
+            <button id="facebook-btn" type="button" class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
                 <i class="fab fa-facebook text-lg mr-2 text-blue-600"></i>
                 Continue with Facebook
-            </a>
+            </button>
         </div>
         <div class="text-center mt-6">
             <p class="text-sm text-gray-600">
@@ -64,15 +64,28 @@
     </div>
     
     <script>
+        const API_BASE = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev'; // Update this to match your server
         const form = document.getElementById('login-form');
         const messageContainer = document.getElementById('message-container');
         const submitBtn = document.getElementById('submit-btn');
+        const googleBtn = document.getElementById('google-btn');
+        const facebookBtn = document.getElementById('facebook-btn');
 
         const showMessage = (message, type) => {
             messageContainer.textContent = message;
             messageContainer.className = `p-4 rounded-md mb-4 text-sm ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-800'}`;
             messageContainer.classList.remove('hidden');
         };
+
+        // Google OAuth
+        googleBtn.addEventListener('click', () => {
+            window.location.href = `${API_BASE}/api/auth/google`;
+        });
+
+        // Facebook OAuth
+        facebookBtn.addEventListener('click', () => {
+            window.location.href = `${API_BASE}/api/auth/facebook`;
+        });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -83,7 +96,7 @@
             submitBtn.textContent = 'Logging In...';
 
             try {
-                const response = await fetch('http://localhost:5000/api/auth/login', {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)

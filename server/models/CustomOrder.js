@@ -40,14 +40,19 @@ const CustomOrderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        // --- Bago mong enum ---
-enum: ['Pending Quote', 'Quote Sent', 'Pending Downpayment', 'In Production', 'Pending Balance', 'Pending Final Verification', 'Completed', 'Cancelled'],
+        enum: ['Pending Quote', 'Quote Sent', 'Pending Downpayment', 'In Production', 'Pending Balance', 'Pending Final Verification', 'Completed', 'Ready for Pickup/Delivery', 'Cancelled'],
         default: 'Pending Quote'
     },
     // I-a-update ito ng admin sa Phase 2
     price: {
         type: Number,
         default: 0
+    },
+    // Payment option: customer can choose full payment or 50% downpayment
+    paymentOption: {
+        type: String,
+        enum: ['full', 'downpayment'],
+        default: 'downpayment'
     },
     downPaymentPaid: {
         type: Boolean,
@@ -56,6 +61,28 @@ enum: ['Pending Quote', 'Quote Sent', 'Pending Downpayment', 'In Production', 'P
     balancePaid: {
         type: Boolean,
         default: false
+    },
+    // Fulfillment details
+    fulfillmentMethod: {
+        type: String,
+        enum: ['pickup', 'delivery', 'pending'],
+        default: 'pending'
+    },
+    deliveryAddress: {
+        type: String
+    },
+    trackingNumber: {
+        type: String
+    },
+    estimatedDeliveryDate: {
+        type: Date
+    },
+    pickupDate: {
+        type: Date
+    },
+    pickupLocation: {
+        type: String,
+        default: 'Fundamental Store - 123 Main St, Manila'
     }
 }, {
     timestamps: true

@@ -84,7 +84,7 @@
     async function validateToken(token) {
       if (!token) return false;
       try {
-        const res = await fetch('http://localhost:5000/api/auth/me', {
+        const res = await fetch('https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/auth/me', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!res.ok) return false;
@@ -112,7 +112,7 @@
 
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const API = 'http://localhost:5000';
+  const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
   const mainContent = document.getElementById('main-content');
   const urlParams = new URLSearchParams(window.location.search);
   const productId = urlParams.get('id');

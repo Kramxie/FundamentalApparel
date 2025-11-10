@@ -8,12 +8,14 @@ const {
     submitCustomOrder,
     getAdminCustomOrders,
     updateCustomOrderQuote,
-    getMyCustomOrders,    // <-- IDAGDAG ITO
+    getMyCustomOrders,
     submitDownPayment,
     verifyDownPayment,
     requestFinalPayment,
     submitFinalPayment,
-    verifyFinalPayment
+    verifyFinalPayment,
+    setFulfillmentMethod,
+    updateFulfillmentDetails
 } = require('../controllers/customOrderController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -82,5 +84,13 @@ router.route('/:id/request-final-payment')
 
 router.route('/:id/verify-final-payment')
     .put(protect, authorize('admin'), verifyFinalPayment);
+
+// Customer chooses pickup or delivery
+router.route('/:id/fulfillment')
+    .put(protect, setFulfillmentMethod);
+
+// Admin adds tracking or pickup details
+router.route('/:id/fulfillment-details')
+    .put(protect, authorize('admin'), updateFulfillmentDetails);
 
 module.exports = router;

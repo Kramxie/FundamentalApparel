@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Test Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-6">🔐 OAuth Configuration Test</h1>
+        
+        <div class="space-y-4">
+            <div class="p-4 bg-blue-50 rounded">
+                <h2 class="font-semibold mb-2">1. Check Server Status</h2>
+                <button id="check-server" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    Test Server Connection
+                </button>
+                <p id="server-status" class="mt-2 text-sm"></p>
+            </div>
+
+            <div class="p-4 bg-green-50 rounded">
+                <h2 class="font-semibold mb-2">2. Test Google OAuth</h2>
+                <button id="test-google" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    Test Google Login
+                </button>
+                <p class="mt-2 text-sm text-gray-600">This will redirect you to Google login</p>
+            </div>
+
+            <div class="p-4 bg-indigo-50 rounded">
+                <h2 class="font-semibold mb-2">3. Test Facebook OAuth</h2>
+                <button id="test-facebook" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                    Test Facebook Login
+                </button>
+                <p class="mt-2 text-sm text-gray-600">This will redirect you to Facebook login</p>
+            </div>
+
+            <div class="p-4 bg-yellow-50 rounded">
+                <h2 class="font-semibold mb-2">4. Check Current Configuration</h2>
+                <div class="text-sm space-y-1">
+                    <p><strong>API Base:</strong> <code id="api-base" class="bg-gray-200 px-2 py-1 rounded"></code></p>
+                    <p><strong>Current URL:</strong> <code class="bg-gray-200 px-2 py-1 rounded" id="current-url"></code></p>
+                    <p><strong>Token Saved:</strong> <span id="token-status" class="font-semibold"></span></p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-gray-50 rounded">
+                <h2 class="font-semibold mb-2">📋 Checklist</h2>
+                <ul class="text-sm space-y-1">
+                    <li>✅ Server is running (localhost:5000 or ngrok)</li>
+                    <li>✅ .env file has correct CLIENT_URL and SERVER_URL</li>
+                    <li>✅ Google OAuth redirect URI configured</li>
+                    <li>✅ Facebook OAuth redirect URI configured</li>
+                    <li>✅ auth-success.html exists in client folder</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev'; // Change this to your server URL
+        
+        // Display config
+        document.getElementById('api-base').textContent = API_BASE;
+        document.getElementById('current-url').textContent = window.location.href;
+        
+        const token = localStorage.getItem('token');
+        const tokenStatus = document.getElementById('token-status');
+        if (token) {
+            tokenStatus.textContent = '✅ Yes';
+            tokenStatus.className = 'font-semibold text-green-600';
+        } else {
+            tokenStatus.textContent = '❌ No';
+            tokenStatus.className = 'font-semibold text-red-600';
+        }
+
+        // Test server connection
+        document.getElementById('check-server').addEventListener('click', async () => {
+            const statusEl = document.getElementById('server-status');
+            statusEl.textContent = 'Checking...';
+            statusEl.className = 'mt-2 text-sm text-blue-600';
+            
+            try {
+                const response = await fetch(`${API_BASE}/`, { 
+                    method: 'GET',
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                const text = await response.text();
+                
+                if (response.ok) {
+                    statusEl.textContent = `✅ Server is running! Response: "${text}"`;
+                    statusEl.className = 'mt-2 text-sm text-green-600 font-semibold';
+                } else {
+                    statusEl.textContent = `❌ Server responded with error: ${response.status}`;
+                    statusEl.className = 'mt-2 text-sm text-red-600';
+                }
+            } catch (error) {
+                statusEl.textContent = `❌ Cannot connect to server: ${error.message}`;
+                statusEl.className = 'mt-2 text-sm text-red-600';
+            }
+        });
+
+        // Test Google OAuth
+        document.getElementById('test-google').addEventListener('click', () => {
+            window.location.href = `${API_BASE}/api/auth/google`;
+        });
+
+        // Test Facebook OAuth
+        document.getElementById('test-facebook').addEventListener('click', () => {
+            window.location.href = `${API_BASE}/api/auth/facebook`;
+        });
+    </script>
+</body>
+</html>

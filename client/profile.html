@@ -392,9 +392,55 @@
             </div>
         </div>
     </div>
+
+    <!-- Fulfillment Modal (Pickup or Delivery) -->
+    <div id="fulfillment-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-lg font-semibold">Choose Fulfillment Method</h3>
+                <button id="fulfillment-modal-close" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-700 mb-4">Your order is complete! How would you like to receive it?</p>
+                
+                <div class="space-y-3">
+                    <label class="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                        <input type="radio" name="fulfillment" value="pickup" class="mt-1 mr-3" checked>
+                        <div>
+                            <p class="font-semibold text-gray-900">📦 Pickup from Store</p>
+                            <p class="text-sm text-gray-600 mt-1">Pick up your order at our store location.</p>
+                            <p class="text-xs text-gray-500 mt-1">Fundamental Store - 123 Main St, Manila</p>
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                        <input type="radio" name="fulfillment" value="delivery" class="mt-1 mr-3">
+                        <div>
+                            <p class="font-semibold text-gray-900">🚚 Delivery to Address</p>
+                            <p class="text-sm text-gray-600 mt-1">We'll deliver your order to your specified address.</p>
+                        </div>
+                    </label>
+                </div>
+                
+                <div id="delivery-address-field" class="mt-4 hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Address *</label>
+                    <textarea id="delivery-address-input" rows="3" 
+                        class="w-full border border-gray-300 rounded-md p-2 text-sm"
+                        placeholder="Enter your complete delivery address (Street, Barangay, City, Province, Zip Code)"></textarea>
+                </div>
+                
+                <div id="fulfillment-error" class="text-red-500 text-sm mt-3 hidden"></div>
+            </div>
+            <div class="p-4 bg-gray-50 flex justify-end gap-2">
+                <button id="fulfillment-modal-cancel" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">Cancel</button>
+                <button id="fulfillment-modal-confirm" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const API = 'http://localhost:5000';
+            const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
             const token = localStorage.getItem('token');
             if (!token) {
                 window.location.href = 'login.html';
@@ -459,6 +505,16 @@
             const fpFileInput = document.getElementById('fp-file-input');
             const fpError = document.getElementById('fp-error');
             let currentCustomOrderId = null; // Para sa pag-upload ng DP
+
+            // --- NEW: Fulfillment Modal Selectors ---
+            const fulfillmentModal = document.getElementById('fulfillment-modal');
+            const fulfillmentModalClose = document.getElementById('fulfillment-modal-close');
+            const fulfillmentModalCancel = document.getElementById('fulfillment-modal-cancel');
+            const fulfillmentModalConfirm = document.getElementById('fulfillment-modal-confirm');
+            const deliveryAddressField = document.getElementById('delivery-address-field');
+            const deliveryAddressInput = document.getElementById('delivery-address-input');
+            const fulfillmentError = document.getElementById('fulfillment-error');
+            let currentFulfillmentOrderId = null;
 
             // --- API Helpers ---
             const showMessage = (container, msg, type = 'success') => {
@@ -858,6 +914,37 @@
                     } else if (order.status === 'Pending Final Verification') {
                         statusColor = 'text-blue-600';
                         buttonsHtml = `<span class="text-sm text-gray-500">Waiting for admin to verify final payment...</span>`;
+                    } else if (order.status === 'Completed') {
+                        statusLabel = 'COMPLETED';
+                        statusColor = 'text-green-700';
+                        buttonsHtml = `<button data-id="${order._id}" class="btn-choose-fulfillment bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700">Choose Pickup or Delivery</button>`;
+                    } else if (order.status === 'Ready for Pickup/Delivery') {
+                        statusLabel = 'READY FOR PICKUP/DELIVERY';
+                        statusColor = 'text-purple-600';
+                        
+                        // Show fulfillment details
+                        let fulfillmentInfo = '';
+                        if (order.fulfillmentMethod === 'delivery') {
+                            fulfillmentInfo = `
+                                <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                                    <p class="text-sm font-semibold text-blue-900">🚚 Delivery Details:</p>
+                                    <p class="text-sm text-gray-700 mt-1"><strong>Address:</strong> ${order.deliveryAddress || 'N/A'}</p>
+                                    ${order.trackingNumber ? `<p class="text-sm text-gray-700 mt-1"><strong>Tracking #:</strong> <span class="font-mono font-semibold text-green-700">${order.trackingNumber}</span></p>` : '<p class="text-sm text-yellow-600 mt-1">⏳ Tracking number pending...</p>'}
+                                    ${order.estimatedDeliveryDate ? `<p class="text-sm text-gray-700 mt-1"><strong>Est. Delivery:</strong> ${new Date(order.estimatedDeliveryDate).toLocaleDateString()}</p>` : ''}
+                                </div>
+                            `;
+                        } else if (order.fulfillmentMethod === 'pickup') {
+                            fulfillmentInfo = `
+                                <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded">
+                                    <p class="text-sm font-semibold text-green-900">📦 Pickup Details:</p>
+                                    <p class="text-sm text-gray-700 mt-1"><strong>Location:</strong> ${order.pickupLocation || 'Fundamental Store - 123 Main St, Manila'}</p>
+                                    ${order.pickupDate ? `<p class="text-sm text-gray-700 mt-1"><strong>Pickup Date:</strong> ${new Date(order.pickupDate).toLocaleDateString()}</p>` : '<p class="text-sm text-yellow-600 mt-1">⏳ Pickup date pending...</p>'}
+                                </div>
+                            `;
+                        }
+                        
+                        detailsHtml += fulfillmentInfo;
+                        buttonsHtml = `<span class="text-sm text-green-600 font-semibold">✓ Fulfillment method selected</span>`;
                     } else {
                         statusLabel = order.status.toUpperCase();
                     }
@@ -891,6 +978,7 @@
             customOrdersList.addEventListener('click', (e) => {
                 const payBtn = e.target.closest('.btn-pay-dp');
                 const payFinalBtn = e.target.closest('.btn-pay-final');
+                const fulfillmentBtn = e.target.closest('.btn-choose-fulfillment');
 
                 if (payBtn) {
                     currentCustomOrderId = payBtn.dataset.id;
@@ -925,6 +1013,19 @@
                     fpError.classList.add('hidden');
                     fpModal.classList.remove('hidden');
                     fpModal.classList.add('flex');
+                }
+
+                if (fulfillmentBtn) {
+                    currentFulfillmentOrderId = fulfillmentBtn.dataset.id;
+                    
+                    // Reset form
+                    document.querySelector('input[name="fulfillment"][value="pickup"]').checked = true;
+                    deliveryAddressInput.value = '';
+                    deliveryAddressField.classList.add('hidden');
+                    fulfillmentError.classList.add('hidden');
+                    
+                    fulfillmentModal.classList.remove('hidden');
+                    fulfillmentModal.classList.add('flex');
                 }
             });
 
@@ -1001,6 +1102,60 @@
                 } finally {
                     fpModalConfirm.disabled = false;
                     fpModalConfirm.textContent = 'Submit Final Receipt';
+                }
+            });
+
+            // --- NEW: Fulfillment Modal Logic ---
+            // Show/hide delivery address field based on selection
+            fulfillmentModal.addEventListener('change', (e) => {
+                if (e.target.name === 'fulfillment') {
+                    if (e.target.value === 'delivery') {
+                        deliveryAddressField.classList.remove('hidden');
+                    } else {
+                        deliveryAddressField.classList.add('hidden');
+                    }
+                }
+            });
+
+            fulfillmentModalClose.addEventListener('click', () => fulfillmentModal.classList.add('hidden'));
+            fulfillmentModalCancel.addEventListener('click', () => fulfillmentModal.classList.add('hidden'));
+
+            fulfillmentModalConfirm.addEventListener('click', async () => {
+                const selectedMethod = document.querySelector('input[name="fulfillment"]:checked').value;
+                const deliveryAddress = deliveryAddressInput.value.trim();
+
+                // Validation
+                if (selectedMethod === 'delivery' && !deliveryAddress) {
+                    fulfillmentError.textContent = 'Please enter your delivery address.';
+                    fulfillmentError.classList.remove('hidden');
+                    return;
+                }
+
+                fulfillmentModalConfirm.disabled = true;
+                fulfillmentModalConfirm.textContent = 'Processing...';
+                fulfillmentError.classList.add('hidden');
+
+                try {
+                    const json = await apiRequest(`/api/custom-orders/${currentFulfillmentOrderId}/fulfillment`, {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            fulfillmentMethod: selectedMethod,
+                            deliveryAddress: selectedMethod === 'delivery' ? deliveryAddress : null
+                        })
+                    });
+
+                    if (!json.success) throw new Error(json.msg || 'Failed to set fulfillment method');
+
+                    alert(json.msg || 'Fulfillment method saved!');
+                    fulfillmentModal.classList.add('hidden');
+                    fetchMyCustomOrders(); // Refresh the orders list
+
+                } catch (err) {
+                    fulfillmentError.textContent = err.message;
+                    fulfillmentError.classList.remove('hidden');
+                } finally {
+                    fulfillmentModalConfirm.disabled = false;
+                    fulfillmentModalConfirm.textContent = 'Confirm';
                 }
             });
 
