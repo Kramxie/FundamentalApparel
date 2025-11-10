@@ -286,16 +286,16 @@
         </div>
 
       </div>
-      <div class="px-5 py-3 border-t flex items-center justify-end gap-3">
-        <p id="custom-modal-error" class="text-sm text-red-600 mr-auto"></p> <button id="custom-modal-save-quote" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded">Send Quote</button>
-        
+      <div class="px-5 py-3 border-t flex items-center justify-between gap-3">
+    <p id="custom-modal-error" class="text-sm text-red-600 mr-auto"></p> <div class="flex items-center gap-3"> <button id="custom-modal-save-quote" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded">Send Quote</button>
+
         <button id="custom-modal-verify-dp" class="hidden bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded">Verify DP</button>
-        
+
         <button id="custom-modal-request-final" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded">Request Final Payment</button>
-        
+
         <button id="custom-modal-verify-final" class="hidden bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded">Verify Final & Complete</button>
-      </div>
     </div>
+</div>
   </div>
   <script>
     const API = 'http://localhost:5000'; // O ang ngrok URL mo
@@ -358,14 +358,17 @@
         customModalType: document.getElementById('custom-modal-type'),
         customModalDetails: document.getElementById('custom-modal-details'),
         customModalNotes: document.getElementById('custom-modal-notes'),
-        customModalDpSection: document.getElementById('custom-modal-dp-section'), // <-- BAGO
-        customModalDpReceipt: document.getElementById('custom-modal-dp-receipt'), // <-- BAGO
-        customModalQuoteBox: document.getElementById('custom-modal-quote-box'), // <-- BAGO
+        customModalDpSection: document.getElementById('custom-modal-dp-section'),
+        customModalDpReceipt: document.getElementById('custom-modal-dp-receipt'),
+        customModalFpSection: document.getElementById('custom-modal-fp-section'),
+        customModalFpReceipt: document.getElementById('custom-modal-fp-receipt'),
+        customModalQuoteBox: document.getElementById('custom-modal-quote-box'),
         formCustomPrice: document.getElementById('form-custom-price'),
-        customModalInfoBox: document.getElementById('custom-modal-info-box'), // <-- BAGO
-        customModalPriceDisplay: document.getElementById('custom-modal-price-display'), // <-- BAGO
-        customModalSaveQuote: document.getElementById('custom-modal-save-quote'), // <-- Dating 'customModalSave'
-        customModalVerifyDp: document.getElementById('custom-modal-verify-dp'), // <-- BAGO
+        customModalInfoBox: document.getElementById('custom-modal-info-box'),
+        customModalInfoText: document.getElementById('custom-modal-info-text'),
+        customModalPriceDisplay: document.getElementById('custom-modal-price-display'),
+        customModalSaveQuote: document.getElementById('custom-modal-save-quote'),
+        customModalVerifyDp: document.getElementById('custom-modal-verify-dp'),
         customModalRequestFinal: document.getElementById('custom-modal-request-final'),
         customModalVerifyFinal: document.getElementById('custom-modal-verify-final')
       };
