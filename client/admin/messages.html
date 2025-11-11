@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Messages</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .conversation-item:hover { background-color: #f3f4f6; }
+        .conversation-item.active { background-color: #eef2ff; border-left: 4px solid #4f46e5; }
+        #messages-list { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="flex h-screen bg-gray-100">
+        <!-- Sidebar -->
+        <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+            <div class="flex items-center justify-center h-16 bg-white shadow-md">
+                <span class="text-2xl font-bold text-indigo-600">Admin Panel</span>
+            </div>
+            <div class="flex flex-col flex-grow p-4">
+                <a href="index.html" class="flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors">
+                    <i class="fas fa-chart-line mr-3"></i> Dashboard
+                </a>
+                <a href="manage-products.html" class="flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors">
+                    <i class="fas fa-box mr-3"></i> Products
+                </a>
+                <a href="orders.html" class="flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors">
+                    <i class="fas fa-shopping-cart mr-3"></i> Orders
+                </a>
+                <a href="vouchers.html" class="flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors">
+                    <i class="fas fa-ticket-alt mr-3"></i> Vouchers
+                </a>
+                <a href="messages.html" class="flex items-center px-4 py-3 bg-indigo-600 text-white rounded-md transition-colors">
+                    <i class="fas fa-comments mr-3"></i> Messages
+                    <span id="sidebar-unread-badge" class="hidden ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1"></span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex flex-col flex-1 overflow-hidden">
+            <!-- Header -->
+            <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
+                <h1 class="text-xl font-semibold text-gray-800">Customer Messages</h1>
+                <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </div>
+
+            <!-- Messages Layout -->
+            <div class="flex flex-1 overflow-hidden">
+                <!-- Conversations List -->
+                <div class="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+                    <div class="p-4 border-b border-gray-200">
+                        <input 
+                            type="text" 
+                            id="search-conversations" 
+                            placeholder="Search customers..." 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                    </div>
+                    <div id="conversations-container">
+                        <div class="p-8 text-center text-gray-500">
+                            <i class="fas fa-inbox text-4xl mb-2"></i>
+                            <p>Loading conversations...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Window -->
+                <div class="flex-1 flex flex-col bg-gray-50">
+                    <!-- No Conversation Selected -->
+                    <div id="no-conversation" class="flex-1 flex items-center justify-center text-gray-500">
+                        <div class="text-center">
+                            <i class="fas fa-comment-dots text-6xl mb-4"></i>
+                            <h2 class="text-xl font-semibold mb-2">Select a conversation</h2>
+                            <p>Choose a customer from the list to view their messages</p>
+                        </div>
+                    </div>
+
+                    <!-- Active Conversation -->
+                    <div id="active-conversation" class="hidden flex-1 flex flex-col">
+                        <!-- Chat Header -->
+                        <div class="bg-white border-b border-gray-200 px-6 py-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-indigo-600"></i>
+                                </div>
+                                <div>
+                                    <h3 id="customer-name" class="font-semibold text-gray-800"></h3>
+                                    <p id="customer-email" class="text-sm text-gray-500"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Messages List -->
+                        <div id="messages-list" class="flex-1 overflow-y-auto p-6 space-y-4">
+                            <!-- Messages will be rendered here -->
+                        </div>
+
+                        <!-- Typing Indicator -->
+                        <div id="typing-indicator" class="hidden px-6 py-2 text-sm text-gray-500 italic">
+                            Customer is typing...
+                        </div>
+
+                        <!-- Message Input -->
+                        <div class="bg-white border-t border-gray-200 p-4">
+                            <div class="flex space-x-3">
+                                <input 
+                                    type="text" 
+                                    id="message-input" 
+                                    placeholder="Type your reply..." 
+                                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <button 
+                                    id="send-btn" 
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center space-x-2"
+                                >
+                                    <i class="fas fa-paper-plane"></i>
+                                    <span>Send</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.io Client -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+    <script>
+        const API_BASE = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
+        const SOCKET_URL = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
+        
+        let socket = null;
+        let currentUser = null;
+        let conversations = [];
+        let selectedCustomer = null;
+        let currentMessages = [];
+        let typingTimeout = null;
+
+        // Auth Check
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchCurrentUser();
+            await loadConversations();
+            initSocket();
+            setupEventListeners();
+        });
+
+        // Fetch current user
+        async function fetchCurrentUser() {
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user');
+                }
+
+                const data = await response.json();
+                currentUser = data.data;
+
+                if (currentUser.role !== 'admin') {
+                    alert('Access denied');
+                    window.location.href = '../index.html';
+                }
+            } catch (error) {
+                console.error('Error fetching user:', error);
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Load conversations
+        async function loadConversations() {
+            try {
+                const response = await fetch(`${API_BASE}/api/messages/conversations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load conversations');
+                }
+
+                const data = await response.json();
+                conversations = data.data;
+
+                renderConversations();
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+                document.getElementById('conversations-container').innerHTML = `
+                    <div class="p-8 text-center text-red-500">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-2"></i>
+                        <p>Failed to load conversations</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Render conversations
+        function renderConversations(filter = '') {
+            const container = document.getElementById('conversations-container');
+
+            if (conversations.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>No conversations yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const filtered = conversations.filter(conv => {
+                const customer = conv._id;
+                return customer.name.toLowerCase().includes(filter.toLowerCase()) ||
+                       customer.email.toLowerCase().includes(filter.toLowerCase());
+            });
+
+            container.innerHTML = filtered.map(conv => {
+                const customer = conv._id;
+                const lastTime = new Date(conv.lastMessageDate).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+
+                return `
+                    <div 
+                        class="conversation-item cursor-pointer p-4 border-b border-gray-200 transition-colors ${selectedCustomer && selectedCustomer._id === customer._id ? 'active' : ''}"
+                        data-customer-id="${customer._id}"
+                    >
+                        <div class="flex items-start space-x-3">
+                            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                ${customer.avatar ? 
+                                    `<img src="${API_BASE}${customer.avatar}" class="w-full h-full rounded-full object-cover" alt="${customer.name}" />` :
+                                    `<i class="fas fa-user text-indigo-600"></i>`
+                                }
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="font-semibold text-gray-800 truncate">${escapeHtml(customer.name)}</h4>
+                                    ${conv.unreadCount > 0 ? 
+                                        `<span class="bg-indigo-600 text-white text-xs rounded-full px-2 py-1 ml-2">${conv.unreadCount}</span>` : 
+                                        ''
+                                    }
+                                </div>
+                                <p class="text-sm text-gray-500 truncate">${escapeHtml(conv.lastMessage)}</p>
+                                <p class="text-xs text-gray-400 mt-1">${lastTime}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click listeners
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const customerId = item.dataset.customerId;
+                    const conv = conversations.find(c => c._id._id === customerId);
+                    if (conv) {
+                        selectConversation(conv._id);
+                    }
+                });
+            });
+        }
+
+        // Select conversation
+        async function selectConversation(customer) {
+            selectedCustomer = customer;
+
+            // Update UI
+            document.getElementById('no-conversation').classList.add('hidden');
+            document.getElementById('active-conversation').classList.remove('hidden');
+            document.getElementById('customer-name').textContent = customer.name;
+            document.getElementById('customer-email').textContent = customer.email;
+
+            // Highlight selected conversation
+            renderConversations();
+
+            // Load messages for this customer
+            await loadMessages(customer._id);
+        }
+
+        // Load messages
+        async function loadMessages(customerId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/messages`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load messages');
+                }
+
+                const data = await response.json();
+                
+                // Filter messages for selected customer
+                currentMessages = data.data.filter(msg => 
+                    msg.sender._id === customerId || msg.recipient._id === customerId
+                );
+
+                renderMessages();
+                scrollToBottom();
+
+                // Mark messages as read
+                markMessagesAsRead();
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        // Render messages
+        function renderMessages() {
+            const messagesList = document.getElementById('messages-list');
+
+            if (currentMessages.length === 0) {
+                messagesList.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-comment text-4xl mb-2"></i>
+                        <p>No messages yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            messagesList.innerHTML = currentMessages.map(msg => {
+                const isOwn = msg.sender._id === currentUser._id;
+                const time = new Date(msg.createdAt).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+
+                return `
+                    <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
+                        <div class="max-w-[70%]">
+                            ${!isOwn ? `<p class="text-xs text-gray-500 mb-1">${msg.sender.name}</p>` : ''}
+                            <div class="${isOwn ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200'} rounded-lg px-4 py-2 shadow-sm">
+                                <p class="text-sm">${escapeHtml(msg.message)}</p>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1 ${isOwn ? 'text-right' : 'text-left'}">${time}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize Socket.io
+        function initSocket() {
+            socket = io(SOCKET_URL, {
+                auth: { token: token },
+                transports: ['websocket', 'polling']
+            });
+
+            socket.on('connect', () => {
+                console.log('Socket.io connected');
+            });
+
+            socket.on('receiveMessage', (data) => {
+                handleReceiveMessage(data);
+            });
+
+            socket.on('userTyping', (data) => {
+                if (selectedCustomer && data.userId === selectedCustomer._id) {
+                    showTypingIndicator(data.isTyping);
+                }
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Socket.io disconnected');
+            });
+        }
+
+        // Handle receive message
+        function handleReceiveMessage(data) {
+            // Check if message is from selected customer
+            if (selectedCustomer && data.senderId === selectedCustomer._id) {
+                const newMessage = {
+                    _id: Date.now().toString(),
+                    sender: {
+                        _id: data.senderId,
+                        name: selectedCustomer.name
+                    },
+                    recipient: {
+                        _id: currentUser._id
+                    },
+                    message: data.message,
+                    createdAt: data.timestamp
+                };
+
+                currentMessages.push(newMessage);
+                renderMessages();
+                scrollToBottom();
+                markMessagesAsRead();
+            }
+
+            // Update conversations list
+            loadConversations();
+        }
+
+        // Send message
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+
+            if (!message || !selectedCustomer) return;
+
+            input.value = '';
+
+            // Optimistic UI
+            const tempMessage = {
+                _id: 'temp-' + Date.now(),
+                sender: {
+                    _id: currentUser._id,
+                    name: currentUser.name
+                },
+                recipient: {
+                    _id: selectedCustomer._id
+                },
+                message: message,
+                createdAt: new Date().toISOString()
+            };
+
+            currentMessages.push(tempMessage);
+            renderMessages();
+            scrollToBottom();
+
+            try {
+                // Send via Socket.io
+                socket.emit('sendMessage', {
+                    recipientId: selectedCustomer._id,
+                    message: message
+                });
+
+                // Save to database
+                const response = await fetch(`${API_BASE}/api/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        recipientId: selectedCustomer._id,
+                        message: message
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to send message');
+                }
+
+                const data = await response.json();
+                
+                // Replace temp message
+                const tempIndex = currentMessages.findIndex(m => m._id === tempMessage._id);
+                if (tempIndex !== -1) {
+                    currentMessages[tempIndex] = data.data;
+                    renderMessages();
+                }
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                currentMessages = currentMessages.filter(m => m._id !== tempMessage._id);
+                renderMessages();
+                alert('Failed to send message');
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            const sendBtn = document.getElementById('send-btn');
+            const messageInput = document.getElementById('message-input');
+            const searchInput = document.getElementById('search-conversations');
+
+            sendBtn.addEventListener('click', sendMessage);
+            
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            messageInput.addEventListener('input', handleTyping);
+
+            searchInput.addEventListener('input', (e) => {
+                renderConversations(e.target.value);
+            });
+        }
+
+        // Handle typing
+        function handleTyping() {
+            if (!selectedCustomer) return;
+
+            socket.emit('typing', {
+                recipientId: selectedCustomer._id
+            });
+
+            if (typingTimeout) {
+                clearTimeout(typingTimeout);
+            }
+
+            typingTimeout = setTimeout(() => {
+                socket.emit('stopTyping', {
+                    recipientId: selectedCustomer._id
+                });
+            }, 2000);
+        }
+
+        // Show typing indicator
+        function showTypingIndicator(isTyping) {
+            const indicator = document.getElementById('typing-indicator');
+            if (isTyping) {
+                indicator.classList.remove('hidden');
+                scrollToBottom();
+            } else {
+                indicator.classList.add('hidden');
+            }
+        }
+
+        // Mark messages as read
+        async function markMessagesAsRead() {
+            const unreadMessages = currentMessages.filter(m => 
+                m.recipient._id === currentUser._id && !m.isRead
+            );
+
+            if (unreadMessages.length === 0) return;
+
+            try {
+                await fetch(`${API_BASE}/api/messages/read`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        messageIds: unreadMessages.map(m => m._id)
+                    })
+                });
+
+                unreadMessages.forEach(m => m.isRead = true);
+                loadConversations();
+            } catch (error) {
+                console.error('Error marking messages as read:', error);
+            }
+        }
+
+        // Scroll to bottom
+        function scrollToBottom() {
+            setTimeout(() => {
+                const list = document.getElementById('messages-list');
+                if (list) {
+                    list.scrollTop = list.scrollHeight;
+                }
+            }, 100);
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

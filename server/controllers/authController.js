@@ -150,6 +150,22 @@ exports.getMe = async (req, res) => {
     }
 };
 
+// --- NEW FUNCTION: Get Admin User ---
+exports.getAdminUser = async (req, res) => {
+    try {
+        const adminUser = await User.findOne({ role: 'admin' }).select('_id name email avatar role');
+        if (!adminUser) {
+            return res.status(404).json({ success: false, message: 'Admin user not found' });
+        }
+        res.status(200).json({
+            success: true,
+            data: adminUser
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
 exports.updateUserDetails = async (req, res) => {
     try {
         const { name, contactNumber, username, gender, dob } = req.body;

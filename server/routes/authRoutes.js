@@ -12,6 +12,7 @@ const {
     verifyUser,
     resendVerificationCode,
     getMe,
+    getAdminUser,
     updateUserDetails,
     updateAvatar,
     addShippingAddress,
@@ -83,6 +84,7 @@ router.get('/facebook/callback',
 
 // --- Protected User Profile Routes ---
 router.get('/me', protect, getMe);
+router.get('/admin-user', getAdminUser); // Public endpoint to get admin user ID
 router.put('/updatedetails', protect, updateUserDetails);
 router.put('/updateavatar', protect, upload.single('avatar'), updateAvatar);
 router.post('/address', protect, addShippingAddress);
