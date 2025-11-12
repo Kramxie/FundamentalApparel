@@ -1,17 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-                    <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
-                    </a>
-                    <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
-                    </a>
-                    <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
-                    </a>
-                    <a href="vouchers.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
-                        <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
-                    </a>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Vouchers</title>
@@ -36,15 +25,16 @@
             <div class="flex flex-col flex-grow p-4">
                 <nav class="flex-grow space-y-2">
                     <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Dashboard</span>
+                        <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
                     </a>
-                    <a href="add-product.html"
-                        class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                    <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
                         <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
                     </a>
-                    <a href="manage-products.html"
-                        class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                    <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
                         <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+                    </a>
+                    <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
                     </a>
                     <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
                         <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
@@ -60,13 +50,12 @@
         </div>
 
         <!-- Main content -->
-        <div class="flex flex-col flex-1 overflow-y-auto">
+        <div class="flex flex-col flex-1 overflow-hidden">
             <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
-                <div>
-                    <h1 class="text-xl font-semibold text-gray-800">Voucher Management</h1>
-                </div>
-                <button id="logout-btn"
-                    class="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-md hover:bg-red-600">Logout</button>
+                <h1 class="text-xl font-semibold text-gray-800">Voucher Management</h1>
+                <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
             </div>
 
             <div class="p-6">
