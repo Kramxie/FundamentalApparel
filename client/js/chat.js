@@ -61,7 +61,35 @@
 
                     <!-- Message Input -->
                     <div class="border-t border-gray-200 p-4 bg-white">
+                        <!-- Image Preview -->
+                        <div id="image-preview-container" class="hidden mb-2">
+                            <div class="relative inline-block">
+                                <img id="image-preview" src="" alt="Preview" class="max-w-xs max-h-32 rounded-lg border-2 border-indigo-300" />
+                                <button 
+                                    id="remove-image-btn" 
+                                    class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                                    aria-label="Remove image"
+                                >
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
                         <div class="flex space-x-2">
+                            <input 
+                                type="file" 
+                                id="image-upload-input" 
+                                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" 
+                                class="hidden"
+                                aria-label="Upload image"
+                            />
+                            <button 
+                                id="image-upload-btn" 
+                                class="bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full w-10 h-10 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                aria-label="Attach image"
+                                title="Upload image (max 5MB)"
+                            >
+                                <i class="fas fa-camera"></i>
+                            </button>
                             <input 
                                 type="text" 
                                 id="message-input" 
@@ -71,11 +99,18 @@
                             />
                             <button 
                                 id="send-message-btn" 
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                 aria-label="Send message"
                             >
                                 <i class="fas fa-paper-plane"></i>
                             </button>
+                        </div>
+                        <!-- Upload Progress -->
+                        <div id="upload-progress" class="hidden mt-2">
+                            <div class="flex items-center space-x-2 text-sm text-gray-600">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Uploading image...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -161,6 +196,9 @@
         const closeBtn = document.getElementById('close-chat-btn');
         const sendBtn = document.getElementById('send-message-btn');
         const messageInput = document.getElementById('message-input');
+        const imageUploadBtn = document.getElementById('image-upload-btn');
+        const imageUploadInput = document.getElementById('image-upload-input');
+        const removeImageBtn = document.getElementById('remove-image-btn');
 
         toggleBtn.addEventListener('click', toggleChat);
         closeBtn.addEventListener('click', toggleChat);
@@ -172,6 +210,11 @@
                 sendMessage();
             }
         });
+
+        // Image upload listeners
+        imageUploadBtn.addEventListener('click', () => imageUploadInput.click());
+        imageUploadInput.addEventListener('change', handleImageSelect);
+        removeImageBtn.addEventListener('click', clearImagePreview);
 
         // Typing indicator
         messageInput.addEventListener('input', handleTyping);
@@ -291,12 +334,27 @@
                 hour12: true 
             });
 
+            // Build image HTML if imageUrl exists
+            let imageHtml = '';
+            if (msg.imageUrl) {
+                imageHtml = `
+                    <div class="mt-2">
+                        <img src="${API_BASE}/${msg.imageUrl}" 
+                             alt="Uploaded image" 
+                             class="max-w-xs rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                             onclick="window.open('${API_BASE}/${msg.imageUrl}', '_blank')"
+                             loading="lazy">
+                    </div>
+                `;
+            }
+
             return `
                 <div class="flex ${isOwn ? 'justify-end' : 'justify-start'} mb-3">
                     <div class="max-w-[75%]">
                         ${!isOwn ? `<p class="text-xs text-gray-500 mb-1">${msg.sender.name}</p>` : ''}
                         <div class="${isOwn ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200'} rounded-lg px-4 py-2 shadow-sm">
-                            <p class="text-sm">${escapeHtml(msg.message)}</p>
+                            ${msg.message && msg.message !== '📷 Image' ? `<p class="text-sm">${escapeHtml(msg.message)}</p>` : ''}
+                            ${imageHtml}
                         </div>
                         <p class="text-xs text-gray-400 mt-1 ${isOwn ? 'text-right' : 'text-left'}">${time}</p>
                     </div>
@@ -342,11 +400,24 @@
         const messageInput = document.getElementById('message-input');
         const message = messageInput.value.trim();
 
-        if (!message || !adminUser) {
-            if (!adminUser) {
-                alert('Admin user not available. Please try again later.');
-            }
+        // Check if we have either message or image
+        if (!message && !selectedImage) {
             return;
+        }
+
+        if (!adminUser) {
+            alert('Admin user not available. Please try again later.');
+            return;
+        }
+
+        // Upload image first if selected
+        let imageUrl = null;
+        if (selectedImage) {
+            imageUrl = await uploadImage();
+            if (!imageUrl) {
+                // Upload failed, stop here
+                return;
+            }
         }
 
         // Clear input
@@ -362,7 +433,8 @@
             recipient: {
                 _id: adminUser._id
             },
-            message: message,
+            message: message || (imageUrl ? '📷 Image' : ''),
+            imageUrl: imageUrl,
             createdAt: new Date().toISOString()
         };
 
@@ -370,11 +442,15 @@
         renderMessages();
         scrollToBottom();
 
+        // Clear image preview
+        clearImagePreview();
+
         try {
             // Send via Socket.io for real-time delivery
             socket.emit('sendMessage', {
                 recipientId: adminUser._id,
-                message: message
+                message: message || '📷 Image',
+                imageUrl: imageUrl
             });
 
             // Also save to database via API
@@ -383,11 +459,13 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'ngrok-skip-browser-warning': 'true'
                 },
                 body: JSON.stringify({
                     recipientId: adminUser._id,
-                    message: message
+                    message: message || '📷 Image',
+                    imageUrl: imageUrl
                 })
             });
 
@@ -410,6 +488,95 @@
             messages = messages.filter(m => m._id !== tempMessage._id);
             renderMessages();
             alert('Failed to send message. Please try again.');
+        }
+    }
+
+    // Handle image selection
+    let selectedImage = null;
+    let selectedImageUrl = null;
+
+    function handleImageSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+            e.target.value = '';
+            return;
+        }
+
+        // Validate file size (5MB max)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            alert('Image size must be less than 5MB');
+            e.target.value = '';
+            return;
+        }
+
+        selectedImage = file;
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const preview = document.getElementById('image-preview');
+            const previewContainer = document.getElementById('image-preview-container');
+            
+            preview.src = event.target.result;
+            previewContainer.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearImagePreview() {
+        selectedImage = null;
+        selectedImageUrl = null;
+        document.getElementById('image-upload-input').value = '';
+        document.getElementById('image-preview-container').classList.add('hidden');
+        document.getElementById('image-preview').src = '';
+    }
+
+    async function uploadImage() {
+        if (!selectedImage) return null;
+
+        const uploadProgress = document.getElementById('upload-progress');
+        const sendBtn = document.getElementById('send-message-btn');
+
+        try {
+            // Show upload progress
+            uploadProgress.classList.remove('hidden');
+            sendBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('image', selectedImage);
+
+            const response = await fetch(`${API_BASE}/api/messages/upload`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Upload failed');
+            }
+
+            const data = await response.json();
+            selectedImageUrl = data.imageUrl;
+
+            return data.imageUrl;
+
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('Failed to upload image: ' + error.message);
+            return null;
+        } finally {
+            uploadProgress.classList.add('hidden');
+            sendBtn.disabled = false;
         }
     }
 

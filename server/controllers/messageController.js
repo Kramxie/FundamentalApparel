@@ -120,13 +120,13 @@ exports.getConversations = async (req, res) => {
 // @access  Private
 exports.sendMessage = async (req, res) => {
     try {
-        const { recipientId, message } = req.body;
+        const { recipientId, message, imageUrl } = req.body;
         const senderId = req.user._id;
 
-        if (!recipientId || !message) {
+        if (!recipientId || (!message && !imageUrl)) {
             return res.status(400).json({
                 success: false,
-                message: 'Recipient and message are required'
+                message: 'Recipient and message or image are required'
             });
         }
 
@@ -144,7 +144,8 @@ exports.sendMessage = async (req, res) => {
         const newMessage = await Message.create({
             sender: senderId,
             recipient: recipientId,
-            message,
+            message: message || '📷 Image',
+            imageUrl: imageUrl || null,
             isAdminMessage
         });
 
@@ -226,6 +227,38 @@ exports.getUnreadCount = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to get unread count'
+        });
+    }
+};
+
+// @desc    Upload image for message
+// @route   POST /api/messages/upload
+// @access  Private
+exports.uploadImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No image file uploaded'
+            });
+        }
+
+        // Get the base URL from environment or construct it
+        const baseUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+        
+        // Construct the image URL
+        const imageUrl = `${baseUrl}/uploads/message-images/${req.file.filename}`;
+
+        res.status(200).json({
+            success: true,
+            imageUrl,
+            filename: req.file.filename
+        });
+    } catch (error) {
+        console.error('Upload Image Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to upload image'
         });
     }
 };

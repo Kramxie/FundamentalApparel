@@ -113,7 +113,44 @@
 
                         <!-- Message Input -->
                         <div class="bg-white border-t border-gray-200 p-4">
+                            <!-- Image Preview -->
+                            <div id="image-preview-container" class="hidden mb-3 relative inline-block">
+                                <img id="image-preview" src="" alt="Preview" class="max-w-xs rounded-lg border">
+                                <button 
+                                    id="remove-image-btn" 
+                                    class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                                    type="button"
+                                >
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                            </div>
+
+                            <!-- Upload Progress -->
+                            <div id="upload-progress" class="hidden mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-spinner fa-spin text-blue-600"></i>
+                                    <span class="text-sm text-blue-700">Uploading image...</span>
+                                </div>
+                            </div>
+
                             <div class="flex space-x-3">
+                                <!-- Hidden File Input -->
+                                <input 
+                                    type="file" 
+                                    id="image-upload-input" 
+                                    accept="image/*" 
+                                    class="hidden"
+                                />
+                                
+                                <!-- Image Upload Button -->
+                                <button 
+                                    id="image-upload-btn" 
+                                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+                                    type="button"
+                                >
+                                    <i class="fas fa-camera"></i>
+                                </button>
+
                                 <input 
                                     type="text" 
                                     id="message-input" 
@@ -356,12 +393,27 @@
                     hour12: true
                 });
 
+                // Build image HTML if imageUrl exists
+                let imageHtml = '';
+                if (msg.imageUrl) {
+                    imageHtml = `
+                        <div class="mt-2">
+                            <img src="${API_BASE}/${msg.imageUrl}" 
+                                 alt="Uploaded image" 
+                                 class="max-w-xs rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                 onclick="window.open('${API_BASE}/${msg.imageUrl}', '_blank')"
+                                 loading="lazy">
+                        </div>
+                    `;
+                }
+
                 return `
                     <div class="flex ${isOwn ? 'justify-end' : 'justify-start'}">
                         <div class="max-w-[70%]">
                             ${!isOwn ? `<p class="text-xs text-gray-500 mb-1">${msg.sender.name}</p>` : ''}
                             <div class="${isOwn ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200'} rounded-lg px-4 py-2 shadow-sm">
-                                <p class="text-sm">${escapeHtml(msg.message)}</p>
+                                ${msg.message && msg.message !== '📷 Image' ? `<p class="text-sm">${escapeHtml(msg.message)}</p>` : ''}
+                                ${imageHtml}
                             </div>
                             <p class="text-xs text-gray-400 mt-1 ${isOwn ? 'text-right' : 'text-left'}">${time}</p>
                         </div>
@@ -428,7 +480,25 @@
             const input = document.getElementById('message-input');
             const message = input.value.trim();
 
-            if (!message || !selectedCustomer) return;
+            // Check if we have either message or image
+            if (!message && !selectedImage) {
+                return;
+            }
+
+            if (!selectedCustomer) {
+                alert('Please select a customer first');
+                return;
+            }
+
+            // Upload image first if selected
+            let imageUrl = null;
+            if (selectedImage) {
+                imageUrl = await uploadImage();
+                if (!imageUrl) {
+                    // Upload failed, stop here
+                    return;
+                }
+            }
 
             input.value = '';
 
@@ -442,7 +512,8 @@
                 recipient: {
                     _id: selectedCustomer._id
                 },
-                message: message,
+                message: message || (imageUrl ? '📷 Image' : ''),
+                imageUrl: imageUrl,
                 createdAt: new Date().toISOString()
             };
 
@@ -450,11 +521,15 @@
             renderMessages();
             scrollToBottom();
 
+            // Clear image preview
+            clearImagePreview();
+
             try {
                 // Send via Socket.io
                 socket.emit('sendMessage', {
                     recipientId: selectedCustomer._id,
-                    message: message
+                    message: message || '📷 Image',
+                    imageUrl: imageUrl
                 });
 
                 // Save to database
@@ -462,11 +537,13 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'ngrok-skip-browser-warning': 'true'
                     },
                     body: JSON.stringify({
                         recipientId: selectedCustomer._id,
-                        message: message
+                        message: message || '📷 Image',
+                        imageUrl: imageUrl
                     })
                 });
 
@@ -496,6 +573,9 @@
             const sendBtn = document.getElementById('send-btn');
             const messageInput = document.getElementById('message-input');
             const searchInput = document.getElementById('search-conversations');
+            const imageUploadBtn = document.getElementById('image-upload-btn');
+            const imageUploadInput = document.getElementById('image-upload-input');
+            const removeImageBtn = document.getElementById('remove-image-btn');
 
             sendBtn.addEventListener('click', sendMessage);
             
@@ -511,6 +591,102 @@
             searchInput.addEventListener('input', (e) => {
                 renderConversations(e.target.value);
             });
+
+            // Image upload listeners
+            imageUploadBtn.addEventListener('click', () => {
+                imageUploadInput.click();
+            });
+
+            imageUploadInput.addEventListener('change', handleImageSelect);
+            removeImageBtn.addEventListener('click', clearImagePreview);
+        }
+
+        // Image handling variables
+        let selectedImage = null;
+        let selectedImageUrl = null;
+
+        // Handle image selection
+        function handleImageSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+                e.target.value = '';
+                return;
+            }
+
+            // Validate file size (5MB max)
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                alert('Image size must be less than 5MB');
+                e.target.value = '';
+                return;
+            }
+
+            selectedImage = file;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                selectedImageUrl = event.target.result;
+                document.getElementById('image-preview').src = selectedImageUrl;
+                document.getElementById('image-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Clear image preview
+        function clearImagePreview() {
+            selectedImage = null;
+            selectedImageUrl = null;
+            document.getElementById('image-preview').src = '';
+            document.getElementById('image-preview-container').classList.add('hidden');
+            document.getElementById('image-upload-input').value = '';
+        }
+
+        // Upload image to server
+        async function uploadImage() {
+            if (!selectedImage) return null;
+
+            const uploadProgress = document.getElementById('upload-progress');
+            const sendBtn = document.getElementById('send-btn');
+
+            try {
+                // Show progress
+                uploadProgress.classList.remove('hidden');
+                sendBtn.disabled = true;
+
+                const formData = new FormData();
+                formData.append('image', selectedImage);
+
+                const response = await fetch(`${API_BASE}/api/messages/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const data = await response.json();
+                return data.data.imageUrl;
+
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert('Failed to upload image. Please try again.');
+                return null;
+            } finally {
+                // Hide progress
+                uploadProgress.classList.add('hidden');
+                sendBtn.disabled = false;
+            }
         }
 
         // Handle typing
