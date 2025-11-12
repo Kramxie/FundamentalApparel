@@ -21,6 +21,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const customOrderRoutes = require('./routes/customOrderRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const inventoryRoutes = require('./routes/inventoryRoutes');
 
 connectDB();
 
@@ -71,6 +72,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/custom-orders', customOrderRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/admin/inventory', inventoryRoutes);
 
 // Socket.io authentication middleware
 io.use((socket, next) => {
