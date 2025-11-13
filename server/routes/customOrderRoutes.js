@@ -61,7 +61,11 @@ router.route('/my-custom-orders')
     .get(protect, getMyCustomOrders);
 
 router.route('/')
-    .post(protect, upload.single('designFile'), submitCustomOrder);
+    .post(protect, upload.fields([
+        { name: 'designFile', maxCount: 1 },
+        { name: 'logoFile', maxCount: 1 },
+        { name: 'shortsDesignFile', maxCount: 1 }
+    ]), submitCustomOrder);
 
 router.route('/:id/downpayment')
     .put(protect, upload.single('designFile'), submitDownPayment); 

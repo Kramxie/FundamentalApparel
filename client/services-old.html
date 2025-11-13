@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Services - Fundamental</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        .service-tab {
+            background-color: #f3f4f6;
+            color: #4b5563;
+        }
+        
+        .service-tab.active {
+            background-color: #4f46e5;
+            color: white;
+        }
+        
+        .service-tab:hover {
+            background-color: #e5e7eb;
+        }
+        
+        .service-tab.active:hover {
+            background-color: #4338ca;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold text-gray-800"><a href="index.html">Fundamental</a></div>
+            <div class="hidden md:flex space-x-8 items-center">
+                <a href="index.html" class="text-gray-600 hover:text-indigo-600">Home</a>
+                <a href="products.html" class="text-gray-600 hover:text-indigo-600">Products</a>
+                <a href="services.html" class="text-gray-800 font-semibold">Services</a>
+                <a href="#" class="text-gray-600 hover:text-indigo-600">About</a>
+                <a href="#" class="text-gray-600 hover:text-indigo-600">Contact</a>
+            </div>
+            <div class="flex items-center space-x-5">
+                <a href="cart.html" class="text-gray-600 hover:text-indigo-600 relative">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count" class="absolute -top-2 -right-3 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                </a>
+                
+                <div id="auth-links-logged-out" class="flex items-center space-x-3">
+                    <a href="login.html" class="text-sm font-medium text-gray-700 hover:text-indigo-600">Log In</a>
+                    <a href="register.html" class="text-sm font-medium bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700">Register</a>
+                </div>
+                <div id="auth-links-logged-in" class="hidden">
+                    <a href="profile.html" id="user-link" class="text-gray-600 hover:text-indigo-600">
+                        <i id="user-icon" class="fas fa-user-circle text-2xl"></i>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">Our Services</h1>
+            <p class="text-lg text-gray-600">Custom designs tailored to your needs</p>
+        </div>
+
+        <!-- Services Container -->
+        <div id="services-container">
+            <!-- Service Tabs -->
+            <div class="flex flex-wrap justify-center gap-4 mb-8">
+                <button onclick="switchTab('customize-jersey')" id="tab-customize-jersey" class="service-tab active px-6 py-3 rounded-lg font-semibold transition-all">
+                    <i class="fas fa-tshirt mr-2"></i>Customize Jersey
+                </button>
+                <button onclick="switchTab('layout-creation')" id="tab-layout-creation" class="service-tab px-6 py-3 rounded-lg font-semibold transition-all">
+                    <i class="fas fa-palette mr-2"></i>Layout Creation
+                </button>
+                <button onclick="switchTab('printing-only')" id="tab-printing-only" class="service-tab px-6 py-3 rounded-lg font-semibold transition-all">
+                    <i class="fas fa-print mr-2"></i>Printing Only
+                </button>
+            </div>
+
+            <!-- Customize Jersey Section -->
+            <div id="section-customize-jersey" class="service-section">
+                <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-6">Customize Your Jersey</h2>
+                    
+                    <!-- Design Type Selection -->
+                    <div class="mb-8">
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">Choose Design Method</label>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="design-method" value="template" class="peer hidden" checked>
+                                <div class="border-2 border-gray-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 rounded-lg p-4 text-center transition-all hover:border-indigo-400">
+                                    <i class="fas fa-palette text-3xl text-indigo-600 mb-2"></i>
+                                    <p class="font-semibold">Customize Jersey</p>
+                                    <p class="text-sm text-gray-600">Choose colors, text & logo</p>
+                                </div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="design-method" value="upload" class="peer hidden">
+                                <div class="border-2 border-gray-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 rounded-lg p-4 text-center transition-all hover:border-indigo-400">
+                                    <i class="fas fa-upload text-3xl text-indigo-600 mb-2"></i>
+                                    <p class="font-semibold">Upload Design File</p>
+                                    <p class="text-sm text-gray-600">Have your own design</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <form id="customize-jersey-form">
+                        <!-- Template Customization Fields -->
+                        <div id="template-fields" class="space-y-6">
+                            <!-- Design Style -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Design Style</label>
+                                <select id="design-style" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <option value="">Select a style</option>
+                                    <option value="classic">Classic</option>
+                                    <option value="modern">Modern</option>
+                                    <option value="retro">Retro</option>
+                                    <option value="minimalist">Minimalist</option>
+                                    <option value="bold">Bold</option>
+                                </select>
+                            </div>
+
+                            <!-- Colors -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Primary Color</label>
+                                    <input type="color" id="primary-color" class="w-full h-12 rounded-lg cursor-pointer" value="#4F46E5">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Secondary Color</label>
+                                    <input type="color" id="secondary-color" class="w-full h-12 rounded-lg cursor-pointer" value="#FFFFFF">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Accent Color</label>
+                                    <input type="color" id="accent-color" class="w-full h-12 rounded-lg cursor-pointer" value="#F59E0B">
+                                </div>
+                            </div>
+
+                            <!-- Text Details -->
+                            <div class="border-t pt-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Text Details</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Font Style</label>
+                                        <select id="text-font" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                            <option value="Arial">Arial</option>
+                                            <option value="Impact">Impact</option>
+                                            <option value="Times New Roman">Times New Roman</option>
+                                            <option value="Bebas Neue">Bebas Neue</option>
+                                            <option value="Roboto">Roboto</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Text Size</label>
+                                        <select id="text-size" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                            <option value="Small">Small</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="Large">Large</option>
+                                            <option value="Extra Large">Extra Large</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Text Placement</label>
+                                        <select id="text-placement" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                            <option value="Front Center">Front Center</option>
+                                            <option value="Back Top">Back Top</option>
+                                            <option value="Back Center">Back Center</option>
+                                            <option value="Chest">Chest</option>
+                                            <option value="Sleeve">Sleeve</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Custom Text</label>
+                                        <input type="text" id="custom-text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Enter text">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Logo Details -->
+                            <div class="border-t pt-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Logo Details</h3>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-3">Logo Option</label>
+                                    <div class="flex gap-4">
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="logo-type" value="upload" class="mr-2">
+                                            <span>Upload Logo</span>
+                                        </label>
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="logo-type" value="none" class="mr-2" checked>
+                                            <span>No Logo</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div id="logo-upload-fields" class="hidden space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Upload Logo</label>
+                                        <input type="file" id="logo-file" accept="image/*" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                        <div id="logo-preview" class="mt-3 hidden">
+                                            <img src="" alt="Logo preview" class="h-24 object-contain border rounded-lg">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Logo Placement</label>
+                                        <select id="logo-placement" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                            <option value="Front Center">Front Center</option>
+                                            <option value="Front Left Chest">Front Left Chest</option>
+                                            <option value="Front Right Chest">Front Right Chest</option>
+                                            <option value="Back Center">Back Center</option>
+                                            <option value="Sleeve">Sleeve</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Design Fields -->
+                        <div id="upload-fields" class="hidden space-y-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Upload Jersey Design</label>
+                                <input type="file" id="jersey-design-file" accept="image/*" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <div id="jersey-design-preview" class="mt-3 hidden">
+                                    <img src="" alt="Jersey design preview" class="max-h-48 object-contain border rounded-lg">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Printing Type (Common) -->
+                        <div class="border-t pt-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                Printing Type 
+                                <button type="button" onclick="openPrintingModal()" class="ml-2 text-indigo-600 hover:text-indigo-800 text-sm">
+                                    <i class="fas fa-info-circle"></i> Learn More
+                                </button>
+                            </label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="printing-type" value="dye-sublimation" class="peer hidden" checked>
+                                    <div class="border-2 border-gray-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 rounded-lg p-3 text-center transition-all">
+                                        <p class="font-medium">Dye-Sublimation</p>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="printing-type" value="heat-transfer" class="peer hidden">
+                                    <div class="border-2 border-gray-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 rounded-lg p-3 text-center transition-all">
+                                        <p class="font-medium">Heat Transfer</p>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="printing-type" value="vinyl-print" class="peer hidden">
+                                    <div class="border-2 border-gray-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 rounded-lg p-3 text-center transition-all">
+                                        <p class="font-medium">Vinyl Print</p>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="printing-type" value="direct-to-garment" class="peer hidden">
+                                    <div class="border-2 border-gray-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 rounded-lg p-3 text-center transition-all">
+                                        <p class="font-medium">Direct-to-Garment</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Item Type -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Item Type</label>
+                            <div class="flex gap-4">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="item-type" value="jersey" class="peer hidden" checked>
+                                    <div class="border-2 border-gray-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 rounded-lg px-6 py-3 transition-all">
+                                        <i class="fas fa-tshirt mr-2"></i>Jersey
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="item-type" value="jacket" class="peer hidden">
+                                    <div class="border-2 border-gray-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 rounded-lg px-6 py-3 transition-all">
+                                        <i class="fas fa-vest mr-2"></i>Jacket
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Quantity -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Quantity</label>
+                            <input type="number" id="jersey-quantity" min="1" value="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <p class="text-sm text-gray-600 mt-1">If quantity > 1, you can add individual team member details below</p>
+                        </div>
+
+                        <!-- Team Details -->
+                        <div id="team-details-section" class="hidden border-t pt-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Team Details</h3>
+                            <div class="mb-4">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Team Name (Optional)</label>
+                                <input type="text" id="team-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Enter team name">
+                            </div>
+                            <div class="mb-4">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" id="include-members" class="mr-2">
+                                    <span class="text-sm font-semibold text-gray-700">Add individual member details (name, number, size)</span>
+                                </label>
+                            </div>
+                            <div id="team-members-container" class="hidden space-y-4"></div>
+                        </div>
+
+                        <!-- Shorts Option -->
+                        <div class="border-t pt-6">
+                            <label class="flex items-center cursor-pointer mb-4">
+                                <input type="checkbox" id="include-shorts" class="mr-2">
+                                <span class="text-sm font-semibold text-gray-700">Include Matching Shorts</span>
+                            </label>
+                            <div id="shorts-options" class="hidden space-y-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-3">Shorts Design</label>
+                                    <div class="flex gap-4">
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="shorts-design" value="same" class="mr-2" checked>
+                                            <span>Same as Jersey</span>
+                                        </label>
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="shorts-design" value="different" class="mr-2">
+                                            <span>Different Design</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div id="shorts-different-fields" class="hidden space-y-4">
+                                    <div id="shorts-template-fields" class="space-y-4">
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-2">Shorts Design Style</label>
+                                            <select id="shorts-design-style" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                                <option value="">Select a style</option>
+                                                <option value="classic">Classic</option>
+                                                <option value="modern">Modern</option>
+                                                <option value="retro">Retro</option>
+                                                <option value="minimalist">Minimalist</option>
+                                            </select>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-semibold text-gray-700 mb-2">Primary Color</label>
+                                                <input type="color" id="shorts-primary-color" class="w-full h-12 rounded-lg cursor-pointer" value="#4F46E5">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-semibold text-gray-700 mb-2">Secondary Color</label>
+                                                <input type="color" id="shorts-secondary-color" class="w-full h-12 rounded-lg cursor-pointer" value="#FFFFFF">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-semibold text-gray-700 mb-2">Accent Color</label>
+                                                <input type="color" id="shorts-accent-color" class="w-full h-12 rounded-lg cursor-pointer" value="#F59E0B">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="shorts-upload-fields" class="hidden">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Upload Shorts Design</label>
+                                        <input type="file" id="shorts-design-file" accept="image/*" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                        <div id="shorts-design-preview" class="mt-3 hidden">
+                                            <img src="" alt="Shorts design preview" class="max-h-48 object-contain border rounded-lg">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Additional Notes (Optional)</label>
+                            <textarea id="jersey-notes" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Any special requests or instructions"></textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
+                            Submit Custom Order
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Layout Creation Section -->
+            <div id="section-layout-creation" class="service-section hidden">
+                <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-6">Layout Creation Service</h2>
+                    <p class="text-gray-600 mb-8">Upload inspiration and let us create a professional design for you</p>
+                    
+                    <form id="layout-creation-form">
+                        <!-- Inspiration Image -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Upload Inspiration Image</label>
+                            <input type="file" id="inspiration-image" accept="image/*" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <p class="text-sm text-gray-600 mt-1">Upload a reference design or inspiration</p>
+                            <div id="inspiration-preview" class="mt-3 hidden">
+                                <img src="" alt="Inspiration preview" class="max-h-64 object-contain border rounded-lg">
+                            </div>
+                        </div>
+
+                        <!-- Team Name -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Team Name</label>
+                            <input type="text" id="layout-team-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Enter team name">
+                        </div>
+
+                        <!-- Member Details -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Member Name</label>
+                                <input type="text" id="layout-member-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Optional">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Jersey Number</label>
+                                <input type="text" id="layout-jersey-number" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Optional">
+                            </div>
+                        </div>
+
+                        <!-- Color Palette -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Color Palette (Choose 2-5 colors)</label>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gray-600 mb-1">Color 1</label>
+                                    <input type="color" id="palette-color-1" class="w-full h-12 rounded-lg cursor-pointer" value="#4F46E5">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-600 mb-1">Color 2</label>
+                                    <input type="color" id="palette-color-2" class="w-full h-12 rounded-lg cursor-pointer" value="#FFFFFF">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-600 mb-1">Color 3</label>
+                                    <input type="color" id="palette-color-3" class="w-full h-12 rounded-lg cursor-pointer" value="#F59E0B">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-600 mb-1">Color 4 (Optional)</label>
+                                    <input type="color" id="palette-color-4" class="w-full h-12 rounded-lg cursor-pointer" value="#10B981">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-600 mb-1">Color 5 (Optional)</label>
+                                    <input type="color" id="palette-color-5" class="w-full h-12 rounded-lg cursor-pointer" value="#EF4444">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quantity -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Estimated Quantity</label>
+                            <input type="number" id="layout-quantity" min="1" value="1" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Additional Details</label>
+                            <textarea id="layout-notes" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Describe your vision, style preferences, or any specific requirements"></textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
+                            Submit Layout Request
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Printing Only Section -->
+            <div id="section-printing-only" class="service-section hidden">
+                <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-6">Printing Only Service</h2>
+                    <p class="text-gray-600 mb-8">Already have a design? We'll print it for you!</p>
+                    
+                    <form id="printing-only-form">
+                        <!-- Printing Method -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Printing Method</label>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="printing-method" value="sublimation" class="peer hidden" checked>
+                                    <div class="border-2 border-gray-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 rounded-lg p-4 text-center transition-all">
+                                        <i class="fas fa-fire text-2xl text-indigo-600 mb-2"></i>
+                                        <p class="font-medium">Sublimation Sample</p>
+                                        <p class="text-xs text-gray-600">Use our sample</p>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="printing-method" value="upload-design" class="peer hidden">
+                                    <div class="border-2 border-gray-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 rounded-lg p-4 text-center transition-all">
+                                        <i class="fas fa-upload text-2xl text-indigo-600 mb-2"></i>
+                                        <p class="font-medium">Upload Your Design</p>
+                                        <p class="text-xs text-gray-600">Bring your file</p>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="printing-method" value="direct-to-garment" class="peer hidden">
+                                    <div class="border-2 border-gray-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 rounded-lg p-4 text-center transition-all">
+                                        <i class="fas fa-tshirt text-2xl text-indigo-600 mb-2"></i>
+                                        <p class="font-medium">Direct to Garment</p>
+                                        <p class="text-xs text-gray-600">DTG printing</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Upload Design (conditional) -->
+                        <div id="printing-upload-field" class="hidden mb-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Upload Your Design</label>
+                            <input type="file" id="printing-design-file" accept="image/*" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <p class="text-sm text-gray-600 mt-1">Accepted formats: PNG, JPG, PDF (High resolution recommended)</p>
+                            <div id="printing-design-preview" class="mt-3 hidden">
+                                <img src="" alt="Design preview" class="max-h-64 object-contain border rounded-lg">
+                            </div>
+                        </div>
+
+                        <!-- Quantity -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Quantity</label>
+                            <input type="number" id="printing-quantity" min="1" value="1" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+
+                        <!-- Garment Size -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Garment Size</label>
+                            <select id="garment-size" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Select size</option>
+                                <option value="XS">XS - Extra Small</option>
+                                <option value="S">S - Small</option>
+                                <option value="M">M - Medium</option>
+                                <option value="L">L - Large</option>
+                                <option value="XL">XL - Extra Large</option>
+                                <option value="XXL">XXL - Double Extra Large</option>
+                                <option value="3XL">3XL - Triple Extra Large</option>
+                                <option value="Various">Various Sizes</option>
+                            </select>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Additional Notes</label>
+                            <textarea id="printing-notes" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Any special instructions or requirements"></textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
+                            Submit Printing Order
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Printing Type Info Modal -->
+    <div id="printing-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-gray-900">Printing Methods Explained</h3>
+                <button onclick="closePrintingModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-8">
+                <!-- Dye-Sublimation -->
+                <div class="border-b pb-6">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-fire text-3xl text-indigo-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-xl font-bold text-gray-900 mb-2">Dye-Sublimation</h4>
+                            <p class="text-gray-700 mb-3">
+                                A heat transfer process that turns solid dye into gas, permanently embedding it into polyester fabrics. 
+                                Creates vibrant, full-color designs that won't crack, peel, or fade.
+                            </p>
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                                <p class="text-sm font-semibold text-green-800 mb-1">Best For:</p>
+                                <ul class="text-sm text-green-700 space-y-1">
+                                    <li>• Full-color designs with gradients</li>
+                                    <li>• Sports jerseys and athletic wear</li>
+                                    <li>• All-over prints</li>
+                                    <li>• Polyester and poly-blend fabrics</li>
+                                </ul>
+                            </div>
+                            <div class="bg-gray-100 rounded-lg p-3">
+                                <p class="text-xs text-gray-600">💡 Most popular choice for custom jerseys!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Heat Transfer -->
+                <div class="border-b pb-6">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 w-16 h-16 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-temperature-high text-3xl text-orange-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-xl font-bold text-gray-900 mb-2">Heat Transfer</h4>
+                            <p class="text-gray-700 mb-3">
+                                A vinyl or paper-based design is heat-pressed onto the fabric. Great for bold, solid colors 
+                                and simple designs. Durable and cost-effective for small quantities.
+                            </p>
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                                <p class="text-sm font-semibold text-blue-800 mb-1">Best For:</p>
+                                <ul class="text-sm text-blue-700 space-y-1">
+                                    <li>• Numbers and names</li>
+                                    <li>• Simple logos and text</li>
+                                    <li>• Cotton and cotton-blend fabrics</li>
+                                    <li>• Low to medium quantity orders</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vinyl Print -->
+                <div class="border-b pb-6">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-cut text-3xl text-purple-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-xl font-bold text-gray-900 mb-2">Vinyl Print</h4>
+                            <p class="text-gray-700 mb-3">
+                                Colored vinyl is cut into shapes and heat-pressed onto fabric. Creates a smooth, 
+                                professional look with solid colors. Very durable and long-lasting.
+                            </p>
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3">
+                                <p class="text-sm font-semibold text-purple-800 mb-1">Best For:</p>
+                                <ul class="text-sm text-purple-700 space-y-1">
+                                    <li>• Team names and numbers</li>
+                                    <li>• Single or two-color designs</li>
+                                    <li>• Block letters and simple shapes</li>
+                                    <li>• High durability needs</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Direct-to-Garment -->
+                <div>
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 w-16 h-16 bg-pink-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-tshirt text-3xl text-pink-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-xl font-bold text-gray-900 mb-2">Direct-to-Garment (DTG)</h4>
+                            <p class="text-gray-700 mb-3">
+                                Specialized inkjet printer sprays water-based ink directly onto fabric. Perfect for 
+                                detailed designs, photographs, and complex artwork with unlimited colors.
+                            </p>
+                            <div class="bg-pink-50 border border-pink-200 rounded-lg p-3 mb-3">
+                                <p class="text-sm font-semibold text-pink-800 mb-1">Best For:</p>
+                                <ul class="text-sm text-pink-700 space-y-1">
+                                    <li>• Detailed artwork and photos</li>
+                                    <li>• Unlimited color designs</li>
+                                    <li>• Cotton fabrics (works best)</li>
+                                    <li>• One-off or small batch orders</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sticky bottom-0 bg-gray-50 border-t px-6 py-4">
+                <button onclick="closePrintingModal()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
+                    Got it, thanks!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="site-footer"></div>
+    <script src="js/footer.js"></script>
+    <script src="js/services-functionality.js"></script>
+    
+    <script>
+        (async () => {
+            const token = localStorage.getItem('token');
+            const authLoggedOut = document.getElementById('auth-links-logged-out');
+            const authLoggedIn = document.getElementById('auth-links-logged-in');
+
+            if (!token) {
+                authLoggedOut.classList.remove('hidden');
+                authLoggedIn.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const res = await fetch('https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    authLoggedOut.classList.add('hidden');
+                    authLoggedIn.classList.remove('hidden');
+                } else {
+                    localStorage.removeItem('token');
+                    authLoggedOut.classList.remove('hidden');
+                    authLoggedIn.classList.add('hidden');
+                }
+            } catch (err) {
+                localStorage.removeItem('token');
+                authLoggedOut.classList.remove('hidden');
+                authLoggedIn.classList.add('hidden');
+            }
+        })();
+    </script>
+
+    <!-- Socket.io Client -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!-- Chat Widget -->
+    <script src="js/chat.js"></script>
+</body>
+</html>

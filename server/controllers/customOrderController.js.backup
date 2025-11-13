@@ -6,54 +6,19 @@ const mongoose = require("mongoose"); // <-- Siguraduhin na na-import ito
 const BASE_URL =
   process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
 
-// @desc    Submit a new custom order
-// @route   POST /api/custom-orders
-// @access  Private
+// @desc    Submit a new custom order
+// @route   POST /api/custom-orders
+// @access  Private
 exports.submitCustomOrder = async (req, res) => {
   try {
-    // Extract all fields from request body
-    const { 
-      serviceType,
-      customType, 
-      productName, 
-      designDetails, 
-      quantity, 
-      notes,
-      // Customize Jersey fields
-      itemType,
-      printingType,
-      teamName,
-      includeTeamMembers,
-      teamMembers,
-      includeShorts,
-      shortsSameDesign,
-      shortsDesignDetails,
-      designStyle,
-      primaryColor,
-      secondaryColor,
-      accentColor,
-      textFont,
-      textSize,
-      textPlacement,
-      customText,
-      logoType,
-      logoPlacement,
-      // Layout Creation fields
-      memberName,
-      jerseyNumber,
-      colorPalette,
-      // Printing Only fields
-      printingMethod,
-      garmentSize
-    } = req.body;
-    
-    const userId = req.user._id;
+    const { customType, productName, designDetails, quantity, notes } =
+      req.body;
+    const userId = req.user._id; // Validation
 
-    // Basic validation
-    if (!quantity) {
+    if (!customType || !quantity) {
       return res.status(400).json({
         success: false,
-        msg: "Missing required field: quantity.",
+        msg: "Missing required fields: customType and quantity.",
       });
     }
     if (Number(quantity) <= 0) {
@@ -62,142 +27,26 @@ exports.submitCustomOrder = async (req, res) => {
         .json({ success: false, msg: "Quantity must be at least 1." });
     }
 
-    // Initialize order data with common fields
     const orderData = {
       user: userId,
-      serviceType: serviceType || 'customize-jersey',
       productName: productName || "Custom Jersey",
-      customType: customType || 'Template',
+      customType,
       quantity: Number(quantity),
       notes: notes || "",
     };
 
-    // Handle multiple file uploads
-    if (req.files) {
-      if (req.files.designFile && req.files.designFile[0]) {
-        orderData.designFileUrl = `${BASE_URL}/uploads/custom-designs/${req.files.designFile[0].filename}`;
+    if (customType === "Template") {
+      orderData.designDetails = designDetails || "No details provided.";
+    } else if (customType === "FileUpload") {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          msg: "A design file is required for File Upload mode.",
+        });
       }
-      if (req.files.logoFile && req.files.logoFile[0]) {
-        orderData.logoUrl = `${BASE_URL}/uploads/custom-designs/${req.files.logoFile[0].filename}`;
-      }
-      if (req.files.shortsDesignFile && req.files.shortsDesignFile[0]) {
-        orderData.shortsDesignFileUrl = `${BASE_URL}/uploads/custom-designs/${req.files.shortsDesignFile[0].filename}`;
-      }
-    } else if (req.file) {
-      // Backward compatibility for single file upload
       orderData.designFileUrl = `${BASE_URL}/uploads/custom-designs/${req.file.filename}`;
     }
 
-    // Route based on serviceType
-    switch(serviceType) {
-      case 'customize-jersey':
-        // Add item and printing type
-        if (itemType) orderData.itemType = itemType;
-        if (printingType) orderData.printingType = printingType;
-
-        // Handle template customization fields
-        if (customType === 'Template') {
-          orderData.designDetails = designDetails || "Template customization";
-          if (designStyle) orderData.designStyle = designStyle;
-          if (primaryColor) orderData.primaryColor = primaryColor;
-          if (secondaryColor) orderData.secondaryColor = secondaryColor;
-          if (accentColor) orderData.accentColor = accentColor;
-          if (textFont) orderData.textFont = textFont;
-          if (textSize) orderData.textSize = textSize;
-          if (textPlacement) orderData.textPlacement = textPlacement;
-          if (customText) orderData.customText = customText;
-          if (logoType) orderData.logoType = logoType;
-          if (logoPlacement) orderData.logoPlacement = logoPlacement;
-        } else if (customType === 'FileUpload') {
-          // Validate design file for upload mode
-          if (!orderData.designFileUrl) {
-            return res.status(400).json({
-              success: false,
-              msg: "A design file is required for File Upload mode.",
-            });
-          }
-          orderData.designDetails = designDetails || "Customer uploaded design";
-        }
-
-        // Handle team details
-        if (teamName) orderData.teamName = teamName;
-        if (includeTeamMembers === 'true' || includeTeamMembers === true) {
-          orderData.includeTeamMembers = true;
-          if (teamMembers) {
-            try {
-              orderData.teamMembers = typeof teamMembers === 'string' 
-                ? JSON.parse(teamMembers) 
-                : teamMembers;
-            } catch (e) {
-              console.error('Error parsing team members:', e);
-            }
-          }
-        }
-
-        // Handle shorts options
-        if (includeShorts === 'true' || includeShorts === true) {
-          orderData.includeShorts = true;
-          orderData.shortsSameDesign = shortsSameDesign === 'true' || shortsSameDesign === true;
-          if (shortsDesignDetails) orderData.shortsDesignDetails = shortsDesignDetails;
-        }
-        break;
-
-      case 'layout-creation':
-        // Require inspiration image for layout creation
-        if (!orderData.designFileUrl) {
-          return res.status(400).json({
-            success: false,
-            msg: "An inspiration image is required for Layout Creation service.",
-          });
-        }
-        orderData.inspirationImageUrl = orderData.designFileUrl;
-        orderData.designDetails = "Layout Creation Service";
-        
-        // Add layout-specific fields
-        if (teamName) orderData.teamName = teamName;
-        if (memberName) orderData.memberName = memberName;
-        if (jerseyNumber) orderData.jerseyNumber = jerseyNumber;
-        
-        // Parse color palette
-        if (colorPalette) {
-          try {
-            orderData.colorPalette = typeof colorPalette === 'string' 
-              ? JSON.parse(colorPalette) 
-              : colorPalette;
-          } catch (e) {
-            console.error('Error parsing color palette:', e);
-          }
-        }
-        break;
-
-      case 'printing-only':
-        // Add printing method and garment size
-        if (printingMethod) orderData.printingMethod = printingMethod;
-        if (garmentSize) orderData.garmentSize = garmentSize;
-        orderData.designDetails = `Printing Only - ${printingMethod || 'Method not specified'}`;
-        
-        // Validate file if upload-design method
-        if (printingMethod === 'upload-design' && !orderData.designFileUrl) {
-          return res.status(400).json({
-            success: false,
-            msg: "A design file is required for upload-design printing method.",
-          });
-        }
-        break;
-
-      default:
-        // Default to customize-jersey behavior for backward compatibility
-        if (customType === 'Template') {
-          orderData.designDetails = designDetails || "No details provided.";
-        } else if (customType === 'FileUpload' && !orderData.designFileUrl) {
-          return res.status(400).json({
-            success: false,
-            msg: "A design file is required for File Upload mode.",
-          });
-        }
-    }
-
-    // Create the custom order
     const customOrder = await CustomOrder.create(orderData);
 
     res.status(201).json({
@@ -207,22 +56,13 @@ exports.submitCustomOrder = async (req, res) => {
     });
   } catch (error) {
     console.error("Custom Order Submit Error:", error);
-    console.error("Error details:", error.message);
-    console.error("Order data:", orderData);
-    
-    // Send more detailed error for debugging
-    res.status(500).json({ 
-      success: false, 
-      msg: "Server Error", 
-      error: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.status(500).json({ success: false, msg: "Server Error" });
   }
 };
 
-// @desc    Get all custom orders (for Admin)
-// @route   GET /api/custom-orders/admin
-// @access  Private/Admin
+// @desc    Get all custom orders (for Admin)
+// @route   GET /api/custom-orders/admin
+// @access  Private/Admin
 exports.getAdminCustomOrders = async (req, res) => {
   try {
     const orders = await CustomOrder.find()
@@ -374,9 +214,9 @@ exports.verifyDownPayment = async (req, res) => {
   }
 };
 
-// @desc    Admin marks order as finished, requests final balance
-// @route   PUT /api/custom-orders/:id/request-final-payment
-// @access  Private/Admin
+// @desc    Admin marks order as finished, requests final balance
+// @route   PUT /api/custom-orders/:id/request-final-payment
+// @access  Private/Admin
 // --- Inalis ang duplicate na comments ---
 exports.requestFinalPayment = async (req, res) => {
   try {
@@ -574,3 +414,4 @@ exports.updateFulfillmentDetails = async (req, res) => {
     res.status(500).json({ success: false, msg: "Server error" });
   }
 };
+

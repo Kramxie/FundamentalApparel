@@ -265,18 +265,130 @@
       </div>
       <div class="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
         <div id="custom-modal-error" class="hidden text-sm p-3 rounded-md bg-red-100 text-red-700"></div>
+        
+        <!-- Basic Information -->
         <div class="text-sm space-y-2">
           <p><strong>Customer:</strong> <span id="custom-modal-user"></span></p>
           <p><strong>Quantity:</strong> <span id="custom-modal-qty"></span></p>
           <p><strong>Type:</strong> <span id="custom-modal-type"></span></p>
         </div>
-        <div>
-          <h4 class="font-medium mb-1">Design Details</h4>
-          <div id="custom-modal-details" class="text-sm bg-gray-50 p-3 rounded-md border max-h-40 overflow-y-auto">
+
+        <!-- Service Type Badge -->
+        <div id="custom-modal-service-type-section">
+          <span id="custom-modal-service-badge" class="inline-block px-3 py-1 rounded-full text-sm font-semibold"></span>
+        </div>
+
+        <!-- Customize Jersey Details -->
+        <div id="custom-modal-customize-jersey-section" class="hidden space-y-3">
+          <div class="border-t pt-3">
+            <h4 class="font-semibold text-gray-800 mb-2">🎽 Jersey Customization</h4>
+            <div class="space-y-2 text-sm">
+              <p><strong>Item Type:</strong> <span id="custom-modal-item-type"></span></p>
+              <p><strong>Printing Type:</strong> <span id="custom-modal-printing-type"></span></p>
+              
+              <!-- Template Design Fields -->
+              <div id="custom-modal-template-fields" class="hidden bg-gray-50 p-3 rounded border space-y-2">
+                <p class="font-medium text-indigo-900">Template Design:</p>
+                <p><strong>Design Style:</strong> <span id="custom-modal-design-style"></span></p>
+                <div id="custom-modal-colors-section">
+                  <strong>Colors:</strong>
+                  <div class="flex gap-2 mt-1">
+                    <div id="custom-modal-primary-color" class="w-8 h-8 rounded border-2 border-gray-300" title="Primary Color"></div>
+                    <div id="custom-modal-secondary-color" class="w-8 h-8 rounded border-2 border-gray-300" title="Secondary Color"></div>
+                    <div id="custom-modal-accent-color" class="w-8 h-8 rounded border-2 border-gray-300" title="Accent Color"></div>
+                  </div>
+                </div>
+                <div id="custom-modal-text-section" class="hidden">
+                  <p><strong>Custom Text:</strong> <span id="custom-modal-custom-text"></span></p>
+                  <p><strong>Font:</strong> <span id="custom-modal-text-font"></span> | <strong>Size:</strong> <span id="custom-modal-text-size"></span></p>
+                  <p><strong>Placement:</strong> <span id="custom-modal-text-placement"></span></p>
+                </div>
+                <div id="custom-modal-logo-section" class="hidden">
+                  <p><strong>Logo Type:</strong> <span id="custom-modal-logo-type"></span></p>
+                  <p><strong>Logo Placement:</strong> <span id="custom-modal-logo-placement"></span></p>
+                  <div id="custom-modal-logo-preview"></div>
+                </div>
+              </div>
+
+              <!-- Upload Design File -->
+              <div id="custom-modal-design-file-section" class="hidden">
+                <strong>Design File:</strong>
+                <div id="custom-modal-design-file" class="mt-1"></div>
+              </div>
+
+              <!-- Team Details -->
+              <div id="custom-modal-team-section" class="hidden bg-blue-50 p-3 rounded border border-blue-200 space-y-2">
+                <h5 class="font-semibold text-blue-900">👥 Team Order</h5>
+                <p><strong>Team Name:</strong> <span id="custom-modal-team-name"></span></p>
+                <div id="custom-modal-team-members-container" class="hidden">
+                  <p class="font-medium mt-2 mb-1">Team Members:</p>
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full text-xs border">
+                      <thead class="bg-blue-100">
+                        <tr>
+                          <th class="border px-2 py-1 text-left">Name</th>
+                          <th class="border px-2 py-1 text-left">Number</th>
+                          <th class="border px-2 py-1 text-left">Size</th>
+                        </tr>
+                      </thead>
+                      <tbody id="custom-modal-team-members-tbody" class="bg-white">
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Shorts Details -->
+              <div id="custom-modal-shorts-section" class="hidden bg-purple-50 p-3 rounded border border-purple-200 space-y-2">
+                <h5 class="font-semibold text-purple-900">🩳 Shorts Included</h5>
+                <p><strong>Same Design as Jersey:</strong> <span id="custom-modal-shorts-same"></span></p>
+                <div id="custom-modal-shorts-different-container" class="hidden mt-2">
+                  <p class="text-xs text-purple-700">Different Shorts Design:</p>
+                  <div id="custom-modal-shorts-details"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div>
-          <h4 class="font-medium mb-1">Customer Notes</h4>
+
+        <!-- Layout Creation Details -->
+        <div id="custom-modal-layout-section" class="hidden space-y-3">
+          <div class="border-t pt-3">
+            <h4 class="font-semibold text-gray-800 mb-2">🎨 Layout Creation</h4>
+            <div class="space-y-2 text-sm">
+              <div id="custom-modal-inspiration-image-container">
+                <strong>Inspiration Image:</strong>
+                <div id="custom-modal-inspiration-image" class="mt-2"></div>
+              </div>
+              <p><strong>Team Name:</strong> <span id="custom-modal-layout-team"></span></p>
+              <p><strong>Member Name:</strong> <span id="custom-modal-layout-member"></span></p>
+              <p><strong>Jersey Number:</strong> <span id="custom-modal-layout-number"></span></p>
+              <div id="custom-modal-color-palette-section">
+                <strong>Color Palette:</strong>
+                <div id="custom-modal-color-palette" class="flex gap-2 mt-1 flex-wrap"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Printing Only Details -->
+        <div id="custom-modal-printing-section" class="hidden space-y-3">
+          <div class="border-t pt-3">
+            <h4 class="font-semibold text-gray-800 mb-2">🖨️ Printing Only</h4>
+            <div class="space-y-2 text-sm">
+              <p><strong>Printing Method:</strong> <span id="custom-modal-printing-method"></span></p>
+              <p><strong>Garment Size:</strong> <span id="custom-modal-garment-size"></span></p>
+              <div id="custom-modal-printing-file-section" class="hidden">
+                <strong>Design File:</strong>
+                <div id="custom-modal-printing-file" class="mt-1"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer Notes -->
+        <div class="border-t pt-3">
+          <h4 class="font-medium mb-1">📝 Customer Notes</h4>
           <div id="custom-modal-notes" class="text-sm bg-gray-50 p-3 rounded-md border min-h-[50px]"></div>
         </div>
 
@@ -630,20 +742,187 @@
       function openCustomModal(order) {
         selectedCustomOrder = order;
         els.customModalError.textContent = '';
-        els.customModalError.classList.add('hidden'); // Itago ang error
+        els.customModalError.classList.add('hidden');
         els.customModal.classList.remove('hidden');
         els.customModal.classList.add('flex');
 
+        // Basic Information
         els.customModalUser.textContent = `${order.user?.name || 'N/A'} (${order.user?.email || 'N/A'})`;
         els.customModalQty.textContent = order.quantity;
         els.customModalType.textContent = order.customType;
         els.customModalNotes.textContent = order.notes || 'N/A';
         els.formCustomPrice.value = order.price || '';
 
-        if (order.customType === 'FileUpload') {
-          els.customModalDetails.innerHTML = `<a href="${order.designFileUrl}" target="_blank" class="text-indigo-600 font-medium hover:underline">Click to View Design File</a>`;
-        } else {
-          els.customModalDetails.textContent = order.designDetails || 'N/A';
+        // Service Type Badge
+        const serviceType = order.serviceType || 'customize-jersey';
+        const serviceBadge = document.getElementById('custom-modal-service-badge');
+        if (serviceType === 'customize-jersey') {
+          serviceBadge.textContent = '🎽 Customize Jersey';
+          serviceBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800';
+        } else if (serviceType === 'layout-creation') {
+          serviceBadge.textContent = '🎨 Layout Creation';
+          serviceBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-800';
+        } else if (serviceType === 'printing-only') {
+          serviceBadge.textContent = '🖨️ Printing Only';
+          serviceBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800';
+        }
+
+        // Hide all service sections first
+        document.getElementById('custom-modal-customize-jersey-section').classList.add('hidden');
+        document.getElementById('custom-modal-layout-section').classList.add('hidden');
+        document.getElementById('custom-modal-printing-section').classList.add('hidden');
+
+        // Show relevant section based on service type
+        if (serviceType === 'customize-jersey') {
+          const section = document.getElementById('custom-modal-customize-jersey-section');
+          section.classList.remove('hidden');
+
+          // Item and Printing Type
+          document.getElementById('custom-modal-item-type').textContent = order.itemType || 'N/A';
+          document.getElementById('custom-modal-printing-type').textContent = order.printingType || 'N/A';
+
+          // Template vs Upload
+          if (order.customType === 'Template') {
+            const templateFields = document.getElementById('custom-modal-template-fields');
+            templateFields.classList.remove('hidden');
+            
+            document.getElementById('custom-modal-design-style').textContent = order.designStyle || 'N/A';
+            
+            // Color swatches
+            if (order.primaryColor) {
+              document.getElementById('custom-modal-primary-color').style.backgroundColor = order.primaryColor;
+            }
+            if (order.secondaryColor) {
+              document.getElementById('custom-modal-secondary-color').style.backgroundColor = order.secondaryColor;
+            }
+            if (order.accentColor) {
+              document.getElementById('custom-modal-accent-color').style.backgroundColor = order.accentColor;
+            }
+
+            // Text details
+            if (order.customText) {
+              const textSection = document.getElementById('custom-modal-text-section');
+              textSection.classList.remove('hidden');
+              document.getElementById('custom-modal-custom-text').textContent = order.customText;
+              document.getElementById('custom-modal-text-font').textContent = order.textFont || 'N/A';
+              document.getElementById('custom-modal-text-size').textContent = order.textSize || 'N/A';
+              document.getElementById('custom-modal-text-placement').textContent = order.textPlacement || 'N/A';
+            }
+
+            // Logo details
+            if (order.logoType && order.logoType !== 'none') {
+              const logoSection = document.getElementById('custom-modal-logo-section');
+              logoSection.classList.remove('hidden');
+              document.getElementById('custom-modal-logo-type').textContent = order.logoType || 'N/A';
+              document.getElementById('custom-modal-logo-placement').textContent = order.logoPlacement || 'N/A';
+              
+              if (order.logoUrl) {
+                document.getElementById('custom-modal-logo-preview').innerHTML = 
+                  `<a href="${order.logoUrl}" target="_blank" class="text-indigo-600 hover:underline text-xs">View Logo File</a>`;
+              }
+            }
+
+            document.getElementById('custom-modal-design-file-section').classList.add('hidden');
+          } else if (order.customType === 'FileUpload') {
+            document.getElementById('custom-modal-template-fields').classList.add('hidden');
+            const fileSection = document.getElementById('custom-modal-design-file-section');
+            fileSection.classList.remove('hidden');
+            
+            if (order.designFileUrl) {
+              document.getElementById('custom-modal-design-file').innerHTML = 
+                `<a href="${order.designFileUrl}" target="_blank" class="text-indigo-600 font-medium hover:underline">View Design File</a>`;
+            } else {
+              document.getElementById('custom-modal-design-file').textContent = 'No file uploaded';
+            }
+          }
+
+          // Team Details
+          if (order.teamName || order.includeTeamMembers) {
+            const teamSection = document.getElementById('custom-modal-team-section');
+            teamSection.classList.remove('hidden');
+            document.getElementById('custom-modal-team-name').textContent = order.teamName || 'N/A';
+
+            if (order.includeTeamMembers && order.teamMembers && order.teamMembers.length > 0) {
+              const membersContainer = document.getElementById('custom-modal-team-members-container');
+              membersContainer.classList.remove('hidden');
+              
+              const tbody = document.getElementById('custom-modal-team-members-tbody');
+              tbody.innerHTML = order.teamMembers.map(member => `
+                <tr>
+                  <td class="border px-2 py-1">${member.name || 'N/A'}</td>
+                  <td class="border px-2 py-1">${member.jerseyNumber || 'N/A'}</td>
+                  <td class="border px-2 py-1">${member.size || 'N/A'}</td>
+                </tr>
+              `).join('');
+            }
+          }
+
+          // Shorts Details
+          if (order.includeShorts) {
+            const shortsSection = document.getElementById('custom-modal-shorts-section');
+            shortsSection.classList.remove('hidden');
+            document.getElementById('custom-modal-shorts-same').textContent = order.shortsSameDesign ? 'Yes' : 'No';
+
+            if (!order.shortsSameDesign) {
+              const differentContainer = document.getElementById('custom-modal-shorts-different-container');
+              differentContainer.classList.remove('hidden');
+              
+              const shortsDetails = document.getElementById('custom-modal-shorts-details');
+              if (order.shortsDesignFileUrl) {
+                shortsDetails.innerHTML = `<a href="${order.shortsDesignFileUrl}" target="_blank" class="text-purple-600 hover:underline text-xs">View Shorts Design File</a>`;
+              } else if (order.shortsDesignDetails) {
+                shortsDetails.textContent = order.shortsDesignDetails;
+              } else {
+                shortsDetails.textContent = 'No details provided';
+              }
+            }
+          }
+        } 
+        else if (serviceType === 'layout-creation') {
+          const section = document.getElementById('custom-modal-layout-section');
+          section.classList.remove('hidden');
+
+          // Inspiration Image
+          if (order.inspirationImageUrl || order.designFileUrl) {
+            const imageUrl = order.inspirationImageUrl || order.designFileUrl;
+            document.getElementById('custom-modal-inspiration-image').innerHTML = 
+              `<a href="${imageUrl}" target="_blank"><img src="${imageUrl}" class="max-h-48 rounded border shadow" alt="Inspiration"></a>`;
+          } else {
+            document.getElementById('custom-modal-inspiration-image').textContent = 'No image uploaded';
+          }
+
+          document.getElementById('custom-modal-layout-team').textContent = order.teamName || 'N/A';
+          document.getElementById('custom-modal-layout-member').textContent = order.memberName || 'N/A';
+          document.getElementById('custom-modal-layout-number').textContent = order.jerseyNumber || 'N/A';
+
+          // Color Palette
+          if (order.colorPalette && order.colorPalette.length > 0) {
+            const paletteContainer = document.getElementById('custom-modal-color-palette');
+            paletteContainer.innerHTML = order.colorPalette.map(color => 
+              `<div class="w-10 h-10 rounded border-2 border-gray-300" style="background-color: ${color}" title="${color}"></div>`
+            ).join('');
+          } else {
+            document.getElementById('custom-modal-color-palette').innerHTML = '<span class="text-gray-500">No colors specified</span>';
+          }
+        } 
+        else if (serviceType === 'printing-only') {
+          const section = document.getElementById('custom-modal-printing-section');
+          section.classList.remove('hidden');
+
+          const methodMap = {
+            'sublimation': 'Sublimation Sample',
+            'upload-design': 'Upload Your Design',
+            'direct-to-garment': 'Direct to Garment (DTG)'
+          };
+          document.getElementById('custom-modal-printing-method').textContent = methodMap[order.printingMethod] || order.printingMethod || 'N/A';
+          document.getElementById('custom-modal-garment-size').textContent = order.garmentSize || 'N/A';
+
+          if (order.printingMethod === 'upload-design' && order.designFileUrl) {
+            const fileSection = document.getElementById('custom-modal-printing-file-section');
+            fileSection.classList.remove('hidden');
+            document.getElementById('custom-modal-printing-file').innerHTML = 
+              `<a href="${order.designFileUrl}" target="_blank" class="text-indigo-600 font-medium hover:underline">View Design File</a>`;
+          }
         }
 
         // I-reset muna lahat ng sections/buttons

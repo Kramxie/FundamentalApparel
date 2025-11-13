@@ -3,12 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard - Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Inter', sans-serif; } </style>
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+        .stat-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .trend-up { color: #10B981; }
+        .trend-down { color: #EF4444; }
+    </style>
 </head>
 <body class="bg-gray-100">
 
@@ -56,51 +67,156 @@
             <!-- Main content with overflow scroll -->
             <div class="flex-1 overflow-y-auto">
             <div class="p-6 space-y-6">
+                <!-- Enhanced Stats Cards with Trends -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
-                        <div class="bg-green-100 p-3 rounded-full"><i class="fas fa-dollar-sign text-2xl text-green-600"></i></div>
-                        <div class="ml-4">
-                            <p class="text-sm text-gray-500">Total Revenue</p>
-                            <p id="total-sales" class="text-2xl font-bold text-gray-800">₱0</p>
+                    <!-- Total Revenue Card -->
+                    <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl shadow-lg text-white">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="bg-white/20 p-3 rounded-lg">
+                                <i class="fas fa-dollar-sign text-2xl"></i>
+                            </div>
+                            <span id="revenue-trend" class="text-xs bg-white/20 px-2 py-1 rounded-full">
+                                <i class="fas fa-arrow-up"></i> 0%
+                            </span>
                         </div>
+                        <p class="text-sm opacity-90 mb-1">Total Revenue</p>
+                        <p id="total-sales" class="text-3xl font-bold">₱0</p>
+                        <p class="text-xs opacity-75 mt-2">All-time earnings</p>
                     </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
-                        <div class="bg-blue-100 p-3 rounded-full"><i class="fas fa-wallet text-2xl text-blue-600"></i></div>
-                        <div class="ml-4">
-                            <p class="text-sm text-gray-500">Sales Today</p>
-                            <p id="today-sales" class="text-2xl font-bold text-gray-800">₱0</p>
+
+                    <!-- Monthly Revenue Card -->
+                    <div class="stat-card bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-xl shadow-lg text-white">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="bg-white/20 p-3 rounded-lg">
+                                <i class="fas fa-chart-line text-2xl"></i>
+                            </div>
+                            <span id="monthly-trend" class="text-xs bg-white/20 px-2 py-1 rounded-full">
+                                <i class="fas fa-arrow-up"></i> 0%
+                            </span>
                         </div>
+                        <p class="text-sm opacity-90 mb-1">This Month</p>
+                        <p id="monthly-sales" class="text-3xl font-bold">₱0</p>
+                        <p class="text-xs opacity-75 mt-2">
+                            <span id="monthly-comparison"></span>
+                        </p>
                     </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
-                        <div class="bg-yellow-100 p-3 rounded-full"><i class="fas fa-shopping-cart text-2xl text-yellow-600"></i></div>
-                        <div class="ml-4">
-                            <p class="text-sm text-gray-500">Total Orders</p>
-                            <p id="total-orders" class="text-2xl font-bold text-gray-800">0</p>
+
+                    <!-- Total Orders Card -->
+                    <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-xl shadow-lg text-white">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="bg-white/20 p-3 rounded-lg">
+                                <i class="fas fa-shopping-cart text-2xl"></i>
+                            </div>
+                            <span id="completion-rate" class="text-xs bg-white/20 px-2 py-1 rounded-full">
+                                <i class="fas fa-check-circle"></i> 0%
+                            </span>
                         </div>
+                        <p class="text-sm opacity-90 mb-1">Total Orders</p>
+                        <p id="total-orders" class="text-3xl font-bold">0</p>
+                        <p class="text-xs opacity-75 mt-2">
+                            <span id="pending-orders-count"></span> pending
+                        </p>
                     </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
-                        <div class="bg-purple-100 p-3 rounded-full"><i class="fas fa-users text-2xl text-purple-600"></i></div>
-                        <div class="ml-4">
-                            <p class="text-sm text-gray-500">New Customers Today</p>
-                            <p id="new-customers" class="text-2xl font-bold text-gray-800">0</p>
+
+                    <!-- New Customers Card -->
+                    <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-xl shadow-lg text-white">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="bg-white/20 p-3 rounded-lg">
+                                <i class="fas fa-users text-2xl"></i>
+                            </div>
+                            <span class="text-xs bg-white/20 px-2 py-1 rounded-full">
+                                <i class="fas fa-calendar-alt"></i> This Month
+                            </span>
                         </div>
+                        <p class="text-sm opacity-90 mb-1">New Customers</p>
+                        <p id="new-customers-month" class="text-3xl font-bold">0</p>
+                        <p class="text-xs opacity-75 mt-2">
+                            <span id="new-customers-today"></span> today
+                        </p>
                     </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4">Sales (Last 7 Days)</h2>
-                    <canvas id="salesChart"></canvas>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Additional KPIs -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Recent Orders</h2>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Average Order Value</p>
+                                <p id="avg-order-value" class="text-2xl font-bold text-gray-800 mt-1">₱0</p>
+                            </div>
+                            <div class="bg-blue-100 p-3 rounded-full">
+                                <i class="fas fa-receipt text-2xl text-blue-600"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Completed Orders</p>
+                                <p id="completed-orders" class="text-2xl font-bold text-gray-800 mt-1">0</p>
+                            </div>
+                            <div class="bg-green-100 p-3 rounded-full">
+                                <i class="fas fa-check-double text-2xl text-green-600"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-500">Today's Sales</p>
+                                <p id="today-sales" class="text-2xl font-bold text-gray-800 mt-1">₱0</p>
+                            </div>
+                            <div class="bg-yellow-100 p-3 rounded-full">
+                                <i class="fas fa-calendar-day text-2xl text-yellow-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Revenue Trend Chart -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold text-gray-800">Revenue Trend</h2>
+                            <div class="flex gap-2">
+                                <button onclick="switchChartPeriod('7days')" id="btn-7days" class="px-3 py-1 text-xs bg-indigo-600 text-white rounded">7 Days</button>
+                                <button onclick="switchChartPeriod('30days')" id="btn-30days" class="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded">30 Days</button>
+                            </div>
+                        </div>
+                        <canvas id="salesChart"></canvas>
+                    </div>
+
+                    <!-- Top Products Chart -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Top Selling Products</h2>
+                        <canvas id="topProductsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Lists and Tables -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Recent Orders -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold text-gray-800">Recent Orders</h2>
+                            <a href="orders.html" class="text-sm text-indigo-600 hover:text-indigo-800">View All <i class="fas fa-arrow-right ml-1"></i></a>
+                        </div>
                         <div id="recent-orders-list" class="space-y-4">
                             <p class="text-gray-500">Loading...</p>
                         </div>
                     </div>
+
+                    <!-- Low Stock Alert -->
                     <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Low Stock Products</h2>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold text-gray-800">Low Stock Alert</h2>
+                            <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">
+                                <i class="fas fa-exclamation-triangle"></i> Critical
+                            </span>
+                        </div>
                         <div id="low-stock-list" class="space-y-4">
                              <p class="text-gray-500">Loading...</p>
                         </div>
@@ -113,6 +229,11 @@
     </div>
     
     <script>
+        let salesChart;
+        let topProductsChart;
+        let currentChartData = { last7Days: [], last30Days: [] };
+        let currentPeriod = '7days';
+
         document.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('adminToken');
             if (!token) { window.location.href = 'login.html'; return; }
@@ -122,6 +243,14 @@
                 window.location.href = 'login.html';
             });
 
+            fetchDashboardData();
+            // Refresh data every 60 seconds
+            setInterval(fetchDashboardData, 60000);
+        });
+
+        async function fetchDashboardData() {
+            const token = localStorage.getItem('adminToken');
+            
             try {
                 const response = await fetch('https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/dashboard/stats', {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -140,89 +269,332 @@
 
             } catch (error) {
                 console.error('Failed to load dashboard data:', error);
-                alert('Could not load dashboard data. Please try again.');
+                showNotification('Could not load dashboard data. Please try again.', 'error');
+            }
+        }
+
+        function updateUI(stats) {
+            // Update Total Revenue
+            document.getElementById('total-sales').textContent = 
+                '₱' + (stats.totalSales || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+
+            // Update Monthly Revenue with trend
+            const monthlyRevenue = stats.thisMonthSales || 0;
+            const revenueGrowth = parseFloat(stats.revenueGrowth) || 0;
+            document.getElementById('monthly-sales').textContent = 
+                '₱' + monthlyRevenue.toLocaleString('en-PH', { minimumFractionDigits: 2 });
+            
+            const revenueTrend = document.getElementById('revenue-trend');
+            revenueTrend.innerHTML = revenueGrowth >= 0 
+                ? `<i class="fas fa-arrow-up"></i> ${Math.abs(revenueGrowth)}%`
+                : `<i class="fas fa-arrow-down"></i> ${Math.abs(revenueGrowth)}%`;
+            
+            const lastMonthSales = stats.lastMonthSales || 0;
+            document.getElementById('monthly-comparison').textContent = 
+                `Last month: ₱${lastMonthSales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
+
+            // Update Monthly Trend Badge
+            const monthlyTrend = document.getElementById('monthly-trend');
+            monthlyTrend.innerHTML = revenueGrowth >= 0 
+                ? `<i class="fas fa-arrow-up"></i> ${Math.abs(revenueGrowth)}%`
+                : `<i class="fas fa-arrow-down"></i> ${Math.abs(revenueGrowth)}%`;
+            monthlyTrend.className = revenueGrowth >= 0 
+                ? 'text-xs bg-white/20 px-2 py-1 rounded-full'
+                : 'text-xs bg-red-400/50 px-2 py-1 rounded-full';
+
+            // Update Total Orders with completion rate
+            document.getElementById('total-orders').textContent = stats.totalOrders || 0;
+            
+            const completionRate = parseFloat(stats.orderCompletionRate) || 0;
+            document.getElementById('completion-rate').innerHTML = 
+                `<i class="fas fa-check-circle"></i> ${completionRate}%`;
+            
+            const pendingOrders = stats.pendingOrders || 0;
+            document.getElementById('pending-orders-count').textContent = pendingOrders;
+
+            // Update New Customers (Monthly primary, Today secondary)
+            const newCustomersMonth = stats.newCustomersThisMonth || 0;
+            const newCustomersToday = stats.newCustomersToday || 0;
+            document.getElementById('new-customers-month').textContent = newCustomersMonth;
+            document.getElementById('new-customers-today').textContent = newCustomersToday;
+
+            // Update Additional KPIs
+            const avgOrderValue = stats.averageOrderValue || 0;
+            document.getElementById('avg-order-value').textContent = 
+                '₱' + avgOrderValue.toLocaleString('en-PH', { minimumFractionDigits: 2 });
+
+            const completedOrders = stats.completedOrders || 0;
+            document.getElementById('completed-orders').textContent = completedOrders;
+
+            const todaySales = stats.todaySales || 0;
+            document.getElementById('today-sales').textContent = 
+                '₱' + todaySales.toLocaleString('en-PH', { minimumFractionDigits: 2 });
+
+            // Store chart data
+            currentChartData.last7Days = stats.salesLast7Days || [];
+            currentChartData.last30Days = stats.salesLast30Days || [];
+
+            // Update Charts
+            updateSalesChart(currentPeriod === '7days' ? stats.salesLast7Days : stats.salesLast30Days);
+            updateTopProductsChart(stats.topProducts || []);
+
+            // Update Lists
+            updateRecentOrders(stats.recentOrders || []);
+            updateLowStock(stats.lowStockProducts || []);
+        }
+
+        function updateSalesChart(salesData) {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+
+            if (salesChart) {
+                salesChart.destroy();
             }
 
-            function updateUI(stats) {
-                document.getElementById('total-sales').textContent = `₱${stats.totalSales.toLocaleString()}`;
-                document.getElementById('today-sales').textContent = `₱${stats.todaySales.toLocaleString()}`;
-                document.getElementById('total-orders').textContent = stats.totalOrders;
-                document.getElementById('new-customers').textContent = stats.newCustomersToday;
+            const labels = salesData.map(item => {
+                const date = new Date(item._id);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
 
-                const ordersList = document.getElementById('recent-orders-list');
-                ordersList.innerHTML = '';
-                if (stats.recentOrders && stats.recentOrders.length > 0) {
-                    stats.recentOrders.forEach(order => {
-                        // FIX: Safely access user name, provide a fallback if user is null
-                        const customerName = order.user ? order.user.name : '[Deleted User]';
-                        ordersList.innerHTML += `
-                            <div class="flex justify-between items-center text-sm">
-                                <div>
-                                    <p class="font-semibold text-gray-700">${customerName}</p>
-                                    <p class="text-xs text-gray-500">${new Date(order.createdAt).toLocaleDateString()}</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-indigo-600">₱${order.totalPrice.toLocaleString()}</p>
-                                    <span class="px-2 py-1 text-xs rounded-full ${order.status === 'Delivered' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${order.status || 'Pending'}</span>
-                                </div>
-                            </div>
-                        `;
-                    });
-                } else {
-                    ordersList.innerHTML = '<p class="text-gray-500">No recent orders.</p>';
-                }
+            const data = salesData.map(item => item.total);
 
-                const lowStockList = document.getElementById('low-stock-list');
-                lowStockList.innerHTML = '';
-                 if (stats.lowStockProducts && stats.lowStockProducts.length > 0) {
-                    stats.lowStockProducts.forEach(product => {
-                         lowStockList.innerHTML += `
-                            <div class="flex justify-between items-center text-sm">
-                                <p class="font-semibold text-gray-700">${product.name}</p>
-                                <p class="font-bold text-red-500">Stock: ${product.countInStock}</p>
-                            </div>
-                        `;
-                    });
-                } else {
-                    lowStockList.innerHTML = '<p class="text-gray-500">No products with low stock.</p>';
-                }
-
-                renderSalesChart(stats.salesLast7Days);
-            }
-
-            function renderSalesChart(salesData) {
-                const ctx = document.getElementById('salesChart').getContext('2d');
-                const labels = [];
-                const data = [];
-                
-                for (let i = 6; i >= 0; i--) {
-                    const date = new Date();
-                    date.setDate(date.getDate() - i);
-                    const formattedDate = date.toISOString().split('T')[0];
-                    labels.push(new Date(formattedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-                    
-                    const dayData = salesData.find(d => d._id === formattedDate);
-                    data.push(dayData ? dayData.total : 0);
-                }
-
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Sales',
-                            data: data,
-                            borderColor: 'rgb(79, 70, 229)',
-                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: true,
-                        }]
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Sales (₱)',
+                        data: data,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#6366f1',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Sales: ₱' + context.parsed.y.toLocaleString('en-PH', { minimumFractionDigits: 2 });
+                                }
+                            }
+                        }
                     },
-                    options: { responsive: true, scales: { y: { beginAtZero: true } } }
-                });
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₱' + value.toLocaleString();
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTopProductsChart(topProducts) {
+            const ctx = document.getElementById('topProductsChart').getContext('2d');
+
+            if (topProductsChart) {
+                topProductsChart.destroy();
             }
-        });
+
+            if (!topProducts || topProducts.length === 0) {
+                // Display empty state
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#9ca3af';
+                ctx.textAlign = 'center';
+                ctx.fillText('No product sales data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+
+            const labels = topProducts.map(item => item.name || 'Unknown Product');
+            const data = topProducts.map(item => item.totalSold || 0);
+            const backgroundColors = [
+                'rgba(99, 102, 241, 0.8)',
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(245, 158, 11, 0.8)',
+                'rgba(239, 68, 68, 0.8)',
+                'rgba(168, 85, 247, 0.8)'
+            ];
+
+            topProductsChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels.slice(0, 5),
+                    datasets: [{
+                        data: data.slice(0, 5),
+                        backgroundColor: backgroundColors,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const product = topProducts[context.dataIndex];
+                                    return [
+                                        context.label,
+                                        `Sold: ${context.parsed} units`,
+                                        `Revenue: ₱${(product.totalRevenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function switchChartPeriod(period) {
+            currentPeriod = period;
+            
+            // Update button styles
+            document.getElementById('btn-7days').className = period === '7days' 
+                ? 'px-3 py-1 text-xs bg-indigo-600 text-white rounded'
+                : 'px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded';
+            
+            document.getElementById('btn-30days').className = period === '30days' 
+                ? 'px-3 py-1 text-xs bg-indigo-600 text-white rounded'
+                : 'px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded';
+
+            // Update chart
+            const chartData = period === '7days' ? currentChartData.last7Days : currentChartData.last30Days;
+            updateSalesChart(chartData);
+        }
+
+        function updateRecentOrders(orders) {
+            const container = document.getElementById('recent-orders-list');
+            
+            if (!orders || orders.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No recent orders</p>';
+                return;
+            }
+
+            container.innerHTML = orders.slice(0, 5).map(order => {
+                const statusColors = {
+                    'pending': 'bg-yellow-100 text-yellow-800',
+                    'processing': 'bg-blue-100 text-blue-800',
+                    'shipped': 'bg-purple-100 text-purple-800',
+                    'delivered': 'bg-green-100 text-green-800',
+                    'cancelled': 'bg-red-100 text-red-800'
+                };
+
+                const statusClass = statusColors[(order.orderStatus || order.status || 'pending').toLowerCase()] || 'bg-gray-100 text-gray-800';
+                const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const customerName = order.user ? order.user.name : '[Deleted User]';
+                const totalAmount = order.totalAmount || order.totalPrice || 0;
+                const orderIdDisplay = order.orderId || order._id.slice(-8);
+
+                return `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800">#${orderIdDisplay}</p>
+                            <p class="text-xs text-gray-500">${customerName} • ${orderDate}</p>
+                        </div>
+                        <div class="text-right mr-4">
+                            <p class="font-semibold text-gray-800">₱${totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs rounded-full ${statusClass}">
+                            ${order.orderStatus || order.status || 'pending'}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateLowStock(products) {
+            const container = document.getElementById('low-stock-list');
+            
+            if (!products || products.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">All products well stocked</p>';
+                return;
+            }
+
+            container.innerHTML = products.slice(0, 5).map(product => {
+                const stockLevel = product.stock || product.countInStock || 0;
+                const stockColor = stockLevel === 0 ? 'text-red-600' : stockLevel < 5 ? 'text-orange-600' : 'text-yellow-600';
+
+                return `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                        <div class="flex items-center flex-1">
+                            ${product.images && product.images[0] ? 
+                                `<img src="/${product.images[0]}" alt="${product.name}" class="w-12 h-12 object-cover rounded mr-3">` :
+                                `<div class="w-12 h-12 bg-gray-200 rounded mr-3 flex items-center justify-center">
+                                    <i class="fas fa-image text-gray-400"></i>
+                                </div>`
+                            }
+                            <div>
+                                <p class="font-medium text-gray-800">${product.name}</p>
+                                <p class="text-xs text-gray-500">SKU: ${product.sku || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold ${stockColor}">${stockLevel} ${stockLevel === 1 ? 'unit' : 'units'}</p>
+                            <p class="text-xs text-gray-500">Min: ${product.minStock || 10}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showNotification(message, type = 'info') {
+            const colors = {
+                'success': 'bg-green-500',
+                'error': 'bg-red-500',
+                'info': 'bg-blue-500'
+            };
+
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-opacity duration-300`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
     </script>
 </body>
 </html>

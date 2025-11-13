@@ -58,6 +58,50 @@ const inventorySchema = new mongoose.Schema({
     lastRestocked: {
         type: Date,
         default: Date.now
+    },
+    
+    // Product-specific fields (only used when type='product')
+    isProduct: {
+        type: Boolean,
+        default: false
+    },
+    productId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product',
+        default: null
+    },
+    category: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    imageUrl: {
+        type: String,
+        default: ''
+    },
+    gallery: {
+        type: [String],
+        default: []
+    },
+    sizes: {
+        type: [String],
+        default: []
+    },
+    colors: {
+        type: [String],
+        default: []
+    },
+    material: {
+        type: String,
+        default: ''
+    },
+    productDetails: {
+        type: String,
+        default: ''
+    },
+    faqs: {
+        type: String,
+        default: ''
     }
 }, {
     timestamps: true

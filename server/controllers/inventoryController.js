@@ -1,4 +1,61 @@
 const Inventory = require('../models/Inventory');
+const Product = require('../models/Product');
+
+// Helper function to sync inventory to product
+async function syncToProduct(inventoryItem) {
+    try {
+        if (!inventoryItem.isProduct) {
+            return null; // Don't sync if it's not marked as a product
+        }
+
+        const productData = {
+            name: inventoryItem.name,
+            description: inventoryItem.description || '',
+            price: inventoryItem.price,
+            category: inventoryItem.category || 'Uncategorized',
+            imageUrl: inventoryItem.imageUrl || '',
+            gallery: inventoryItem.gallery || [],
+            countInStock: inventoryItem.quantity,
+            sizes: inventoryItem.sizes || [],
+            colors: inventoryItem.colors || [],
+            material: inventoryItem.material || '',
+            productDetails: inventoryItem.productDetails || '',
+            faqs: inventoryItem.faqs || ''
+        };
+
+        if (inventoryItem.productId) {
+            // Update existing product
+            const product = await Product.findByIdAndUpdate(
+                inventoryItem.productId,
+                productData,
+                { new: true, runValidators: true }
+            );
+            return product;
+        } else {
+            // Create new product
+            const product = await Product.create(productData);
+            // Update inventory with productId reference
+            inventoryItem.productId = product._id;
+            await inventoryItem.save();
+            return product;
+        }
+    } catch (error) {
+        console.error('Sync to Product Error:', error);
+        throw error;
+    }
+}
+
+// Helper function to delete product when inventory is deleted
+async function deleteProductIfLinked(inventoryItem) {
+    try {
+        if (inventoryItem.productId) {
+            await Product.findByIdAndDelete(inventoryItem.productId);
+        }
+    } catch (error) {
+        console.error('Delete Product Error:', error);
+        // Continue even if product deletion fails
+    }
+}
 
 // @desc    Get all inventory items
 // @route   GET /api/admin/inventory
@@ -95,11 +152,16 @@ exports.getInventoryItem = async (req, res) => {
 };
 
 // @desc    Create new inventory item
+// @desc    Create new inventory item
 // @route   POST /api/admin/inventory
 // @access  Private/Admin
 exports.createInventoryItem = async (req, res) => {
     try {
-        const { name, type, quantity, unit, price, lowStockThreshold, supplier, description, sku } = req.body;
+        const { 
+            name, type, quantity, unit, price, lowStockThreshold, supplier, description, sku,
+            // Product fields
+            isProduct, category, sizes, colors, material, productDetails, faqs
+        } = req.body;
 
         // Validation
         if (!name || !type || quantity === undefined || !unit || price === undefined) {
@@ -120,7 +182,30 @@ exports.createInventoryItem = async (req, res) => {
             }
         }
 
-        const item = await Inventory.create({
+        // Handle uploaded images
+        const BASE_URL = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+        let imageUrl = '';
+        let gallery = [];
+
+        if (req.files) {
+            // Main image
+            if (req.files.mainImage && req.files.mainImage[0]) {
+                imageUrl = `${BASE_URL}/uploads/products/${req.files.mainImage[0].filename}`;
+            }
+            
+            // Gallery images
+            if (req.files.galleryImages && req.files.galleryImages.length > 0) {
+                gallery = req.files.galleryImages.map(file => 
+                    `${BASE_URL}/uploads/products/${file.filename}`
+                );
+            }
+        }
+
+        // Parse arrays from form data
+        const parsedSizes = sizes ? (Array.isArray(sizes) ? sizes : JSON.parse(sizes)) : [];
+        const parsedColors = colors ? (Array.isArray(colors) ? colors : JSON.parse(colors)) : [];
+
+        const itemData = {
             name,
             type,
             quantity,
@@ -129,13 +214,32 @@ exports.createInventoryItem = async (req, res) => {
             lowStockThreshold: lowStockThreshold || 10,
             supplier: supplier || '',
             description: description || '',
-            sku: sku || undefined
-        });
+            sku: sku || undefined,
+            // Product fields
+            isProduct: isProduct === 'true' || isProduct === true,
+            category: category || '',
+            imageUrl,
+            gallery,
+            sizes: parsedSizes,
+            colors: parsedColors,
+            material: material || '',
+            productDetails: productDetails || '',
+            faqs: faqs || ''
+        };
+
+        const item = await Inventory.create(itemData);
+
+        // Sync to Product collection if this is a product
+        let syncedProduct = null;
+        if (item.isProduct) {
+            syncedProduct = await syncToProduct(item);
+        }
 
         res.status(201).json({
             success: true,
             data: item,
-            message: 'Inventory item created successfully'
+            product: syncedProduct,
+            message: `Inventory item created successfully${item.isProduct ? ' and synced to products' : ''}`
         });
     } catch (error) {
         console.error('Create Inventory Error:', error);
@@ -151,7 +255,11 @@ exports.createInventoryItem = async (req, res) => {
 // @access  Private/Admin
 exports.updateInventoryItem = async (req, res) => {
     try {
-        const { name, type, quantity, unit, price, lowStockThreshold, supplier, description, sku } = req.body;
+        const { 
+            name, type, quantity, unit, price, lowStockThreshold, supplier, description, sku,
+            // Product fields
+            isProduct, category, sizes, colors, material, productDetails, faqs
+        } = req.body;
 
         let item = await Inventory.findById(req.params.id);
 
@@ -173,7 +281,29 @@ exports.updateInventoryItem = async (req, res) => {
             }
         }
 
-        // Update fields
+        // Handle uploaded images
+        const BASE_URL = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+        
+        if (req.files) {
+            // Main image - only update if new file uploaded
+            if (req.files.mainImage && req.files.mainImage[0]) {
+                item.imageUrl = `${BASE_URL}/uploads/products/${req.files.mainImage[0].filename}`;
+            }
+            
+            // Gallery images - append new images to existing ones
+            if (req.files.galleryImages && req.files.galleryImages.length > 0) {
+                const newGalleryImages = req.files.galleryImages.map(file => 
+                    `${BASE_URL}/uploads/products/${file.filename}`
+                );
+                item.gallery = [...(item.gallery || []), ...newGalleryImages];
+            }
+        }
+
+        // Parse arrays from form data if they exist
+        const parsedSizes = sizes ? (Array.isArray(sizes) ? sizes : JSON.parse(sizes)) : undefined;
+        const parsedColors = colors ? (Array.isArray(colors) ? colors : JSON.parse(colors)) : undefined;
+
+        // Update basic fields
         if (name !== undefined) item.name = name;
         if (type !== undefined) item.type = type;
         if (quantity !== undefined) item.quantity = quantity;
@@ -184,6 +314,15 @@ exports.updateInventoryItem = async (req, res) => {
         if (description !== undefined) item.description = description;
         if (sku !== undefined) item.sku = sku;
 
+        // Update product fields
+        if (isProduct !== undefined) item.isProduct = isProduct === 'true' || isProduct === true;
+        if (category !== undefined) item.category = category;
+        if (parsedSizes !== undefined) item.sizes = parsedSizes;
+        if (parsedColors !== undefined) item.colors = parsedColors;
+        if (material !== undefined) item.material = material;
+        if (productDetails !== undefined) item.productDetails = productDetails;
+        if (faqs !== undefined) item.faqs = faqs;
+
         // Update lastRestocked if quantity increased
         if (quantity !== undefined && quantity > item.quantity) {
             item.lastRestocked = Date.now();
@@ -191,10 +330,22 @@ exports.updateInventoryItem = async (req, res) => {
 
         await item.save();
 
+        // Sync to Product collection if this is a product
+        let syncedProduct = null;
+        if (item.isProduct) {
+            syncedProduct = await syncToProduct(item);
+        } else if (item.productId) {
+            // If isProduct was set to false, delete the linked product
+            await deleteProductIfLinked(item);
+            item.productId = null;
+            await item.save();
+        }
+
         res.status(200).json({
             success: true,
             data: item,
-            message: 'Inventory item updated successfully'
+            product: syncedProduct,
+            message: `Inventory item updated successfully${item.isProduct ? ' and synced to products' : ''}`
         });
     } catch (error) {
         console.error('Update Inventory Error:', error);
@@ -218,6 +369,9 @@ exports.deleteInventoryItem = async (req, res) => {
                 message: 'Inventory item not found'
             });
         }
+
+        // Delete linked product if exists
+        await deleteProductIfLinked(item);
 
         await item.deleteOne();
 

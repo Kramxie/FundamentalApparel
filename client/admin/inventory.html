@@ -210,7 +210,7 @@
 
     <!-- Add/Edit Modal -->
     <div id="inventory-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div class="px-6 py-4 border-b border-gray-200">
                 <div class="flex items-center justify-between">
                     <h3 id="modal-title" class="text-lg font-semibold text-gray-900">Add New Inventory Item</h3>
@@ -221,138 +221,285 @@
             </div>
 
             <form id="inventory-form" class="px-6 py-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Item Name -->
-                    <div class="col-span-2">
-                        <label for="item-name" class="block text-sm font-medium text-gray-700 mb-2">
-                            Item Name <span class="text-red-500">*</span>
-                        </label>
-                        <input 
-                            type="text" 
-                            id="item-name" 
-                            required 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            placeholder="Enter item name"
-                        />
-                    </div>
+                <!-- Basic Information Section -->
+                <div class="mb-6">
+                    <h4 class="text-md font-semibold text-gray-700 mb-4 flex items-center">
+                        <i class="fas fa-info-circle text-indigo-600 mr-2"></i>
+                        Basic Information
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Item Name -->
+                        <div class="col-span-2">
+                            <label for="item-name" class="block text-sm font-medium text-gray-700 mb-2">
+                                Item Name <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="item-name" 
+                                required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="Enter item name"
+                            />
+                        </div>
 
-                    <!-- Type -->
-                    <div>
-                        <label for="item-type" class="block text-sm font-medium text-gray-700 mb-2">
-                            Type <span class="text-red-500">*</span>
-                        </label>
-                        <select 
-                            id="item-type" 
-                            required 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                            <option value="">Select Type</option>
-                            <option value="fabric">Fabric/Material</option>
-                            <option value="product">Product</option>
-                        </select>
-                    </div>
+                        <!-- Type -->
+                        <div>
+                            <label for="item-type" class="block text-sm font-medium text-gray-700 mb-2">
+                                Type <span class="text-red-500">*</span>
+                            </label>
+                            <select 
+                                id="item-type" 
+                                required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                <option value="">Select Type</option>
+                                <option value="fabric">Fabric/Material</option>
+                                <option value="product">Product</option>
+                            </select>
+                        </div>
 
-                    <!-- Unit -->
-                    <div>
-                        <label for="item-unit" class="block text-sm font-medium text-gray-700 mb-2">
-                            Unit <span class="text-red-500">*</span>
-                        </label>
-                        <input 
-                            type="text" 
-                            id="item-unit" 
-                            required 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            placeholder="e.g., meters, pieces"
-                        />
-                    </div>
+                        <!-- Unit -->
+                        <div>
+                            <label for="item-unit" class="block text-sm font-medium text-gray-700 mb-2">
+                                Unit <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="item-unit" 
+                                required 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="e.g., meters, pieces"
+                            />
+                        </div>
 
-                    <!-- Quantity -->
-                    <div>
-                        <label for="item-quantity" class="block text-sm font-medium text-gray-700 mb-2">
-                            Quantity <span class="text-red-500">*</span>
-                        </label>
-                        <input 
-                            type="number" 
-                            id="item-quantity" 
-                            required 
-                            min="0" 
-                            step="0.01"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            placeholder="0"
-                        />
-                    </div>
+                        <!-- Quantity -->
+                        <div>
+                            <label for="item-quantity" class="block text-sm font-medium text-gray-700 mb-2">
+                                Quantity <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="number" 
+                                id="item-quantity" 
+                                required 
+                                min="0" 
+                                step="0.01"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="0"
+                            />
+                        </div>
 
-                    <!-- Price -->
-                    <div>
-                        <label for="item-price" class="block text-sm font-medium text-gray-700 mb-2">
-                            Price (₱) <span class="text-red-500">*</span>
-                        </label>
-                        <input 
-                            type="number" 
-                            id="item-price" 
-                            required 
-                            min="0" 
-                            step="0.01"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            placeholder="0.00"
-                        />
-                    </div>
+                        <!-- Price -->
+                        <div>
+                            <label for="item-price" class="block text-sm font-medium text-gray-700 mb-2">
+                                Price (₱) <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="number" 
+                                id="item-price" 
+                                required 
+                                min="0" 
+                                step="0.01"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="0.00"
+                            />
+                        </div>
 
-                    <!-- Low Stock Threshold -->
-                    <div>
-                        <label for="item-threshold" class="block text-sm font-medium text-gray-700 mb-2">
-                            Low Stock Threshold
-                        </label>
-                        <input 
-                            type="number" 
-                            id="item-threshold" 
-                            min="0" 
-                            value="10"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                    </div>
+                        <!-- Low Stock Threshold -->
+                        <div>
+                            <label for="item-threshold" class="block text-sm font-medium text-gray-700 mb-2">
+                                Low Stock Threshold
+                            </label>
+                            <input 
+                                type="number" 
+                                id="item-threshold" 
+                                min="0" 
+                                value="10"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                        </div>
 
-                    <!-- Supplier -->
-                    <div>
-                        <label for="item-supplier" class="block text-sm font-medium text-gray-700 mb-2">
-                            Supplier
-                        </label>
-                        <input 
-                            type="text" 
-                            id="item-supplier" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            placeholder="Supplier name"
-                        />
-                    </div>
+                        <!-- Supplier -->
+                        <div>
+                            <label for="item-supplier" class="block text-sm font-medium text-gray-700 mb-2">
+                                Supplier
+                            </label>
+                            <input 
+                                type="text" 
+                                id="item-supplier" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="Supplier name"
+                            />
+                        </div>
 
-                    <!-- SKU -->
-                    <div class="col-span-2">
-                        <label for="item-sku" class="block text-sm font-medium text-gray-700 mb-2">
-                            SKU (Stock Keeping Unit)
-                        </label>
-                        <input 
-                            type="text" 
-                            id="item-sku" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            placeholder="e.g., FAB-001"
-                        />
-                    </div>
+                        <!-- SKU -->
+                        <div class="col-span-2">
+                            <label for="item-sku" class="block text-sm font-medium text-gray-700 mb-2">
+                                SKU (Stock Keeping Unit)
+                            </label>
+                            <input 
+                                type="text" 
+                                id="item-sku" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="e.g., FAB-001"
+                            />
+                        </div>
 
-                    <!-- Description -->
-                    <div class="col-span-2">
-                        <label for="item-description" class="block text-sm font-medium text-gray-700 mb-2">
-                            Description
-                        </label>
-                        <textarea 
-                            id="item-description" 
-                            rows="3"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            placeholder="Item description..."
-                        ></textarea>
+                        <!-- Description -->
+                        <div class="col-span-2">
+                            <label for="item-description" class="block text-sm font-medium text-gray-700 mb-2">
+                                Description
+                            </label>
+                            <textarea 
+                                id="item-description" 
+                                rows="3"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="Item description..."
+                            ></textarea>
+                        </div>
                     </div>
                 </div>
 
-                <div class="mt-6 flex justify-end space-x-3">
+                <!-- Product Fields Checkbox -->
+                <div class="mb-6 border-t border-gray-200 pt-6">
+                    <div class="flex items-center">
+                        <input 
+                            type="checkbox" 
+                            id="is-product-checkbox" 
+                            class="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <label for="is-product-checkbox" class="ml-3 flex items-center cursor-pointer">
+                            <span class="text-md font-semibold text-gray-700">
+                                <i class="fas fa-store text-indigo-600 mr-2"></i>
+                                Mark as Sellable Product
+                            </span>
+                            <span class="ml-2 text-sm text-gray-500">(Will sync to customer product catalog)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Product-Specific Fields (Hidden by default) -->
+                <div id="product-fields" class="hidden mb-6 border border-indigo-200 rounded-lg p-4 bg-indigo-50">
+                    <h4 class="text-md font-semibold text-indigo-700 mb-4 flex items-center">
+                        <i class="fas fa-box-open text-indigo-600 mr-2"></i>
+                        Product Information
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Category -->
+                        <div>
+                            <label for="product-category" class="block text-sm font-medium text-gray-700 mb-2">
+                                Category
+                            </label>
+                            <input 
+                                type="text" 
+                                id="product-category" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                placeholder="e.g., T-Shirts, Jerseys"
+                            />
+                        </div>
+
+                        <!-- Material -->
+                        <div>
+                            <label for="product-material" class="block text-sm font-medium text-gray-700 mb-2">
+                                Material
+                            </label>
+                            <input 
+                                type="text" 
+                                id="product-material" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                placeholder="e.g., 100% Cotton"
+                            />
+                        </div>
+
+                        <!-- Image URL -->
+                        <div class="col-span-2">
+                            <label for="product-image" class="block text-sm font-medium text-gray-700 mb-2">
+                                Main Product Image
+                            </label>
+                            <input 
+                                type="file" 
+                                id="product-image" 
+                                accept="image/*"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                            />
+                            <p class="mt-1 text-xs text-gray-500">Upload main product image (JPEG, PNG, GIF, WEBP - Max 5MB)</p>
+                            <!-- Image Preview -->
+                            <div id="main-image-preview" class="mt-3 hidden">
+                                <img src="" alt="Preview" class="h-32 w-32 object-cover rounded-md border-2 border-indigo-200">
+                            </div>
+                        </div>
+
+                        <!-- Gallery Images -->
+                        <div class="col-span-2">
+                            <label for="product-gallery" class="block text-sm font-medium text-gray-700 mb-2">
+                                Gallery Images
+                            </label>
+                            <input 
+                                type="file" 
+                                id="product-gallery" 
+                                accept="image/*"
+                                multiple
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                            />
+                            <p class="mt-1 text-xs text-gray-500">Upload up to 10 gallery images (Max 5MB each)</p>
+                            <!-- Gallery Preview -->
+                            <div id="gallery-preview" class="mt-3 grid grid-cols-4 gap-2 hidden"></div>
+                        </div>
+
+                        <!-- Sizes -->
+                        <div>
+                            <label for="product-sizes" class="block text-sm font-medium text-gray-700 mb-2">
+                                Available Sizes (comma-separated)
+                            </label>
+                            <input 
+                                type="text" 
+                                id="product-sizes" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                placeholder="S, M, L, XL, XXL"
+                            />
+                        </div>
+
+                        <!-- Colors -->
+                        <div>
+                            <label for="product-colors" class="block text-sm font-medium text-gray-700 mb-2">
+                                Available Colors (comma-separated)
+                            </label>
+                            <input 
+                                type="text" 
+                                id="product-colors" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                placeholder="Red, Blue, Black, White"
+                            />
+                        </div>
+
+                        <!-- Product Details -->
+                        <div class="col-span-2">
+                            <label for="product-details" class="block text-sm font-medium text-gray-700 mb-2">
+                                Product Details
+                            </label>
+                            <textarea 
+                                id="product-details" 
+                                rows="4"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                placeholder="Detailed product specifications, features, etc..."
+                            ></textarea>
+                        </div>
+
+                        <!-- FAQs -->
+                        <div class="col-span-2">
+                            <label for="product-faqs" class="block text-sm font-medium text-gray-700 mb-2">
+                                FAQs
+                            </label>
+                            <textarea 
+                                id="product-faqs" 
+                                rows="4"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                placeholder="Frequently asked questions about this product..."
+                            ></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end space-x-3 border-t border-gray-200 pt-4">
                     <button 
                         type="button" 
                         id="cancel-btn" 
@@ -380,8 +527,15 @@
                     <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
                 </div>
                 <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Delete Inventory Item?</h3>
+                <p class="text-sm text-gray-500 text-center mb-2">
+                    Are you sure you want to delete "<span id="delete-item-name" class="font-semibold"></span>"?
+                </p>
+                <p id="product-sync-warning" class="hidden text-xs text-red-600 text-center mb-6">
+                    <i class="fas fa-exclamation-circle mr-1"></i>
+                    This will also remove the product from customer catalog.
+                </p>
                 <p class="text-sm text-gray-500 text-center mb-6">
-                    Are you sure you want to delete "<span id="delete-item-name" class="font-semibold"></span>"? This action cannot be undone.
+                    This action cannot be undone.
                 </p>
                 <div class="flex justify-center space-x-3">
                     <button 
@@ -465,6 +619,121 @@
 
             // Delete modal
             document.getElementById('cancel-delete-btn').addEventListener('click', closeDeleteModal);
+            document.getElementById('confirm-delete-btn').addEventListener('click', handleDelete);
+
+            // Product fields toggle
+            const isProductCheckbox = document.getElementById('is-product-checkbox');
+            const productFields = document.getElementById('product-fields');
+            isProductCheckbox.addEventListener('change', () => {
+                if (isProductCheckbox.checked) {
+                    productFields.classList.remove('hidden');
+                } else {
+                    productFields.classList.add('hidden');
+                }
+            });
+
+            // Image preview listeners
+            document.getElementById('product-image').addEventListener('change', handleMainImagePreview);
+            document.getElementById('product-gallery').addEventListener('change', handleGalleryPreview);
+        }
+
+        // Handle main image preview
+        function handleMainImagePreview(e) {
+            const file = e.target.files[0];
+            const previewContainer = document.getElementById('main-image-preview');
+            
+            if (file) {
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    showError('Please select a valid image file');
+                    e.target.value = '';
+                    return;
+                }
+                
+                // Validate file size (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showError('Image size must be less than 5MB');
+                    e.target.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    previewContainer.querySelector('img').src = event.target.result;
+                    previewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewContainer.classList.add('hidden');
+            }
+        }
+
+        // Handle gallery images preview
+        function handleGalleryPreview(e) {
+            const files = Array.from(e.target.files);
+            const previewContainer = document.getElementById('gallery-preview');
+            
+            if (files.length > 0) {
+                // Validate number of files
+                if (files.length > 10) {
+                    showError('Maximum 10 gallery images allowed');
+                    e.target.value = '';
+                    return;
+                }
+                
+                // Clear previous previews
+                previewContainer.innerHTML = '';
+                
+                files.forEach((file, index) => {
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                        showError(`File ${index + 1} is not a valid image`);
+                        return;
+                    }
+                    
+                    // Validate file size
+                    if (file.size > 5 * 1024 * 1024) {
+                        showError(`Image ${index + 1} exceeds 5MB limit`);
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const imgWrapper = document.createElement('div');
+                        imgWrapper.className = 'relative';
+                        imgWrapper.innerHTML = `
+                            <img src="${event.target.result}" alt="Gallery ${index + 1}" class="h-24 w-24 object-cover rounded-md border-2 border-indigo-200">
+                            <button type="button" onclick="removeGalleryImage(${index})" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
+                        `;
+                        previewContainer.appendChild(imgWrapper);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                
+                previewContainer.classList.remove('hidden');
+            } else {
+                previewContainer.classList.add('hidden');
+            }
+        }
+
+        // Remove gallery image
+        function removeGalleryImage(index) {
+            const input = document.getElementById('product-gallery');
+            const dt = new DataTransfer();
+            const files = Array.from(input.files);
+            
+            files.forEach((file, i) => {
+                if (i !== index) {
+                    dt.items.add(file);
+                }
+            });
+            
+            input.files = dt.files;
+            
+            // Trigger preview update
+            handleGalleryPreview({ target: input });
         }
 
         // Load inventory data
@@ -526,11 +795,18 @@
                 const typeBadge = item.type === 'fabric' ? 
                     '<span class="px-2 py-1 text-xs font-semibold text-purple-700 bg-purple-100 rounded-full">Fabric</span>' :
                     '<span class="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">Product</span>';
+                
+                // Add product indicator badge if synced to product catalog
+                const productBadge = item.isProduct ? 
+                    '<span class="ml-2 px-2 py-1 text-xs font-semibold text-indigo-700 bg-indigo-100 rounded-full" title="Synced to product catalog"><i class="fas fa-sync-alt"></i> Synced</span>' : '';
 
                 return `
                     <tr class="${rowClass}">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">${escapeHtml(item.name)}</div>
+                            <div class="text-sm font-medium text-gray-900">
+                                ${escapeHtml(item.name)}
+                                ${productBadge}
+                            </div>
                             ${item.sku ? `<div class="text-xs text-gray-500">SKU: ${escapeHtml(item.sku)}</div>` : ''}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -560,7 +836,7 @@
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button 
-                                onclick="openDeleteModal('${item._id}', '${escapeHtml(item.name)}')" 
+                                onclick="openDeleteModal('${item._id}', '${escapeHtml(item.name)}', ${item.isProduct || false})" 
                                 class="text-red-600 hover:text-red-900"
                                 aria-label="Delete item"
                             >
@@ -668,7 +944,8 @@
             try {
                 const response = await fetch(`${API_BASE}/api/admin/inventory/${itemId}`, {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'ngrok-skip-browser-warning': 'true'
                     }
                 });
 
@@ -678,7 +955,7 @@
 
                 const { data } = await response.json();
 
-                // Populate form
+                // Populate basic form fields
                 document.getElementById('item-name').value = data.name;
                 document.getElementById('item-type').value = data.type;
                 document.getElementById('item-quantity').value = data.quantity;
@@ -688,6 +965,64 @@
                 document.getElementById('item-supplier').value = data.supplier || '';
                 document.getElementById('item-sku').value = data.sku || '';
                 document.getElementById('item-description').value = data.description || '';
+
+                // Populate product fields
+                const isProductCheckbox = document.getElementById('is-product-checkbox');
+                const productFields = document.getElementById('product-fields');
+                
+                isProductCheckbox.checked = data.isProduct || false;
+                
+                if (data.isProduct) {
+                    productFields.classList.remove('hidden');
+                    
+                    document.getElementById('product-category').value = data.category || '';
+                    document.getElementById('product-material').value = data.material || '';
+                    document.getElementById('product-sizes').value = data.sizes ? data.sizes.join(', ') : '';
+                    document.getElementById('product-colors').value = data.colors ? data.colors.join(', ') : '';
+                    document.getElementById('product-details').value = data.productDetails || '';
+                    document.getElementById('product-faqs').value = data.faqs || '';
+                    
+                    // Show existing main image
+                    const mainImagePreview = document.getElementById('main-image-preview');
+                    if (data.imageUrl) {
+                        mainImagePreview.querySelector('img').src = data.imageUrl;
+                        mainImagePreview.classList.remove('hidden');
+                    } else {
+                        mainImagePreview.classList.add('hidden');
+                    }
+                    
+                    // Show existing gallery images
+                    const galleryPreview = document.getElementById('gallery-preview');
+                    if (data.gallery && data.gallery.length > 0) {
+                        galleryPreview.innerHTML = '';
+                        data.gallery.forEach((imageUrl, index) => {
+                            const imgWrapper = document.createElement('div');
+                            imgWrapper.className = 'relative';
+                            imgWrapper.innerHTML = `
+                                <img src="${imageUrl}" alt="Gallery ${index + 1}" class="h-24 w-24 object-cover rounded-md border-2 border-indigo-200">
+                                <div class="absolute top-0 left-0 right-0 bottom-0 bg-black bg-opacity-40 flex items-center justify-center text-white text-xs rounded-md">
+                                    <span>Existing</span>
+                                </div>
+                            `;
+                            galleryPreview.appendChild(imgWrapper);
+                        });
+                        galleryPreview.classList.remove('hidden');
+                    } else {
+                        galleryPreview.innerHTML = '';
+                        galleryPreview.classList.add('hidden');
+                    }
+                } else {
+                    productFields.classList.add('hidden');
+                    // Clear product fields
+                    document.getElementById('product-category').value = '';
+                    document.getElementById('product-material').value = '';
+                    document.getElementById('product-sizes').value = '';
+                    document.getElementById('product-colors').value = '';
+                    document.getElementById('product-details').value = '';
+                    document.getElementById('product-faqs').value = '';
+                    document.getElementById('main-image-preview').classList.add('hidden');
+                    document.getElementById('gallery-preview').classList.add('hidden');
+                }
 
                 document.getElementById('inventory-modal').classList.remove('hidden');
                 document.getElementById('inventory-modal').classList.add('flex');
@@ -703,6 +1038,19 @@
             document.getElementById('inventory-modal').classList.remove('flex');
             document.getElementById('inventory-modal').classList.add('hidden');
             document.getElementById('inventory-form').reset();
+            
+            // Reset product fields visibility
+            const productFields = document.getElementById('product-fields');
+            productFields.classList.add('hidden');
+            
+            // Clear image previews
+            document.getElementById('main-image-preview').classList.add('hidden');
+            document.getElementById('gallery-preview').classList.add('hidden');
+            document.getElementById('gallery-preview').innerHTML = '';
+            
+            // Reset modal title
+            document.getElementById('modal-title').textContent = 'Add New Item';
+            
             editingItemId = null;
         }
 
@@ -710,17 +1058,53 @@
         async function handleSubmit(e) {
             e.preventDefault();
 
-            const formData = {
-                name: document.getElementById('item-name').value.trim(),
-                type: document.getElementById('item-type').value,
-                quantity: parseFloat(document.getElementById('item-quantity').value),
-                unit: document.getElementById('item-unit').value.trim(),
-                price: parseFloat(document.getElementById('item-price').value),
-                lowStockThreshold: parseInt(document.getElementById('item-threshold').value),
-                supplier: document.getElementById('item-supplier').value.trim(),
-                sku: document.getElementById('item-sku').value.trim(),
-                description: document.getElementById('item-description').value.trim()
-            };
+            // Use FormData for file uploads
+            const formData = new FormData();
+            
+            // Append basic fields
+            formData.append('name', document.getElementById('item-name').value.trim());
+            formData.append('type', document.getElementById('item-type').value);
+            formData.append('quantity', parseFloat(document.getElementById('item-quantity').value));
+            formData.append('unit', document.getElementById('item-unit').value.trim());
+            formData.append('price', parseFloat(document.getElementById('item-price').value));
+            formData.append('lowStockThreshold', parseInt(document.getElementById('item-threshold').value));
+            formData.append('supplier', document.getElementById('item-supplier').value.trim());
+            formData.append('sku', document.getElementById('item-sku').value.trim());
+            formData.append('description', document.getElementById('item-description').value.trim());
+            
+            // Product fields
+            const isProduct = document.getElementById('is-product-checkbox').checked;
+            formData.append('isProduct', isProduct);
+            formData.append('category', document.getElementById('product-category').value.trim());
+            formData.append('material', document.getElementById('product-material').value.trim());
+            
+            // Handle main image file
+            const mainImageFile = document.getElementById('product-image').files[0];
+            if (mainImageFile) {
+                formData.append('mainImage', mainImageFile);
+            }
+            
+            // Handle gallery image files
+            const galleryFiles = document.getElementById('product-gallery').files;
+            for (let i = 0; i < galleryFiles.length; i++) {
+                formData.append('galleryImages', galleryFiles[i]);
+            }
+            
+            // Sizes and colors (as JSON strings for arrays)
+            const sizes = document.getElementById('product-sizes').value
+                .split(',')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+            formData.append('sizes', JSON.stringify(sizes));
+            
+            const colors = document.getElementById('product-colors').value
+                .split(',')
+                .map(c => c.trim())
+                .filter(c => c.length > 0);
+            formData.append('colors', JSON.stringify(colors));
+            
+            formData.append('productDetails', document.getElementById('product-details').value.trim());
+            formData.append('faqs', document.getElementById('product-faqs').value.trim());
 
             try {
                 const url = editingItemId ? 
@@ -732,10 +1116,11 @@
                 const response = await fetch(url, {
                     method,
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'ngrok-skip-browser-warning': 'true'
+                        // Note: Don't set Content-Type header - browser sets it automatically with boundary for FormData
                     },
-                    body: JSON.stringify(formData)
+                    body: formData
                 });
 
                 if (!response.ok) {
@@ -743,8 +1128,9 @@
                     throw new Error(error.message || 'Failed to save item');
                 }
 
-                const { message } = await response.json();
-                showSuccess(message);
+                const result = await response.json();
+                const syncMessage = result.data && result.data.isProduct ? ' and synced to products' : '';
+                showSuccess(`Item ${editingItemId ? 'updated' : 'created'} successfully${syncMessage}`);
                 closeModal();
                 loadInventory();
 
@@ -755,13 +1141,20 @@
         }
 
         // Open delete modal
-        function openDeleteModal(itemId, itemName) {
+        function openDeleteModal(itemId, itemName, isProduct) {
             editingItemId = itemId;
             document.getElementById('delete-item-name').textContent = itemName;
+            
+            // Show/hide product sync warning
+            const syncWarning = document.getElementById('product-sync-warning');
+            if (isProduct) {
+                syncWarning.classList.remove('hidden');
+            } else {
+                syncWarning.classList.add('hidden');
+            }
+            
             document.getElementById('delete-modal').classList.remove('hidden');
             document.getElementById('delete-modal').classList.add('flex');
-
-            document.getElementById('confirm-delete-btn').onclick = () => deleteItem(itemId);
         }
 
         // Close delete modal
@@ -769,6 +1162,34 @@
             document.getElementById('delete-modal').classList.remove('flex');
             document.getElementById('delete-modal').classList.add('hidden');
             editingItemId = null;
+        }
+
+        // Handle delete
+        async function handleDelete() {
+            if (!editingItemId) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/inventory/${editingItemId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'ngrok-skip-browser-warning': 'true'
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to delete item');
+                }
+
+                showSuccess('Item deleted successfully');
+                closeDeleteModal();
+                loadInventory();
+
+            } catch (error) {
+                console.error('Error deleting item:', error);
+                showError(error.message || 'Failed to delete item');
+            }
         }
 
         // Delete item
