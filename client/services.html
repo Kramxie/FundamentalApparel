@@ -112,27 +112,85 @@
 
         <!-- Services Container -->
         <div id="services-container">
-            <!-- Service Tabs -->
-            <div class="flex flex-wrap justify-center gap-4 mb-8">
-                <button onclick="switchServiceTab('customize-jersey')" 
-                    class="service-tab active px-8 py-4 rounded-xl font-bold text-lg shadow-lg flex items-center gap-2">
-                    <i class="fas fa-tshirt"></i>
-                    <span>Customize Jersey</span>
-                </button>
-                <button onclick="switchServiceTab('layout-creation')" 
-                    class="service-tab px-8 py-4 rounded-xl font-bold text-lg bg-white text-gray-700 shadow-lg flex items-center gap-2">
-                    <i class="fas fa-palette"></i>
-                    <span>Layout Creation</span>
-                </button>
-                <button onclick="switchServiceTab('printing-only')" 
-                    class="service-tab px-8 py-4 rounded-xl font-bold text-lg bg-white text-gray-700 shadow-lg flex items-center gap-2">
-                    <i class="fas fa-print"></i>
-                    <span>Printing Only</span>
+            <!-- SERVICE CATEGORY SELECTION SCREEN -->
+            <div id="category-selection-screen" class="mb-12">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Choose Your Service</h2>
+                    <p class="text-lg text-gray-600">Select the service that best fits your needs</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                    <!-- Customize Jersey Card -->
+                    <div onclick="selectServiceCategory('customize-jersey')" class="group cursor-pointer">
+                        <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 h-full transform hover:scale-105">
+                            <div class="text-center">
+                                <i class="fas fa-tshirt text-6xl text-indigo-600 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
+                                <h3 class="text-2xl font-bold text-gray-900 mb-3">Customize Jersey</h3>
+                                <p class="text-gray-600 mb-6">Design your own jersey with our live preview tool. Choose colors, add text, upload logos, and see your design in real-time.</p>
+                                <div class="space-y-2 text-sm text-gray-500 mb-6">
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>3D Live Preview</p>
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Custom Colors</p>
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Add Text & Logos</p>
+                                </div>
+                                <button class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
+                                    Get Started
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Layout Creation Card -->
+                    <div onclick="selectServiceCategory('layout-creation')" class="group cursor-pointer">
+                        <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 h-full transform hover:scale-105">
+                            <div class="text-center">
+                                <i class="fas fa-palette text-6xl text-purple-600 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
+                                <h3 class="text-2xl font-bold text-gray-900 mb-3">Layout Creation</h3>
+                                <p class="text-gray-600 mb-6">Let our design team create a custom layout for you. We'll turn your vision into a professional design.</p>
+                                <div class="space-y-2 text-sm text-gray-500 mb-6">
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Professional Design</p>
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Custom Mockup</p>
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Multiple Revisions</p>
+                                </div>
+                                <button class="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition">
+                                    Get Started
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Printing Only Card -->
+                    <div onclick="selectServiceCategory('printing-only')" class="group cursor-pointer">
+                        <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 h-full transform hover:scale-105">
+                            <div class="text-center">
+                                <i class="fas fa-print text-6xl text-pink-600 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
+                                <h3 class="text-2xl font-bold text-gray-900 mb-3">Printing Only</h3>
+                                <p class="text-gray-600 mb-6">Already have a design? Submit your artwork and we'll handle the printing. Fast turnaround guaranteed.</p>
+                                <div class="space-y-2 text-sm text-gray-500 mb-6">
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Upload Design</p>
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Fast Printing</p>
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Quality Guarantee</p>
+                                </div>
+                                <button class="px-6 py-2 bg-pink-600 text-white rounded-lg font-semibold hover:bg-pink-700 transition">
+                                    Get Started
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Tabs (Hidden Initially) -->
+            <div id="service-tabs-section" class="hidden mb-8">
+                <button onclick="goBackToCategories()" class="mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i>Back to Categories
                 </button>
             </div>
 
             <!-- CUSTOMIZE JERSEY SECTION -->
-            <div id="customize-jersey-section" class="service-section">
+            <div id="customize-jersey-section" class="service-section hidden">
+                <button onclick="goBackToCategories()" class="mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i>Back to Categories
+                </button>
                 <div class="bg-white rounded-2xl shadow-2xl p-8">
                     <!-- Learn More Button at Top -->
                     <div class="flex justify-between items-center mb-6">
@@ -486,6 +544,9 @@
 
             <!-- LAYOUT CREATION SECTION -->
             <div id="layout-creation-section" class="service-section hidden">
+                <button onclick="goBackToCategories()" class="mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i>Back to Categories
+                </button>
                 <div class="bg-white rounded-2xl shadow-2xl p-8">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-3xl font-bold text-gray-900">Layout Creation Service</h2>
@@ -546,6 +607,9 @@
 
             <!-- PRINTING ONLY SECTION -->
             <div id="printing-only-section" class="service-section hidden">
+                <button onclick="goBackToCategories()" class="mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i>Back to Categories
+                </button>
                 <div class="bg-white rounded-2xl shadow-2xl p-8">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-3xl font-bold text-gray-900">Printing Only Service</h2>
@@ -1059,6 +1123,46 @@
         }
 
         // === TAB SWITCHING ===
+        // Select a service category (from the initial screen)
+        function selectServiceCategory(category) {
+            // If user selects Customize Jersey, redirect to the new professional customizer
+            if (category === 'customize-jersey') {
+                window.location.href = 'customize-jersey-new.html';
+                return;
+            }
+            // Hide category selection screen
+            document.getElementById('category-selection-screen').classList.add('hidden');
+            
+            // HIDE tabs section entirely (don't show tabs)
+            document.getElementById('service-tabs-section').classList.add('hidden');
+            
+            // Show only the selected service section
+            document.querySelectorAll('.service-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.getElementById(category + '-section').classList.remove('hidden');
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
+        // Go back to category selection
+        function goBackToCategories() {
+            // Show category selection screen
+            document.getElementById('category-selection-screen').classList.remove('hidden');
+            
+            // Hide tabs section
+            document.getElementById('service-tabs-section').classList.add('hidden');
+            
+            // Hide all service sections
+            document.querySelectorAll('.service-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
         function switchServiceTab(tab) {
             // Hide all sections
             document.querySelectorAll('.service-section').forEach(section => {

@@ -316,6 +316,53 @@
                 <div id="custom-modal-design-file" class="mt-1"></div>
               </div>
 
+              <!-- Professional Customizer (3-panel) Details -->
+              <div id="custom-modal-pro-section" class="hidden bg-gray-50 p-3 rounded border space-y-2">
+                <p class="font-medium text-indigo-900">Professional Customizer Details:</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <p><strong>Garment:</strong> <span id="pro-garment"></span></p>
+                  <p><strong>Location:</strong> <span id="pro-location"></span></p>
+                </div>
+                <div>
+                  <strong>Colors:</strong>
+                  <div class="flex gap-2 mt-1">
+                    <div id="pro-color-primary" class="w-8 h-8 rounded border-2 border-gray-300" title="Primary"></div>
+                    <div id="pro-color-secondary" class="w-8 h-8 rounded border-2 border-gray-300" title="Secondary"></div>
+                    <div id="pro-color-accent" class="w-8 h-8 rounded border-2 border-gray-300" title="Accent"></div>
+                  </div>
+                </div>
+                <div id="pro-design-text-wrap" class="hidden">
+                  <p><strong>Design Text:</strong> <span id="pro-design-text"></span></p>
+                </div>
+                <div id="pro-design-image-wrap" class="hidden">
+                  <p class="mb-1"><strong>Design Image:</strong></p>
+                  <div id="pro-design-image"></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <p><strong>Printing Type:</strong> <span id="pro-printing-type"></span></p>
+                  <p><strong>Quantity:</strong> <span id="pro-qty"></span></p>
+                </div>
+                <div id="pro-team-wrap" class="hidden">
+                  <p class="font-medium mt-2">Team Entries:</p>
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full text-xs border">
+                      <thead class="bg-indigo-100">
+                        <tr>
+                          <th class="border px-2 py-1 text-left">Name</th>
+                          <th class="border px-2 py-1 text-left">#</th>
+                          <th class="border px-2 py-1 text-left">Size</th>
+                        </tr>
+                      </thead>
+                      <tbody id="pro-team-tbody" class="bg-white"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div id="pro-pricing-wrap" class="hidden">
+                  <p class="font-medium mt-2">Pricing Breakdown:</p>
+                  <pre id="pro-pricing-json" class="text-[11px] bg-white border rounded p-2 overflow-auto max-h-40"></pre>
+                </div>
+              </div>
+
               <!-- Team Details -->
               <div id="custom-modal-team-section" class="hidden bg-blue-50 p-3 rounded border border-blue-200 space-y-2">
                 <h5 class="font-semibold text-blue-900">👥 Team Order</h5>
@@ -406,16 +453,21 @@
         </div>
         <hr>
 
-        <div id="custom-modal-quote-box" class="hidden">
-          <label for="form-custom-price" class="block font-medium mb-1">Set Total Price (PHP)</label>
-          <input id="form-custom-price" type="number" min="0" class="w-full border rounded px-3 py-2"
-            placeholder="Enter total amount for this custom order">
+        <div id="custom-modal-quote-box" class="hidden space-y-2">
+          <div>
+            <label for="form-custom-price" class="block font-medium mb-1">Set Total Price (PHP)</label>
+            <input id="form-custom-price" type="number" min="0" class="w-full border rounded px-3 py-2" placeholder="Enter total amount for this custom order">
+          </div>
+          <div>
+            <label for="form-pricing-notes" class="block font-medium mb-1">Pricing Breakdown / Notes (shown to customer)</label>
+            <textarea id="form-pricing-notes" rows="3" class="w-full border rounded px-3 py-2" placeholder="Write a short breakdown customers will see (e.g., Materials, Printing, Discounts)"></textarea>
+          </div>
         </div>
 
         <div id="custom-modal-info-box" class="hidden text-sm">
           <p><strong>Total Price:</strong> <span id="custom-modal-price-display" class="font-semibold text-lg"></span>
           </p>
-          <p id="custom-modal-info-text" class="text-gray-600">Waiting for user to pay 50% down payment.</p>
+          <p id="custom-modal-info-text" class="text-gray-600">Waiting for user to accept quote.</p>
         </div>
 
         <!-- NEW: Fulfillment Details Section -->
@@ -546,7 +598,8 @@
         customModalSaveQuote: document.getElementById('custom-modal-save-quote'),
         customModalVerifyDp: document.getElementById('custom-modal-verify-dp'),
         customModalRequestFinal: document.getElementById('custom-modal-request-final'),
-        customModalVerifyFinal: document.getElementById('custom-modal-verify-final')
+        customModalVerifyFinal: document.getElementById('custom-modal-verify-final'),
+        formPricingNotes: document.getElementById('form-pricing-notes')
       };
 
       let allOrders = [];
@@ -752,6 +805,7 @@
         els.customModalType.textContent = order.customType;
         els.customModalNotes.textContent = order.notes || 'N/A';
         els.formCustomPrice.value = order.price || '';
+        els.formPricingNotes.value = order.adminNotes || '';
 
         // Service Type Badge
         const serviceType = order.serviceType || 'customize-jersey';
@@ -779,7 +833,7 @@
 
           // Item and Printing Type
           document.getElementById('custom-modal-item-type').textContent = order.itemType || 'N/A';
-          document.getElementById('custom-modal-printing-type').textContent = order.printingType || 'N/A';
+          document.getElementById('custom-modal-printing-type').textContent = order.printingType || (order.quotePayload && order.quotePayload.printingType) || 'N/A';
 
           // Template vs Upload
           if (order.customType === 'Template') {
@@ -788,16 +842,10 @@
             
             document.getElementById('custom-modal-design-style').textContent = order.designStyle || 'N/A';
             
-            // Color swatches
-            if (order.primaryColor) {
-              document.getElementById('custom-modal-primary-color').style.backgroundColor = order.primaryColor;
-            }
-            if (order.secondaryColor) {
-              document.getElementById('custom-modal-secondary-color').style.backgroundColor = order.secondaryColor;
-            }
-            if (order.accentColor) {
-              document.getElementById('custom-modal-accent-color').style.backgroundColor = order.accentColor;
-            }
+            // Color swatches (legacy fields)
+            if (order.primaryColor) document.getElementById('custom-modal-primary-color').style.backgroundColor = order.primaryColor;
+            if (order.secondaryColor) document.getElementById('custom-modal-secondary-color').style.backgroundColor = order.secondaryColor;
+            if (order.accentColor) document.getElementById('custom-modal-accent-color').style.backgroundColor = order.accentColor;
 
             // Text details
             if (order.customText) {
@@ -830,7 +878,7 @@
             
             if (order.designFileUrl) {
               document.getElementById('custom-modal-design-file').innerHTML = 
-                `<a href="${order.designFileUrl}" target="_blank" class="text-indigo-600 font-medium hover:underline">View Design File</a>`;
+                `<a href="${order.designFileUrl}" target="_blank" download class="text-indigo-600 font-medium hover:underline">View/Download Design File</a>`;
             } else {
               document.getElementById('custom-modal-design-file').textContent = 'No file uploaded';
             }
@@ -845,15 +893,39 @@
             if (order.includeTeamMembers && order.teamMembers && order.teamMembers.length > 0) {
               const membersContainer = document.getElementById('custom-modal-team-members-container');
               membersContainer.classList.remove('hidden');
-              
+
               const tbody = document.getElementById('custom-modal-team-members-tbody');
-              tbody.innerHTML = order.teamMembers.map(member => `
+              const rowsHtml = order.teamMembers.map(member => `
                 <tr>
-                  <td class="border px-2 py-1">${member.name || 'N/A'}</td>
-                  <td class="border px-2 py-1">${member.jerseyNumber || 'N/A'}</td>
-                  <td class="border px-2 py-1">${member.size || 'N/A'}</td>
+                  <td class=\"border px-2 py-1\">${member.name || 'N/A'}</td>
+                  <td class=\"border px-2 py-1\">${member.jerseyNumber || 'N/A'}</td>
+                  <td class=\"border px-2 py-1\">${member.size || 'N/A'}</td>
                 </tr>
               `).join('');
+              // Collapse control
+              const maxVisible = 8;
+              if (order.teamMembers.length > maxVisible) {
+                tbody.innerHTML = rowsHtml.split('</tr>').slice(0, maxVisible).join('</tr>');
+                // Add toggle button
+                let toggleBtn = membersContainer.querySelector('[data-team-toggle]');
+                if (!toggleBtn) {
+                  toggleBtn = document.createElement('button');
+                  toggleBtn.setAttribute('data-team-toggle', '');
+                  toggleBtn.className = 'mt-2 px-3 py-1 text-xs border rounded hover:bg-gray-50';
+                  membersContainer.appendChild(toggleBtn);
+                }
+                toggleBtn.textContent = `Show all (${order.teamMembers.length})`;
+                let expanded = false;
+                toggleBtn.onclick = () => {
+                  expanded = !expanded;
+                  tbody.innerHTML = expanded ? rowsHtml : rowsHtml.split('</tr>').slice(0, maxVisible).join('</tr>');
+                  toggleBtn.textContent = expanded ? 'Show less' : `Show all (${order.teamMembers.length})`;
+                };
+              } else {
+                tbody.innerHTML = rowsHtml;
+                const toggleBtn = membersContainer.querySelector('[data-team-toggle]');
+                if (toggleBtn) toggleBtn.remove();
+              }
             }
           }
 
@@ -876,6 +948,101 @@
                 shortsDetails.textContent = 'No details provided';
               }
             }
+          }
+
+          // --- Professional Customizer Details (3-panel layout) ---
+          const pro = document.getElementById('custom-modal-pro-section');
+          pro.classList.add('hidden');
+          const hasProData = !!(order.garmentType || order.selectedLocation || order.colors || order.designImage || order.designText || order.quotePayload);
+          if (hasProData) {
+            pro.classList.remove('hidden');
+            const qp = order.quotePayload || {};
+            // Garment and location
+            document.getElementById('pro-garment').textContent = (order.garmentType || order.itemType || '-');
+            document.getElementById('pro-location').textContent = (order.selectedLocation || qp.selectedLocation || '-');
+            // Colors
+            const colors = order.colors || {};
+            if (colors.primary || colors.secondary || colors.accent) {
+              if (colors.primary) document.getElementById('pro-color-primary').style.backgroundColor = colors.primary;
+              if (colors.secondary) document.getElementById('pro-color-secondary').style.backgroundColor = colors.secondary;
+              if (colors.accent) document.getElementById('pro-color-accent').style.backgroundColor = colors.accent;
+            }
+            // Design text
+            const dtext = (order.designText || '');
+            if (dtext) {
+              document.getElementById('pro-design-text').textContent = dtext;
+              document.getElementById('pro-design-text-wrap').classList.remove('hidden');
+            } else {
+              document.getElementById('pro-design-text-wrap').classList.add('hidden');
+            }
+            // Design images (single legacy + multi-location previews)
+            const designWrap = document.getElementById('pro-design-image');
+            const multi = order.designImagesMap || {};
+            if (Object.keys(multi).length) {
+              const entries = Object.entries(multi);
+              designWrap.innerHTML = entries.map(([loc,url]) => `
+                <div class="mb-3">
+                  <p class="text-xs font-semibold text-gray-700 mb-1">${loc.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</p>
+                  <a href="${url}" target="_blank" download>
+                    <img src="${url}" class="max-h-40 rounded border shadow" alt="${loc} preview">
+                  </a>
+                  <div class="mt-1">
+                    <a href="${url}" target="_blank" download class="px-2 py-1 text-xs border rounded hover:bg-gray-50">Download</a>
+                  </div>
+                </div>`).join('');
+              document.getElementById('pro-design-image-wrap').classList.remove('hidden');
+            } else if (order.designImage) {
+              designWrap.innerHTML = `
+                <a href="${order.designImage}" target="_blank" download>
+                  <img src="${order.designImage}" class="max-h-40 rounded border shadow" alt="Design Image">
+                </a>
+                <div class="mt-2">
+                  <a href="${order.designImage}" target="_blank" download class="px-3 py-1 text-xs border rounded hover:bg-gray-50">Download Image</a>
+                </div>`;
+              document.getElementById('pro-design-image-wrap').classList.remove('hidden');
+            } else {
+              document.getElementById('pro-design-image-wrap').classList.add('hidden');
+            }
+            // Printing, qty
+            document.getElementById('pro-printing-type').textContent = (qp.printingType || order.printingType || '-');
+            document.getElementById('pro-qty').textContent = (order.quantity != null ? order.quantity : '-');
+            // Team entries
+            const teamEntries = Array.isArray(qp.teamEntries) ? qp.teamEntries : [];
+            const teamWrap = document.getElementById('pro-team-wrap');
+            if (qp.teamMode && teamEntries.length) {
+              teamWrap.classList.remove('hidden');
+              const tb = document.getElementById('pro-team-tbody');
+              const rowsHtml = teamEntries.map(e => `<tr><td class="border px-2 py-1">${e.name || ''}</td><td class="border px-2 py-1">${e.number || ''}</td><td class="border px-2 py-1">${e.size || ''}</td></tr>`).join('');
+              const maxVisiblePro = 8;
+              if (teamEntries.length > maxVisiblePro) {
+                tb.innerHTML = rowsHtml.split('</tr>').slice(0, maxVisiblePro).join('</tr>');
+                let toggleBtn = teamWrap.querySelector('[data-pro-team-toggle]');
+                if (!toggleBtn) {
+                  toggleBtn = document.createElement('button');
+                  toggleBtn.setAttribute('data-pro-team-toggle', '');
+                  toggleBtn.className = 'mt-2 px-3 py-1 text-xs border rounded hover:bg-gray-50';
+                  teamWrap.appendChild(toggleBtn);
+                }
+                toggleBtn.textContent = `Show all (${teamEntries.length})`;
+                let expanded = false;
+                toggleBtn.onclick = () => {
+                  expanded = !expanded;
+                  tb.innerHTML = expanded ? rowsHtml : rowsHtml.split('</tr>').slice(0, maxVisiblePro).join('</tr>');
+                  toggleBtn.textContent = expanded ? 'Show less' : `Show all (${teamEntries.length})`;
+                };
+              } else {
+                tb.innerHTML = rowsHtml;
+                const toggleBtn = teamWrap.querySelector('[data-pro-team-toggle]');
+                if (toggleBtn) toggleBtn.remove();
+              }
+            } else {
+              teamWrap.classList.add('hidden');
+            }
+            // Pricing breakdown (hidden for admin to input later)
+            const pricingWrap = document.getElementById('pro-pricing-wrap');
+            pricingWrap.classList.add('hidden');
+            const pj = document.getElementById('pro-pricing-json');
+            if (pj) pj.textContent = '';
           }
         } 
         else if (serviceType === 'layout-creation') {
@@ -942,7 +1109,12 @@
         }
         else if (order.status === 'Quote Sent') {
           els.customModalInfoBox.classList.remove('hidden');
-          els.customModalPriceDisplay.textContent = `₱${order.price.toLocaleString()}`;
+          els.customModalPriceDisplay.textContent = `₱${order.price?.toLocaleString?.() || order.price || ''}`;
+          els.customModalInfoText.textContent = "Waiting for user to accept quote.";
+        }
+        else if (order.status === 'Quote Accepted') {
+          els.customModalInfoBox.classList.remove('hidden');
+          els.customModalPriceDisplay.textContent = `₱${order.price?.toLocaleString?.() || order.price || ''}`;
           els.customModalInfoText.textContent = "Waiting for user to pay 50% down payment.";
         }
         else if (order.status === 'Pending Downpayment') {
@@ -1070,7 +1242,7 @@
           const res = await fetch(`${API}/api/custom-orders/${selectedCustomOrder._id}/quote`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ price: price })
+            body: JSON.stringify({ price: price, notes: els.formPricingNotes.value || undefined })
           });
           const data = await res.json();
           if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to send quote');

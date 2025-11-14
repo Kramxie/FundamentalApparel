@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Service Checkout - Fundamental Apparel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .field-disabled { background-color: #f9fafb; cursor: not-allowed; }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <!-- Header -->
+  <header class="bg-white shadow-md sticky top-0 z-50">
+    <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <div class="text-2xl font-bold text-gray-800"><a href="index.html">Fundamental</a></div>
+      <div class="flex items-center space-x-5">
+        <a href="index.html" class="text-gray-600 hover:text-indigo-600"><i class="fas fa-home"></i> <span class="hidden sm:inline">Home</span></a>
+        <a href="services.html" class="text-gray-600 hover:text-indigo-600"><i class="fas fa-briefcase"></i> <span class="hidden sm:inline">Services</span></a>
+        
+        <div id="auth-links-logged-out" class="hidden items-center space-x-3">
+            <a href="login.html" class="text-sm font-medium text-gray-700 hover:text-indigo-600">Log In</a>
+            <a href="register.html" class="text-sm font-medium bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700">Register</a>
+        </div>
+
+        <div id="auth-links-logged-in">
+            <a href="profile.html" id="user-link" class="text-gray-600 hover:text-indigo-600">
+                <i id="user-icon" class="fas fa-user-circle text-2xl"></i>
+            </a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main id="services-checkout-container" class="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="max-w-5xl mx-auto">
+      <!-- Page Header -->
+      <div class="mb-8">
+        <a href="services.html" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium mb-2 inline-block">
+          <i class="fas fa-arrow-left mr-1"></i> Back to Services
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900">Service Checkout</h1>
+        <p class="text-gray-600 mt-1">Review your custom order and complete payment</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Left Column: Service Summary -->
+        <div class="lg:col-span-7 space-y-6">
+          <!-- Service Details -->
+          <section class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+              <i class="fas fa-clipboard-list mr-2 text-indigo-600"></i>
+              Service Summary
+            </h2>
+            <div id="service-summary" class="space-y-4">
+              <p class="text-gray-500">Loading service details...</p>
+            </div>
+          </section>
+
+          <!-- Customer Information Form -->
+          <section class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+              <i class="fas fa-user mr-2 text-indigo-600"></i>
+              Contact Information
+            </h2>
+            <form id="contact-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input id="contact-name" type="text" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Juan Dela Cruz">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                <input id="contact-email" type="email" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="juan@example.com">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <input id="contact-phone" type="tel" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="+63 912 345 6789">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Additional Notes (Optional)</label>
+                <textarea id="contact-notes" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Any special instructions or requests..."></textarea>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        <!-- Right Column: Payment & Summary -->
+        <aside class="lg:col-span-5 space-y-6">
+          <!-- Payment Information -->
+          <section class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+              <i class="fas fa-credit-card mr-2 text-indigo-600"></i>
+              Payment Method
+            </h2>
+            
+            <div class="space-y-4">
+              <!-- Payment Method Selection -->
+              <div class="space-y-3">
+                <label class="flex items-center justify-between border-2 rounded-lg p-4 cursor-pointer transition hover:border-indigo-500" id="gcash-option">
+                  <div class="flex items-center gap-3">
+                    <input type="radio" name="payment_method" id="pay-gcash" class="h-4 w-4 text-indigo-600" checked>
+                    <div>
+                      <span class="font-semibold text-gray-900">GCash</span>
+                      <p class="text-xs text-gray-500">Pay via GCash e-wallet</p>
+                    </div>
+                  </div>
+                  <img src="https://via.placeholder.com/50x30/007DBA/FFFFFF?text=GC" alt="GCash" class="h-8">
+                </label>
+                
+                <label class="flex items-center justify-between border-2 rounded-lg p-4 cursor-pointer transition hover:border-indigo-500" id="card-option">
+                  <div class="flex items-center gap-3">
+                    <input type="radio" name="payment_method" id="pay-card" class="h-4 w-4 text-indigo-600">
+                    <div>
+                      <span class="font-semibold text-gray-900">Credit/Debit Card</span>
+                      <p class="text-xs text-gray-500">Visa, Mastercard, JCB</p>
+                    </div>
+                  </div>
+                  <div class="flex gap-1">
+                    <img src="https://via.placeholder.com/35x22/1A1F71/FFFFFF?text=V" alt="Visa" class="h-6">
+                    <img src="https://via.placeholder.com/35x22/EB001B/FFFFFF?text=MC" alt="Mastercard" class="h-6">
+                  </div>
+                </label>
+              </div>
+
+              <!-- Amount Display -->
+              <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm text-gray-600">Base Price</span>
+                  <span class="font-medium">₱<span id="base-price">0</span></span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm text-gray-600">Quantity</span>
+                  <span class="font-medium"><span id="quantity-display">1</span></span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm text-gray-600">Service Fee</span>
+                  <span class="font-medium">₱<span id="service-fee">0</span></span>
+                </div>
+                <hr class="my-3 border-indigo-200">
+                <div class="flex justify-between items-center">
+                  <span class="text-lg font-semibold text-gray-900">Total Amount</span>
+                  <span class="text-2xl font-bold text-indigo-600">₱<span id="total-amount">0</span></span>
+                </div>
+              </div>
+
+              <!-- Payment Security Info -->
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div class="flex items-start gap-3">
+                  <i class="fas fa-shield-alt text-green-600 text-xl mt-1"></i>
+                  <div>
+                    <h3 class="font-semibold text-gray-900 mb-1">Secure Payment via PayMongo</h3>
+                    <p class="text-xs text-gray-600">Your payment is processed securely. We accept GCash and major credit/debit cards.</p>
+                    <div class="flex gap-2 mt-2">
+                      <img src="https://via.placeholder.com/40x25/4A90E2/FFFFFF?text=VISA" alt="Visa" class="h-6">
+                      <img src="https://via.placeholder.com/40x25/EB001B/FFFFFF?text=MC" alt="Mastercard" class="h-6">
+                      <img src="https://via.placeholder.com/40x25/007DBA/FFFFFF?text=GC" alt="GCash" class="h-6">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Terms Checkbox -->
+              <label class="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+                <input id="agree-terms" type="checkbox" class="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"> 
+                <span>I agree to the <a href="#" class="text-indigo-600 hover:underline">Terms of Service</a> and <a href="#" class="text-indigo-600 hover:underline">Privacy Policy</a></span>
+              </label>
+
+              <!-- Submit Button -->
+              <button id="proceed-payment-btn" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-md hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                <i class="fas fa-lock"></i>
+                <span>Proceed to Secure Payment</span>
+              </button>
+
+              <!-- Status Messages -->
+              <div id="error-message" class="hidden text-red-600 text-sm bg-red-50 border border-red-200 rounded p-3"></div>
+              <div id="success-message" class="hidden text-green-600 text-sm bg-green-50 border border-green-200 rounded p-3"></div>
+            </div>
+          </section>
+
+          <!-- Order Reference -->
+          <section class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+              <i class="fas fa-info-circle"></i>
+              <span>Order Reference: <strong id="order-ref" class="text-gray-900">N/A</strong></span>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
+    
+    // Utility: Format peso
+    function peso(n) { 
+      return '₱' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); 
+    }
+
+    // State
+    let serviceData = null;
+    let orderReference = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      
+      // Auth check
+      if (!token) {
+        alert('Please log in to continue with checkout.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Show logged-in state
+      const authLoggedOut = document.getElementById('auth-links-logged-out');
+      const authLoggedIn = document.getElementById('auth-links-logged-in');
+      if (authLoggedOut) authLoggedOut.classList.add('hidden');
+      if (authLoggedIn) authLoggedIn.classList.remove('hidden');
+
+      // Load service data from localStorage or URL params
+      loadServiceData();
+      
+      // Fetch user profile to pre-fill contact form
+      fetchUserProfile();
+
+      // Attach event listeners
+      document.getElementById('proceed-payment-btn').addEventListener('click', handlePaymentSubmit);
+    });
+
+    /**
+     * Load service data from localStorage (set by customizer page)
+     */
+    function loadServiceData() {
+      const storedData = localStorage.getItem('pendingServiceCheckout');
+      
+      if (!storedData) {
+        showError('No service data found. Please start from the customizer page.');
+        document.getElementById('service-summary').innerHTML = '<p class="text-red-500">Service data not found.</p>';
+        document.getElementById('proceed-payment-btn').disabled = true;
+        return;
+      }
+
+      try {
+        serviceData = JSON.parse(storedData);
+        orderReference = serviceData.orderReference || 'PENDING';
+        
+        // Render service summary
+        renderServiceSummary(serviceData);
+        
+        // Update payment amounts
+        updatePaymentAmounts(serviceData);
+        
+        // Update order reference
+        document.getElementById('order-ref').textContent = orderReference;
+        
+      } catch (err) {
+        console.error('Error parsing service data:', err);
+        showError('Invalid service data format.');
+        document.getElementById('proceed-payment-btn').disabled = true;
+      }
+    }
+
+    /**
+     * Render service summary section
+     */
+    function renderServiceSummary(data) {
+      const container = document.getElementById('service-summary');
+      
+      const html = `
+        <div class="border-b pb-3 mb-3">
+          <div class="flex items-center gap-3 mb-2">
+            <i class="fas fa-tshirt text-2xl text-indigo-600"></i>
+            <div>
+              <h3 class="font-semibold text-gray-900">${data.serviceName || 'Custom Jersey Service'}</h3>
+              <p class="text-sm text-gray-600">${data.serviceType || 'customize-jersey'}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <span class="text-gray-600">Garment Type:</span>
+            <p class="font-medium">${data.garmentType || 'T-Shirt'}</p>
+          </div>
+          <div>
+            <span class="text-gray-600">Printing Type:</span>
+            <p class="font-medium">${data.printingType || 'Dye Sublimation'}</p>
+          </div>
+          <div>
+            <span class="text-gray-600">Quantity:</span>
+            <p class="font-medium">${data.quantity || 1} pcs</p>
+          </div>
+          <div>
+            <span class="text-gray-600">Location:</span>
+            <p class="font-medium">${data.selectedLocation || 'Front'}</p>
+          </div>
+          ${data.teamMode ? `
+          <div class="col-span-2">
+            <span class="text-gray-600">Team Mode:</span>
+            <p class="font-medium text-indigo-600">Yes (${data.teamEntries?.length || 0} entries)</p>
+          </div>
+          ` : ''}
+          ${data.designText ? `
+          <div class="col-span-2">
+            <span class="text-gray-600">Design Text:</span>
+            <p class="font-medium">${data.designText}</p>
+          </div>
+          ` : ''}
+        </div>
+
+        ${data.designPreviews && data.designPreviews.length > 0 ? `
+        <div class="mt-4">
+          <p class="text-sm text-gray-600 mb-2">Design Previews:</p>
+          <div class="grid grid-cols-2 gap-2">
+            ${data.designPreviews.map(preview => `
+              <div class="border rounded p-2">
+                <img src="${preview.url}" alt="${preview.location}" class="w-full h-24 object-contain rounded mb-1">
+                <p class="text-xs text-center text-gray-600">${preview.location}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        ` : ''}
+
+        ${data.notes ? `
+        <div class="mt-4 p-3 bg-gray-50 rounded border border-gray-200">
+          <p class="text-xs text-gray-600 mb-1">Customer Notes:</p>
+          <p class="text-sm">${data.notes}</p>
+        </div>
+        ` : ''}
+      `;
+      
+      container.innerHTML = html;
+    }
+
+    /**
+     * Update payment amounts display
+     */
+    function updatePaymentAmounts(data) {
+      const basePrice = data.unitPrice || data.basePrice || 530;
+      const quantity = data.quantity || 1;
+      const serviceFee = 0; // No additional service fee for now
+      const total = data.totalPrice || (basePrice * quantity + serviceFee);
+
+      document.getElementById('base-price').textContent = basePrice.toLocaleString();
+      document.getElementById('quantity-display').textContent = quantity;
+      document.getElementById('service-fee').textContent = serviceFee.toLocaleString();
+      document.getElementById('total-amount').textContent = total.toLocaleString();
+    }
+
+    /**
+     * Fetch user profile to pre-fill contact form
+     */
+    async function fetchUserProfile() {
+      const token = localStorage.getItem('token');
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/me`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        
+        if (!res.ok) throw new Error('Failed to fetch profile');
+        
+        const json = await res.json();
+        if (json.success && json.data) {
+          const user = json.data;
+          document.getElementById('contact-name').value = user.name || '';
+          document.getElementById('contact-email').value = user.email || '';
+          document.getElementById('contact-phone').value = user.contactNumber || '';
+        }
+      } catch (err) {
+        console.error('Error fetching user profile:', err);
+        // Non-blocking error - user can still fill form manually
+      }
+    }
+
+    /**
+     * Handle payment submission
+     */
+    async function handlePaymentSubmit(e) {
+      e.preventDefault();
+      
+      const btn = document.getElementById('proceed-payment-btn');
+      const originalBtnText = btn.innerHTML;
+      
+      // Validation
+      if (!validateForm()) return;
+      
+      // Show loading state
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+      hideMessages();
+
+      const token = localStorage.getItem('token');
+      
+      try {
+        // Get selected payment method
+        const paymentMethod = document.getElementById('pay-card')?.checked ? 'card' : 'gcash';
+        
+        // Prepare payment payload
+        const payload = {
+          orderId: serviceData.orderId || null,
+          orderReference: orderReference,
+          serviceType: serviceData.serviceType || 'customize-jersey',
+          amount: serviceData.totalPrice || 0,
+          paymentMethod: paymentMethod,
+          customerInfo: {
+            name: document.getElementById('contact-name').value.trim(),
+            email: document.getElementById('contact-email').value.trim(),
+            phone: document.getElementById('contact-phone').value.trim(),
+            notes: document.getElementById('contact-notes').value.trim()
+          },
+          serviceData: serviceData,
+          successUrl: `${window.location.origin}/client/payment-success.html`,
+          cancelUrl: `${window.location.origin}/client/payment-cancel.html`
+        };
+
+        // Create PayMongo checkout session
+        const res = await fetch(`${API_BASE}/api/payments/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const json = await res.json();
+
+        if (!res.ok) {
+          throw new Error(json.msg || json.error || `Server returned ${res.status}`);
+        }
+
+        if (json.success && json.data && json.data.checkoutUrl) {
+          // Clear pending checkout data
+          localStorage.removeItem('pendingServiceCheckout');
+          
+          // Store order ID for success page
+          if (json.data.orderId) {
+            localStorage.setItem('lastOrderId', json.data.orderId);
+          }
+          
+          // Redirect to PayMongo checkout
+          showSuccess('Redirecting to secure payment page...');
+          setTimeout(() => {
+            window.location.href = json.data.checkoutUrl;
+          }, 1000);
+        } else {
+          throw new Error('Invalid response from payment gateway');
+        }
+
+      } catch (err) {
+        console.error('Payment submission error:', err);
+        showError(err.message || 'Failed to process payment. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = originalBtnText;
+      }
+    }
+
+    /**
+     * Validate checkout form
+     */
+    function validateForm() {
+      const name = document.getElementById('contact-name').value.trim();
+      const email = document.getElementById('contact-email').value.trim();
+      const phone = document.getElementById('contact-phone').value.trim();
+      const agreeTerms = document.getElementById('agree-terms').checked;
+
+      if (!name) {
+        showError('Please enter your full name.');
+        document.getElementById('contact-name').focus();
+        return false;
+      }
+
+      if (!email || !isValidEmail(email)) {
+        showError('Please enter a valid email address.');
+        document.getElementById('contact-email').focus();
+        return false;
+      }
+
+      if (!phone) {
+        showError('Please enter your phone number.');
+        document.getElementById('contact-phone').focus();
+        return false;
+      }
+
+      if (!agreeTerms) {
+        showError('Please agree to the Terms of Service and Privacy Policy.');
+        return false;
+      }
+
+      return true;
+    }
+
+    /**
+     * Validate email format
+     */
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    /**
+     * Show error message
+     */
+    function showError(message) {
+      const errorEl = document.getElementById('error-message');
+      errorEl.textContent = message;
+      errorEl.classList.remove('hidden');
+      
+      // Scroll to message
+      errorEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /**
+     * Show success message
+     */
+    function showSuccess(message) {
+      const successEl = document.getElementById('success-message');
+      successEl.textContent = message;
+      successEl.classList.remove('hidden');
+    }
+
+    /**
+     * Hide all messages
+     */
+    function hideMessages() {
+      document.getElementById('error-message').classList.add('hidden');
+      document.getElementById('success-message').classList.add('hidden');
+    }
+  </script>
+
+  <!-- Socket.io Client -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <!-- Chat Widget -->
+  <script src="js/chat.js"></script>
+</body>
+</html>

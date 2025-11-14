@@ -45,7 +45,7 @@ const orderSchema = new mongoose.Schema({
     // Payment (no gateway integration). A receipt image will be uploaded by the buyer
     paymentMethod: {
         type: String,
-        enum: ['GCash', 'BankTransfer'],
+        enum: ['GCash', 'BankTransfer', 'card'],
         default: 'GCash',
         required: true
     },
@@ -54,7 +54,8 @@ const orderSchema = new mongoose.Schema({
         enum: ['Pending', 'Received', 'Rejected'],
         default: 'Pending'
     },
-    receiptUrl: { type: String }, // public URL to the uploaded receipt image
+    receiptUrl: { type: String }, // public URL to the uploaded receipt image (deprecated for PayMongo)
+    paymentIntentId: { type: String }, // PayMongo checkout session ID
 
     // Order lifecycle status managed by admin
     status: {

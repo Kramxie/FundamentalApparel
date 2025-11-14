@@ -119,20 +119,47 @@
 
       <aside class="lg:col-span-5 space-y-6">
         <section class="bg-white rounded-lg shadow p-6">
-          <h2 class="text-xl font-semibold mb-4">Payment Method</h2>
-          <div class="space-y-3">
-            <label class="flex items-center gap-3">
-              <input type="radio" name="payment_method" id="pay-gcash" class="h-4 w-4" checked>
-              <span class="font-medium">GCash</span>
-            </label>
-            <label class="flex items-center gap-3">
-              <input type="radio" name="payment_method" id="pay-bank" class="h-4 w-4">
-              <span class="font-medium">Bank Transfer</span>
-            </label>
-            <div class="pt-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Upload Receipt</label>
-              <input id="receipt" type="file" accept="image/png,image/jpeg,image/jpg,image/webp" class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
-              <p class="text-xs text-gray-500 mt-1">Accepted: PNG, JPG, JPEG, WEBP up to 5MB.</p>
+          <h2 class="text-xl font-semibold mb-4 flex items-center">
+            <i class="fas fa-credit-card mr-2 text-indigo-600"></i>
+            Payment Method
+          </h2>
+          <div class="space-y-4">
+            <!-- Payment Method Selection -->
+            <div class="space-y-3">
+              <label class="flex items-center justify-between border-2 rounded-lg p-4 cursor-pointer transition hover:border-indigo-500" id="gcash-option">
+                <div class="flex items-center gap-3">
+                  <input type="radio" name="payment_method" id="pay-gcash" class="h-4 w-4 text-indigo-600" checked>
+                  <div>
+                    <span class="font-semibold text-gray-900">GCash</span>
+                    <p class="text-xs text-gray-500">Pay via GCash e-wallet</p>
+                  </div>
+                </div>
+                <img src="https://via.placeholder.com/50x30/007DBA/FFFFFF?text=GC" alt="GCash" class="h-8">
+              </label>
+              
+              <label class="flex items-center justify-between border-2 rounded-lg p-4 cursor-pointer transition hover:border-indigo-500" id="card-option">
+                <div class="flex items-center gap-3">
+                  <input type="radio" name="payment_method" id="pay-card" class="h-4 w-4 text-indigo-600">
+                  <div>
+                    <span class="font-semibold text-gray-900">Credit/Debit Card</span>
+                    <p class="text-xs text-gray-500">Visa, Mastercard, JCB</p>
+                  </div>
+                </div>
+                <div class="flex gap-1">
+                  <img src="https://via.placeholder.com/35x22/1A1F71/FFFFFF?text=V" alt="Visa" class="h-6">
+                  <img src="https://via.placeholder.com/35x22/EB001B/FFFFFF?text=MC" alt="Mastercard" class="h-6">
+                </div>
+              </label>
+            </div>
+
+            <!-- Payment Info -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div class="flex items-start gap-2">
+                <i class="fas fa-shield-alt text-blue-600 text-sm mt-0.5"></i>
+                <p class="text-xs text-blue-800">
+                  <strong>Secure Payment:</strong> You'll be redirected to PayMongo's secure checkout page to complete your payment.
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -164,7 +191,10 @@
             <label class="flex items-start gap-2 text-sm text-gray-700">
               <input id="agree" type="checkbox" class="mt-1"> <span>Please check to acknowledge our Privacy & Terms Policy</span>
             </label>
-            <button id="place-order" class="w-full bg-black text-white font-semibold py-3 rounded-md disabled:opacity-50">Submit Order with Receipt</button>
+            <button id="place-order" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-md hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              <i class="fas fa-lock"></i>
+              <span>Proceed to Secure Payment</span>
+            </button>
             <p id="error-message" class="text-red-600 text-sm"></p>
             <p id="success-message" class="text-green-600 text-sm"></p>
           </div>
@@ -194,10 +224,8 @@
       const orderSummary = document.getElementById('order-summary');
       const subtotalEl = document.getElementById('subtotal');
       const deliveryFeeEl = document.getElementById('delivery-fee');
-      // ... (ang iba pang const selectors mo ay pareho pa rin) ...
       const grandTotalEl = document.getElementById('grand-total');
       const placeOrderBtn = document.getElementById('place-order');
-      const receiptInput = document.getElementById('receipt');
       const agreeCheckbox = document.getElementById('agree');
       const orderComment = document.getElementById('order-comment');
       const radioDefault = document.getElementById('addr-default');
@@ -325,13 +353,16 @@
       }
       async function submitOrder() {
         placeOrderBtn.disabled = true;
-        placeOrderBtn.textContent = 'Submitting...';
+        const originalBtnHtml = placeOrderBtn.innerHTML;
+        placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+        
         if (!agreeCheckbox.checked) {
           alert('Please acknowledge the Privacy & Terms Policy.');
           placeOrderBtn.disabled = false;
-          placeOrderBtn.textContent = 'Submit Order with Receipt';
+          placeOrderBtn.innerHTML = originalBtnHtml;
           return;
         }
+        
         const shippingAddress = {
           block: document.getElementById('ship-block')?.value || '',
           lot: document.getElementById('ship-lot')?.value || '',
@@ -342,74 +373,81 @@
           zip: document.getElementById('ship-zip')?.value || '',
           phone: document.getElementById('ship-phone')?.value || ''
         };
+        
         const required = ['street','province','city','zip','phone'];
         for (const k of required) {
           if (!shippingAddress[k]) {
             alert(`Please fill ${k} in shipping address.`);
             placeOrderBtn.disabled = false;
-            placeOrderBtn.textContent = 'Submit Order with Receipt';
+            placeOrderBtn.innerHTML = originalBtnHtml;
             return;
           }
         }
+        
         const shippingMethod = document.getElementById('method-pickup')?.checked ? 'Pick-Up' : 'Standard';
-        const paymentMethod = document.getElementById('pay-bank')?.checked ? 'BankTransfer' : 'GCash';
-        const deliveryFee = Number(document.getElementById('delivery-fee')?.textContent.replace(/ ,/g, '') || 0);
+        const paymentMethod = document.getElementById('pay-card')?.checked ? 'card' : 'gcash';
+        const deliveryFee = Number(document.getElementById('delivery-fee')?.textContent.replace(/,/g, '') || 0);
+        const subtotal = Number(subtotalEl.textContent.replace(/,/g, '') || 0);
+        const totalAmount = subtotal + deliveryFee;
         const comment = orderComment.value || '';
+        
         try {
-          const file = receiptInput.files[0];
-          if (file) {
-            const fd = new FormData();
-            fd.append('receipt', file);
-            fd.append('shippingAddress', JSON.stringify(shippingAddress));
-            fd.append('shippingMethod', shippingMethod);
-            fd.append('paymentMethod', paymentMethod);
-            fd.append('deliveryFee', String(deliveryFee));
-            fd.append('comment', comment);
-            if(itemIdsToCheckout) {
-                fd.append('itemIds', JSON.stringify(itemIdsToCheckout));
-            }
-            const res = await fetch(`${API_BASE}/api/orders/upload-receipt`, {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${token}` },
-              body: fd
-            });
-            const json = await res.json();
-            if (json.success) {
-              window.location.href = `order-confirmation.html?id=${json.data._id}`;
-              return;
-            } else {
-              throw new Error(json.msg || 'Order failed');
-            }
-          } else {
-            const payload = {
-              shippingAddress,
-              shippingMethod,
-              paymentMethod,
-              deliveryFee,
-              comment
-            };
-            if (itemIdsToCheckout) {
-                payload.itemIds = itemIdsToCheckout;
-            }
-            const res = await fetch(`${API_BASE}/api/orders`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify(payload)
-            });
-            const json = await res.json();
-            if (json.success) {
-              window.location.href = `order-confirmation.html?id=${json.data._id}`;
-              return;
-            } else {
-              throw new Error(json.msg || 'Order failed');
-            }
+          // Prepare PayMongo checkout payload
+          const payload = {
+            orderType: 'product',
+            amount: totalAmount,
+            shippingAddress: shippingAddress,
+            shippingMethod: shippingMethod,
+            paymentMethod: paymentMethod,
+            deliveryFee: deliveryFee,
+            comment: comment,
+            customerInfo: {
+              name: shippingAddress.building || 'Customer',
+              email: req.user?.email || '',
+              phone: shippingAddress.phone
+            },
+            successUrl: `${window.location.origin}/client/payment-success.html`,
+            cancelUrl: `${window.location.origin}/client/payment-cancel.html`
+          };
+          
+          if (itemIdsToCheckout) {
+            payload.itemIds = itemIdsToCheckout;
           }
+          
+          // Create PayMongo checkout session
+          const res = await fetch(`${API_BASE}/api/payments/create-order`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'ngrok-skip-browser-warning': 'true'
+            },
+            body: JSON.stringify(payload)
+          });
+          
+          const json = await res.json();
+          
+          if (!res.ok) {
+            throw new Error(json.msg || json.error || 'Failed to create checkout session');
+          }
+          
+          if (json.success && json.data && json.data.checkoutUrl) {
+            // Store order reference for success page
+            if (json.data.orderId) {
+              localStorage.setItem('lastOrderId', json.data.orderId);
+            }
+            
+            // Redirect to PayMongo checkout
+            window.location.href = json.data.checkoutUrl;
+          } else {
+            throw new Error('Invalid response from payment gateway');
+          }
+          
         } catch (err) {
           console.error('submitOrder error', err);
-          alert(err.message || 'Failed to place order.');
-        } finally {
+          alert(err.message || 'Failed to process payment. Please try again.');
           placeOrderBtn.disabled = false;
-          placeOrderBtn.textContent = 'Submit Order with Receipt';
+          placeOrderBtn.innerHTML = originalBtnHtml;
         }
       }
       const methodStandard = document.getElementById('method-standard');

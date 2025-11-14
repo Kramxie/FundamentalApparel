@@ -8,6 +8,7 @@ const {
     submitCustomOrder,
     getAdminCustomOrders,
     updateCustomOrderQuote,
+    acceptCustomOrderQuote,
     getMyCustomOrders,
     submitDownPayment,
     verifyDownPayment,
@@ -15,7 +16,9 @@ const {
     submitFinalPayment,
     verifyFinalPayment,
     setFulfillmentMethod,
-    updateFulfillmentDetails
+    updateFulfillmentDetails,
+    submitQuote,
+    rejectCustomOrderQuote
 } = require('../controllers/customOrderController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -60,6 +63,11 @@ const upload = multer({
 router.route('/my-custom-orders')
     .get(protect, getMyCustomOrders);
 
+// New route: Submit customization quote from professional customizer (3-panel layout)
+// Accept multiple per-location preview images: designImage_front, designImage_back, etc.
+router.route('/quote')
+    .post(protect, upload.any(), submitQuote);
+
 router.route('/')
     .post(protect, upload.fields([
         { name: 'designFile', maxCount: 1 },
@@ -79,6 +87,12 @@ router.route('/admin')
 
 router.route('/:id/quote')
     .put(protect, authorize('admin'), updateCustomOrderQuote);
+
+router.route('/:id/accept')
+    .put(protect, acceptCustomOrderQuote);
+
+router.route('/:id/reject')
+    .put(protect, authorize('admin'), rejectCustomOrderQuote);
 
 router.route('/:id/verify-downpayment')
     .put(protect, authorize('admin'), verifyDownPayment);    

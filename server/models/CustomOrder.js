@@ -24,7 +24,7 @@ const CustomOrderSchema = new mongoose.Schema({
     // Item Type (Jersey, Jacket, etc.)
     itemType: {
         type: String,
-        enum: ['jersey', 'jacket', 'shorts', 'other'],
+        enum: ['t-shirt', 'jersey', 'hoodie', 'jacket', 'shorts', 'other'],
         default: 'jersey'
     },
     
@@ -109,6 +109,32 @@ const CustomOrderSchema = new mongoose.Schema({
     },
     garmentSize: String,
     
+    // New Professional Customizer Fields (3-Panel Layout)
+    // garmentType: Type of garment being customized (t-shirt, jersey, hoodie)
+    garmentType: {
+        type: String,
+        enum: ['t-shirt', 'jersey', 'hoodie']
+    },
+    // selectedLocation: Placement location (Front, Back, Sleeves, etc.)
+    selectedLocation: String,
+    // colors: Hex color values for garment customization
+    colors: {
+        primary: String,
+        secondary: String,
+        accent: String
+    },
+    // designText: Text added by user for the design
+    designText: String,
+    // designImage: File path to uploaded design image
+    designImage: String,
+    // Multi-location generated preview images (e.g., front, back, sleeves)
+    designImagesMap: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
+    },
+    // totalPrice: Total price calculated based on customization
+    totalPrice: Number,
+    
     downPaymentReceiptUrl: {
         type: String
     },
@@ -168,6 +194,31 @@ const CustomOrderSchema = new mongoose.Schema({
     pickupLocation: {
         type: String,
         default: 'Fundamental Store - 123 Main St, Manila'
+    },
+    // Raw payload from the quote-first customizer (for admin review)
+    quotePayload: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
+    },
+    // Optional notes from admin (e.g., rejection reason or adjustments)
+    adminNotes: {
+        type: String,
+        default: ''
+    },
+    // PayMongo payment integration fields
+    paymentIntentId: {
+        type: String,
+        default: null
+    },
+    paymentStatus: {
+        type: String,
+        enum: ['pending', 'paid', 'failed', 'refunded'],
+        default: 'pending'
+    },
+    paymentMethod: {
+        type: String,
+        enum: ['card', 'gcash', 'grab_pay', 'paymaya', 'online_banking', 'manual'],
+        default: null
     }
 }, {
     timestamps: true

@@ -22,6 +22,7 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const customOrderRoutes = require('./routes/customOrderRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 connectDB();
 
@@ -58,6 +59,8 @@ app.use(passport.initialize());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/client', express.static(path.join(__dirname, '..', 'client')));
+// Serve images folder (outside client) for product/customizer assets
+app.use('/images', express.static(path.join(__dirname, '..', 'images')));
 
 app.get('/', (req, res) => {
   res.send('API is running...');
@@ -74,6 +77,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/custom-orders', customOrderRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/admin/inventory', inventoryRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Socket.io authentication middleware
 io.use((socket, next) => {

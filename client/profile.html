@@ -104,6 +104,8 @@
             font-weight: 600;
             /* font-semibold */
         }
+
+        
     </style>
 </head>
 
@@ -162,9 +164,10 @@
                                 <i class="sidebar-icon fas fa-receipt"></i> My Purchases
                             </button>
 
-                            <button data-tab="custom-orders" class="sidebar-parent-link w-full">
-                                <i class="sidebar-icon fas fa-cut"></i> My Custom Orders
-                            </button>
+                            
+                            <a href="my-quotes.html" class="sidebar-parent-link w-full">
+                                <i class="sidebar-icon fas fa-file-invoice"></i> My Quotes
+                            </a>
                             <button data-tab="vouchers" class="sidebar-parent-link w-full">
                                 <i class="sidebar-icon fas fa-ticket-alt"></i> My Vouchers
                             </button>
@@ -293,17 +296,7 @@
                             <div id="vouchers-list" class="space-y-4"></div>
                         </div>
 
-                        <div id="custom-orders-content" class="hidden">
-                            <div class="bg-white rounded-lg shadow-md">
-                                <div class="p-4 border-b">
-                                    <h2 class="text-2xl font-bold text-gray-800">My Custom Orders</h2>
-                                    <p class="text-sm text-gray-500">View quotes and pay for your custom designs here.
-                                    </p>
-                                </div>
-                                <div id="custom-orders-list" class="space-y-4 p-4">
-                                </div>
-                            </div>
-                        </div>
+                        
                     </div>
                 </div>
             </div>
@@ -349,94 +342,7 @@
         </div>
     </div>
 
-    <div id="downpayment-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg shadow-lg max-w-md w-full">
-            <div class="flex justify-between items-center p-4 border-b">
-                <h3 class="text-lg font-semibold">Submit Down Payment</h3>
-                <button id="dp-modal-close" class="text-gray-500 hover:text-gray-700">&times;</button>
-            </div>
-            <div class="p-4">
-                <p class="text-sm mb-2">Your quote for <strong id="dp-modal-product-name"
-                        class="text-indigo-700">...</strong> is <strong>₱<span id="dp-modal-total">0</span></strong>.
-                </p>
-                <p class="text-lg font-bold mb-4">50% Down Payment: <strong>₱<span
-                            id="dp-modal-amount">0</span></strong></p>
-                <p class="text-sm text-gray-600 mb-2">Please pay the 50% down payment via GCash/Bank Transfer and upload
-                    your proof of payment.</p>
-                <input type="file" id="dp-file-input" accept="image/png,image/jpeg,image/webp"
-                    class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                <div id="dp-error" class="text-red-500 text-sm mt-2 hidden"></div>
-            </div>
-            <div class="p-4 bg-gray-50 flex justify-end">
-                <button id="dp-modal-confirm" class="bg-indigo-600 text-white px-4 py-2 rounded">Submit Receipt</button>
-            </div>
-        </div>
-    </div>
-    <div id="final-payment-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg shadow-lg max-w-md w-full">
-            <div class="flex justify-between items-center p-4 border-b">
-                <h3 class="text-lg font-semibold">Submit Final Payment</h3>
-                <button id="fp-modal-close" class="text-gray-500 hover:text-gray-700">&times;</button>
-            </div>
-            <div class="p-4">
-                <p class="text-sm mb-2">Your order for <strong id="fp-modal-product-name" class="text-indigo-700">...</strong> is ready!</p>
-                <p class="text-sm">Total Quote: <strong>₱<span id="fp-modal-total">0</span></strong></p>
-                <p class="text-sm">Down Payment Paid: <strong>- ₱<span id="fp-modal-dp-paid">0</span></strong></p>
-                <p class="text-lg font-bold mb-4">Remaining Balance: <strong>₱<span id="fp-modal-amount">0</span></strong></p>
-                <p class="text-sm text-gray-600 mb-2">Please pay the remaining balance and upload your proof of payment to complete the order.</p>
-                <input type="file" id="fp-file-input" accept="image/png,image/jpeg,image/webp" class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                <div id="fp-error" class="text-red-500 text-sm mt-2 hidden"></div>
-            </div>
-            <div class="p-4 bg-gray-50 flex justify-end">
-                <button id="fp-modal-confirm" class="bg-green-600 text-white px-4 py-2 rounded">Submit Final Receipt</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Fulfillment Modal (Pickup or Delivery) -->
-    <div id="fulfillment-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg shadow-lg max-w-md w-full">
-            <div class="flex justify-between items-center p-4 border-b">
-                <h3 class="text-lg font-semibold">Choose Fulfillment Method</h3>
-                <button id="fulfillment-modal-close" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-            </div>
-            <div class="p-6">
-                <p class="text-sm text-gray-700 mb-4">Your order is complete! How would you like to receive it?</p>
-                
-                <div class="space-y-3">
-                    <label class="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                        <input type="radio" name="fulfillment" value="pickup" class="mt-1 mr-3" checked>
-                        <div>
-                            <p class="font-semibold text-gray-900">📦 Pickup from Store</p>
-                            <p class="text-sm text-gray-600 mt-1">Pick up your order at our store location.</p>
-                            <p class="text-xs text-gray-500 mt-1">Fundamental Store - 123 Main St, Manila</p>
-                        </div>
-                    </label>
-                    
-                    <label class="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                        <input type="radio" name="fulfillment" value="delivery" class="mt-1 mr-3">
-                        <div>
-                            <p class="font-semibold text-gray-900">🚚 Delivery to Address</p>
-                            <p class="text-sm text-gray-600 mt-1">We'll deliver your order to your specified address.</p>
-                        </div>
-                    </label>
-                </div>
-                
-                <div id="delivery-address-field" class="mt-4 hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Address *</label>
-                    <textarea id="delivery-address-input" rows="3" 
-                        class="w-full border border-gray-300 rounded-md p-2 text-sm"
-                        placeholder="Enter your complete delivery address (Street, Barangay, City, Province, Zip Code)"></textarea>
-                </div>
-                
-                <div id="fulfillment-error" class="text-red-500 text-sm mt-3 hidden"></div>
-            </div>
-            <div class="p-4 bg-gray-50 flex justify-end gap-2">
-                <button id="fulfillment-modal-cancel" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100">Cancel</button>
-                <button id="fulfillment-modal-confirm" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Confirm</button>
-            </div>
-        </div>
-    </div>
+    
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -485,36 +391,7 @@
             const cancelAddressBtn = document.getElementById('cancel-address-btn');
             const vouchersList = document.getElementById('vouchers-list');
 
-            // --- NEW: Custom Order Selectors ---
-            const customOrdersList = document.getElementById('custom-orders-list');
-            const dpModal = document.getElementById('downpayment-modal');
-            const dpModalClose = document.getElementById('dp-modal-close');
-            const dpModalConfirm = document.getElementById('dp-modal-confirm');
-            const dpModalProductName = document.getElementById('dp-modal-product-name');
-            const dpModalTotal = document.getElementById('dp-modal-total');
-            const dpModalAmount = document.getElementById('dp-modal-amount');
-            const dpFileInput = document.getElementById('dp-file-input');
-            const dpError = document.getElementById('dp-error');
-            const fpModal = document.getElementById('final-payment-modal');
-            const fpModalClose = document.getElementById('fp-modal-close');
-            const fpModalConfirm = document.getElementById('fp-modal-confirm');
-            const fpModalProductName = document.getElementById('fp-modal-product-name');
-            const fpModalTotal = document.getElementById('fp-modal-total');
-            const fpModalDpPaid = document.getElementById('fp-modal-dp-paid');
-            const fpModalAmount = document.getElementById('fp-modal-amount');
-            const fpFileInput = document.getElementById('fp-file-input');
-            const fpError = document.getElementById('fp-error');
-            let currentCustomOrderId = null; // Para sa pag-upload ng DP
-
-            // --- NEW: Fulfillment Modal Selectors ---
-            const fulfillmentModal = document.getElementById('fulfillment-modal');
-            const fulfillmentModalClose = document.getElementById('fulfillment-modal-close');
-            const fulfillmentModalCancel = document.getElementById('fulfillment-modal-cancel');
-            const fulfillmentModalConfirm = document.getElementById('fulfillment-modal-confirm');
-            const deliveryAddressField = document.getElementById('delivery-address-field');
-            const deliveryAddressInput = document.getElementById('delivery-address-input');
-            const fulfillmentError = document.getElementById('fulfillment-error');
-            let currentFulfillmentOrderId = null;
+            // Custom orders UI removed; My Quotes page is canonical.
 
             // --- API Helpers ---
             const showMessage = (container, msg, type = 'success') => {
@@ -582,9 +459,26 @@
                     populateUI(json.data);
                     loadingContainer.classList.add('hidden');
                     profileContainer.classList.remove('hidden');
+
+                    // If URL param requests a section, open it
+                    const params = new URLSearchParams(window.location.search);
+                    const section = params.get('section');
+                    if (section) {
+                        openSection(section);
+                    }
                 } catch (err) {
                     console.error('fetchUserData error', err);
                     loadingContainer.innerHTML = `<p class="text-red-500">Failed to load profile: ${err.message}</p>`;
+                }
+            }
+            function openSection(section) {
+                // Map to sidebar buttons and trigger click to reuse logic
+                if (section === 'profile') {
+                    document.querySelector('#sidebar-nav .sidebar-submenu button[data-tab="profile"]').click();
+                } else if (section === 'purchases') {
+                    document.querySelector('#sidebar-nav button[data-tab="purchases"]').click();
+                } else if (section === 'vouchers') {
+                    document.querySelector('#sidebar-nav button[data-tab="vouchers"]').click();
                 }
             }
 
@@ -926,299 +820,7 @@
                 </div>`).join('');
             }
 
-            // --- NEW: Custom Order Functions ---
-            async function fetchMyCustomOrders() {
-                customOrdersList.innerHTML = '<p class="text-gray-500 text-center py-8">Loading custom orders...</p>';
-                try {
-                    const json = await apiRequest('/api/custom-orders/my-custom-orders');
-                    if (!json.success) throw new Error(json.msg || 'Could not load orders');
-                    renderMyCustomOrders(json.data || []);
-                } catch (err) {
-                    customOrdersList.innerHTML = `<p class="text-red-500 text-center py-8">${err.message}</p>`;
-                }
-            }
-
-            function renderMyCustomOrders(orders) {
-                if (!orders || orders.length === 0) {
-                    customOrdersList.innerHTML = '<p class="text-gray-500 text-center py-10">You have no custom orders.</p>';
-                    return;
-                }
-
-                customOrdersList.innerHTML = orders.map(order => {
-                    let detailsHtml = '';
-                    if (order.customType === 'FileUpload') {
-                        detailsHtml = `<strong>Design:</strong> <a href="${order.designFileUrl}" target="_blank" class="text-indigo-600 hover:underline">View Uploaded File</a>`;
-                    } else {
-                        detailsHtml = `<strong>Design:</strong> ${order.designDetails || 'N/A'}`;
-                    }
-
-                    let statusLabel = order.status;
-                    let statusColor = 'text-gray-700';
-                    let buttonsHtml = '';
-
-                    if (order.status === 'Pending Quote') {
-                        statusLabel = 'PENDING QUOTE'; statusColor = 'text-yellow-600';
-                        buttonsHtml = `<span class="text-sm text-gray-500">Waiting for admin quote...</span>`;
-                    } else if (order.status === 'Quote Sent') {
-                        statusLabel = 'QUOTE READY'; statusColor = 'text-green-600';
-                        buttonsHtml = `<button data-id="${order._id}" data-name="${order.productName}" data-price="${order.price}" class="btn-pay-dp bg-indigo-600 text-white px-4 py-2 rounded text-sm">Pay 50% Down Payment</button>`;
-                    } else if (order.status === 'Pending Downpayment') {
-                        statusLabel = 'PENDING DP VERIFICATION'; statusColor = 'text-blue-600';
-                        buttonsHtml = `<span class="text-sm text-gray-500">Waiting for admin to verify your payment...</span>`;
-                    } else if (order.status === 'In Production') {
-                        statusLabel = 'IN PRODUCTION'; statusColor = 'text-blue-800';
-                        buttonsHtml = `<span class="text-sm text-gray-500">Your order is in production.</span>`;
-                    } else if (order.status === 'Pending Balance') {
-                        // --- ITO ANG BAGO PARA SA PHASE 5.2 ---
-                        statusColor = 'text-green-600';
-                        buttonsHtml = `<button data-id="${order._id}" data-name="${order.productName}" data-price="${order.price}" class="btn-pay-final bg-green-600 text-white px-4 py-2 rounded text-sm">Pay Remaining Balance</button>`;
-                    } else if (order.status === 'Pending Final Verification') {
-                        statusColor = 'text-blue-600';
-                        buttonsHtml = `<span class="text-sm text-gray-500">Waiting for admin to verify final payment...</span>`;
-                    } else if (order.status === 'Completed') {
-                        statusLabel = 'COMPLETED';
-                        statusColor = 'text-green-700';
-                        buttonsHtml = `<button data-id="${order._id}" class="btn-choose-fulfillment bg-indigo-600 text-white px-4 py-2 rounded text-sm hover:bg-indigo-700">Choose Pickup or Delivery</button>`;
-                    } else if (order.status === 'Ready for Pickup/Delivery') {
-                        statusLabel = 'READY FOR PICKUP/DELIVERY';
-                        statusColor = 'text-purple-600';
-                        
-                        // Show fulfillment details
-                        let fulfillmentInfo = '';
-                        if (order.fulfillmentMethod === 'delivery') {
-                            fulfillmentInfo = `
-                                <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
-                                    <p class="text-sm font-semibold text-blue-900">🚚 Delivery Details:</p>
-                                    <p class="text-sm text-gray-700 mt-1"><strong>Address:</strong> ${order.deliveryAddress || 'N/A'}</p>
-                                    ${order.trackingNumber ? `<p class="text-sm text-gray-700 mt-1"><strong>Tracking #:</strong> <span class="font-mono font-semibold text-green-700">${order.trackingNumber}</span></p>` : '<p class="text-sm text-yellow-600 mt-1">⏳ Tracking number pending...</p>'}
-                                    ${order.estimatedDeliveryDate ? `<p class="text-sm text-gray-700 mt-1"><strong>Est. Delivery:</strong> ${new Date(order.estimatedDeliveryDate).toLocaleDateString()}</p>` : ''}
-                                </div>
-                            `;
-                        } else if (order.fulfillmentMethod === 'pickup') {
-                            fulfillmentInfo = `
-                                <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded">
-                                    <p class="text-sm font-semibold text-green-900">📦 Pickup Details:</p>
-                                    <p class="text-sm text-gray-700 mt-1"><strong>Location:</strong> ${order.pickupLocation || 'Fundamental Store - 123 Main St, Manila'}</p>
-                                    ${order.pickupDate ? `<p class="text-sm text-gray-700 mt-1"><strong>Pickup Date:</strong> ${new Date(order.pickupDate).toLocaleDateString()}</p>` : '<p class="text-sm text-yellow-600 mt-1">⏳ Pickup date pending...</p>'}
-                                </div>
-                            `;
-                        }
-                        
-                        detailsHtml += fulfillmentInfo;
-                        buttonsHtml = `<span class="text-sm text-green-600 font-semibold">✓ Fulfillment method selected</span>`;
-                    } else {
-                        statusLabel = order.status.toUpperCase();
-                    }
-
-                    return `
-                        <div class="bg-white rounded-lg shadow-sm border">
-                            <div class="p-4 flex justify-between items-center">
-                                <span class="text-sm font-medium">Request ID: <span class="font-mono">${order._id.slice(0, 10)}...</span></span>
-                                <span class="text-sm font-semibold ${statusColor}">${statusLabel}</span>
-                            </div>
-                            <div class="p-4 border-t">
-                                <p class="font-semibold text-lg">${order.productName}</p>
-                                <p class="text-sm text-gray-600"><strong>Quantity:</strong> ${order.quantity}</p>
-                                <p class="text-sm text-gray-600">${detailsHtml}</p>
-                                ${order.notes ? `<p class="text-sm text-gray-600 mt-2"><strong>Notes:</strong> ${order.notes}</p>` : ''}
-                            </div>
-                            <div class="p-4 bg-gray-50 flex flex-col sm:flex-row justify-end items-center gap-4">
-                                <div class="text-lg">
-                                    Order Total: <span class="font-bold text-indigo-700">${order.price > 0 ? `₱${order.price.toLocaleString()}` : 'Pending Quote'}</span>
-                                </div>
-                                <div class="flex gap-3">
-                                    ${buttonsHtml}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            // --- NEW: Event listener for "Pay Down Payment" button ---
-            customOrdersList.addEventListener('click', (e) => {
-                const payBtn = e.target.closest('.btn-pay-dp');
-                const payFinalBtn = e.target.closest('.btn-pay-final');
-                const fulfillmentBtn = e.target.closest('.btn-choose-fulfillment');
-
-                if (payBtn) {
-                    currentCustomOrderId = payBtn.dataset.id;
-                    const productName = payBtn.dataset.name;
-                    const totalPrice = parseFloat(payBtn.dataset.price);
-                    const downPayment = totalPrice * 0.5;
-
-                    dpModalProductName.textContent = productName;
-                    dpModalTotal.textContent = totalPrice.toLocaleString();
-                    dpModalAmount.textContent = downPayment.toLocaleString();
-
-                    dpFileInput.value = '';
-                    dpError.classList.add('hidden');
-
-                    dpModal.classList.remove('hidden');
-                    dpModal.classList.add('flex');
-                }
-
-                if (payFinalBtn) {
-                    currentCustomOrderId = payFinalBtn.dataset.id;
-                    const productName = payFinalBtn.dataset.name;
-                    const totalPrice = parseFloat(payFinalBtn.dataset.price);
-                    const downPayment = totalPrice * 0.5;
-                    const finalPayment = totalPrice - downPayment;
-
-                    fpModalProductName.textContent = productName;
-                    fpModalTotal.textContent = totalPrice.toLocaleString();
-                    fpModalDpPaid.textContent = downPayment.toLocaleString();
-                    fpModalAmount.textContent = finalPayment.toLocaleString();
-
-                    fpFileInput.value = '';
-                    fpError.classList.add('hidden');
-                    fpModal.classList.remove('hidden');
-                    fpModal.classList.add('flex');
-                }
-
-                if (fulfillmentBtn) {
-                    currentFulfillmentOrderId = fulfillmentBtn.dataset.id;
-                    
-                    // Reset form
-                    document.querySelector('input[name="fulfillment"][value="pickup"]').checked = true;
-                    deliveryAddressInput.value = '';
-                    deliveryAddressField.classList.add('hidden');
-                    fulfillmentError.classList.add('hidden');
-                    
-                    fulfillmentModal.classList.remove('hidden');
-                    fulfillmentModal.classList.add('flex');
-                }
-            });
-
-            // --- NEW: Down Payment Modal Logic ---
-            dpModalClose.addEventListener('click', () => dpModal.classList.add('hidden'));
-            dpModalConfirm.addEventListener('click', async () => {
-                const file = dpFileInput.files[0];
-                if (!file) {
-                    dpError.textContent = 'Please select your receipt file.';
-                    dpError.classList.remove('hidden');
-                    return;
-                }
-
-                const fd = new FormData();
-                // Ginamit ang 'designFile' na field name galing sa customOrderRoutes.js
-                fd.append('designFile', file);
-
-                dpModalConfirm.disabled = true;
-                dpModalConfirm.textContent = 'Uploading...';
-                dpError.classList.add('hidden');
-
-                try {
-                    const json = await apiRequest(`/api/custom-orders/${currentCustomOrderId}/downpayment`, {
-                        method: 'PUT',
-                        body: fd
-                    });
-
-                    if (!json.success) throw new Error(json.msg || 'Failed to submit receipt');
-
-                    alert(json.msg || 'Receipt submitted!');
-                    dpModal.classList.add('hidden');
-                    fetchMyCustomOrders(); // I-refresh ang listahan
-
-                } catch (err) {
-                    dpError.textContent = err.message;
-                    dpError.classList.remove('hidden');
-                } finally {
-                    dpModalConfirm.disabled = false;
-                    dpModalConfirm.textContent = 'Submit Receipt';
-                }
-            });
-
-            // --- NEW: Final Payment Modal Logic (Para sa Phase 5.2) ---
-            fpModalClose.addEventListener('click', () => fpModal.classList.add('hidden'));
-            fpModalConfirm.addEventListener('click', async () => {
-                const file = fpFileInput.files[0];
-                if (!file) {
-                    fpError.textContent = 'Please select your receipt file.';
-                    fpError.classList.remove('hidden');
-                    return;
-                }
-
-                const fd = new FormData();
-                fd.append('designFile', file); // Gagamitin ulit natin ang 'designFile' field name
-
-                fpModalConfirm.disabled = true;
-                fpModalConfirm.textContent = 'Uploading...';
-                fpError.classList.add('hidden');
-
-                try {
-                    const json = await apiRequest(`/api/custom-orders/${currentCustomOrderId}/final-payment`, {
-                        method: 'PUT',
-                        body: fd
-                    });
-                    if (!json.success) throw new Error(json.msg || 'Failed to submit receipt');
-                    
-                    alert(json.msg || 'Final receipt submitted!');
-                    fpModal.classList.add('hidden');
-                    fetchMyCustomOrders(); // I-refresh ang listahan
-
-                } catch (err) {
-                    fpError.textContent = err.message;
-                    fpError.classList.remove('hidden');
-                } finally {
-                    fpModalConfirm.disabled = false;
-                    fpModalConfirm.textContent = 'Submit Final Receipt';
-                }
-            });
-
-            // --- NEW: Fulfillment Modal Logic ---
-            // Show/hide delivery address field based on selection
-            fulfillmentModal.addEventListener('change', (e) => {
-                if (e.target.name === 'fulfillment') {
-                    if (e.target.value === 'delivery') {
-                        deliveryAddressField.classList.remove('hidden');
-                    } else {
-                        deliveryAddressField.classList.add('hidden');
-                    }
-                }
-            });
-
-            fulfillmentModalClose.addEventListener('click', () => fulfillmentModal.classList.add('hidden'));
-            fulfillmentModalCancel.addEventListener('click', () => fulfillmentModal.classList.add('hidden'));
-
-            fulfillmentModalConfirm.addEventListener('click', async () => {
-                const selectedMethod = document.querySelector('input[name="fulfillment"]:checked').value;
-                const deliveryAddress = deliveryAddressInput.value.trim();
-
-                // Validation
-                if (selectedMethod === 'delivery' && !deliveryAddress) {
-                    fulfillmentError.textContent = 'Please enter your delivery address.';
-                    fulfillmentError.classList.remove('hidden');
-                    return;
-                }
-
-                fulfillmentModalConfirm.disabled = true;
-                fulfillmentModalConfirm.textContent = 'Processing...';
-                fulfillmentError.classList.add('hidden');
-
-                try {
-                    const json = await apiRequest(`/api/custom-orders/${currentFulfillmentOrderId}/fulfillment`, {
-                        method: 'PUT',
-                        body: JSON.stringify({
-                            fulfillmentMethod: selectedMethod,
-                            deliveryAddress: selectedMethod === 'delivery' ? deliveryAddress : null
-                        })
-                    });
-
-                    if (!json.success) throw new Error(json.msg || 'Failed to set fulfillment method');
-
-                    alert(json.msg || 'Fulfillment method saved!');
-                    fulfillmentModal.classList.add('hidden');
-                    fetchMyCustomOrders(); // Refresh the orders list
-
-                } catch (err) {
-                    fulfillmentError.textContent = err.message;
-                    fulfillmentError.classList.remove('hidden');
-                } finally {
-                    fulfillmentModalConfirm.disabled = false;
-                    fulfillmentModalConfirm.textContent = 'Confirm';
-                }
-            });
+            // Custom order logic removed in favor of dedicated My Quotes page.
 
             // --- MODIFIED: Main Tab/Sidebar Switching Logic ---
             sidebarNav.addEventListener('click', (e) => {
@@ -1242,7 +844,7 @@
                     const contentEl = document.getElementById(`${tab}-content`);
                     if (contentEl) {
                         contentEl.classList.remove('hidden');
-                        if (tab !== 'purchases' && tab !== 'custom-orders') { // <-- MODIFIED
+                        if (tab !== 'purchases') {
                             contentEl.classList.add('bg-white', 'p-6', 'md:p-8', 'rounded-lg', 'shadow-md');
                         }
                     }
@@ -1251,7 +853,6 @@
                     if (tab === 'purchases' && purchasesList.innerHTML.trim() === "") fetchPurchases('All');
                     if (tab === 'addresses' && addressesList.innerHTML.trim() === "") fetchAddresses();
                     if (tab === 'vouchers' && vouchersList.innerHTML.trim() === "") fetchVouchers();
-                    if (tab === 'custom-orders' && customOrdersList.innerHTML.trim() === "") fetchMyCustomOrders(); // <-- NEW
 
                 } else if (parentTab) {
                     btn.classList.add('sidebar-active');
@@ -1263,12 +864,11 @@
                         const contentEl = document.getElementById(`${parentTab}-content`);
                         if (contentEl) {
                             contentEl.classList.remove('hidden');
-                            if (parentTab !== 'purchases' && parentTab !== 'custom-orders') { // <-- MODIFIED
+                            if (parentTab !== 'purchases') {
                                 contentEl.classList.add('bg-white', 'p-6', 'md:p-8', 'rounded-lg', 'shadow-md');
                             }
                         }
                         if (parentTab === 'purchases' && purchasesList.innerHTML.trim() === "") fetchPurchases('All');
-                        if (parentTab === 'custom-orders' && customOrdersList.innerHTML.trim() === "") fetchMyCustomOrders(); // <-- NEW
                     }
                 }
             });

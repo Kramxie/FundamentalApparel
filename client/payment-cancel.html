@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Cancelled - Fundamental Apparel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <header class="bg-white shadow-md">
+    <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <div class="text-2xl font-bold text-gray-800"><a href="index.html">Fundamental</a></div>
+    </nav>
+  </header>
+
+  <main class="container mx-auto px-4 py-16">
+    <div class="max-w-2xl mx-auto">
+      <div class="bg-white rounded-2xl shadow-lg p-8 md:p-12 text-center">
+        <!-- Warning Icon -->
+        <div class="mb-6 flex justify-center">
+          <div class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-5xl text-yellow-500"></i>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <h1 class="text-3xl font-bold text-gray-900 mb-3">
+          Payment Cancelled
+        </h1>
+        
+        <p class="text-gray-600 mb-6">
+          Your payment was cancelled. No charges were made to your account.
+        </p>
+
+        <!-- Info Box -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6 text-left">
+          <h3 class="font-semibold text-blue-900 mb-3 flex items-center">
+            <i class="fas fa-info-circle mr-2"></i>
+            What Happened?
+          </h3>
+          <p class="text-sm text-blue-800 mb-3">
+            You cancelled the payment process or the transaction was interrupted. Your order has been saved but is not yet confirmed.
+          </p>
+          <p class="text-sm text-blue-800">
+            You can return to complete the payment anytime from your order history.
+          </p>
+        </div>
+
+        <!-- Saved Order Reference -->
+        <div id="order-ref-container" class="bg-gray-50 rounded-lg p-4 mb-6 hidden">
+          <p class="text-sm text-gray-600">
+            Order Reference: <strong id="saved-order-ref" class="text-gray-900">N/A</strong>
+          </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <a href="services-checkout.html" class="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
+            <i class="fas fa-redo mr-2"></i>
+            Try Again
+          </a>
+          <a href="profile.html" class="inline-flex items-center justify-center px-6 py-3 bg-white text-indigo-600 font-semibold rounded-lg border-2 border-indigo-600 hover:bg-indigo-50 transition">
+            <i class="fas fa-user mr-2"></i>
+            My Orders
+          </a>
+          <a href="services.html" class="inline-flex items-center justify-center px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Back to Services
+          </a>
+        </div>
+
+        <!-- Support -->
+        <div class="mt-8 pt-6 border-t">
+          <p class="text-sm text-gray-600 mb-3">
+            <i class="fas fa-question-circle mr-1"></i>
+            Having trouble with payment?
+          </p>
+          <div class="flex flex-col sm:flex-row gap-3 justify-center text-sm">
+            <a href="#" class="text-indigo-600 hover:underline font-medium">
+              <i class="fas fa-life-ring mr-1"></i> Contact Support
+            </a>
+            <a href="#" class="text-indigo-600 hover:underline font-medium">
+              <i class="fas fa-book mr-1"></i> Payment FAQs
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check if there's a saved order reference
+      const urlParams = new URLSearchParams(window.location.search);
+      const orderRef = urlParams.get('ref') || localStorage.getItem('lastOrderId');
+      
+      if (orderRef) {
+        document.getElementById('saved-order-ref').textContent = orderRef;
+        document.getElementById('order-ref-container').classList.remove('hidden');
+      }
+
+      // Restore pending checkout data if available
+      const pendingCheckout = localStorage.getItem('pendingServiceCheckout');
+      if (pendingCheckout) {
+        console.log('Pending checkout data preserved for retry');
+      }
+    });
+  </script>
+</body>
+</html>

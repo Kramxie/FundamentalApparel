@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin • Quotes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <header class="bg-white shadow">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="/client/admin/index.html" class="text-xl font-bold text-indigo-600">Fundamental Admin</a>
+      <nav class="text-sm text-gray-600 flex gap-4">
+        <a href="/client/admin/orders.html" class="hover:text-indigo-600">Orders</a>
+        <a href="/client/admin/quotes.html" class="text-indigo-600 font-semibold">Quotes</a>
+        <a href="/client/admin/fulfillment.html" class="hover:text-indigo-600">Fulfillment</a>
+        <a href="/client/admin/inventory.html" class="hover:text-indigo-600">Inventory</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 py-6">
+    <div class="flex items-end justify-between mb-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Quotes</h1>
+        <p class="text-sm text-gray-500">Review submitted customization quotes and send pricing.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-700">Status</label>
+        <select id="statusFilter" class="px-3 py-2 border rounded">
+          <option value="">All</option>
+          <option value="Pending Quote" selected>Pending Quote</option>
+          <option value="Quote Sent">Quote Sent</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-12 gap-6">
+      <div class="col-span-12 lg:col-span-7">
+        <div class="bg-white border rounded-xl overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-100">
+              <tr>
+                <th class="text-left px-4 py-2">Quote #</th>
+                <th class="text-left px-4 py-2">Customer</th>
+                <th class="text-left px-4 py-2">Garment</th>
+                <th class="text-left px-4 py-2">Qty</th>
+                <th class="text-left px-4 py-2">Status</th>
+                <th class="text-left px-4 py-2">Created</th>
+              </tr>
+            </thead>
+            <tbody id="quotesTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="col-span-12 lg:col-span-5">
+        <div class="bg-white border rounded-xl p-4" id="detailPanel">
+          <p class="text-sm text-gray-500">Select a quote to review details.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('token');
+
+    async function fetchQuotes() {
+      const status = document.getElementById('statusFilter').value;
+      const url = status ? `/api/custom-orders/admin?status=${encodeURIComponent(status)}` : '/api/custom-orders/admin';
+      const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }});
+      const json = await res.json();
+      if (!json.success) { alert(json.msg || 'Failed to fetch quotes'); return; }
+      renderTable(json.data || []);
+    }
+
+    function renderTable(rows){
+      const tbody = document.getElementById('quotesTable');
+      tbody.innerHTML = '';
+      rows
+        .filter(r => r.customType === 'Template')
+        .forEach(r => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b hover:bg-gray-50 cursor-pointer';
+          const code = (r._id || '').toString().slice(-8).toUpperCase();
+          tr.innerHTML = `
+            <td class="px-4 py-2 font-mono">${code}</td>
+            <td class="px-4 py-2">${r.user?.name || '—'}<div class="text-xs text-gray-500">${r.user?.email || ''}</div></td>
+            <td class="px-4 py-2">${r.productName || '-'}<div class="text-xs text-gray-500">${r.itemType || ''}</div></td>
+            <td class="px-4 py-2">${r.quantity || 0}</td>
+            <td class="px-4 py-2">${r.status}</td>
+            <td class="px-4 py-2">${new Date(r.createdAt).toLocaleString()}</td>
+          `;
+          tr.addEventListener('click', ()=>renderDetail(r));
+          tbody.appendChild(tr);
+        });
+    }
+
+    function renderDetail(order){
+      const d = document.getElementById('detailPanel');
+      const code = (order._id || '').toString().slice(-8).toUpperCase();
+      const qp = order.quotePayload || {};
+      const teamCount = Array.isArray(qp.teamEntries) ? qp.teamEntries.length : 0;
+      const designCount = Array.isArray(qp.designElements) ? qp.designElements.length : 0;
+      d.innerHTML = `
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <h2 class="text-lg font-semibold">Quote ${code}</h2>
+            <p class="text-xs text-gray-500">${order.productName || ''} • Qty ${order.quantity}</p>
+          </div>
+          <span class="px-2 py-1 text-xs rounded ${badgeClass(order.status)}">${order.status}</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div class="p-3 bg-gray-50 rounded">
+            <div class="text-gray-500 text-xs mb-1">Garment</div>
+            <div>${order.itemType || '—'}</div>
+            <div class="text-xs text-gray-500">Location: ${order.selectedLocation || '—'}</div>
+          </div>
+          <div class="p-3 bg-gray-50 rounded">
+            <div class="text-gray-500 text-xs mb-1">Printing</div>
+            <div>${qp.printingType || order.printingType || '—'}</div>
+            <div class="text-xs text-gray-500">Team Mode: ${qp.teamMode ? 'Yes' : 'No'}</div>
+          </div>
+          <div class="p-3 bg-gray-50 rounded col-span-2">
+            <div class="text-gray-500 text-xs mb-1">Summary</div>
+            <div>Team entries: ${teamCount}, Design elements: ${designCount}</div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="text-sm font-medium">Set Final Price (₱)</label>
+          <input id="priceInput" type="number" min="0" class="mt-1 w-full px-3 py-2 border rounded" placeholder="e.g., 1500" value="${order.price || ''}" />
+          <div class="flex gap-2 mt-3">
+            <button class="px-4 py-2 bg-indigo-600 text-white rounded" onclick="approveQuote('${order._id}')"><i class="fas fa-paper-plane mr-1"></i>Send Quote</button>
+            <button class="px-4 py-2 bg-red-600 text-white rounded" onclick="rejectQuote('${order._id}')"><i class="fas fa-ban mr-1"></i>Reject</button>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="text-sm font-medium">Admin Notes</label>
+          <textarea id="adminNotes" rows="3" class="mt-1 w-full px-3 py-2 border rounded" placeholder="Optional notes or reason">${order.adminNotes || ''}</textarea>
+        </div>
+
+        <div class="mt-4 text-xs text-gray-500">
+          Created: ${new Date(order.createdAt).toLocaleString()} • Updated: ${new Date(order.updatedAt).toLocaleString()}
+        </div>
+      `;
+    }
+
+    function badgeClass(status){
+      switch(status){
+        case 'Pending Quote': return 'bg-yellow-100 text-yellow-800';
+        case 'Quote Sent': return 'bg-blue-100 text-blue-800';
+        case 'Cancelled': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+      }
+    }
+
+    async function approveQuote(id){
+      const price = Number(document.getElementById('priceInput').value);
+      if (!price || price <= 0) { alert('Please enter a valid price'); return; }
+      const res = await fetch(`/api/custom-orders/${id}/quote`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify({ price })
+      });
+      const json = await res.json();
+      if (!json.success) { alert(json.msg || 'Failed to update'); return; }
+      alert('Quote sent to customer.');
+      fetchQuotes();
+    }
+
+    async function rejectQuote(id){
+      const notes = document.getElementById('adminNotes')?.value || '';
+      if (!confirm('Reject this quote?')) return;
+      const res = await fetch(`/api/custom-orders/${id}/reject`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify({ notes })
+      });
+      const json = await res.json();
+      if (!json.success) { alert(json.msg || 'Failed to reject'); return; }
+      alert('Quote rejected.');
+      fetchQuotes();
+    }
+
+    document.getElementById('statusFilter').addEventListener('change', fetchQuotes);
+
+    // Initial load
+    fetchQuotes();
+  </script>
+</body>
+</html>

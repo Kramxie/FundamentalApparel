@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jersey Customizer - Fundamental</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Top Navigation Styles */
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid #E5E7EB;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .nav-item:hover {
+            background: #F3F4F6;
+            border-color: #4F46E5;
+        }
+        
+        .nav-item i {
+            margin-right: 6px;
+        }
+        
+        /* Canvas Styles */
+        #garment-canvas {
+            border: 2px solid #D1D5DB;
+            background: white;
+            cursor: crosshair;
+            border-radius: 8px;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .design-area {
+            border: 2px dashed #4F46E5;
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .design-area:hover {
+            background: rgba(79, 70, 229, 0.05);
+            border-color: #818CF8;
+        }
+        
+        .design-area.selected {
+            background: rgba(79, 70, 229, 0.15);
+            border-color: #4F46E5;
+            box-shadow: 0 0 10px rgba(79, 70, 229, 0.3);
+        }
+
+        /* Draggable design elements: base text only, no box unless selected */
+        .design-element {
+            position: absolute;
+            cursor: move;
+            user-select: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            padding: 0;
+            min-width: 20px;
+            min-height: 16px;
+        }
+        .design-element.selected {
+            border: 1px dashed #4F46E5;
+            background: rgba(255,255,255,0.4);
+            padding: 4px 8px;
+            border-radius: 4px;
+            box-shadow: 0 0 6px rgba(79,70,229,0.4);
+        }
+        /* Locked element: remove all selection visuals */
+        .design-element.locked, .design-element.locked.selected {
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+            cursor: default;
+        }
+        .design-element.locked .resize-handle { display:none !important; }
+        .resize-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #4F46E5;
+            right: -6px;
+            bottom: -6px;
+            border-radius: 3px;
+            cursor: nwse-resize;
+        }
+        .element-toolbar {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            background: #ffffff;
+            border: 1px solid #E5E7EB;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 6px;
+            padding: 2px 4px;
+            display: flex;
+            gap: 4px;
+            z-index: 9999;
+        }
+        .element-toolbar button {
+            background: none;
+            border: none;
+            padding: 4px 6px;
+            font-size: 12px;
+            cursor: pointer;
+            color: #4F46E5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        .element-toolbar button:hover { background:#EEF2FF; }
+        
+        /* Location Selector Styles */
+        .location-btn {
+            padding: 10px 12px;
+            background: white;
+            border: 2px solid #E5E7EB;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 13px;
+        }
+        
+        .location-btn:hover {
+            border-color: #4F46E5;
+            background: #F3F4F6;
+        }
+        
+        .location-btn.active {
+            background: #4F46E5;
+            color: white;
+            border-color: #4F46E5;
+        }
+        
+        /* Scrollbar */
+        .overflow-y-auto::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-track {
+            background: #F3F4F6;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+            background: #D1D5DB;
+            border-radius: 3px;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+            background: #9CA3AF;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header with Logo -->
+    <header class="bg-white shadow-md sticky top-0 z-40">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="index.html" class="text-2xl font-bold text-indigo-600">Fundamental</a>
+            <div class="flex gap-4 items-center">
+                <a href="services.html" class="text-gray-700 hover:text-indigo-600 transition">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Services
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Top Control Bar -->
+    <div class="bg-white border-b border-gray-200 sticky top-16 z-30">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex flex-wrap gap-3 items-center justify-between">
+                <div class="flex gap-3 flex-wrap">
+                    <!-- Product Selector -->
+                    <div class="nav-item" onclick="openProductSelector()">
+                        <i class="fas fa-box"></i>
+                        <span>Product</span>
+                        <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                    </div>
+                    
+                    <!-- Add Text -->
+                    <div class="nav-item" onclick="openAddTextModal()">
+                        <i class="fas fa-heading"></i>
+                        <span>Add Text</span>
+                    </div>
+                    
+                    <!-- Add Design -->
+                    <div class="nav-item" onclick="openAddDesignModal()">
+                        <i class="fas fa-image"></i>
+                        <span>Add Design</span>
+                    </div>
+
+                    <!-- Delete Selected Text -->
+                    <div class="nav-item" onclick="deleteSelectedElement()">
+                        <i class="fas fa-backspace"></i>
+                        <span>Delete Text</span>
+                    </div>
+
+                    <!-- Clear All Text Elements -->
+                    <div class="nav-item" onclick="clearAllTextElements()">
+                        <i class="fas fa-trash"></i>
+                        <span>Clear All</span>
+                    </div>
+
+                    <!-- Color Selector -->
+                    <div class="nav-item" onclick="openColorPicker()">
+                        <i class="fas fa-palette"></i>
+                        <span>Colors</span>
+                    </div>
+                    <!-- Team Mode Toggle -->
+                    <div class="nav-item" onclick="toggleTeamMode()">
+                        <i class="fas fa-users"></i>
+                        <span id="team-mode-label">Team Mode: Off</span>
+                    </div>
+                    <!-- Team Names Modal Trigger -->
+                    <div class="nav-item" onclick="openTeamNamesModal()">
+                        <i class="fas fa-user-edit"></i>
+                        <span>Team Names</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 items-center">
+                    <div class="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg">
+                        <label class="text-sm font-semibold text-gray-700">QTY:</label>
+                        <input type="number" id="qty-input" value="1" min="1" class="w-12 px-2 py-1 border border-gray-300 rounded text-center">
+                    </div>
+                    
+                    <div class="text-sm font-semibold text-indigo-600" id="price-display">Quote: Pending admin review</div>
+                    
+                    <button id="submit-quote-btn" onclick="addToCart()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center gap-2">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Submit Quote</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="container mx-auto px-6 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- LEFT PANEL: Product Selector -->
+            <div class="bg-white rounded-xl shadow-lg p-6 h-fit">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <i class="fas fa-box mr-2 text-indigo-600"></i>Product
+                </h3>
+                
+                <!-- Product Categories -->
+                <div id="product-categories" class="space-y-3">
+                    <div class="product-category cursor-pointer p-3 rounded-lg hover:bg-gray-100 transition" onclick="showSubcategories('tshirt')">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold text-gray-900">👕 T-Shirt</p>
+                                <p class="text-xs text-gray-500">Classic & Premium</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+
+                    <div class="product-category cursor-pointer p-3 rounded-lg hover:bg-gray-100 transition" onclick="showSubcategories('jersey')">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold text-gray-900">🏀 Jersey</p>
+                                <p class="text-xs text-gray-500">Casual & Athletic</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+
+                    <div class="product-category cursor-pointer p-3 rounded-lg hover:bg-gray-100 transition" onclick="showSubcategories('hoodie')">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold text-gray-900">🧥 Hoodie/Jacket</p>
+                                <p class="text-xs text-gray-500">Comfortable Wear</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Product Info -->
+                <div id="selected-product-info" class="hidden mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <p class="text-sm font-semibold text-gray-900 mb-2" id="selected-product-name"></p>
+                    <img id="selected-product-image" src="" class="w-full h-32 object-cover rounded-lg mb-2">
+                    <p class="text-xs text-gray-600" id="selected-product-description"></p>
+                </div>
+            </div>
+
+            <!-- CENTER PANEL: Garment Preview -->
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <i class="fas fa-cube mr-2 text-indigo-600"></i>Design Preview
+                </h3>
+
+                <div class="bg-gray-50 rounded-xl p-4 flex items-center justify-center relative" style="min-height: 500px;">
+                    <img id="garment-image" src="" alt="Product Preview" class="max-w-full h-auto rounded-lg" style="max-height: 500px;" />
+                    <!-- Design Area Overlay Box -->
+                    <div id="design-area-box" class="absolute border-2 border-dashed border-indigo-500 rounded" style="display: none;"></div>
+                </div>
+
+                <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p class="text-xs text-blue-700">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Click on design areas to add text or designs. Use the controls above.
+                    </p>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: Location Selector -->
+            <div class="bg-white rounded-xl shadow-lg p-6 h-fit">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <i class="fas fa-location-pin mr-2 text-indigo-600"></i>Placement Location
+                </h3>
+
+                <div id="location-options" class="space-y-2">
+                    <!-- Locations will be populated based on garment type -->
+                </div>
+
+                <!-- Garment Colors -->
+                <div class="mt-6 pt-6 border-t">
+                    <h4 class="font-semibold text-gray-900 mb-3 text-sm">
+                        <i class="fas fa-palette mr-2"></i>Garment Color
+                    </h4>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-2">Garment Color</label>
+                            <select id="garment-color" class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg" onchange="updatePreview()">
+                                <option value="Green">Green</option>
+                                <option value="Black">Black</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">More colors coming soon</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Printing Type -->
+                <div class="mt-6 pt-6 border-t">
+                    <h4 class="font-semibold text-gray-900 mb-3 text-sm">
+                        <i class="fas fa-print mr-2"></i>Printing Type
+                    </h4>
+                    <div class="space-y-2 text-xs">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="printingType" value="dye-sublimation" checked onchange="setPrintingType(this.value)" class="text-indigo-600">
+                            <span>Dye Sublimation</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="printingType" value="heat-transfer" onchange="setPrintingType(this.value)">
+                            <span>Heat Transfer</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="printingType" value="vinyl-print" onchange="setPrintingType(this.value)">
+                            <span>Vinyl Print</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Customization Summary -->
+                <div class="mt-6 pt-6 border-t">
+                    <h4 class="font-semibold text-gray-900 mb-3 text-sm">Summary</h4>
+                    <div id="customization-summary" class="text-xs space-y-2 text-gray-600">
+                        <p><strong>Product:</strong> <span id="summary-product">None selected</span></p>
+                        <p><strong>Location:</strong> <span id="summary-location">Front</span></p>
+                        <p><strong>Text:</strong> <span id="summary-text">None</span></p>
+                        <p><strong>Design:</strong> <span id="summary-design">None</span></p>
+                        <p><strong>Print Type:</strong> <span id="summary-print">Dye Sublimation</span></p>
+                        <p><strong>Team Names:</strong> <span id="summary-team">None</span></p>
+                        <div class="mt-3 p-2 bg-gray-50 border rounded">
+                            <p class="font-semibold text-gray-700 mb-1">Pricing</p>
+                            <div id="pricing-breakdown" class="text-[11px] leading-tight">Pricing will be provided after admin verification.</div>
+                        </div>
+                        <div id="team-numbers-preview" class="mt-2 text-[11px] text-gray-500"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Product Selector Modal -->
+    <div id="product-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full max-h-96 overflow-y-auto">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Select Product</h2>
+                
+                <div id="product-list" class="space-y-3">
+                    <!-- Product list will be populated -->
+                </div>
+
+                <button onclick="document.getElementById('product-modal').classList.add('hidden')" class="w-full mt-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Text Modal -->
+    <div id="text-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Add Text</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Text</label>
+                        <input type="text" id="text-input" placeholder="Enter your text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Font Size</label>
+                        <select id="text-size" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <option value="24">Small (24px)</option>
+                            <option value="36" selected>Medium (36px)</option>
+                            <option value="48">Large (48px)</option>
+                            <option value="60">Extra Large (60px)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Text Color</label>
+                        <input type="color" id="text-color" value="#000000" class="w-full h-10 rounded-lg cursor-pointer border-2 border-gray-300">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Font</label>
+                        <select id="text-font" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <option value="Arial">Arial</option>
+                            <option value="Impact">Impact</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Verdana">Verdana</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button onclick="addTextToDesign()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
+                        Add Text
+                    </button>
+                    <button onclick="document.getElementById('text-modal').classList.add('hidden')" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Design Modal -->
+    <div id="design-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Add Design</h2>
+                
+                <div class="space-y-4">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition" onclick="document.getElementById('design-upload').click()">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                        <p class="font-semibold text-gray-700">Upload Design</p>
+                        <p class="text-xs text-gray-500">PNG, JPG, GIF (Max 5MB)</p>
+                        <input type="file" id="design-upload" accept="image/*" class="hidden" onchange="handleDesignUpload(event)">
+                    </div>
+
+                    <p class="text-sm text-gray-600 text-center">OR</p>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Choose Pre-made Design</label>
+                        <select id="design-preset" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Select a design...</option>
+                            <option value="design1">Geometric Pattern</option>
+                            <option value="design2">Team Spirit</option>
+                            <option value="design3">Minimalist Logo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button onclick="addDesignToGarment()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
+                        Add Design
+                    </button>
+                    <button onclick="document.getElementById('design-modal').classList.add('hidden')" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Names Modal -->
+    <div id="team-names-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Team Entries</h2>
+                <p class="text-xs text-gray-600 mb-4">Add player name, number and size. Quantity auto-calculates from entries.</p>
+                <div id="team-entries-list" class="space-y-2"></div>
+                <button onclick="addTeamEntry()" class="w-full mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
+                    <i class="fas fa-plus mr-1"></i>Add Entry
+                </button>
+                <div class="flex gap-3 mt-6">
+                    <button onclick="applyTeamEntries()" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition">Apply</button>
+                    <button onclick="document.getElementById('team-names-modal').classList.add('hidden')" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        const state = {
+            garmentType: 'tshirt',
+            selectedLocation: 'Front',
+            primaryColor: '#3B82F6',
+            secondaryColor: '#FFFFFF',
+            accentColor: '#000000',
+            designText: '',
+            designImage: null,
+            quantity: 1,
+            basePrice: 530,
+            // tshirt style: 'vneck' or 'round'
+            neckStyle: 'vneck',
+            // Deprecated single-location array (kept for backward compatibility when submitting front design only)
+            designElements: [], // array of {id,type,text,color,font,size,x,y,width,height,rotation,zIndex}
+            // New: store design elements per placement so Front text doesn't appear on Back/Sleeves
+            designElementsByLocation: {}, // { 'Front': [elements], 'Back': [...], ... }
+            selectedElementId: null,
+            // Phase 1 additions
+            printingType: 'dye-sublimation', // dye-sublimation | heat-transfer | vinyl-print
+            teamMode: false,
+            teamEntries: [], // array of {id,name,number,size}
+            // Phase 2 pricing maps
+            printingTypeSurcharges: {
+                'dye-sublimation': 0,
+                'heat-transfer': 40,
+                'vinyl-print': 60
+            },
+            sizeSurcharges: { XS: 0, S: 0, M: 0, L: 10, XL: 15 }
+        };
+
+        // Product Data
+        const products = {
+            tshirt: {
+                classic: { name: 'V-Neck T-Shirt', price: 530, image: 'https://via.placeholder.com/200x200?text=Classic+Tshirt' },
+                premium: { name: 'Round-Neck T-Shirt', price: 630, image: 'https://via.placeholder.com/200x200?text=Premium+Tshirt' }
+                
+            },
+            jersey: {
+                casual: { name: 'Casual Jersey', price: 630, image: 'https://via.placeholder.com/200x200?text=Casual+Jersey' },
+                athletic: { name: 'Athletic Jersey', price: 730, image: 'https://via.placeholder.com/200x200?text=Athletic+Jersey' }
+            },
+            hoodie: {
+                basic: { name: 'Basic Hoodie', price: 830, image: 'https://via.placeholder.com/200x200?text=Basic+Hoodie' }
+            }
+        };
+
+        const locations = {
+            tshirt: ['Front', 'Back', 'Left Sleeve', 'Right Sleeve'],
+            jersey: ['Front', 'Back', 'Left Chest', 'Right Chest', 'Shoulders'],
+            hoodie: ['Front', 'Back', 'Left Sleeve', 'Right Sleeve', 'Hood']
+        };
+
+        // Available colors per neck style (adjust as assets are added)
+        const availableColors = {
+            vneck: ['Green', 'Black', 'White'],
+            round: ['Black', 'Green', 'White']
+        };
+
+        // Initialize Image Loading
+        function initCanvas() {
+            loadGarmentImage();
+        }
+
+        // Return candidate image paths to handle mixed filename conventions across colors
+        function buildImageCandidates(neckStyle, color, location) {
+            const candidates = [];
+            if (neckStyle === 'round') {
+                // Prefer simple names, then legacy names
+                const simple = { 'Front': 'Front.jpg', 'Back': 'Back.jpg', 'Left Sleeve': 'Left.jpg', 'Right Sleeve': 'Right.jpg' };
+                const legacyFB = { 'Front': 'Round-Front_T-shirt.jpg', 'Back': 'Round-Back_T-shirt.jpg' };
+                const legacyLR = { 'Left Sleeve': 'Left-Side.jpg', 'Right Sleeve': 'Right-Side.jpg' };
+                const s = simple[location];
+                if (s) candidates.push(`/images/Round_Neck_T-Shirt/${color}/${s}`);
+                const fb = legacyFB[location]; if (fb) candidates.push(`/images/Round_Neck_T-Shirt/${color}/${fb}`);
+                const lr = legacyLR[location]; if (lr) candidates.push(`/images/Round_Neck_T-Shirt/${color}/${lr}`);
+            } else {
+                // V-neck: prefer legacy 'V-*' naming, then simple names
+                const vmap = { 'Front': 'V-Front', 'Back': 'V-Back', 'Left Sleeve': 'V-LeftSleeve', 'Right Sleeve': 'V-RightSleeve' };
+                const smap = { 'Front': 'Front.jpg', 'Back': 'Back.jpg', 'Left Sleeve': 'Left.jpg', 'Right Sleeve': 'Right.jpg' };
+                const v = vmap[location] || 'V-Front';
+                candidates.push(`/images/V_Neck_T-Shirt/${color}/${v}_T-shirt.jpg`);
+                const s = smap[location]; if (s) candidates.push(`/images/V_Neck_T-Shirt/${color}/${s}`);
+            }
+            return candidates;
+        }
+
+        // Try loading image with fallbacks
+        function tryLoadImage(img, paths) {
+            let i = 0;
+            const attempt = () => {
+                if (i >= paths.length) {
+                    console.error('All image fallbacks failed:', paths);
+                    img.alt = 'Image not found';
+                    return;
+                }
+                const p = paths[i++];
+                console.log('Loading image:', p);
+                img.onerror = attempt;
+                img.src = p;
+            };
+            attempt();
+        }
+
+        // Image loading system
+        function loadGarmentImage() {
+            const garmentImage = document.getElementById('garment-image');
+            if (!garmentImage) return;
+            
+            const garmentType = state.garmentType;
+            const colorSelect = document.getElementById('garment-color');
+            const color = colorSelect ? colorSelect.value : 'Green';
+            const location = state.selectedLocation;
+            
+            // Build image path based on garment type
+            if (garmentType === 'tshirt') {
+                const paths = buildImageCandidates(state.neckStyle, color, location);
+                tryLoadImage(garmentImage, paths);
+                return;
+            } else if (garmentType === 'jersey') {
+                // Placeholder - jersey not available yet
+                console.log('Jersey images not available yet');
+                return;
+            } else if (garmentType === 'hoodie') {
+                // Placeholder - hoodie not available yet
+                console.log('Hoodie images not available yet');
+                return;
+            }
+            // If not tshirt, nothing to load yet
+        }
+
+        // Populate color dropdown based on current neck style
+        function populateColorOptions() {
+            const select = document.getElementById('garment-color');
+            if (!select) return;
+            const colors = availableColors[state.neckStyle] || ['Green'];
+            const current = select.value;
+            select.innerHTML = '';
+            colors.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c; opt.textContent = c; select.appendChild(opt);
+            });
+            // keep current if still available, else pick first
+            if (colors.includes(current)) {
+                select.value = current;
+            } else {
+                select.value = colors[0];
+            }
+        }
+
+        function updatePreview() {
+            loadGarmentImage();
+        }
+
+        function showSubcategories(type) {
+            state.garmentType = type;
+            const modal = document.getElementById('product-modal');
+            const productList = document.getElementById('product-list');
+            
+            let html = '';
+            const typeProducts = products[type];
+            
+            for (const [key, product] of Object.entries(typeProducts)) {
+                html += `
+                    <div onclick="selectProduct('${type}', '${key}')" class="p-4 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 cursor-pointer transition">
+                        <p class="font-semibold text-gray-900">${product.name}</p>
+                        <p class="text-xs text-gray-500 mt-1">Quote: Pending admin review</p>
+                    </div>
+                `;
+            }
+            
+            productList.innerHTML = html;
+            modal.classList.remove('hidden');
+        }
+
+        function selectProduct(type, key) {
+            const product = products[type][key];
+            state.garmentType = type;
+            state.basePrice = product.price;
+            // Map sub-variant to neck style for tshirt
+            if (type === 'tshirt') {
+                // classic -> V-Neck, premium -> Round-Neck
+                state.neckStyle = (key === 'premium') ? 'round' : 'vneck';
+            }
+            
+            document.getElementById('selected-product-name').textContent = product.name;
+            document.getElementById('selected-product-image').src = product.image;
+            document.getElementById('selected-product-description').textContent = 'Quote: Pending admin review';
+            document.getElementById('selected-product-info').classList.remove('hidden');
+            document.getElementById('summary-product').textContent = product.name;
+
+            
+            // Update locations
+            updateLocations(type);
+            // Update available colors for this style
+            populateColorOptions();
+            
+            // Close modal and load image
+            document.getElementById('product-modal').classList.add('hidden');
+            loadGarmentImage();
+        }
+
+        function updateLocations(garmentType) {
+            const locationOptions = document.getElementById('location-options');
+            const locs = locations[garmentType];
+            
+            let html = '';
+            locs.forEach((loc, index) => {
+                html += `<button class="location-btn ${index === 0 ? 'active' : ''}" onclick="selectLocation('${loc}', this)">
+                    ${loc}
+                </button>`;
+            });
+            
+            locationOptions.innerHTML = html;
+            state.selectedLocation = locs[0];
+            loadGarmentImage();
+        }
+
+        function selectLocation(location, element) {
+            document.querySelectorAll('.location-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            state.selectedLocation = location;
+            document.getElementById('summary-location').textContent = location;
+            loadGarmentImage();
+            // Initialize array for this location if missing
+            if (!state.designElementsByLocation[location]) {
+                state.designElementsByLocation[location] = [];
+            }
+            // Reset active selection when switching views
+            state.selectedElementId = null;
+            // Render only the elements for this location
+            renderDesignElements();
+        }        function openProductSelector() {
+            showSubcategories(state.garmentType);
+        }
+
+        function openAddTextModal() {
+            document.getElementById('text-modal').classList.remove('hidden');
+        }
+
+        function openAddDesignModal() {
+            document.getElementById('design-modal').classList.remove('hidden');
+        }
+
+        function openColorPicker() {
+            // Color picker is already visible in right panel
+        }
+
+        function addTextToDesign() {
+            const text = document.getElementById('text-input').value.trim();
+            if (!text) { alert('Please enter text'); return; }
+            const size = parseInt(document.getElementById('text-size').value,10) || 36;
+            const color = document.getElementById('text-color').value || '#000000';
+            const font = document.getElementById('text-font').value || 'Arial';
+
+            // Create design element object
+            const previewWrap = document.querySelector('.bg-gray-50.rounded-xl.p-4.flex');
+            const defaultWidth = 140; // px
+            const defaultHeight = size + 20; // approximate
+            // center relative to preview container
+            const rect = previewWrap.getBoundingClientRect();
+            const x = (previewWrap.clientWidth - defaultWidth)/2;
+            const y = (previewWrap.clientHeight - defaultHeight)/2;
+
+            const loc = state.selectedLocation || 'Front';
+            if (!state.designElementsByLocation[loc]) state.designElementsByLocation[loc] = [];
+            const currentArr = state.designElementsByLocation[loc];
+            const element = {
+                id: 'de_' + Date.now(),
+                type: 'text',
+                text, color, font,
+                size,
+                x, y,
+                width: defaultWidth,
+                height: defaultHeight,
+                rotation: 0,
+                zIndex: currentArr.length + 1,
+                locked: false
+            };
+            currentArr.push(element);
+            state.selectedElementId = element.id;
+            state.designText = text;
+            document.getElementById('summary-text').textContent = text;
+            renderDesignElements();
+            document.getElementById('text-modal').classList.add('hidden');
+            document.getElementById('text-input').value = '';
+        }
+
+        function renderDesignElements() {
+            const container = document.querySelector('.bg-gray-50.rounded-xl.p-4.flex');
+            if (!container) return;
+            if (getComputedStyle(container).position === 'static') {
+                container.style.position = 'relative';
+            }
+            // Clear previous rendered design elements
+            container.querySelectorAll('.design-element').forEach(el=>el.remove());
+            const arr = state.designElementsByLocation[state.selectedLocation] || [];
+            arr.forEach(el => {
+                const div = document.createElement('div');
+                div.className = 'design-element' + ((state.selectedElementId === el.id && !el.locked) ? ' selected' : '');
+                if (el.locked) div.classList.add('locked');
+                div.dataset.id = el.id;
+                div.style.left = el.x + 'px';
+                div.style.top = el.y + 'px';
+                div.style.width = el.width + 'px';
+                div.style.height = el.height + 'px';
+                div.style.fontFamily = el.font;
+                div.style.fontSize = el.size + 'px';
+                div.style.color = el.color;
+                div.style.transform = `rotate(${el.rotation}deg)`;
+                div.style.zIndex = el.zIndex;
+                div.textContent = el.text;
+                const handle = document.createElement('div');
+                handle.className = 'resize-handle';
+                handle.dataset.id = el.id;
+                div.appendChild(handle);
+                div.addEventListener('click', () => selectDesignElement(el.id));
+                div.addEventListener('dblclick', () => openEditElementModal(el.id));
+                enableDragResize(div, handle);
+                if (state.selectedElementId === el.id) {
+                    const toolbar = document.createElement('div');
+                    toolbar.className = 'element-toolbar';
+                    const lockIcon = el.locked ? 'fa-lock' : 'fa-lock-open';
+                    // If locked: only show lock/unlock toggle. Else full controls.
+                    toolbar.innerHTML = el.locked ? `
+                        <button title="Unlock" data-act="lock"><i class="fas ${lockIcon}"></i></button>
+                    ` : `
+                        <button title="Rotate Left" data-act="rot-left"><i class="fas fa-undo"></i></button>
+                        <button title="Rotate Right" data-act="rot-right"><i class="fas fa-redo"></i></button>
+                        <button title="Bring Forward" data-act="forward"><i class="fas fa-layer-group"></i></button>
+                        <button title="Send Backward" data-act="back"><i class="fas fa-level-down-alt"></i></button>
+                        <button title="Duplicate" data-act="dup"><i class="fas fa-copy"></i></button>
+                        <button title="Lock / Unlock" data-act="lock"><i class="fas ${lockIcon}"></i></button>
+                        <button title="Edit Text" data-act="edit"><i class="fas fa-edit"></i></button>
+                        <button title="Delete" data-act="del"><i class="fas fa-trash"></i></button>`;
+                    // Prevent outside click handler from firing when clicking inside toolbar
+                    toolbar.addEventListener('click', e => e.stopPropagation());
+                    toolbar.querySelectorAll('button').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const act = btn.dataset.act;
+                            if (act === 'rot-left') rotateElement(el.id, -15);
+                            else if (act === 'rot-right') rotateElement(el.id, 15);
+                            else if (act === 'forward') changeZIndex(el.id, 1);
+                            else if (act === 'back') changeZIndex(el.id, -1);
+                            else if (act === 'dup') duplicateElement(el.id);
+                            else if (act === 'del') deleteElement(el.id);
+                            else if (act === 'lock') toggleLockElement(el.id);
+                            else if (act === 'edit') openEditElementModal(el.id);
+                        });
+                    });
+                    div.appendChild(toolbar);
+                }
+                container.appendChild(div);
+            });
+        }
+
+
+        function selectDesignElement(id) {
+            state.selectedElementId = id;
+            renderDesignElements();
+        }
+
+        // Deselect when clicking outside any design element or toolbar
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.design-element') || e.target.closest('.element-toolbar')) return;
+            if (state.selectedElementId) {
+                state.selectedElementId = null;
+                renderDesignElements();
+            }
+        });
+
+        function rotateElement(id, delta) {
+            const arr = state.designElementsByLocation[state.selectedLocation] || [];
+            const el = arr.find(d => d.id === id);
+            if (!el) return;
+            el.rotation = (el.rotation + delta) % 360;
+            renderDesignElements();
+        }
+
+        function changeZIndex(id, direction) {
+            const arr = state.designElementsByLocation[state.selectedLocation] || [];
+            const el = arr.find(d => d.id === id);
+            if (!el) return;
+            el.zIndex += direction;
+            if (el.zIndex < 1) el.zIndex = 1;
+            // normalize to avoid huge numbers
+            const sorted = [...arr].sort((a,b)=>a.zIndex-b.zIndex);
+            sorted.forEach((e,i)=>e.zIndex=i+1);
+            renderDesignElements();
+        }
+
+        function duplicateElement(id) {
+            const arr = state.designElementsByLocation[state.selectedLocation] || [];
+            const el = arr.find(d => d.id === id);
+            if (!el) return;
+            const copy = { ...el, id: 'de_' + Date.now(), x: el.x + 20, y: el.y + 20, zIndex: arr.length + 1 };
+            arr.push(copy);
+            state.selectedElementId = copy.id;
+            renderDesignElements();
+        }
+
+        function deleteElement(id) {
+            const loc = state.selectedLocation;
+            const arr = state.designElementsByLocation[loc] || [];
+            state.designElementsByLocation[loc] = arr.filter(d => d.id !== id);
+            if (state.selectedElementId === id) state.selectedElementId = null;
+            renderDesignElements();
+        }
+        // Delete currently selected text element (triggered by top bar button)
+        function deleteSelectedElement() {
+            if (!state.selectedElementId) { alert('Select a text first'); return; }
+            deleteElement(state.selectedElementId);
+        }
+        // Remove all text elements at once
+        function clearAllTextElements() {
+            const loc = state.selectedLocation;
+            const arr = state.designElementsByLocation[loc] || [];
+            const hadText = arr.some(e => e.type === 'text');
+            state.designElementsByLocation[loc] = arr.filter(e => e.type !== 'text');
+            state.selectedElementId = null;
+            if (hadText) {
+                state.designText = '';
+                const summaryText = document.getElementById('summary-text');
+                if (summaryText) summaryText.textContent = 'None';
+                renderDesignElements();
+            } else {
+                alert('No text elements to clear');
+            }
+        }
+        // Keyboard shortcut: Delete / Backspace to remove selected when not typing in input
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedElementId) {
+                const tag = document.activeElement.tagName;
+                if (tag === 'INPUT' || tag === 'TEXTAREA') return; // don't interfere with typing
+                deleteElement(state.selectedElementId);
+            }
+        });
+        function enableDragResize(div, handle) {
+            let dragging = false, resizing = false, startX, startY, startLeft, startTop, startW, startH;
+            div.addEventListener('mousedown', e => {
+                if (e.target === handle) return; // resize will handle
+                const id = div.dataset.id;
+                const arr = state.designElementsByLocation[state.selectedLocation] || [];
+                const el = arr.find(d=>d.id===id);
+                if (!el || el.locked) return; // locked element cannot move
+                dragging = true;
+                startX = e.clientX; startY = e.clientY;
+                const rect = div.getBoundingClientRect();
+                startLeft = rect.left; startTop = rect.top;
+                div.classList.add('selected');
+                e.preventDefault();
+            });
+            handle.addEventListener('mousedown', e => {
+                const id = div.dataset.id;
+                const arr = state.designElementsByLocation[state.selectedLocation] || [];
+                const el = arr.find(d=>d.id===id);
+                if (!el || el.locked) return; // locked element cannot resize
+                resizing = true;
+                startX = e.clientX; startY = e.clientY;
+                const rect = div.getBoundingClientRect();
+                startW = rect.width; startH = rect.height;
+                div.classList.add('selected');
+                e.stopPropagation();
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', e => {
+                if (dragging) {
+                    const id = div.dataset.id;
+                    const arr = state.designElementsByLocation[state.selectedLocation] || [];
+                    const el = arr.find(d=>d.id===id);
+                    if (!el || el.locked) return;
+                    const dx = e.clientX - startX; const dy = e.clientY - startY;
+                    const container = div.parentElement.getBoundingClientRect();
+                    const elemRect = div.getBoundingClientRect();
+                    let newLeft = startLeft + dx - container.left;
+                    let newTop = startTop + dy - container.top;
+                    // boundaries
+                    if (newLeft < 0) newLeft = 0;
+                    if (newTop < 0) newTop = 0;
+                    const maxLeft = container.width - elemRect.width;
+                    const maxTop = container.height - elemRect.height;
+                    if (newLeft > maxLeft) newLeft = maxLeft;
+                    if (newTop > maxTop) newTop = maxTop;
+                    div.style.left = newLeft + 'px';
+                    div.style.top = newTop + 'px';
+                    el.x = newLeft;
+                    el.y = newTop;
+                } else if (resizing) {
+                    const id = div.dataset.id;
+                    const arr = state.designElementsByLocation[state.selectedLocation] || [];
+                    const el = arr.find(d=>d.id===id);
+                    if (!el || el.locked) return;
+                    const dx = e.clientX - startX; const dy = e.clientY - startY;
+                    let newW = Math.max(40, startW + dx);
+                    let newH = Math.max(20, startH + dy);
+                    div.style.width = newW + 'px';
+                    div.style.height = newH + 'px';
+                    el.width = newW;
+                    el.height = newH;
+                }
+            });
+            document.addEventListener('mouseup', () => {
+                if (dragging || resizing) {
+                    dragging = false; resizing = false; div.classList.remove('selected');
+                }
+            });
+        }
+
+        // --- Lock / Edit Helpers ---
+        function toggleLockElement(id){
+            const arr = state.designElementsByLocation[state.selectedLocation] || [];
+            const el = arr.find(d=>d.id===id);
+            if (!el) return;
+            el.locked = !el.locked;
+            renderDesignElements();
+        }
+
+        function openEditElementModal(id){
+            const arr = state.designElementsByLocation[state.selectedLocation] || [];
+            const el = arr.find(d=>d.id===id);
+            if (!el) return;
+            let modal = document.getElementById('edit-element-modal');
+            if (!modal){
+                modal = document.createElement('div');
+                modal.id = 'edit-element-modal';
+                modal.style.position='fixed';
+                modal.style.top='50%';
+                modal.style.left='50%';
+                modal.style.transform='translate(-50%, -50%)';
+                modal.style.background='#fff';
+                modal.style.border='1px solid #ddd';
+                modal.style.padding='16px';
+                modal.style.zIndex='9999';
+                modal.style.width='280px';
+                modal.style.borderRadius='8px';
+                modal.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)';
+                modal.innerHTML = `
+                    <h3 class="text-sm font-semibold mb-2">Edit Text Element</h3>
+                    <label class="block text-xs mb-1">Text</label>
+                    <input id="edit-element-text" class="w-full border rounded px-2 py-1 text-sm mb-3" />
+                    <div class="flex gap-2 justify-end text-sm">
+                        <button id="edit-save-btn" class="px-3 py-1 bg-indigo-600 text-white rounded">Save</button>
+                        <button id="edit-delete-btn" class="px-3 py-1 bg-red-600 text-white rounded">Remove</button>
+                        <button id="edit-cancel-btn" class="px-3 py-1 bg-gray-300 rounded">Cancel</button>
+                    </div>`;
+                document.body.appendChild(modal);
+            }
+            document.getElementById('edit-element-text').value = el.text;
+            modal.dataset.elementId = id;
+            modal.style.display='block';
+            document.getElementById('edit-save-btn').onclick = () => applyElementEdit();
+            document.getElementById('edit-delete-btn').onclick = () => { deleteElement(id); closeEditElementModal(); };
+            document.getElementById('edit-cancel-btn').onclick = () => closeEditElementModal();
+        }
+
+        function closeEditElementModal(){
+            const modal = document.getElementById('edit-element-modal');
+            if (modal) modal.style.display='none';
+        }
+
+        function applyElementEdit(){
+            const modal = document.getElementById('edit-element-modal');
+            if (!modal) return;
+            const id = modal.dataset.elementId;
+            const arr = state.designElementsByLocation[state.selectedLocation] || [];
+            const el = arr.find(d=>d.id===id);
+            if (!el) { closeEditElementModal(); return; }
+            const newText = document.getElementById('edit-element-text').value.trim();
+            if (newText){
+                el.text = newText;
+                if (state.selectedElementId === id) {
+                    state.designText = newText;
+                    const summaryText = document.getElementById('summary-text');
+                    if (summaryText) summaryText.textContent = newText;
+                }
+            }
+            renderDesignElements();
+            closeEditElementModal();
+        }
+
+        function handleDesignUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Store the actual file object for FormData submission
+                state.designImage = file;
+                
+                // Also show preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('summary-design').textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function addDesignToGarment() {
+            document.getElementById('design-modal').classList.add('hidden');
+        }
+
+        async function addToCart() {
+            const inputQty = parseInt(document.getElementById('qty-input').value);
+            const effectiveQty = state.teamMode ? (state.teamEntries.length || 1) : inputQty;
+            // Use Phase 2 computed pricing
+            const totalPrice = computeTotalPrice();
+            const unitPrice = computeUnitPrice();
+
+            // Validate required fields
+            if (!state.garmentType || !state.selectedLocation) {
+                alert('Please select a garment type and location');
+                return;
+            }
+            // Team entries validation if team mode
+            if (state.teamMode) {
+                if (!validateTeamEntries()) return; // alerts handled inside
+            }
+
+            try {
+                // Show loading state
+                const buyBtn = document.getElementById('submit-quote-btn') || event.target;
+                const originalText = buyBtn.innerHTML;
+                buyBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting quote...';
+                buyBtn.disabled = true;
+
+                // Prepare FormData for multipart submission
+                const formData = new FormData();
+                // Map UI value 'tshirt' to backend enum 't-shirt'
+                const backendGarmentType = (state.garmentType === 'tshirt') ? 't-shirt' : state.garmentType;
+                formData.append('garmentType', backendGarmentType);
+                formData.append('selectedLocation', state.selectedLocation);
+                formData.append('primaryColor', state.primaryColor);
+                formData.append('secondaryColor', state.secondaryColor);
+                formData.append('accentColor', state.accentColor);
+                formData.append('designText', state.designText || '');
+                formData.append('requestType', 'quote');
+                formData.append('quantity', effectiveQty);
+                formData.append('totalPrice', totalPrice);
+                formData.append('unitPrice', unitPrice);
+                // pricing breakdown for backend transparency
+                const breakdown = {
+                    basePrice: state.basePrice,
+                    printingType: state.printingType,
+                    printingSurcharge: state.printingTypeSurcharges[state.printingType] || 0,
+                    sizeSurcharges: state.teamEntries.map(e=>({size:e.size,surcharge: state.sizeSurcharges[e.size]||0})),
+                    unitPrice: unitPrice,
+                    totalPrice: totalPrice,
+                    quantity: effectiveQty
+                };
+                formData.append('pricingBreakdown', JSON.stringify(breakdown));
+                formData.append('printingType', state.printingType);
+                formData.append('teamMode', state.teamMode ? 'true' : 'false');
+                formData.append('teamEntries', JSON.stringify(state.teamEntries));
+                                // Serialize design elements (current location + full map)
+                                const currentLoc = state.selectedLocation;
+                                const currentArr = state.designElementsByLocation[currentLoc] || [];
+                                const exportedElements = currentArr.map(e => ({
+                                        id: e.id, type: e.type, text: e.text, color: e.color, font: e.font, size: e.size,
+                                        x: e.x, y: e.y, width: e.width, height: e.height, rotation: e.rotation, zIndex: e.zIndex
+                                }));
+                                formData.append('designElements', JSON.stringify(exportedElements));
+                                const designMap = {};
+                                Object.entries(state.designElementsByLocation).forEach(([loc, arr]) => {
+                                    designMap[loc] = arr.map(e => ({
+                                        id: e.id, type: e.type, text: e.text, color: e.color, font: e.font, size: e.size,
+                                        x: e.x, y: e.y, width: e.width, height: e.height, rotation: e.rotation, zIndex: e.zIndex
+                                    }));
+                                });
+                                formData.append('designElementsMap', JSON.stringify(designMap));
+
+                // Capture per-location previews (Front, Back, Sleeves...) unless user uploaded a design image
+                if (state.designImage && typeof state.designImage === 'object') {
+                    formData.append('designImage', state.designImage);
+                } else if (window.html2canvas) {
+                    const originalLocation = state.selectedLocation;
+                    const locs = locations[state.garmentType] || [originalLocation];
+                    const target = document.querySelector('.bg-gray-50.rounded-xl.p-4.flex');
+                    const slug = s => s.toLowerCase().replace(/\s+/g,'-');
+                    for (const loc of locs) {
+                        // switch location
+                        state.selectedLocation = loc;
+                        if (!state.designElementsByLocation[loc]) state.designElementsByLocation[loc] = [];
+                        loadGarmentImage();
+                        renderDesignElements();
+                        // wait for image load (simple delay)
+                        await new Promise(r=>setTimeout(r,300));
+                        try {
+                            if (target) {
+                                const canvas = await html2canvas(target, { useCORS: true, backgroundColor: '#ffffff', scale: 1 });
+                                await new Promise(resolve => canvas.toBlob(b => { if (b) formData.append(`designImage_${slug(loc)}`, b, `preview-${slug(loc)}.png`); resolve(); }, 'image/png'));
+                            }
+                        } catch(e){ console.warn('Capture failed for', loc, e); }
+                    }
+                    // restore original
+                    state.selectedLocation = originalLocation;
+                    loadGarmentImage();
+                    renderDesignElements();
+                }
+
+                // Submit to backend
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Missing auth token. Please log in first.');
+                }
+                // Debug: log form keys (helps when backend fails)
+                const debugKeys = [];
+                formData.forEach((v,k)=>debugKeys.push(k));
+                console.log('[Quote Submit] FormData keys:', debugKeys.join(', '));
+
+                let response, raw, data;
+                try {
+                    response = await fetch('/api/custom-orders/quote', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'ngrok-skip-browser-warning': 'true'
+                        },
+                        body: formData
+                    });
+                } catch(netErr) {
+                    throw new Error('Network error: ' + netErr.message);
+                }
+
+                try {
+                    raw = await response.text();
+                } catch(readErr) {
+                    throw new Error('Failed reading response: ' + readErr.message);
+                }
+                try {
+                    data = raw ? JSON.parse(raw) : {};
+                } catch(parseErr) {
+                    console.warn('Response not JSON. Raw:', raw?.slice(0,200));
+                    throw new Error('Invalid server response (status ' + response.status + ').');
+                }
+
+                // Restore button state
+                buyBtn.innerHTML = originalText;
+                buyBtn.disabled = false;
+
+                if (!response.ok) {
+                    const serverMsg = data.msg || data.error || ('HTTP ' + response.status);
+                    alert(`Error submitting quote:\n${serverMsg}`);
+                    return;
+                }
+
+                // Success (quote-first flow)
+                const ref = (data && data.data && (data.data.quoteNumber || data.data.orderNumber)) || 'N/A';
+                alert(`✓ Quote submitted successfully!\nReference: ${ref}\nAn admin will review and send final pricing with payment options.`);
+                
+                // Optional: Reset form or redirect
+                // window.location.href = '/order-confirmation.html?orderId=' + data.data.orderId;
+
+            } catch (error) {
+                console.error('Quote submit failed:', error);
+                alert('Failed to submit quote:\n' + error.message);
+            }
+        }
+
+        // Update price display
+        document.getElementById('qty-input').addEventListener('change', () => {
+            if (state.teamMode) {
+                updateQuantityFromTeamEntries();
+                return;
+            }
+            // Quote-first flow: keep price hidden
+            document.getElementById('price-display').textContent = 'Quote: Pending admin review';
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initCanvas();
+            populateColorOptions();
+            updateLocations('tshirt');
+        });
+
+        // --- Phase 1: Printing Type & Team Mode Functions ---
+        function printingTypeLabel(t){
+            switch(t){
+                case 'dye-sublimation': return 'Dye Sublimation';
+                case 'heat-transfer': return 'Heat Transfer';
+                case 'vinyl-print': return 'Vinyl Print';
+                default: return t;
+            }
+        }
+        function setPrintingType(type){
+            state.printingType = type;
+            const el = document.getElementById('summary-print');
+            if (el) el.textContent = printingTypeLabel(type);
+            recalcPrice();
+        }
+        function toggleTeamMode(){
+            state.teamMode = !state.teamMode;
+            const lbl = document.getElementById('team-mode-label');
+            if (lbl) lbl.textContent = 'Team Mode: ' + (state.teamMode ? 'On' : 'Off');
+            const qtyInput = document.getElementById('qty-input');
+            if (state.teamMode){
+                if (qtyInput) qtyInput.disabled = true;
+                updateQuantityFromTeamEntries();
+            } else {
+                if (qtyInput){ qtyInput.disabled = false; qtyInput.value = 1; }
+                document.getElementById('summary-team').textContent = 'None';
+                document.getElementById('price-display').textContent = 'Quote: Pending admin review';
+            }
+        }
+        function openTeamNamesModal(){
+            if (!state.teamMode){ alert('Enable Team Mode first'); return; }
+            document.getElementById('team-names-modal').classList.remove('hidden');
+            renderTeamEntries();
+        }
+        function addTeamEntry(){
+            const entry = { id: 'tm_' + Date.now(), name: '', number: '', size: 'M' };
+            state.teamEntries.push(entry);
+            renderTeamEntries();
+            recalcPrice();
+        }
+        function removeTeamEntry(id){
+            state.teamEntries = state.teamEntries.filter(e => e.id !== id);
+            renderTeamEntries();
+            recalcPrice();
+        }
+        function updateTeamField(id, field, value){
+            const e = state.teamEntries.find(x => x.id === id);
+            if (e){ e[field] = value; }
+            if (field === 'size') recalcPrice();
+        }
+        function renderTeamEntries(){
+            const list = document.getElementById('team-entries-list');
+            if (!list) return;
+            list.innerHTML = '';
+            state.teamEntries.forEach(e => {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-12 gap-2 items-center';
+                row.innerHTML = `
+                    <input placeholder="Name" value="${e.name}" class="col-span-5 px-2 py-1 border rounded text-xs" oninput="updateTeamField('${e.id}','name',this.value)">
+                    <input placeholder="#" value="${e.number}" class="col-span-2 px-2 py-1 border rounded text-xs" oninput="updateTeamField('${e.id}','number',this.value)">
+                    <select class="col-span-3 px-2 py-1 border rounded text-xs" oninput="updateTeamField('${e.id}','size',this.value)">
+                        <option value="XS" ${e.size==='XS'?'selected':''}>XS</option>
+                        <option value="S" ${e.size==='S'?'selected':''}>S</option>
+                        <option value="M" ${e.size==='M'?'selected':''}>M</option>
+                        <option value="L" ${e.size==='L'?'selected':''}>L</option>
+                        <option value="XL" ${e.size==='XL'?'selected':''}>XL</option>
+                    </select>
+                    <button class="col-span-2 px-2 py-1 bg-red-500 text-white rounded text-xs" onclick="removeTeamEntry('${e.id}')"><i class="fas fa-times"></i></button>
+                `;
+                list.appendChild(row);
+            });
+        }
+        function applyTeamEntries(){
+            // Validate before applying
+            if (!validateTeamEntries()) return;
+            updateQuantityFromTeamEntries();
+            const count = state.teamEntries.length;
+            document.getElementById('summary-team').textContent = count ? (count + ' entries') : 'None';
+            document.getElementById('team-names-modal').classList.add('hidden');
+            recalcPrice();
+            updateTeamNumbersPreview();
+        }
+        function updateQuantityFromTeamEntries(){
+            if (!state.teamMode) return;
+            const qtyInput = document.getElementById('qty-input');
+            const count = state.teamEntries.length || 1;
+            if (qtyInput) qtyInput.value = count;
+            // Quote-first flow: keep price hidden
+            document.getElementById('price-display').textContent = 'Quote: Pending admin review';
+        }
+        // Validate team entries: name non-empty, number 1-3 digits, size in allowed list
+        function validateTeamEntries(){
+            const allowedSizes = ['XS','S','M','L','XL'];
+            if (state.teamEntries.length === 0){
+                alert('Add at least one team entry before applying.');
+                return false;
+            }
+            const issues = [];
+            const numbersSeen = new Set();
+            state.teamEntries.forEach((e,i)=>{
+                if (!e.name || !e.name.trim()) issues.push(`Row ${i+1}: name required`);
+                if (!e.number || !/^[0-9]{1,3}$/.test(e.number)) issues.push(`Row ${i+1}: number 1-3 digits`);
+                if (!allowedSizes.includes(e.size)) issues.push(`Row ${i+1}: invalid size`);
+                if (e.number) {
+                    if (numbersSeen.has(e.number)) issues.push(`Row ${i+1}: duplicate number ${e.number}`);
+                    numbersSeen.add(e.number);
+                }
+            });
+            if (issues.length){
+                alert('Please fix team entries before applying:\n' + issues.join('\n'));
+                return false;
+            }
+            return true;
+        }
+
+        function updateTeamNumbersPreview(){
+            const preview = document.getElementById('team-numbers-preview');
+            if (!preview) return;
+            if (!state.teamMode || state.teamEntries.length === 0){
+                preview.textContent = '';
+                return;
+            }
+            const nums = state.teamEntries.map(e => e.number).filter(n=>n).join(', ');
+            const truncated = nums.length > 60 ? nums.slice(0,57) + '...' : nums;
+            preview.innerHTML = `<span class='font-semibold text-gray-600'>Numbers:</span> ${truncated}`;
+        }
+
+        // Phase 2 pricing computation
+        function computeUnitPrice(){
+            const base = state.basePrice;
+            const printSurcharge = state.printingTypeSurcharges[state.printingType] || 0;
+            if (!state.teamMode || state.teamEntries.length === 0){
+                // Single garment scenario
+                return base + printSurcharge;
+            }
+            // Average size surcharge across entries
+            let sizeTotal = 0;
+            state.teamEntries.forEach(e => {
+                sizeTotal += state.sizeSurcharges[e.size] || 0;
+            });
+            const avgSize = sizeTotal / state.teamEntries.length;
+            return base + printSurcharge + avgSize;
+        }
+        function computeTotalPrice(){
+            const unit = computeUnitPrice();
+            const qty = state.teamMode ? (state.teamEntries.length || 1) : parseInt(document.getElementById('qty-input').value) || 1;
+            return Math.round(unit * qty);
+        }
+        function recalcPrice(){
+            // Quote-first flow: do not show totals to the customer here
+            document.getElementById('price-display').textContent = 'Quote: Pending admin review';
+            // Update breakdown placeholder
+            const bd = document.getElementById('pricing-breakdown');
+            if (bd){
+                bd.textContent = 'Pricing will be provided after admin verification.';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Quotes & Orders • Fundamental</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <header class="bg-white shadow">
+    <div class="max-w-6xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <a href="/client/index.html" class="text-xl font-bold text-indigo-600">Fundamental</a>
+        <a href="/client/profile.html" class="inline-flex items-center gap-2 px-3 py-2 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-700">
+          <i class="fas fa-arrow-left"></i>
+          Back to My Profile
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 py-6">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">My Quotes & Orders</h1>
+        <p class="text-sm text-gray-500">Track status, view pricing, and upload payment receipts.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-700">Status</label>
+        <select id="statusFilter" class="px-3 py-2 border rounded bg-white">
+          <option value="">All</option>
+          <option>Pending Quote</option>
+          <option>Quote Sent</option>
+          <option>Quote Accepted</option>
+          <option>Pending Downpayment</option>
+          <option>In Production</option>
+          <option>Pending Balance</option>
+          <option>Pending Final Verification</option>
+          <option>Completed</option>
+          <option>Ready for Pickup/Delivery</option>
+          <option>Cancelled</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="list" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 items-stretch"></div>
+  </main>
+
+  <template id="cardTpl">
+    <div class="bg-white border rounded-xl p-4 flex flex-col gap-3 h-full">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="text-xs text-gray-500">Quote #<span data-ref></span></div>
+          <div class="font-semibold" data-product></div>
+          <div class="text-xs text-gray-500" data-item></div>
+        </div>
+        <span class="px-2 py-1 text-xs rounded-full" data-badge></span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <div class="p-2 bg-gray-50 rounded">
+          <div class="text-xs text-gray-500">Quantity</div>
+          <div data-qty></div>
+        </div>
+        <div class="p-2 bg-gray-50 rounded">
+          <div class="text-xs text-gray-500">Price</div>
+          <div data-price>-</div>
+        </div>
+      </div>
+
+      <div class="text-xs text-gray-500" data-updated></div>
+      <div class="hidden" data-breakdown-wrap>
+        <button type="button" class="inline-flex items-center gap-1 px-2 py-1 border border-indigo-300 text-indigo-700 bg-indigo-50 rounded text-xs hover:bg-indigo-100" data-breakdown-toggle>
+          <i class="fas fa-list"></i>
+          View Pricing Breakdown
+        </button>
+        <pre class="mt-2 text-[11px] leading-tight bg-indigo-50 border border-indigo-200 rounded p-2 whitespace-pre-wrap hidden" data-breakdown></pre>
+      </div>
+      <div class="border-t pt-3 mt-auto" data-actions></div>
+    </div>
+  </template>
+
+  <script>
+    const token = localStorage.getItem('token');
+    let fileCounter = 0;
+
+    function badgeClass(status){
+      switch(status){
+        case 'Pending Quote': return 'bg-yellow-100 text-yellow-800';
+        case 'Quote Sent': return 'bg-blue-100 text-blue-800';
+        case 'Quote Accepted': return 'bg-blue-100 text-blue-800';
+        case 'Pending Downpayment': return 'bg-orange-100 text-orange-800';
+        case 'In Production': return 'bg-indigo-100 text-indigo-800';
+        case 'Pending Balance': return 'bg-purple-100 text-purple-800';
+        case 'Pending Final Verification': return 'bg-teal-100 text-teal-800';
+        case 'Completed': return 'bg-green-100 text-green-800';
+        case 'Ready for Pickup/Delivery': return 'bg-green-100 text-green-800';
+        case 'Cancelled': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+      }
+    }
+
+    async function fetchMine(){
+      const token = localStorage.getItem('token');
+      if (!token){ window.location.href = '/client/login.html'; return; }
+      const res = await fetch('/api/custom-orders/my-custom-orders', { headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' } });
+      const json = await res.json();
+      if (!json.success) { alert(json.msg || 'Failed to load'); return; }
+      renderList(json.data || []);
+    }
+
+    function renderList(items){
+      const filter = document.getElementById('statusFilter').value;
+      const wrap = document.getElementById('list');
+      wrap.innerHTML = '';
+      items
+        .filter(o => !filter || o.status === filter)
+        .forEach(o => wrap.appendChild(renderCard(o)));
+
+      if (!wrap.children.length){
+        wrap.innerHTML = `
+          <div class="md:col-span-2 lg:col-span-3">
+            <div class="text-center p-12 bg-white border rounded-xl">
+              <div class="text-3xl mb-2">🧾</div>
+              <div class="font-semibold text-gray-800 mb-1">No quotes found</div>
+              <p class="text-sm text-gray-500">Start a new customization from Services or the Customizer.</p>
+            </div>
+          </div>`;
+      }
+    }
+
+    function renderCard(order){
+      const tpl = document.getElementById('cardTpl').content.cloneNode(true);
+      const code = (order._id || '').toString().slice(-8).toUpperCase();
+      tpl.querySelector('[data-ref]').textContent = code;
+      tpl.querySelector('[data-product]').textContent = order.productName || 'Custom Garment';
+      tpl.querySelector('[data-item]').textContent = `${order.itemType || ''} • ${order.selectedLocation || ''}`;
+      tpl.querySelector('[data-qty]').textContent = order.quantity || 0;
+
+      const badge = tpl.querySelector('[data-badge]');
+      badge.textContent = order.status;
+      badge.className = 'px-2 py-1 text-xs rounded ' + badgeClass(order.status);
+
+      // Price: show only when admin has sent a quote; include per-item
+      const priceEl = tpl.querySelector('[data-price]');
+      if (typeof order.price === 'number' && order.price > 0) {
+        try {
+          const total = Number(order.price);
+          const qty = Number(order.quantity) || 0;
+          const each = qty > 0 ? Math.round((total / qty) * 100) / 100 : null;
+          priceEl.textContent = '₱' + total.toLocaleString() + (each ? ` (₱${each.toLocaleString()} each)` : '');
+        } catch {
+          const qty = Number(order.quantity) || 0;
+          const total = order.price;
+          const each = qty > 0 ? Math.round((Number(total) / qty) * 100) / 100 : null;
+          priceEl.textContent = '₱' + total + (each ? ` (₱${each} each)` : '');
+        }
+      } else {
+        priceEl.textContent = '—';
+      }
+
+      tpl.querySelector('[data-updated]').textContent = `Updated: ${new Date(order.updatedAt).toLocaleString()}`;
+      // Compact item line when values are missing
+      const itemEl = tpl.querySelector('[data-item]');
+      const loc = order.selectedLocation || order.designStyle || '';
+      const it = order.itemType || order.customType || '';
+      const meta = [it, loc].filter(Boolean).join(' • ');
+      if (meta) itemEl.textContent = meta;
+
+      // Pricing breakdown: show when price exists; if notes missing, show placeholder
+      const bdWrap = tpl.querySelector('[data-breakdown-wrap]');
+      const bd = tpl.querySelector('[data-breakdown]');
+      const bdToggle = tpl.querySelector('[data-breakdown-toggle]');
+      const priceAvailable = typeof order.price === 'number' && order.price > 0;
+      if (priceAvailable) {
+        bdWrap.classList.remove('hidden');
+        const hasAdminNotes = (order.adminNotes && String(order.adminNotes).trim().length > 0);
+        if (hasAdminNotes) {
+          bd.textContent = order.adminNotes;
+        } else {
+          // Fallback to auto breakdown from quote payload if available
+          const autoBD = order.quotePayload && order.quotePayload.pricingBreakdown;
+          if (autoBD) {
+            try {
+              const lines = [];
+              if (autoBD.basePrice != null) lines.push(`Base: ₱${Number(autoBD.basePrice).toLocaleString()}`);
+              if (autoBD.printingType) lines.push(`Printing: ${autoBD.printingType}`);
+              if (autoBD.printingSurcharge != null) lines.push(`Printing Surcharge: ₱${Number(autoBD.printingSurcharge).toLocaleString()}`);
+              if (Array.isArray(autoBD.sizeSurcharges) && autoBD.sizeSurcharges.length){
+                const nonZero = autoBD.sizeSurcharges.filter(s=>Number(s.surcharge)>0);
+                if (nonZero.length){
+                  lines.push('Size Surcharges:');
+                  nonZero.forEach(s=>lines.push(`  • ${s.size}: ₱${Number(s.surcharge).toLocaleString()}`));
+                }
+              }
+              if (autoBD.unitPrice != null) lines.push(`Per Item: ₱${Number(autoBD.unitPrice).toLocaleString()}`);
+              if (autoBD.quantity != null) lines.push(`Quantity: ${autoBD.quantity}`);
+              if (autoBD.totalPrice != null) lines.push(`Total: ₱${Number(autoBD.totalPrice).toLocaleString()}`);
+              bd.textContent = lines.length ? lines.join('\n') : 'No detailed pricing breakdown provided.';
+            } catch {
+              bd.textContent = typeof autoBD === 'string' ? autoBD : JSON.stringify(autoBD, null, 2);
+            }
+          } else {
+            bd.textContent = 'No detailed pricing breakdown provided.';
+          }
+        }
+        let expanded = false;
+        bdToggle.addEventListener('click', () => {
+          expanded = !expanded;
+          bd.classList.toggle('hidden', !expanded);
+          bdToggle.innerHTML = expanded ? '<i class="fas fa-list"></i> Hide Pricing Breakdown' : '<i class="fas fa-list"></i> View Pricing Breakdown';
+        });
+      }
+
+      const actions = tpl.querySelector('[data-actions]');
+      actions.appendChild(renderActions(order));
+
+      return tpl;
+    }
+
+    function renderActions(order){
+      const wrap = document.createElement('div');
+      wrap.className = 'flex flex-col gap-3';
+
+      if (order.status === 'Quote Sent'){
+        const info = document.createElement('div');
+        info.className = 'text-sm text-gray-700';
+        info.textContent = 'Please review the quote and accept to proceed with payment.';
+        const btn = document.createElement('button');
+        btn.className = 'px-3 py-2 bg-blue-600 text-white rounded text-sm w-fit';
+        btn.textContent = 'Accept Quote';
+        btn.onclick = async ()=>{ await acceptQuote(order._id); };
+        wrap.appendChild(info);
+        wrap.appendChild(btn);
+      }
+      else if (order.status === 'Quote Accepted'){
+        // Payments available after acceptance
+        wrap.appendChild(uploadRow('Upload 50% Downpayment Receipt', (file)=>submitDownpayment(order._id, file)));
+        wrap.appendChild(uploadRow('Pay Full (Upload Receipt)', (file)=>submitFinalPayment(order._id, file)));
+      }
+      else if (order.status === 'Pending Downpayment'){
+        wrap.innerHTML = '<div class="text-sm text-gray-600">Awaiting downpayment verification…</div>';
+      }
+      else if (order.status === 'Pending Balance'){
+        wrap.appendChild(uploadRow('Upload Final Payment Receipt', (file)=>submitFinalPayment(order._id, file)));
+      }
+      else if (order.status === 'Pending Final Verification'){
+        wrap.innerHTML = '<div class="text-sm text-gray-600">Awaiting final payment verification…</div>';
+      }
+      else if (order.status === 'Completed'){
+        const box = document.createElement('div');
+        box.className = 'p-3 bg-green-50 border border-green-200 rounded';
+        box.innerHTML = `
+          <div class="text-sm font-medium text-green-800 mb-2">Choose Fulfillment</div>
+          <div class="flex items-center gap-3 mb-2 text-sm">
+            <label class="inline-flex items-center gap-1">
+              <input type="radio" name="fulfill-${order._id}" value="pickup" checked>
+              <span>Pickup</span>
+            </label>
+            <label class="inline-flex items-center gap-1">
+              <input type="radio" name="fulfill-${order._id}" value="delivery">
+              <span>Delivery</span>
+            </label>
+          </div>
+          <div class="mb-2">
+            <input type="text" class="w-full px-3 py-2 border rounded text-sm hidden" placeholder="Delivery address" data-address>
+          </div>
+          <button class="px-3 py-2 bg-green-600 text-white rounded text-sm" data-submit>Set Fulfillment</button>
+        `;
+        const addressInput = box.querySelector('[data-address]');
+        box.querySelectorAll(`input[name="fulfill-${order._id}"]`).forEach(r => {
+          r.addEventListener('change', ()=>{
+            if (r.value === 'delivery' && r.checked) addressInput.classList.remove('hidden');
+            if (r.value === 'pickup' && r.checked) addressInput.classList.add('hidden');
+          });
+        });
+        box.querySelector('[data-submit]').addEventListener('click', async ()=>{
+          const chosen = [...box.querySelectorAll(`input[name="fulfill-${order._id}"]`)].find(i=>i.checked)?.value;
+          const addr = addressInput.value.trim();
+          if (chosen === 'delivery' && !addr){ alert('Please enter a delivery address'); return; }
+          await setFulfillment(order._id, chosen, addr);
+        });
+        wrap.appendChild(box);
+      }
+      else if (order.status === 'Cancelled'){
+        wrap.innerHTML = '<div class="text-sm text-red-600">Quote cancelled. Please submit a new quote.</div>';
+      } else {
+        wrap.innerHTML = '<div class="text-sm text-gray-600">No actions available at this stage.</div>';
+      }
+
+      return wrap;
+    }
+
+    function uploadRow(label, onSubmit){
+      const row = document.createElement('div');
+      row.className = 'flex flex-col sm:flex-row sm:items-center gap-2';
+
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,.pdf';
+      input.id = `file-${++fileCounter}`;
+      input.className = 'hidden';
+
+      const choose = document.createElement('label');
+      choose.setAttribute('for', input.id);
+      choose.className = 'inline-flex items-center gap-2 px-3 py-2 border rounded text-sm bg-white hover:bg-gray-50 cursor-pointer';
+      choose.innerHTML = '<i class="fas fa-paperclip text-gray-500"></i> Choose File';
+
+      const name = document.createElement('span');
+      name.className = 'text-xs text-gray-500 truncate';
+      name.textContent = 'No file chosen';
+
+      input.addEventListener('change', ()=>{
+        const f = input.files && input.files[0];
+        name.textContent = f ? f.name : 'No file chosen';
+      });
+
+      const btn = document.createElement('button');
+      btn.className = 'px-3 py-2 bg-indigo-600 text-white rounded text-sm';
+      btn.textContent = label;
+      btn.onclick = async ()=>{
+        const file = input.files && input.files[0];
+        if (!file){ alert('Please choose a file'); return; }
+        btn.disabled = true; btn.textContent = 'Uploading…';
+        try { await onSubmit(file); } finally { btn.disabled = false; btn.textContent = label; }
+      };
+
+      row.appendChild(input);
+      row.appendChild(choose);
+      row.appendChild(name);
+      row.appendChild(btn);
+      return row;
+    }
+
+    async function submitDownpayment(id, file){
+      const fd = new FormData();
+      fd.append('designFile', file);
+      const res = await fetch(`/api/custom-orders/${id}/downpayment`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' },
+        body: fd
+      });
+      const json = await res.json();
+      if (!json.success){ alert(json.msg || 'Failed to upload downpayment'); return; }
+      alert('Downpayment receipt uploaded. Awaiting verification.');
+      fetchMine();
+    }
+
+    async function submitFinalPayment(id, file){
+      const fd = new FormData();
+      fd.append('designFile', file);
+      const res = await fetch(`/api/custom-orders/${id}/final-payment`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' },
+        body: fd
+      });
+      const json = await res.json();
+      if (!json.success){ alert(json.msg || 'Failed to upload final payment'); return; }
+      alert('Final payment receipt uploaded. Awaiting verification.');
+      fetchMine();
+    }
+
+    async function acceptQuote(id){
+      const res = await fetch(`/api/custom-orders/${id}/accept`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
+      });
+      const json = await res.json();
+      if (!json.success){ alert(json.msg || 'Failed to accept quote'); return; }
+      alert('Quote accepted. You can proceed with payment.');
+      fetchMine();
+    }
+
+    document.getElementById('statusFilter').addEventListener('change', fetchMine);
+
+    // Initial skeleton state
+    (function skeleton(){
+      const wrap = document.getElementById('list');
+      wrap.innerHTML = Array.from({length: 6}).map(()=>`
+        <div class="bg-white border rounded-xl p-4 animate-pulse">
+          <div class="h-4 w-24 bg-gray-200 rounded mb-2"></div>
+          <div class="h-5 w-40 bg-gray-200 rounded mb-4"></div>
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <div class="h-10 bg-gray-100 rounded"></div>
+            <div class="h-10 bg-gray-100 rounded"></div>
+          </div>
+          <div class="h-4 w-32 bg-gray-200 rounded mb-3"></div>
+          <div class="h-10 bg-gray-100 rounded"></div>
+        </div>`).join('');
+    })();
+
+    fetchMine();
+
+    async function setFulfillment(id, method, address){
+      const res = await fetch(`/api/custom-orders/${id}/fulfillment`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify({ fulfillmentMethod: method, deliveryAddress: address || undefined })
+      });
+      const json = await res.json();
+      if (!json.success){ alert(json.msg || 'Failed to set fulfillment'); return; }
+      alert('Fulfillment set. We will provide details soon.');
+      fetchMine();
+    }
+  </script>
+</body>
+</html>
