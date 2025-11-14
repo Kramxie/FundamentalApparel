@@ -50,7 +50,10 @@ router.route('/')
 
 router.route('/:id')
     .get(getProductById)
-    .put(protect, authorize('admin'), updateProduct)
+    .put(protect, authorize('admin'), upload.fields([
+        { name: 'mainImage', maxCount: 1 },
+        { name: 'galleryImages', maxCount: 8 }
+    ]), updateProduct)
     .delete(protect, authorize('admin'), deleteProduct);
 
 module.exports = router;

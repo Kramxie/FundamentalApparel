@@ -234,13 +234,26 @@
         wrap.appendChild(info);
         wrap.appendChild(btn);
       }
-      else if (order.status === 'Quote Accepted'){
-        // Payments available after acceptance
-        wrap.appendChild(uploadRow('Upload 50% Downpayment Receipt', (file)=>submitDownpayment(order._id, file)));
-        wrap.appendChild(uploadRow('Pay Full (Upload Receipt)', (file)=>submitFinalPayment(order._id, file)));
-      }
       else if (order.status === 'Pending Downpayment'){
-        wrap.innerHTML = '<div class="text-sm text-gray-600">Awaiting downpayment verification…</div>';
+        // Show payment options after quote acceptance
+        const info = document.createElement('div');
+        info.className = 'text-sm text-gray-700 mb-3';
+        info.innerHTML = '<strong>Quote Accepted!</strong> Choose your payment option:';
+        wrap.appendChild(info);
+        
+        // Pay 50% Downpayment Button
+        const btn50 = document.createElement('button');
+        btn50.className = 'px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition';
+        btn50.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Pay 50% Downpayment';
+        btn50.onclick = ()=> proceedToPayment(order, 'downpayment');
+        wrap.appendChild(btn50);
+        
+        // Pay 100% Full Payment Button
+        const btn100 = document.createElement('button');
+        btn100.className = 'px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition';
+        btn100.innerHTML = '<i class="fas fa-money-bill-wave mr-2"></i>Pay 100% Full Amount';
+        btn100.onclick = ()=> proceedToPayment(order, 'full');
+        wrap.appendChild(btn100);
       }
       else if (order.status === 'Pending Balance'){
         wrap.appendChild(uploadRow('Upload Final Payment Receipt', (file)=>submitFinalPayment(order._id, file)));
@@ -368,8 +381,33 @@
       });
       const json = await res.json();
       if (!json.success){ alert(json.msg || 'Failed to accept quote'); return; }
-      alert('Quote accepted. You can proceed with payment.');
+      // Refresh to show payment options
       fetchMine();
+    }
+    
+    function proceedToPayment(order, paymentOption){
+      // Store order and payment option in localStorage
+      const checkoutData = {
+        orderId: order._id,
+        orderReference: order._id.toString().slice(-8).toUpperCase(),
+        serviceType: order.serviceType || 'customize-jersey',
+        serviceName: order.productName || 'Custom Order',
+        quantity: order.quantity || 1,
+        basePrice: order.price || order.totalPrice || 0,
+        totalPrice: paymentOption === 'full' ? (order.price || order.totalPrice || 0) : (order.price || order.totalPrice || 0) * 0.5,
+        paymentOption: paymentOption,
+        garmentType: order.garmentType || order.itemType || 't-shirt',
+        selectedLocation: order.selectedLocation || 'Front',
+        designDetails: order.designDetails || '',
+        colors: order.colors || {},
+        designText: order.designText || '',
+        designImagesMap: order.designImagesMap || null,
+        designImage: order.designImage || '',
+        notes: order.notes || ''
+      };
+      
+      localStorage.setItem('pendingServiceCheckout', JSON.stringify(checkoutData));
+      window.location.href = 'services-checkout.html';
     }
 
     document.getElementById('statusFilter').addEventListener('change', fetchMine);

@@ -22,6 +22,11 @@ exports.createPaymentSession = async (req, res) => {
       orderReference,
       serviceType,
       amount,
+      baseAmount,
+      deliveryFee,
+      paymentOption,
+      shippingMethod,
+      shippingAddress,
       customerInfo,
       serviceData,
       successUrl,
@@ -29,6 +34,9 @@ exports.createPaymentSession = async (req, res) => {
     } = req.body;
 
     console.log('[PayMongo] Creating checkout session for user:', userId);
+    console.log('[PayMongo] Payment option:', paymentOption);
+    console.log('[PayMongo] Shipping method:', shippingMethod);
+    console.log('[PayMongo] Delivery fee:', deliveryFee);
 
     // Validation
     if (!amount || amount <= 0) {
@@ -44,17 +52,30 @@ exports.createPaymentSession = async (req, res) => {
         msg: 'Customer information is required'
       });
     }
+    
+    // Validate shipping address if Standard Delivery
+    if (shippingMethod === 'Standard' && (!shippingAddress || !shippingAddress.street)) {
+      return res.status(400).json({
+        success: false,
+        msg: 'Shipping address is required for Standard Delivery'
+      });
+    }
 
     // Convert amount to centavos (PayMongo expects integer in cents)
     const amountInCents = Math.round(amount * 100);
+    
+    // Determine payment description based on payment option
+    const paymentDesc = paymentOption === 'downpayment' 
+      ? '50% Downpayment' 
+      : '100% Full Payment';
 
     // Prepare line items for PayMongo
     const lineItems = [{
       currency: 'PHP',
       amount: amountInCents,
-      name: serviceData?.serviceName || 'Custom Jersey Service',
+      name: `${serviceData?.serviceName || 'Custom Jersey Service'} - ${paymentDesc}`,
       quantity: serviceData?.quantity || 1,
-      description: `${serviceType || 'customize-jersey'} - Ref: ${orderReference || 'PENDING'}`
+      description: `${serviceType || 'customize-jersey'} - Ref: ${orderReference || 'PENDING'} - ${shippingMethod || 'Standard'} Delivery`
     }];
 
     // Create or update CustomOrder
@@ -76,9 +97,13 @@ exports.createPaymentSession = async (req, res) => {
         });
       }
 
-      // Update order with payment intent
+      // Update order with payment intent and shipping info
       order.paymentStatus = 'pending';
-      order.totalPrice = amount;
+      order.totalPrice = baseAmount || amount;
+      order.paymentOption = paymentOption || 'full';
+      order.shippingMethod = shippingMethod || 'Standard';
+      order.shippingAddress = shippingAddress || null;
+      order.deliveryFee = deliveryFee || 0;
       order.quotePayload = {
         ...order.quotePayload,
         ...serviceData,
@@ -94,7 +119,11 @@ exports.createPaymentSession = async (req, res) => {
         garmentType: serviceData?.garmentType || 't-shirt',
         selectedLocation: serviceData?.selectedLocation || 'Front',
         quantity: serviceData?.quantity || 1,
-        totalPrice: amount,
+        totalPrice: baseAmount || amount,
+        paymentOption: paymentOption || 'full',
+        shippingMethod: shippingMethod || 'Standard',
+        shippingAddress: shippingAddress || null,
+        deliveryFee: deliveryFee || 0,
         status: 'Pending Quote',
         paymentStatus: 'pending',
         quotePayload: {
@@ -430,14 +459,24 @@ async function handlePaymentSuccess(eventData) {
       order.isPaid = true;
       order.paidAt = new Date();
     } else {
+      // Service order - check payment option
       order.paymentStatus = 'paid';
-      order.status = 'Quote Accepted'; // Move to next workflow step
-      order.downPaymentPaid = true;
+      
+      if (order.paymentOption === 'downpayment') {
+        // 50% downpayment paid
+        order.status = 'In Production';
+        order.downPaymentPaid = true;
+      } else {
+        // 100% full payment paid
+        order.status = 'In Production';
+        order.downPaymentPaid = true;
+        order.finalPaymentPaid = true;
+      }
     }
 
     await order.save();
 
-    console.log('[PayMongo] Order updated successfully:', order._id, 'Type:', isProductOrder ? 'Product' : 'Service');
+    console.log('[PayMongo] Order updated successfully:', order._id, 'Type:', isProductOrder ? 'Product' : 'Service', 'Payment Option:', order.paymentOption);
 
     // TODO: Send confirmation email to customer
 

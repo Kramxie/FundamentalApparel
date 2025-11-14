@@ -148,18 +148,52 @@ exports.updateProduct = async (req, res, next) => {
       return res.status(404).json({ success: false, msg: "Product not found" });
     }
 
-    // Mongoose findByIdAndUpdate will handle the update
-    const updatedData = req.body;
+    const updatedData = { ...req.body };
 
-    // Convert comma-separated strings to arrays
-    if (updatedData.gallery)
-      updatedData.gallery = updatedData.gallery
-        .split(",")
-        .map((url) => url.trim());
-    if (updatedData.sizes)
-      updatedData.sizes = updatedData.sizes.split(",").map((s) => s.trim());
-    if (updatedData.colors)
-      updatedData.colors = updatedData.colors.split(",").map((c) => c.trim());
+    // Handle main image upload
+    if (req.files && req.files.mainImage && req.files.mainImage[0]) {
+      updatedData.imageUrl = `${BASE_URL}/uploads/products/${path.basename(req.files.mainImage[0].path)}`;
+    } else if (req.body.existingMainImage) {
+      updatedData.imageUrl = req.body.existingMainImage;
+    }
+
+    // Handle gallery images
+    let galleryUrls = [];
+    
+    // Keep existing images (not marked for deletion)
+    if (req.body.existingGallery) {
+      try {
+        const existing = JSON.parse(req.body.existingGallery);
+        if (Array.isArray(existing)) {
+          galleryUrls = [...existing];
+        }
+      } catch (e) {
+        console.error('Error parsing existingGallery:', e);
+      }
+    }
+    
+    // Add new uploaded images
+    if (req.files && req.files.galleryImages && req.files.galleryImages.length > 0) {
+      const newGalleryUrls = req.files.galleryImages.map(
+        (f) => `${BASE_URL}/uploads/products/${path.basename(f.path)}`
+      );
+      galleryUrls = [...galleryUrls, ...newGalleryUrls];
+    }
+    
+    updatedData.gallery = galleryUrls;
+
+    // Convert comma-separated strings to arrays for sizes/colors
+    if (updatedData.sizes && typeof updatedData.sizes === 'string') {
+      updatedData.sizes = updatedData.sizes.split(",").map((s) => s.trim()).filter(s => s);
+    }
+    if (updatedData.colors && typeof updatedData.colors === 'string') {
+      updatedData.colors = updatedData.colors.split(",").map((c) => c.trim()).filter(c => c);
+    }
+
+    // Remove upload metadata fields
+    delete updatedData.existingMainImage;
+    delete updatedData.existingGallery;
+    delete updatedData.deletedGallery;
 
     product = await Product.findByIdAndUpdate(req.params.id, updatedData, {
       new: true,

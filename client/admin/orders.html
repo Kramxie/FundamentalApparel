@@ -258,25 +258,36 @@
   </div>
 
   <div id="custom-order-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-lg shadow max-w-lg w-full overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-3 border-b">
-        <h3 class="font-semibold text-gray-800">Custom Order Request</h3>
-        <button id="custom-modal-close" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+    <div class="bg-white rounded-lg shadow max-w-6xl w-full overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b bg-gray-50">
+        <h3 class="text-lg font-semibold text-gray-800">Custom Order Request</h3>
+        <button id="custom-modal-close" class="text-gray-500 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
       </div>
-      <div class="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+      <div class="p-6 max-h-[80vh] overflow-y-auto space-y-6">
+        <!-- Error Message (Full Width) -->
         <div id="custom-modal-error" class="hidden text-sm p-3 rounded-md bg-red-100 text-red-700"></div>
         
-        <!-- Basic Information -->
-        <div class="text-sm space-y-2">
-          <p><strong>Customer:</strong> <span id="custom-modal-user"></span></p>
-          <p><strong>Quantity:</strong> <span id="custom-modal-qty"></span></p>
-          <p><strong>Type:</strong> <span id="custom-modal-type"></span></p>
-        </div>
+        <!-- Two Column Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- LEFT COLUMN -->
+          <div class="space-y-6">
+            <!-- Basic Information -->
+            <div class="bg-gray-50 p-4 rounded-lg border">
+              <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+                <i class="fas fa-info-circle mr-2 text-indigo-600"></i>
+                Order Information
+              </h4>
+              <div class="text-sm space-y-2">
+                <p><strong>Customer:</strong> <span id="custom-modal-user"></span></p>
+                <p><strong>Quantity:</strong> <span id="custom-modal-qty"></span></p>
+                <p><strong>Type:</strong> <span id="custom-modal-type"></span></p>
+              </div>
+            </div>
 
-        <!-- Service Type Badge -->
-        <div id="custom-modal-service-type-section">
-          <span id="custom-modal-service-badge" class="inline-block px-3 py-1 rounded-full text-sm font-semibold"></span>
-        </div>
+            <!-- Service Type Badge -->
+            <div id="custom-modal-service-type-section">
+              <span id="custom-modal-service-badge" class="inline-block px-3 py-1 rounded-full text-sm font-semibold"></span>
+            </div>
 
         <!-- Customize Jersey Details -->
         <div id="custom-modal-customize-jersey-section" class="hidden space-y-3">
@@ -335,8 +346,8 @@
                   <p><strong>Design Text:</strong> <span id="pro-design-text"></span></p>
                 </div>
                 <div id="pro-design-image-wrap" class="hidden">
-                  <p class="mb-1"><strong>Design Image:</strong></p>
-                  <div id="pro-design-image"></div>
+                  <p class="mb-2"><strong>Design Images:</strong></p>
+                  <div id="pro-design-image" class="grid grid-cols-2 gap-3"></div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <p><strong>Printing Type:</strong> <span id="pro-printing-type"></span></p>
@@ -432,56 +443,70 @@
             </div>
           </div>
         </div>
+          </div>
+          <!-- END LEFT COLUMN -->
 
+          <!-- RIGHT COLUMN -->
+          <div class="space-y-6">
         <!-- Customer Notes -->
-        <div class="border-t pt-3">
-          <h4 class="font-medium mb-1">📝 Customer Notes</h4>
-          <div id="custom-modal-notes" class="text-sm bg-gray-50 p-3 rounded-md border min-h-[50px]"></div>
+        <div class="bg-gray-50 p-4 rounded-lg border">
+          <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+            <i class="fas fa-clipboard mr-2 text-indigo-600"></i>
+            Customer Notes
+          </h4>
+          <div id="custom-modal-notes" class="text-sm bg-white p-3 rounded-md border min-h-[50px]"></div>
         </div>
 
-        <div id="custom-modal-dp-section" class="hidden space-y-2">
-          <hr>
-          <h4 class="font-medium">Down Payment Receipt</h4>
-          <div id="custom-modal-dp-receipt" class="text-sm">
-          </div>
+        <!-- Payment Receipts -->
+        <div id="custom-modal-dp-section" class="hidden bg-gray-50 p-4 rounded-lg border">
+          <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+            <i class="fas fa-receipt mr-2 text-green-600"></i>
+            Down Payment Receipt
+          </h4>
+          <div id="custom-modal-dp-receipt" class="text-sm"></div>
         </div>
-        <div id="custom-modal-fp-section" class="hidden space-y-2">
-          <hr>
-          <h4 class="font-medium">Final Payment Receipt</h4>
-          <div id="custom-modal-fp-receipt" class="text-sm">
-          </div>
+        
+        <div id="custom-modal-fp-section" class="hidden bg-gray-50 p-4 rounded-lg border">
+          <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+            <i class="fas fa-receipt mr-2 text-blue-600"></i>
+            Final Payment Receipt
+          </h4>
+          <div id="custom-modal-fp-receipt" class="text-sm"></div>
         </div>
-        <hr>
 
-        <div id="custom-modal-quote-box" class="hidden space-y-2">
+        <!-- Quote Form -->
+        <div id="custom-modal-quote-box" class="hidden bg-indigo-50 p-4 rounded-lg border border-indigo-200 space-y-3">
+          <h4 class="font-semibold text-indigo-900 mb-2">💰 Set Quote Price</h4>
           <div>
-            <label for="form-custom-price" class="block font-medium mb-1">Set Total Price (PHP)</label>
-            <input id="form-custom-price" type="number" min="0" class="w-full border rounded px-3 py-2" placeholder="Enter total amount for this custom order">
+            <label for="form-custom-price" class="block text-sm font-medium mb-1">Total Price (PHP)</label>
+            <input id="form-custom-price" type="number" min="0" class="w-full border rounded px-3 py-2 text-sm" placeholder="Enter total amount">
           </div>
           <div>
-            <label for="form-pricing-notes" class="block font-medium mb-1">Pricing Breakdown / Notes (shown to customer)</label>
-            <textarea id="form-pricing-notes" rows="3" class="w-full border rounded px-3 py-2" placeholder="Write a short breakdown customers will see (e.g., Materials, Printing, Discounts)"></textarea>
+            <label for="form-pricing-notes" class="block text-sm font-medium mb-1">Pricing Breakdown / Notes</label>
+            <textarea id="form-pricing-notes" rows="3" class="w-full border rounded px-3 py-2 text-sm" placeholder="Materials, Printing, Discounts..."></textarea>
           </div>
         </div>
 
-        <div id="custom-modal-info-box" class="hidden text-sm">
-          <p><strong>Total Price:</strong> <span id="custom-modal-price-display" class="font-semibold text-lg"></span>
-          </p>
-          <p id="custom-modal-info-text" class="text-gray-600">Waiting for user to accept quote.</p>
+        <!-- Price Display -->
+        <div id="custom-modal-info-box" class="hidden bg-green-50 p-4 rounded-lg border border-green-200">
+          <p class="text-sm"><strong>Total Price:</strong> <span id="custom-modal-price-display" class="font-bold text-xl text-green-700"></span></p>
+          <p id="custom-modal-info-text" class="text-sm text-gray-600 mt-1">Waiting for user to accept quote.</p>
         </div>
 
-        <!-- NEW: Fulfillment Details Section -->
-        <div id="custom-modal-fulfillment-section" class="hidden space-y-3">
-          <hr>
-          <h4 class="font-medium text-gray-800">📦 Fulfillment Details</h4>
+        <!-- Fulfillment Details Section -->
+        <div id="custom-modal-fulfillment-section" class="hidden bg-gray-50 p-4 rounded-lg border space-y-3">
+          <h4 class="font-semibold text-gray-800 flex items-center">
+            <i class="fas fa-truck mr-2 text-purple-600"></i>
+            Fulfillment Details
+          </h4>
           
-          <div id="custom-modal-fulfillment-info" class="text-sm bg-gray-50 p-3 rounded-md border">
+          <div id="custom-modal-fulfillment-info" class="text-sm bg-white p-3 rounded-md border">
             <!-- This will be populated dynamically -->
           </div>
 
           <!-- Admin form to add tracking/pickup details -->
-          <div id="custom-modal-fulfillment-form" class="hidden space-y-3 p-4 bg-indigo-50 rounded-md border border-indigo-200">
-            <p class="text-sm font-medium text-indigo-900">Add Fulfillment Details:</p>
+          <div id="custom-modal-fulfillment-form" class="hidden space-y-3 p-3 bg-indigo-50 rounded-md border border-indigo-200">
+            <p class="text-xs font-medium text-indigo-900">Add Fulfillment Details:</p>
             
             <!-- For Delivery -->
             <div id="fulfillment-delivery-fields" class="hidden space-y-2">
@@ -512,18 +537,30 @@
             </button>
           </div>
         </div>
-
+          </div>
+          <!-- END RIGHT COLUMN -->
+        </div>
+        <!-- END TWO COLUMN GRID -->
       </div>
-      <div class="px-5 py-3 border-t flex items-center justify-between gap-3">
-    <p id="custom-modal-error" class="text-sm text-red-600 mr-auto"></p> <div class="flex items-center gap-3"> <button id="custom-modal-save-quote" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded">Send Quote</button>
-
-        <button id="custom-modal-verify-dp" class="hidden bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded">Verify DP</button>
-
-        <button id="custom-modal-request-final" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded">Request Final Payment</button>
-
-        <button id="custom-modal-verify-final" class="hidden bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded">Verify Final & Complete</button>
-    </div>
-</div>
+      
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t bg-gray-50 flex items-center justify-between gap-3">
+        <p id="custom-modal-error" class="text-sm text-red-600 mr-auto"></p> 
+        <div class="flex items-center gap-2"> 
+          <button id="custom-modal-save-quote" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-lg transition">
+            <i class="fas fa-paper-plane mr-2"></i>Send Quote
+          </button>
+          <button id="custom-modal-verify-dp" class="hidden bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2.5 rounded-lg transition">
+            <i class="fas fa-check-circle mr-2"></i>Verify DP
+          </button>
+          <button id="custom-modal-request-final" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-lg transition">
+            <i class="fas fa-money-bill-wave mr-2"></i>Request Final Payment
+          </button>
+          <button id="custom-modal-verify-final" class="hidden bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2.5 rounded-lg transition">
+            <i class="fas fa-check-double mr-2"></i>Verify Final & Complete
+          </button>
+        </div>
+      </div>
   </div>
   <script>
     const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev'; // O ang ngrok URL mo
@@ -975,29 +1012,31 @@
             } else {
               document.getElementById('pro-design-text-wrap').classList.add('hidden');
             }
-            // Design images (single legacy + multi-location previews)
+            // Design images (single legacy + multi-location previews) - 2x2 grid
             const designWrap = document.getElementById('pro-design-image');
             const multi = order.designImagesMap || {};
             if (Object.keys(multi).length) {
               const entries = Object.entries(multi);
               designWrap.innerHTML = entries.map(([loc,url]) => `
-                <div class="mb-3">
-                  <p class="text-xs font-semibold text-gray-700 mb-1">${loc.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</p>
-                  <a href="${url}" target="_blank" download>
-                    <img src="${url}" class="max-h-40 rounded border shadow" alt="${loc} preview">
+                <div class="bg-white p-3 rounded-lg border">
+                  <p class="text-xs font-semibold text-gray-700 mb-2">${loc.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</p>
+                  <a href="${url}" target="_blank" download class="block mb-2">
+                    <img src="${url}" class="w-full h-32 object-contain rounded border shadow-sm hover:shadow-md transition" alt="${loc} preview">
                   </a>
-                  <div class="mt-1">
-                    <a href="${url}" target="_blank" download class="px-2 py-1 text-xs border rounded hover:bg-gray-50">Download</a>
-                  </div>
+                  <a href="${url}" target="_blank" download class="block text-center px-2 py-1 text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 rounded hover:bg-indigo-100 transition">
+                    <i class="fas fa-download mr-1"></i>Download
+                  </a>
                 </div>`).join('');
               document.getElementById('pro-design-image-wrap').classList.remove('hidden');
             } else if (order.designImage) {
               designWrap.innerHTML = `
-                <a href="${order.designImage}" target="_blank" download>
-                  <img src="${order.designImage}" class="max-h-40 rounded border shadow" alt="Design Image">
-                </a>
-                <div class="mt-2">
-                  <a href="${order.designImage}" target="_blank" download class="px-3 py-1 text-xs border rounded hover:bg-gray-50">Download Image</a>
+                <div class="col-span-2 bg-white p-3 rounded-lg border">
+                  <a href="${order.designImage}" target="_blank" download class="block mb-2">
+                    <img src="${order.designImage}" class="w-full h-48 object-contain rounded border shadow-sm hover:shadow-md transition" alt="Design Image">
+                  </a>
+                  <a href="${order.designImage}" target="_blank" download class="block text-center px-3 py-2 text-sm bg-indigo-50 text-indigo-700 border border-indigo-200 rounded hover:bg-indigo-100 transition">
+                    <i class="fas fa-download mr-1"></i>Download Image
+                  </a>
                 </div>`;
               document.getElementById('pro-design-image-wrap').classList.remove('hidden');
             } else {
@@ -1188,7 +1227,33 @@
           fulfillmentSection.classList.remove('hidden');
 
           if (order.fulfillmentMethod === 'pending' || !order.fulfillmentMethod) {
-            fulfillmentInfo.innerHTML = '<p class="text-gray-600">⏳ Customer has not chosen a fulfillment method yet.</p>';
+            // Check if shippingAddress or shippingMethod exists (new structured data)
+            if (order.shippingAddress || order.shippingMethod) {
+              const addr = order.shippingAddress;
+              const method = order.shippingMethod || 'Standard';
+              
+              if (method === 'Pick-Up') {
+                fulfillmentInfo.innerHTML = `
+                  <p class="font-semibold text-green-900">📦 Pick-Up Selected</p>
+                  <p class="mt-1"><strong>Method:</strong> Customer will pick up at store</p>
+                  <p class="mt-1 text-sm text-gray-600">Delivery Fee: FREE</p>
+                `;
+              } else {
+                const fullAddress = addr 
+                  ? `${addr.street || ''}${addr.building ? ', ' + addr.building : ''}, ${addr.city || ''}, ${addr.province || ''} ${addr.zip || ''}`
+                  : order.deliveryAddress || 'N/A';
+                
+                fulfillmentInfo.innerHTML = `
+                  <p class="font-semibold text-blue-900">🚚 Standard Delivery Selected</p>
+                  <p class="mt-1"><strong>Address:</strong> ${fullAddress}</p>
+                  ${addr && addr.phone ? `<p class="mt-1"><strong>Contact:</strong> ${addr.phone}</p>` : ''}
+                  <p class="mt-1 text-sm text-gray-600">Delivery Fee: ₱${order.deliveryFee || 80}</p>
+                  <p class="mt-1 text-yellow-600">⏳ Awaiting admin to set tracking details</p>
+                `;
+              }
+            } else {
+              fulfillmentInfo.innerHTML = '<p class="text-gray-600">⏳ Customer has not chosen a fulfillment method yet.</p>';
+            }
           } else if (order.fulfillmentMethod === 'delivery') {
             fulfillmentInfo.innerHTML = `
               <p class="font-semibold text-blue-900">🚚 Delivery Selected</p>

@@ -18,7 +18,8 @@ const {
     setFulfillmentMethod,
     updateFulfillmentDetails,
     submitQuote,
-    rejectCustomOrderQuote
+    rejectCustomOrderQuote,
+    getSingleCustomOrder
 } = require('../controllers/customOrderController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -90,6 +91,9 @@ router.route('/:id/quote')
 
 router.route('/:id/accept')
     .put(protect, acceptCustomOrderQuote);
+
+router.route('/:id')
+    .get(protect, getSingleCustomOrder);
 
 router.route('/:id/reject')
     .put(protect, authorize('admin'), rejectCustomOrderQuote);

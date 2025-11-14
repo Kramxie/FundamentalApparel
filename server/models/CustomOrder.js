@@ -182,6 +182,28 @@ const CustomOrderSchema = new mongoose.Schema({
     deliveryAddress: {
         type: String
     },
+    // Shipping Address (detailed structure)
+    shippingAddress: {
+        block: { type: String },
+        lot: { type: String },
+        street: { type: String, required: false },
+        building: { type: String },
+        province: { type: String, required: false },
+        city: { type: String, required: false },
+        zip: { type: String, required: false },
+        phone: { type: String, required: false }
+    },
+    // Shipping Method (Standard Delivery or Pick-Up)
+    shippingMethod: {
+        type: String,
+        enum: ['Standard', 'Pick-Up'],
+        default: 'Standard'
+    },
+    // Delivery Fee
+    deliveryFee: {
+        type: Number,
+        default: 0
+    },
     trackingNumber: {
         type: String
     },

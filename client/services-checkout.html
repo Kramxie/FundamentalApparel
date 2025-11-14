@@ -47,147 +47,217 @@
         <p class="text-gray-600 mt-1">Review your custom order and complete payment</p>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- Left Column: Service Summary -->
-        <div class="lg:col-span-7 space-y-6">
-          <!-- Service Details -->
-          <section class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-4 flex items-center">
-              <i class="fas fa-clipboard-list mr-2 text-indigo-600"></i>
-              Service Summary
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column: Service Details & Shipping (2 columns width) -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Service Details with Design Preview -->
+          <section class="bg-white rounded-lg shadow-sm border p-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900">
+              Order Summary
             </h2>
             <div id="service-summary" class="space-y-4">
               <p class="text-gray-500">Loading service details...</p>
             </div>
           </section>
 
-          <!-- Customer Information Form -->
-          <section class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-4 flex items-center">
-              <i class="fas fa-user mr-2 text-indigo-600"></i>
-              Contact Information
+          <!-- Shipping Address -->
+          <section class="bg-white rounded-lg shadow-sm border p-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900">
+              Shipping Address
             </h2>
-            <form id="contact-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input id="contact-name" type="text" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Juan Dela Cruz">
+            <div class="flex items-center gap-6 mb-4 text-sm">
+              <label class="flex items-center gap-2">
+                <input type="radio" name="address-mode" id="address-default" value="default" class="h-4 w-4 text-indigo-600" checked> 
+                Use Default Address
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="radio" name="address-mode" id="address-new" value="new" class="h-4 w-4 text-indigo-600"> 
+                Enter New Address
+              </label>
+            </div>
+            <form id="shipping-form" class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Block</label>
+                <input id="ship-block" type="text" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Blk 13">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                <input id="contact-email" type="email" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="juan@example.com">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Lot</label>
+                <input id="ship-lot" type="text" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Lot 41">
+              </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Street <span class="text-red-500">*</span></label>
+                <input id="ship-street" type="text" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="blk 8 lot 52 Greentown Villas 1, Mambog 3" required>
+              </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Building / Address</label>
+                <input id="ship-building" type="text" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="De La Salle University - Dasmariñas">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                <input id="contact-phone" type="tel" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="+63 912 345 6789">
+                <label class="block text-xs font-medium text-gray-700 mb-1">State/Province <span class="text-red-500">*</span></label>
+                <input id="ship-province" type="text" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Cavite" required>
               </div>
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Additional Notes (Optional)</label>
-                <textarea id="contact-notes" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Any special instructions or requests..."></textarea>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">City <span class="text-red-500">*</span></label>
+                <input id="ship-city" type="text" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Bacoor" required>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Zip/Postal Code <span class="text-red-500">*</span></label>
+                <input id="ship-zip" type="text" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="4102" required>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Phone <span class="text-red-500">*</span></label>
+                <input id="ship-phone" type="tel" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="+63 912 345 6789" required>
               </div>
             </form>
           </section>
+
+          <!-- Delivery Method -->
+          <section class="bg-white rounded-lg shadow-sm border p-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900">
+              Delivery Method
+            </h2>
+            <div class="space-y-3">
+              <label class="flex items-center justify-between border-2 rounded-lg p-3 cursor-pointer hover:border-indigo-400 transition-colors" id="delivery-standard-option">
+                <div class="flex items-center gap-3">
+                  <input id="method-standard" type="radio" name="delivery-method" value="standard" class="h-4 w-4 text-indigo-600" checked>
+                  <div>
+                    <p class="font-medium text-sm">Standard Delivery</p>
+                    <p class="text-xs text-gray-500">3-5 days via J&T / Lalamove</p>
+                  </div>
+                </div>
+                <div class="font-semibold text-indigo-600">₱80</div>
+              </label>
+              <label class="flex items-center justify-between border-2 rounded-lg p-3 cursor-pointer hover:border-green-400 transition-colors" id="delivery-pickup-option">
+                <div class="flex items-center gap-3">
+                  <input id="method-pickup" type="radio" name="delivery-method" value="pickup" class="h-4 w-4 text-green-600">
+                  <div>
+                    <p class="font-medium text-sm">Pick-Up</p>
+                    <p class="text-xs text-gray-500">Pick-up at store - No delivery fee</p>
+                  </div>
+                </div>
+                <div class="font-semibold text-green-600">FREE</div>
+              </label>
+            </div>
+          </section>
         </div>
 
-        <!-- Right Column: Payment & Summary -->
-        <aside class="lg:col-span-5 space-y-6">
-          <!-- Payment Information -->
-          <section class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-4 flex items-center">
+        <!-- Right Column: Payment & Summary (1 column width) -->
+        <aside class="lg:col-span-1 space-y-6">
+          <!-- Payment Method -->
+          <section class="bg-white rounded-lg shadow-sm border p-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900 flex items-center">
               <i class="fas fa-credit-card mr-2 text-indigo-600"></i>
               Payment Method
             </h2>
             
-            <div class="space-y-4">
-              <!-- Payment Method Selection -->
-              <div class="space-y-3">
-                <label class="flex items-center justify-between border-2 rounded-lg p-4 cursor-pointer transition hover:border-indigo-500" id="gcash-option">
-                  <div class="flex items-center gap-3">
-                    <input type="radio" name="payment_method" id="pay-gcash" class="h-4 w-4 text-indigo-600" checked>
-                    <div>
-                      <span class="font-semibold text-gray-900">GCash</span>
-                      <p class="text-xs text-gray-500">Pay via GCash e-wallet</p>
-                    </div>
-                  </div>
-                  <img src="https://via.placeholder.com/50x30/007DBA/FFFFFF?text=GC" alt="GCash" class="h-8">
-                </label>
-                
-                <label class="flex items-center justify-between border-2 rounded-lg p-4 cursor-pointer transition hover:border-indigo-500" id="card-option">
-                  <div class="flex items-center gap-3">
-                    <input type="radio" name="payment_method" id="pay-card" class="h-4 w-4 text-indigo-600">
-                    <div>
-                      <span class="font-semibold text-gray-900">Credit/Debit Card</span>
-                      <p class="text-xs text-gray-500">Visa, Mastercard, JCB</p>
-                    </div>
-                  </div>
-                  <div class="flex gap-1">
-                    <img src="https://via.placeholder.com/35x22/1A1F71/FFFFFF?text=V" alt="Visa" class="h-6">
-                    <img src="https://via.placeholder.com/35x22/EB001B/FFFFFF?text=MC" alt="Mastercard" class="h-6">
-                  </div>
-                </label>
-              </div>
-
-              <!-- Amount Display -->
-              <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                <div class="flex justify-between items-center mb-2">
-                  <span class="text-sm text-gray-600">Base Price</span>
-                  <span class="font-medium">₱<span id="base-price">0</span></span>
-                </div>
-                <div class="flex justify-between items-center mb-2">
-                  <span class="text-sm text-gray-600">Quantity</span>
-                  <span class="font-medium"><span id="quantity-display">1</span></span>
-                </div>
-                <div class="flex justify-between items-center mb-2">
-                  <span class="text-sm text-gray-600">Service Fee</span>
-                  <span class="font-medium">₱<span id="service-fee">0</span></span>
-                </div>
-                <hr class="my-3 border-indigo-200">
-                <div class="flex justify-between items-center">
-                  <span class="text-lg font-semibold text-gray-900">Total Amount</span>
-                  <span class="text-2xl font-bold text-indigo-600">₱<span id="total-amount">0</span></span>
-                </div>
-              </div>
-
-              <!-- Payment Security Info -->
-              <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <div class="flex items-start gap-3">
-                  <i class="fas fa-shield-alt text-green-600 text-xl mt-1"></i>
+            <div class="space-y-3">
+              <label class="flex items-center justify-between border-2 rounded-lg p-3 cursor-pointer transition hover:border-indigo-500" id="gcash-option">
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="payment_method" id="pay-gcash" class="h-4 w-4 text-indigo-600" checked>
                   <div>
-                    <h3 class="font-semibold text-gray-900 mb-1">Secure Payment via PayMongo</h3>
-                    <p class="text-xs text-gray-600">Your payment is processed securely. We accept GCash and major credit/debit cards.</p>
-                    <div class="flex gap-2 mt-2">
-                      <img src="https://via.placeholder.com/40x25/4A90E2/FFFFFF?text=VISA" alt="Visa" class="h-6">
-                      <img src="https://via.placeholder.com/40x25/EB001B/FFFFFF?text=MC" alt="Mastercard" class="h-6">
-                      <img src="https://via.placeholder.com/40x25/007DBA/FFFFFF?text=GC" alt="GCash" class="h-6">
-                    </div>
+                    <span class="font-medium text-sm">GCash</span>
+                    <p class="text-xs text-gray-500">Pay via GCash e-wallet</p>
                   </div>
                 </div>
-              </div>
-
-              <!-- Terms Checkbox -->
-              <label class="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
-                <input id="agree-terms" type="checkbox" class="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"> 
-                <span>I agree to the <a href="#" class="text-indigo-600 hover:underline">Terms of Service</a> and <a href="#" class="text-indigo-600 hover:underline">Privacy Policy</a></span>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/GCash_logo.svg/512px-GCash_logo.svg.png" alt="GCash" class="h-6">
               </label>
-
-              <!-- Submit Button -->
-              <button id="proceed-payment-btn" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-md hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                <i class="fas fa-lock"></i>
-                <span>Proceed to Secure Payment</span>
-              </button>
-
-              <!-- Status Messages -->
-              <div id="error-message" class="hidden text-red-600 text-sm bg-red-50 border border-red-200 rounded p-3"></div>
-              <div id="success-message" class="hidden text-green-600 text-sm bg-green-50 border border-green-200 rounded p-3"></div>
+              
+              <label class="flex items-center justify-between border-2 rounded-lg p-3 cursor-pointer transition hover:border-indigo-500" id="card-option">
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="payment_method" id="pay-card" class="h-4 w-4 text-indigo-600">
+                  <div>
+                    <span class="font-medium text-sm">Credit/Debit Card</span>
+                    <p class="text-xs text-gray-500">Visa, Mastercard, JCB</p>
+                  </div>
+                </div>
+                <div class="flex gap-1">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png" alt="Visa" class="h-5">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-5">
+                </div>
+              </label>
             </div>
+
+            <!-- Security Badge -->
+            <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+              <i class="fas fa-shield-alt text-blue-600 mt-0.5"></i>
+              <p class="text-xs text-blue-900">
+                <strong>Secure Payment:</strong> You'll be redirected to PayMongo's secure checkout page to complete your payment.
+              </p>
+            </div>
+          </section>
+
+          <!-- Billing Summary -->
+          <section class="bg-white rounded-lg shadow-sm border p-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900">
+              Billing Summary
+            </h2>
+            
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Subtotal</span>
+                <span class="font-medium">₱<span id="base-price">0</span></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Discount</span>
+                <span class="font-medium text-red-600">-₱0</span>
+              </div>
+              <div id="delivery-fee-row" class="flex justify-between">
+                <span class="text-gray-600">Delivery Fee</span>
+                <span id="delivery-fee-amount" class="font-medium">₱80</span>
+              </div>
+              <hr class="border-gray-200">
+              <div class="flex justify-between items-center pt-2">
+                <span class="text-base font-semibold text-gray-900">Total</span>
+                <span class="text-xl font-bold text-indigo-600">₱<span id="total-amount">0</span></span>
+              </div>
+            </div>
+
+            <!-- Order Comment -->
+            <div class="mt-4">
+              <label class="block text-xs font-medium text-gray-700 mb-1">Order Comment</label>
+              <textarea id="contact-notes" rows="3" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Type here..."></textarea>
+            </div>
+
+            <!-- Contact Info (Compact) -->
+            <div class="mt-4 space-y-2">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+                <input id="contact-name" type="text" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="Juan Dela Cruz">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+                <input id="contact-email" type="email" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="juan@example.com">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Phone <span class="text-red-500">*</span></label>
+                <input id="contact-phone" type="tel" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="+63 912 345 6789">
+              </div>
+            </div>
+
+            <!-- Terms Checkbox -->
+            <label class="flex items-start gap-2 text-xs text-gray-700 cursor-pointer mt-4">
+              <input id="agree-terms" type="checkbox" class="mt-0.5 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"> 
+              <span>I agree to the <a href="#" class="text-indigo-600 hover:underline">Terms of Service</a> and <a href="#" class="text-indigo-600 hover:underline">Privacy Policy</a></span>
+            </label>
+
+            <!-- Checkout Button -->
+            <button id="proceed-payment-btn" class="w-full mt-4 bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              <i class="fas fa-lock"></i>
+              <span>Proceed to Payment</span>
+            </button>
+
+            <!-- Status Messages -->
+            <div id="error-message" class="hidden mt-3 text-red-600 text-xs bg-red-50 border border-red-200 rounded p-2"></div>
+            <div id="success-message" class="hidden mt-3 text-green-600 text-xs bg-green-50 border border-green-200 rounded p-2"></div>
           </section>
 
           <!-- Order Reference -->
-          <section class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <div class="flex items-center gap-2 text-sm text-gray-600">
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <div class="flex items-center gap-2 text-xs text-gray-600">
               <i class="fas fa-info-circle"></i>
-              <span>Order Reference: <strong id="order-ref" class="text-gray-900">N/A</strong></span>
+              <span>Order Ref: <strong id="order-ref" class="text-gray-900">N/A</strong></span>
             </div>
-          </section>
+          </div>
         </aside>
       </div>
     </div>
@@ -224,12 +294,67 @@
       // Load service data from localStorage or URL params
       loadServiceData();
       
-      // Fetch user profile to pre-fill contact form
+      // Fetch user profile to pre-fill contact form and address
       fetchUserProfile();
+
+      // Setup shipping address mode toggle
+      setupShippingAddressToggle();
+      
+      // Setup delivery method change handler
+      setupDeliveryMethodHandlers();
 
       // Attach event listeners
       document.getElementById('proceed-payment-btn').addEventListener('click', handlePaymentSubmit);
     });
+
+    /**
+     * Setup shipping address toggle (default vs new)
+     */
+    function setupShippingAddressToggle() {
+      const defaultRadio = document.getElementById('address-default');
+      const newRadio = document.getElementById('address-new');
+      const shippingInputs = document.querySelectorAll('#shipping-form input');
+      
+      function updateAddressFields() {
+        shippingInputs.forEach(input => {
+          input.disabled = defaultRadio.checked;
+          if (defaultRadio.checked) {
+            input.classList.add('bg-gray-100', 'cursor-not-allowed');
+          } else {
+            input.classList.remove('bg-gray-100', 'cursor-not-allowed');
+          }
+        });
+      }
+      
+      defaultRadio.addEventListener('change', updateAddressFields);
+      newRadio.addEventListener('change', updateAddressFields);
+      updateAddressFields(); // Initial state
+    }
+
+    /**
+     * Setup delivery method handlers (Standard vs Pick-Up)
+     */
+    function setupDeliveryMethodHandlers() {
+      const standardRadio = document.getElementById('method-standard');
+      const pickupRadio = document.getElementById('method-pickup');
+      const shippingSection = document.querySelector('section:has(#shipping-form)');
+      
+      function updateDeliveryUI() {
+        if (pickupRadio.checked) {
+          // Hide shipping address for pickup
+          shippingSection.style.display = 'none';
+        } else {
+          // Show shipping address for delivery
+          shippingSection.style.display = 'block';
+        }
+        // Recalculate total amount with delivery fee
+        updatePaymentAmounts(serviceData);
+      }
+      
+      standardRadio.addEventListener('change', updateDeliveryUI);
+      pickupRadio.addEventListener('change', updateDeliveryUI);
+      updateDeliveryUI(); // Initial state
+    }
 
     /**
      * Load service data from localStorage (set by customizer page)
@@ -248,11 +373,17 @@
         serviceData = JSON.parse(storedData);
         orderReference = serviceData.orderReference || 'PENDING';
         
-        // Render service summary
-        renderServiceSummary(serviceData);
+        console.log('[DEBUG] Service data loaded:', serviceData);
+        console.log('[DEBUG] Design images map:', serviceData.designImagesMap);
         
-        // Update payment amounts
-        updatePaymentAmounts(serviceData);
+        // If orderId exists, fetch full order details from backend to get design images
+        if (serviceData.orderId) {
+          fetchOrderDetails(serviceData.orderId);
+        } else {
+          // Render with localStorage data only
+          renderServiceSummary(serviceData);
+          updatePaymentAmounts(serviceData);
+        }
         
         // Update order reference
         document.getElementById('order-ref').textContent = orderReference;
@@ -262,6 +393,47 @@
         showError('Invalid service data format.');
         document.getElementById('proceed-payment-btn').disabled = true;
       }
+    }
+
+    /**
+     * Fetch full order details from backend (includes design images)
+     */
+    async function fetchOrderDetails(orderId) {
+      const token = localStorage.getItem('token');
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/custom-orders/${orderId}`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        
+        if (!res.ok) throw new Error('Failed to fetch order details');
+        
+        const json = await res.json();
+        
+        if (json.success && json.data) {
+          // Merge backend data with localStorage data
+          serviceData = {
+            ...serviceData,
+            ...json.data,
+            // Preserve payment option from localStorage
+            paymentOption: serviceData.paymentOption,
+            totalPrice: serviceData.totalPrice
+          };
+          
+          console.log('[DEBUG] Merged order data:', serviceData);
+          console.log('[DEBUG] Design images from backend:', serviceData.designImagesMap);
+        }
+      } catch (err) {
+        console.error('Error fetching order details:', err);
+        // Continue with localStorage data
+      }
+      
+      // Render with updated data
+      renderServiceSummary(serviceData);
+      updatePaymentAmounts(serviceData);
     }
 
     /**
@@ -281,50 +453,34 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 text-sm">
+        ${renderDesignPreviews(data)}
+
+        <div class="grid grid-cols-2 gap-3 text-sm mt-4">
           <div>
             <span class="text-gray-600">Garment Type:</span>
             <p class="font-medium">${data.garmentType || 'T-Shirt'}</p>
           </div>
           <div>
-            <span class="text-gray-600">Printing Type:</span>
-            <p class="font-medium">${data.printingType || 'Dye Sublimation'}</p>
-          </div>
-          <div>
             <span class="text-gray-600">Quantity:</span>
             <p class="font-medium">${data.quantity || 1} pcs</p>
           </div>
-          <div>
-            <span class="text-gray-600">Location:</span>
-            <p class="font-medium">${data.selectedLocation || 'Front'}</p>
-          </div>
-          ${data.teamMode ? `
-          <div class="col-span-2">
-            <span class="text-gray-600">Team Mode:</span>
-            <p class="font-medium text-indigo-600">Yes (${data.teamEntries?.length || 0} entries)</p>
-          </div>
-          ` : ''}
           ${data.designText ? `
           <div class="col-span-2">
             <span class="text-gray-600">Design Text:</span>
             <p class="font-medium">${data.designText}</p>
           </div>
           ` : ''}
-        </div>
-
-        ${data.designPreviews && data.designPreviews.length > 0 ? `
-        <div class="mt-4">
-          <p class="text-sm text-gray-600 mb-2">Design Previews:</p>
-          <div class="grid grid-cols-2 gap-2">
-            ${data.designPreviews.map(preview => `
-              <div class="border rounded p-2">
-                <img src="${preview.url}" alt="${preview.location}" class="w-full h-24 object-contain rounded mb-1">
-                <p class="text-xs text-center text-gray-600">${preview.location}</p>
-              </div>
-            `).join('')}
+          ${data.colors && (data.colors.primary || data.colors.secondary || data.colors.accent) ? `
+          <div class="col-span-2">
+            <span class="text-gray-600">Colors:</span>
+            <div class="flex gap-2 mt-1">
+              ${data.colors.primary ? `<div class="flex items-center gap-1"><div class="w-6 h-6 rounded border" style="background-color: ${data.colors.primary}"></div><span class="text-xs">Primary</span></div>` : ''}
+              ${data.colors.secondary ? `<div class="flex items-center gap-1"><div class="w-6 h-6 rounded border" style="background-color: ${data.colors.secondary}"></div><span class="text-xs">Secondary</span></div>` : ''}
+              ${data.colors.accent ? `<div class="flex items-center gap-1"><div class="w-6 h-6 rounded border" style="background-color: ${data.colors.accent}"></div><span class="text-xs">Accent</span></div>` : ''}
+            </div>
           </div>
+          ` : ''}
         </div>
-        ` : ''}
 
         ${data.notes ? `
         <div class="mt-4 p-3 bg-gray-50 rounded border border-gray-200">
@@ -338,22 +494,169 @@
     }
 
     /**
-     * Update payment amounts display
+     * Render design preview images (4 placements like admin view)
+     */
+    function renderDesignPreviews(data) {
+      console.log('[DEBUG] renderDesignPreviews called with:', data);
+      console.log('[DEBUG] designImagesMap:', data.designImagesMap);
+      console.log('[DEBUG] designPreviews:', data.designPreviews);
+      console.log('[DEBUG] designImage:', data.designImage);
+      
+      // Check if designImagesMap exists (from new customizer)
+      if (data.designImagesMap && typeof data.designImagesMap === 'object') {
+        // Handle both capitalized and lowercase keys
+        const placementMappings = [
+          { display: 'Front', keys: ['Front', 'front'] },
+          { display: 'Back', keys: ['Back', 'back'] },
+          { display: 'Left Sleeve', keys: ['Left Sleeve', 'left-sleeve', 'leftSleeve'] },
+          { display: 'Right Sleeve', keys: ['Right Sleeve', 'right-sleeve', 'rightSleeve'] }
+        ];
+        
+        const images = [];
+        
+        placementMappings.forEach(mapping => {
+          // Try to find image with any of the possible key names
+          for (const key of mapping.keys) {
+            if (data.designImagesMap[key]) {
+              images.push({
+                location: mapping.display,
+                url: data.designImagesMap[key]
+              });
+              break; // Found it, move to next placement
+            }
+          }
+        });
+        
+        console.log('[DEBUG] Found images from designImagesMap:', images.length);
+        
+        if (images.length > 0) {
+          return `
+            <div class="mb-4">
+              <p class="text-sm font-medium text-gray-700 mb-3">
+                <i class="fas fa-images mr-1"></i>
+                Design Previews (${images.length} views)
+              </p>
+              <div class="grid grid-cols-2 gap-3">
+                ${images.map(img => `
+                  <div class="border-2 border-gray-200 rounded-lg overflow-hidden hover:border-indigo-400 transition">
+                    <div class="bg-gray-50 p-2">
+                      <img src="${img.url}" alt="${img.location}" class="w-full h-32 object-contain" onerror="this.parentElement.innerHTML='<div class=\\'text-red-500 text-xs p-2\\'>Image failed to load</div>'">
+                    </div>
+                    <div class="bg-white px-2 py-1.5 border-t border-gray-200">
+                      <p class="text-xs font-medium text-gray-700 text-center">${img.location}</p>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+      }
+      
+      // Fallback: Check old designPreviews format
+      if (data.designPreviews && data.designPreviews.length > 0) {
+        console.log('[DEBUG] Using designPreviews fallback');
+        return `
+          <div class="mb-4">
+            <p class="text-sm font-medium text-gray-700 mb-3">
+              <i class="fas fa-images mr-1"></i>
+              Design Previews
+            </p>
+            <div class="grid grid-cols-2 gap-3">
+              ${data.designPreviews.map(preview => `
+                <div class="border-2 border-gray-200 rounded-lg overflow-hidden hover:border-indigo-400 transition">
+                  <div class="bg-gray-50 p-2">
+                    <img src="${preview.url}" alt="${preview.location}" class="w-full h-32 object-contain">
+                  </div>
+                  <div class="bg-white px-2 py-1.5 border-t border-gray-200">
+                    <p class="text-xs font-medium text-gray-700 text-center">${preview.location}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+      
+      // Fallback: Single design image
+      if (data.designImage) {
+        console.log('[DEBUG] Using single designImage');
+        return `
+          <div class="mb-4">
+            <p class="text-sm font-medium text-gray-700 mb-3">
+              <i class="fas fa-image mr-1"></i>
+              Design Preview
+            </p>
+            <div class="border-2 border-gray-200 rounded-lg overflow-hidden">
+              <div class="bg-gray-50 p-4">
+                <img src="${data.designImage}" alt="Design" class="w-full h-48 object-contain">
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      
+      // No preview images available
+      console.log('[DEBUG] No design images found');
+      return `
+        <div class="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+          <i class="fas fa-image text-3xl text-gray-400 mb-2"></i>
+          <p class="text-sm text-gray-500">No design preview available</p>
+          <p class="text-xs text-gray-400 mt-1">Design images will be generated after order confirmation</p>
+        </div>
+      `;
+    }
+
+    /**
+     * Update payment amounts display with delivery fee
+     */
+    /**
+     * Update payment amounts display with delivery fee
      */
     function updatePaymentAmounts(data) {
       const basePrice = data.unitPrice || data.basePrice || 530;
       const quantity = data.quantity || 1;
       const serviceFee = 0; // No additional service fee for now
-      const total = data.totalPrice || (basePrice * quantity + serviceFee);
+      const paymentOption = data.paymentOption || 'full';
+      
+      // Get delivery fee based on selected method
+      const deliveryMethod = document.querySelector('input[name="delivery-method"]:checked');
+      const deliveryFee = deliveryMethod && deliveryMethod.value === 'pickup' ? 0 : 80;
+      
+      // Calculate total including delivery fee
+      const subtotal = basePrice * quantity + serviceFee;
+      const fullAmount = data.totalPrice || subtotal;
+      const fullAmountWithDelivery = fullAmount + deliveryFee;
+      const displayAmount = paymentOption === 'downpayment' 
+        ? fullAmountWithDelivery * 0.5 
+        : fullAmountWithDelivery;
 
-      document.getElementById('base-price').textContent = basePrice.toLocaleString();
-      document.getElementById('quantity-display').textContent = quantity;
-      document.getElementById('service-fee').textContent = serviceFee.toLocaleString();
-      document.getElementById('total-amount').textContent = total.toLocaleString();
+      // Update displays
+      document.getElementById('base-price').textContent = (basePrice * quantity).toLocaleString();
+      document.getElementById('delivery-fee-amount').textContent = `₱${deliveryFee.toLocaleString()}`;
+      document.getElementById('total-amount').textContent = displayAmount.toLocaleString();
+      
+      // Remove existing payment option badge if any
+      const existingBadge = document.querySelector('.payment-option-badge');
+      if (existingBadge) existingBadge.remove();
+      
+      // Show payment option badge (add after billing summary)
+      const billingSection = document.getElementById('total-amount').closest('section');
+      if (paymentOption === 'downpayment') {
+        const badge = document.createElement('div');
+        badge.className = 'payment-option-badge bg-yellow-50 border border-yellow-300 rounded-lg p-3 text-xs text-yellow-800 mt-3';
+        badge.innerHTML = '<i class="fas fa-info-circle mr-1"></i><strong>50% Downpayment</strong> - Remaining balance due after production starts';
+        billingSection.querySelector('.space-y-3').after(badge);
+      } else if (paymentOption === 'full') {
+        const badge = document.createElement('div');
+        badge.className = 'payment-option-badge bg-green-50 border border-green-300 rounded-lg p-3 text-xs text-green-800 mt-3';
+        badge.innerHTML = '<i class="fas fa-check-circle mr-1"></i><strong>100% Full Payment</strong> - Complete payment, no balance due';
+        billingSection.querySelector('.space-y-3').after(badge);
+      }
     }
 
     /**
-     * Fetch user profile to pre-fill contact form
+     * Fetch user profile to pre-fill contact form and shipping address
      */
     async function fetchUserProfile() {
       const token = localStorage.getItem('token');
@@ -371,9 +674,23 @@
         const json = await res.json();
         if (json.success && json.data) {
           const user = json.data;
+          
+          // Fill contact information
           document.getElementById('contact-name').value = user.name || '';
           document.getElementById('contact-email').value = user.email || '';
           document.getElementById('contact-phone').value = user.contactNumber || '';
+          
+          // Fill shipping address if available
+          if (user.address) {
+            document.getElementById('ship-block').value = user.address.block || '';
+            document.getElementById('ship-lot').value = user.address.lot || '';
+            document.getElementById('ship-street').value = user.address.street || '';
+            document.getElementById('ship-building').value = user.address.building || '';
+            document.getElementById('ship-province').value = user.address.province || '';
+            document.getElementById('ship-city').value = user.address.city || '';
+            document.getElementById('ship-zip').value = user.address.zip || '';
+            document.getElementById('ship-phone').value = user.address.phone || user.contactNumber || '';
+          }
         }
       } catch (err) {
         console.error('Error fetching user profile:', err);
@@ -404,13 +721,47 @@
         // Get selected payment method
         const paymentMethod = document.getElementById('pay-card')?.checked ? 'card' : 'gcash';
         
+        // Get delivery method and fee
+        const deliveryMethodElem = document.querySelector('input[name="delivery-method"]:checked');
+        const deliveryMethod = deliveryMethodElem?.value === 'pickup' ? 'Pick-Up' : 'Standard';
+        const deliveryFee = deliveryMethod === 'Pick-Up' ? 0 : 80;
+        
+        // Get shipping address (only if not pick-up)
+        let shippingAddress = null;
+        if (deliveryMethod === 'Standard') {
+          const useDefault = document.getElementById('address-default')?.checked;
+          shippingAddress = {
+            block: document.getElementById('ship-block').value.trim(),
+            lot: document.getElementById('ship-lot').value.trim(),
+            street: document.getElementById('ship-street').value.trim(),
+            building: document.getElementById('ship-building').value.trim(),
+            province: document.getElementById('ship-province').value.trim(),
+            city: document.getElementById('ship-city').value.trim(),
+            zip: document.getElementById('ship-zip').value.trim(),
+            phone: document.getElementById('ship-phone').value.trim()
+          };
+        }
+        
+        // Calculate total amount with delivery fee
+        const baseAmount = serviceData.totalPrice || 0;
+        const totalAmountWithDelivery = baseAmount + deliveryFee;
+        const paymentOption = serviceData.paymentOption || 'full';
+        const finalAmount = paymentOption === 'downpayment' 
+          ? totalAmountWithDelivery * 0.5 
+          : totalAmountWithDelivery;
+        
         // Prepare payment payload
         const payload = {
           orderId: serviceData.orderId || null,
           orderReference: orderReference,
           serviceType: serviceData.serviceType || 'customize-jersey',
-          amount: serviceData.totalPrice || 0,
+          amount: finalAmount,
+          baseAmount: baseAmount,
+          deliveryFee: deliveryFee,
           paymentMethod: paymentMethod,
+          paymentOption: paymentOption, // 'downpayment' or 'full'
+          shippingMethod: deliveryMethod,
+          shippingAddress: shippingAddress,
           customerInfo: {
             name: document.getElementById('contact-name').value.trim(),
             email: document.getElementById('contact-email').value.trim(),
@@ -490,6 +841,48 @@
         showError('Please enter your phone number.');
         document.getElementById('contact-phone').focus();
         return false;
+      }
+      
+      // Validate shipping address if Standard Delivery is selected
+      const deliveryMethodElem = document.querySelector('input[name="delivery-method"]:checked');
+      const deliveryMethod = deliveryMethodElem?.value;
+      
+      if (deliveryMethod === 'standard') {
+        const street = document.getElementById('ship-street').value.trim();
+        const province = document.getElementById('ship-province').value.trim();
+        const city = document.getElementById('ship-city').value.trim();
+        const zip = document.getElementById('ship-zip').value.trim();
+        const shipPhone = document.getElementById('ship-phone').value.trim();
+        
+        if (!street) {
+          showError('Please enter your street address.');
+          document.getElementById('ship-street').focus();
+          return false;
+        }
+        
+        if (!province) {
+          showError('Please select your province.');
+          document.getElementById('ship-province').focus();
+          return false;
+        }
+        
+        if (!city) {
+          showError('Please enter your city.');
+          document.getElementById('ship-city').focus();
+          return false;
+        }
+        
+        if (!zip) {
+          showError('Please enter your ZIP code.');
+          document.getElementById('ship-zip').focus();
+          return false;
+        }
+        
+        if (!shipPhone) {
+          showError('Please enter your contact number for delivery.');
+          document.getElementById('ship-phone').focus();
+          return false;
+        }
       }
 
       if (!agreeTerms) {

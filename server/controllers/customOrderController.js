@@ -322,6 +322,29 @@ exports.getMyCustomOrders = async (req, res) => {
   }
 };
 
+// @desc    Get single custom order by ID
+// @route   GET /api/custom-orders/:id
+// @access  Private
+exports.getSingleCustomOrder = async (req, res) => {
+  try {
+    const order = await CustomOrder.findById(req.params.id);
+    
+    if (!order) {
+      return res.status(404).json({ success: false, msg: 'Order not found' });
+    }
+    
+    // Check if user owns this order or is admin
+    if (order.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, msg: 'Not authorized to view this order' });
+    }
+    
+    res.status(200).json({ success: true, data: order });
+  } catch (error) {
+    console.error("Get Single Order Error:", error);
+    res.status(500).json({ success: false, msg: "Server Error" });
+  }
+};
+
 // @desc    Customer accepts the quote to proceed
 // @route   PUT /api/custom-orders/:id/accept
 // @access  Private
@@ -335,7 +358,7 @@ exports.acceptCustomOrderQuote = async (req, res) => {
     if (order.status !== 'Quote Sent') {
       return res.status(400).json({ success: false, msg: 'Quote is not awaiting acceptance.' });
     }
-    order.status = 'Quote Accepted';
+    order.status = 'Pending Downpayment';
     await order.save();
 
     // Notify customer (optional) that acceptance is recorded
@@ -391,7 +414,7 @@ exports.submitDownPayment = async (req, res) => {
     }
 
     // Inayos ang logic at error message
-    if (order.status !== "Quote Sent" && order.status !== "Quote Accepted") {
+    if (order.status !== "Quote Sent" && order.status !== "Pending Downpayment") {
       return res
         .status(400)
         .json({
