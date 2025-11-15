@@ -6,7 +6,7 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 
 
 router.route('/assign')
-    .post(protect, authorize('admin'), assignVoucher);
+    .post(protect, authorize('admin','employee'), assignVoucher);
 
 module.exports = router;
 

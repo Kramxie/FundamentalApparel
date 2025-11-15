@@ -51,8 +51,8 @@ router.use(protect);
 // Get chat history
 router.get('/', getMessages);
 
-// Get all conversations (admin only)
-router.get('/conversations', authorize('admin'), getConversations);
+// Get all conversations (admin and employee)
+router.get('/conversations', authorize('admin','employee'), getConversations);
 
 // Send a message
 router.post('/', sendMessage);

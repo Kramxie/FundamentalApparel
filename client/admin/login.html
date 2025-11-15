@@ -27,6 +27,9 @@
                 <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
                 <input type="password" id="password" name="password" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
             </div>
+            <div class="mb-4 text-right">
+                <a href="#" id="forgot-password-link" class="text-sm text-indigo-600 hover:text-indigo-800">Forgot Password?</a>
+            </div>
             <div>
                 <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     Sign In
@@ -35,10 +38,77 @@
         </form>
     </div>
 
+    <!-- Forgot Password Modal -->
+    <div id="forgot-password-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4">
+            <!-- Step 1: Request Reset Code -->
+            <div id="forgot-step-1">
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Reset Password</h3>
+                <p class="text-sm text-gray-600 mb-6">Enter your email to receive a password reset code</p>
+                
+                <div id="forgot-message-1" class="hidden mb-4 p-3 rounded-md text-sm"></div>
+                
+                <form id="forgot-form-1">
+                    <div class="mb-4">
+                        <label for="forgot-email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                        <input type="email" id="forgot-email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="button" id="cancel-forgot-1" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">Cancel</button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Send Code</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Step 2: Enter Code & New Password -->
+            <div id="forgot-step-2" class="hidden">
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Enter Reset Code</h3>
+                <p class="text-sm text-gray-600 mb-6">Check your email for the 6-digit code</p>
+                
+                <div id="forgot-message-2" class="hidden mb-4 p-3 rounded-md text-sm"></div>
+                
+                <form id="forgot-form-2">
+                    <div class="mb-4">
+                        <label for="reset-code" class="block text-sm font-medium text-gray-700 mb-1">Reset Code</label>
+                        <input type="text" id="reset-code" required maxlength="6" pattern="[0-9]{6}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="6-digit code">
+                    </div>
+                    <div class="mb-4">
+                        <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                        <input type="password" id="new-password" required minlength="8" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Minimum 8 characters">
+                    </div>
+                    <div class="mb-6">
+                        <label for="confirm-new-password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                        <input type="password" id="confirm-new-password" required minlength="8" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Re-enter password">
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="button" id="cancel-forgot-2" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">Cancel</button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Reset Password</button>
+                    </div>
+                </form>
+                <div class="mt-4 text-center">
+                    <button id="resend-forgot-code" class="text-sm text-indigo-600 hover:text-indigo-800">Resend Code</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
+
         document.addEventListener('DOMContentLoaded', () => {
             const loginForm = document.getElementById('login-form');
             const messageContainer = document.getElementById('message-container');
+            const forgotLink = document.getElementById('forgot-password-link');
+            const forgotModal = document.getElementById('forgot-password-modal');
+            const forgotStep1 = document.getElementById('forgot-step-1');
+            const forgotStep2 = document.getElementById('forgot-step-2');
+            const forgotForm1 = document.getElementById('forgot-form-1');
+            const forgotForm2 = document.getElementById('forgot-form-2');
+            const cancelBtn1 = document.getElementById('cancel-forgot-1');
+            const cancelBtn2 = document.getElementById('cancel-forgot-2');
+            const resendBtn = document.getElementById('resend-forgot-code');
+
+            let resendCooldown = 0;
 
             const showMessage = (message, type) => {
                 messageContainer.textContent = message;
@@ -46,37 +116,212 @@
                 messageContainer.classList.remove('hidden');
             };
 
+            const showForgotMessage = (step, message, type) => {
+                const msgEl = document.getElementById(`forgot-message-${step}`);
+                msgEl.textContent = message;
+                msgEl.className = `mb-4 p-3 rounded-md text-sm ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+                msgEl.classList.remove('hidden');
+            };
+
+            const closeForgotModal = () => {
+                forgotModal.classList.add('hidden');
+                forgotStep1.classList.remove('hidden');
+                forgotStep2.classList.add('hidden');
+                document.getElementById('forgot-message-1').classList.add('hidden');
+                document.getElementById('forgot-message-2').classList.add('hidden');
+                forgotForm1.reset();
+                forgotForm2.reset();
+            };
+
+            const startResendCooldown = () => {
+                resendCooldown = 60;
+                resendBtn.disabled = true;
+                const originalText = resendBtn.textContent;
+                const interval = setInterval(() => {
+                    if (resendCooldown > 0) {
+                        resendBtn.textContent = `Resend Code (${resendCooldown}s)`;
+                        resendCooldown--;
+                    } else {
+                        resendBtn.textContent = originalText;
+                        resendBtn.disabled = false;
+                        clearInterval(interval);
+                    }
+                }, 1000);
+            };
+
+            // Login form
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const formData = new FormData(loginForm);
                 const data = Object.fromEntries(formData.entries());
+                data.email = String(data.email || '').trim().toLowerCase();
 
                 try {
-                    const response = await fetch('https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/auth/login', {
+                    const response = await fetch(`${API}/api/auth/login`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'ngrok-skip-browser-warning': 'true'
+                        },
                         body: JSON.stringify(data)
                     });
 
                     const result = await response.json();
 
                     if (response.ok && result.success) {
-                        // FIX: Tinitingnan na natin ngayon ang 'result.user.role' na galing sa server.
-                        if (result.user && result.user.role === 'admin') {
+                        if (result.user && (result.user.role === 'admin' || result.user.role === 'employee')) {
                             showMessage('Login successful! Redirecting...', 'success');
-                            // FIX: Gagamitin na natin ang "token" para maging pare-pareho.
                             localStorage.setItem('adminToken', result.token);
                             setTimeout(() => {
                                 window.location.href = 'index.html';
                             }, 1500);
                         } else {
-                            showMessage('Access Denied: You do not have admin privileges.', 'error');
+                            showMessage('Access Denied: You do not have admin or employee privileges.', 'error');
                         }
                     } else {
-                        throw new Error(result.msg || 'An error occurred');
+                        if (result && result.verificationRequired) {
+                            throw new Error('Account not verified. Please check your email for the verification code.');
+                        }
+                        throw new Error(result && result.msg ? result.msg : 'Invalid credentials');
                     }
                 } catch (error) {
                     showMessage(error.message, 'error');
+                }
+            });
+
+            // Forgot password link
+            forgotLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                forgotModal.classList.remove('hidden');
+            });
+
+            // Cancel buttons
+            cancelBtn1.addEventListener('click', closeForgotModal);
+            cancelBtn2.addEventListener('click', closeForgotModal);
+
+            // Step 1: Request reset code
+            forgotForm1.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+                
+                const btn = e.target.querySelector('button[type="submit"]');
+                btn.disabled = true;
+                btn.textContent = 'Sending...';
+
+                try {
+                    const response = await fetch(`${API}/api/auth/forgotpassword`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'ngrok-skip-browser-warning': 'true'
+                        },
+                        body: JSON.stringify({ email })
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.msg || 'Failed to send reset code');
+                    }
+
+                    showForgotMessage(1, 'Reset code sent! Check your email.', 'success');
+                    setTimeout(() => {
+                        forgotStep1.classList.add('hidden');
+                        forgotStep2.classList.remove('hidden');
+                        startResendCooldown();
+                    }, 1500);
+                } catch (error) {
+                    showForgotMessage(1, error.message, 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Send Code';
+                }
+            });
+
+            // Step 2: Reset password with code
+            forgotForm2.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+                const resetToken = document.getElementById('reset-code').value.trim();
+                const newPassword = document.getElementById('new-password').value;
+                const confirmPassword = document.getElementById('confirm-new-password').value;
+
+                // Validations
+                if (!/^\d{6}$/.test(resetToken)) {
+                    showForgotMessage(2, 'Please enter a valid 6-digit code', 'error');
+                    return;
+                }
+                if (newPassword.length < 8) {
+                    showForgotMessage(2, 'Password must be at least 8 characters', 'error');
+                    return;
+                }
+                if (newPassword !== confirmPassword) {
+                    showForgotMessage(2, 'Passwords do not match', 'error');
+                    return;
+                }
+
+                const btn = e.target.querySelector('button[type="submit"]');
+                btn.disabled = true;
+                btn.textContent = 'Resetting...';
+
+                try {
+                    const response = await fetch(`${API}/api/auth/resetpassword`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'ngrok-skip-browser-warning': 'true'
+                        },
+                        body: JSON.stringify({ email, resetToken, newPassword })
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.msg || 'Failed to reset password');
+                    }
+
+                    showForgotMessage(2, 'Password reset successful! You can now login.', 'success');
+                    setTimeout(() => {
+                        closeForgotModal();
+                    }, 2000);
+                } catch (error) {
+                    showForgotMessage(2, error.message, 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Reset Password';
+                }
+            });
+
+            // Resend code
+            resendBtn.addEventListener('click', async () => {
+                const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+                
+                resendBtn.disabled = true;
+                const original = resendBtn.textContent;
+                resendBtn.textContent = 'Sending...';
+
+                try {
+                    const response = await fetch(`${API}/api/auth/forgotpassword`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'ngrok-skip-browser-warning': 'true'
+                        },
+                        body: JSON.stringify({ email })
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.msg || 'Failed to resend code');
+                    }
+
+                    showForgotMessage(2, 'New code sent! Check your email.', 'success');
+                    startResendCooldown();
+                } catch (error) {
+                    showForgotMessage(2, error.message, 'error');
+                    resendBtn.textContent = original;
+                    resendBtn.disabled = false;
                 }
             });
         });

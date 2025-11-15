@@ -42,7 +42,7 @@ const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024
 
 router.route('/')
     .get(getProducts)
-    .post(protect, authorize('admin'), upload.fields([
+    .post(protect, authorize('admin','employee'), upload.fields([
         { name: 'image', maxCount: 1 },
         { name: 'gallery', maxCount: 8 }
     ]), addProduct); 
@@ -50,11 +50,11 @@ router.route('/')
 
 router.route('/:id')
     .get(getProductById)
-    .put(protect, authorize('admin'), upload.fields([
+    .put(protect, authorize('admin','employee'), upload.fields([
         { name: 'mainImage', maxCount: 1 },
         { name: 'galleryImages', maxCount: 8 }
     ]), updateProduct)
-    .delete(protect, authorize('admin'), deleteProduct);
+    .delete(protect, authorize('admin','employee'), deleteProduct);
 
 module.exports = router;
 

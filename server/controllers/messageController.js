@@ -1,17 +1,17 @@
 const Message = require('../models/Message');
 const User = require('../models/User');
 
-// @desc    Get chat history between user and admin
+// @desc    Get chat history (staff sees all)
 // @route   GET /api/messages
 // @access  Private
 exports.getMessages = async (req, res) => {
     try {
         const userId = req.user._id;
-        const isAdmin = req.user.role === 'admin';
+        const isStaff = req.user.role === 'admin' || req.user.role === 'employee';
 
         let query;
-        if (isAdmin) {
-            // If admin, get all messages (can filter by customer later in frontend)
+        if (isStaff) {
+            // If staff (admin or employee), get all messages (frontend filters per conversation)
             query = {};
         } else {
             // If customer, get only messages between them and admin
@@ -47,12 +47,13 @@ exports.getMessages = async (req, res) => {
     }
 };
 
-// @desc    Get all conversations for admin
+// @desc    Get all conversations for staff (admin and employee)
 // @route   GET /api/messages/conversations
-// @access  Private/Admin
+// @access  Private/Admin,Employee
 exports.getConversations = async (req, res) => {
     try {
-        if (req.user.role !== 'admin') {
+        const isStaff = req.user.role === 'admin' || req.user.role === 'employee';
+        if (!isStaff) {
             return res.status(403).json({ success: false, message: 'Not authorized' });
         }
 
@@ -139,7 +140,7 @@ exports.sendMessage = async (req, res) => {
             });
         }
 
-        const isAdminMessage = req.user.role === 'admin';
+        const isAdminMessage = req.user.role === 'admin' || req.user.role === 'employee';
 
         const newMessage = await Message.create({
             sender: senderId,

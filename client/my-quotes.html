@@ -393,14 +393,18 @@
         serviceType: order.serviceType || 'customize-jersey',
         serviceName: order.productName || 'Custom Order',
         quantity: order.quantity || 1,
+        // Always keep totals as FULL amounts; checkout will handle downpayment math
         basePrice: order.price || order.totalPrice || 0,
-        totalPrice: paymentOption === 'full' ? (order.price || order.totalPrice || 0) : (order.price || order.totalPrice || 0) * 0.5,
+        totalPrice: order.price || order.totalPrice || 0,
+        // Provide unitPrice for clearer subtotal when available
+        unitPrice: (order.quantity && (order.price || order.totalPrice)) ? ((order.price || order.totalPrice) / (order.quantity || 1)) : undefined,
         paymentOption: paymentOption,
         garmentType: order.garmentType || order.itemType || 't-shirt',
         selectedLocation: order.selectedLocation || 'Front',
         designDetails: order.designDetails || '',
         colors: order.colors || {},
         designText: order.designText || '',
+        quotePayload: order.quotePayload || {},
         designImagesMap: order.designImagesMap || null,
         designImage: order.designImage || '',
         notes: order.notes || ''

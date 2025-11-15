@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Profile - Fundamental Apparel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .admin-tab {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: rgb(156 163 175);
+      padding-bottom: 0.5rem;
+      cursor: pointer;
+    }
+    .admin-tab.active {
+      color: rgb(17 24 39);
+      border-bottom-width: 2px;
+      border-color: rgb(17 24 39);
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="flex h-screen bg-gray-100">
+    <!-- Sidebar Navigation -->
+    <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+      <div class="flex items-center justify-center h-16 bg-white shadow-md">
+        <span class="text-2xl font-bold text-indigo-600">Admin Panel</span>
+      </div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+          </a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
+          </a>
+          <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+          </a>
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
+          </a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
+          </a>
+          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
+          </a>
+          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
+          </a>
+          <a href="profile.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
+            <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex flex-col flex-1 overflow-hidden">
+      <!-- Header -->
+      <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
+        <h1 class="text-xl font-semibold text-gray-800">Admin Profile</h1>
+        <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+          <i class="fas fa-sign-out-alt mr-2"></i>Logout
+        </button>
+      </div>
+
+      <!-- Content Area -->
+      <div id="admin-profile-container" class="flex-1 overflow-y-auto p-6">
+        <div class="max-w-4xl mx-auto space-y-6">
+          
+          <!-- Profile Information Card -->
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center space-x-4 mb-6">
+              <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-user text-indigo-600 text-3xl"></i>
+              </div>
+              <div>
+                <h2 class="text-2xl font-bold text-gray-900" id="admin-name">Loading...</h2>
+                <p class="text-gray-600" id="admin-email">Loading...</p>
+                <span class="inline-block mt-1 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800" id="admin-role">Admin</span>
+              </div>
+            </div>
+
+            <!-- Change Password Section -->
+            <div class="border-t pt-6">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-lock mr-2 text-indigo-600"></i>Security
+              </h3>
+              <button id="change-password-btn" class="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2">
+                <i class="fas fa-key"></i>
+                Change Password
+              </button>
+            </div>
+          </div>
+
+          <!-- Employee Management Card (Admin Only) -->
+          <div id="employee-section" class="bg-white rounded-lg shadow-md p-6 hidden">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              <i class="fas fa-users mr-2 text-indigo-600"></i>Employee Management
+            </h3>
+            <p class="text-sm text-gray-600 mb-6">Create new employee accounts with access to the admin panel.</p>
+
+            <form id="employee-form" class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="emp-name" class="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name <span class="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    id="emp-name" 
+                    required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="John Doe"
+                    aria-label="Employee full name"
+                  >
+                </div>
+                <div>
+                  <label for="emp-email" class="block text-sm font-medium text-gray-700 mb-1">
+                    Email <span class="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="email" 
+                    id="emp-email" 
+                    required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="john@company.com"
+                    aria-label="Employee email"
+                  >
+                </div>
+              </div>
+              <div>
+                <label for="emp-password" class="block text-sm font-medium text-gray-700 mb-1">
+                  Password <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                  <input 
+                    type="password" 
+                    id="emp-password" 
+                    required
+                    minlength="8"
+                    autocomplete="new-password"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                    placeholder="Minimum 8 characters"
+                    aria-label="Employee password"
+                  >
+                  <button type="button" id="toggle-emp-password" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">Password must be at least 8 characters long</p>
+              </div>
+              <div class="flex items-center gap-4">
+                <button 
+                  type="submit" 
+                  class="px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                  aria-label="Create employee account"
+                >
+                  <i class="fas fa-user-plus"></i>
+                  Create Employee
+                </button>
+                <button 
+                  type="button"
+                  id="clear-employee-form"
+                  class="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+            </form>
+
+            <!-- Success/Error Messages -->
+            <div id="employee-message" class="hidden mt-4 p-4 rounded-lg"></div>
+
+            <hr class="my-6">
+            <h4 class="text-md font-semibold text-gray-900 mb-2">Reset Employee Password</h4>
+            <p class="text-sm text-gray-600 mb-4">Use this if an employee can’t log in. This resets their password immediately.</p>
+            <form id="employee-reset-form" class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="reset-emp-email" class="block text-sm font-medium text-gray-700 mb-1">Employee Email <span class="text-red-500">*</span></label>
+                  <input type="email" id="reset-emp-email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="employee@company.com">
+                </div>
+                <div>
+                  <label for="reset-emp-password" class="block text-sm font-medium text-gray-700 mb-1">New Password <span class="text-red-500">*</span></label>
+                  <input type="password" id="reset-emp-password" required minlength="8" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Minimum 8 characters">
+                </div>
+              </div>
+              <div class="flex items-center gap-4">
+                <button type="submit" class="px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2">
+                  <i class="fas fa-key"></i>
+                  Reset Password
+                </button>
+              </div>
+            </form>
+            <div id="employee-reset-message" class="hidden mt-4 p-4 rounded-lg"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal - Step 1: Send Reset Code -->
+  <div id="forgot-modal-step1" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <h3 class="text-lg font-semibold text-gray-900">Forgot Password</h3>
+        <button id="close-forgot-modal-1" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <p class="text-sm text-gray-600 mb-4">We'll send a reset code to your email address.</p>
+        <form id="forgot-step1-form">
+          <div class="mb-4">
+            <label for="forgot-email" class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+            <input 
+              type="email" 
+              id="forgot-email" 
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="you@company.com"
+              aria-label="Email for password reset"
+            >
+            <p class="mt-1 text-xs text-gray-500">We’ll send the code to your account email.</p>
+          </div>
+          <div id="forgot1-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
+          <div class="flex gap-3">
+            <button type="submit" id="send-reset-code-btn" class="flex-1 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
+              <i class="fas fa-paper-plane"></i>
+              Send Reset Code
+            </button>
+            <button type="button" id="cancel-forgot1-btn" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal - Step 2: Enter Code + New Password -->
+  <div id="forgot-modal-step2" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <h3 class="text-lg font-semibold text-gray-900">Reset Password</h3>
+        <button id="close-forgot-modal-2" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <form id="forgot-step2-form">
+          <div class="mb-4">
+            <label for="reset-code" class="block text-sm font-medium text-gray-700 mb-1">Reset Code <span class="text-red-500">*</span></label>
+            <input type="text" id="reset-code" required maxlength="6" pattern="[0-9]{6}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center text-2xl tracking-widest" placeholder="000000" aria-label="Reset code">
+          </div>
+          <div class="mb-4">
+            <label for="forgot-new-password" class="block text-sm font-medium text-gray-700 mb-1">New Password <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <input type="password" id="forgot-new-password" required minlength="8" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10" placeholder="Minimum 8 characters" aria-label="New password">
+              <button type="button" id="toggle-forgot-new" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"><i class="fas fa-eye"></i></button>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label for="forgot-confirm-password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <input type="password" id="forgot-confirm-password" required minlength="8" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10" placeholder="Confirm new password" aria-label="Confirm password">
+              <button type="button" id="toggle-forgot-confirm" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"><i class="fas fa-eye"></i></button>
+            </div>
+          </div>
+          <div id="forgot2-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
+          <div class="flex gap-3 flex-wrap">
+            <button type="submit" id="reset-password-btn" class="flex-1 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+              <i class="fas fa-save"></i>
+              Reset Password
+            </button>
+            <button type="button" id="resend-reset-code-btn" class="px-4 py-2 bg-gray-100 text-gray-800 font-medium rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
+              <i class="fas fa-redo"></i>
+              <span id="resend-reset-label">Resend Code</span>
+            </button>
+            <button type="button" id="cancel-forgot2-btn" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal - Step 1: Enter Current Password -->
+  <div id="password-modal-step1" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <h3 class="text-lg font-semibold text-gray-900">Change Password</h3>
+        <button id="close-password-modal-1" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <p class="text-sm text-gray-600 mb-4">Enter your current password to receive a verification code via email.</p>
+        <form id="password-step1-form">
+          <div class="mb-4">
+            <label for="current-password" class="block text-sm font-medium text-gray-700 mb-1">
+              Current Password <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                type="password" 
+                id="current-password" 
+                required
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                placeholder="Enter current password"
+                aria-label="Current password"
+              >
+              <button type="button" id="toggle-current-password" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <button type="button" id="forgot-password-link" class="mt-2 text-sm text-indigo-600 hover:underline">Forgot your current password?</button>
+          </div>
+          <div id="step1-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
+          <div class="flex gap-3">
+            <button 
+              type="submit" 
+              id="send-code-btn"
+              class="flex-1 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <i class="fas fa-paper-plane"></i>
+              Send Verification Code
+            </button>
+            <button 
+              type="button"
+              id="cancel-step1-btn"
+              class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal - Step 2: Verify Code -->
+  <div id="password-modal-step2" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <h3 class="text-lg font-semibold text-gray-900">Verify Code</h3>
+        <button id="close-password-modal-2" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <p class="text-sm text-gray-600 mb-4">A verification code has been sent to your email. Please enter it below.</p>
+        <form id="password-step2-form">
+          <div class="mb-4">
+            <label for="verification-code" class="block text-sm font-medium text-gray-700 mb-1">
+              Verification Code <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="verification-code" 
+              required
+              maxlength="6"
+              pattern="[0-9]{6}"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center text-2xl tracking-widest"
+              placeholder="000000"
+              aria-label="Verification code"
+            >
+          </div>
+          <div id="step2-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
+          <div class="flex gap-3 flex-wrap">
+            <button 
+              type="submit" 
+              id="verify-code-btn"
+              class="flex-1 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <i class="fas fa-check-circle"></i>
+              Verify Code
+            </button>
+            <button 
+              type="button"
+              id="resend-code-btn"
+              class="px-4 py-2 bg-gray-100 text-gray-800 font-medium rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+            >
+              <i class="fas fa-redo"></i>
+              <span id="resend-code-label">Resend Code</span>
+            </button>
+            <button 
+              type="button"
+              id="cancel-step2-btn"
+              class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal - Step 3: Set New Password -->
+  <div id="password-modal-step3" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <h3 class="text-lg font-semibold text-gray-900">Set New Password</h3>
+        <button id="close-password-modal-3" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <p class="text-sm text-gray-600 mb-4">Enter your new password below.</p>
+        <form id="password-step3-form">
+          <div class="mb-4">
+            <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">
+              New Password <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                type="password" 
+                id="new-password" 
+                required
+                minlength="8"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                placeholder="Minimum 8 characters"
+                aria-label="New password"
+              >
+              <button type="button" id="toggle-new-password" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">
+              Confirm Password <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                type="password" 
+                id="confirm-password" 
+                required
+                minlength="8"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                placeholder="Confirm new password"
+                aria-label="Confirm password"
+              >
+              <button type="button" id="toggle-confirm-password" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          <div id="step3-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
+          <div class="flex gap-3">
+            <button 
+              type="submit" 
+              id="update-password-btn"
+              class="flex-1 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <i class="fas fa-save"></i>
+              Update Password
+            </button>
+            <button 
+              type="button"
+              id="cancel-step3-btn"
+              class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
+    let currentUser = null;
+    let verificationToken = null;
+    let forgotEmail = null;
+    // cooldown timers
+    let cpCooldown = 0, cpTimer = null; // change-password
+    let fpCooldown = 0, fpTimer = null; // forgot-password
+
+    // Check authentication on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Fetch current admin info
+      await loadAdminProfile(token);
+
+      // Setup event listeners
+      setupEventListeners();
+    });
+
+    async function loadAdminProfile(token) {
+      try {
+        // Show loading state on the elements themselves instead of replacing content
+        const nameEl = document.getElementById('admin-name');
+        const emailEl = document.getElementById('admin-email');
+        const roleEl = document.getElementById('admin-role');
+        
+        nameEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        emailEl.textContent = 'Loading...';
+        
+        console.log('[Profile] Fetching /api/auth/me ...');
+        const res = await fetch(`${API}/api/auth/me`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        console.log('[Profile] /api/auth/me status:', res.status);
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+            return;
+          }
+          throw new Error('Failed to load profile');
+        }
+
+        let data;
+        try {
+          data = await res.json();
+        } catch (jsonErr) {
+          console.error('[Profile] Failed to parse JSON:', jsonErr);
+          throw new Error('Invalid server response');
+        }
+        console.log('[Profile] Data:', data);
+        
+        if (data.success && data.data) {
+          currentUser = data.data;
+          
+          // Check if user is admin or employee
+          if (currentUser.role !== 'admin' && currentUser.role !== 'employee') {
+            alert('Access denied. Admin or employee privileges required.');
+            window.location.href = 'login.html';
+            return;
+          }
+
+          // Update UI
+          nameEl.textContent = currentUser.name || 'Admin User';
+          emailEl.textContent = currentUser.email || 'admin@example.com';
+          roleEl.textContent = currentUser.role === 'admin' ? 'Administrator' : 'Employee';
+
+          // Show employee section only for admins
+          if (currentUser.role === 'admin') {
+            document.getElementById('employee-section').classList.remove('hidden');
+          }
+        } else {
+          throw new Error(data.msg || 'Invalid response from server');
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        console.error('Error details:', error.message);
+        // Fallback: if token exists assume admin so page not totally stuck
+        if (token) {
+          document.getElementById('admin-name').textContent = 'Admin';
+          document.getElementById('admin-email').textContent = '(unknown)';
+          document.getElementById('admin-role').textContent = 'Admin';
+          document.getElementById('employee-section').classList.remove('hidden');
+          console.warn('[Profile] Showing fallback UI due to profile load failure');
+        }
+        alert(`Failed to load profile: ${error.message}\n\nPlease check:\n1. Your internet connection\n2. That you are logged in\n3. The server is running`);
+        window.location.href = 'login.html';
+      }
+    }
+
+    function setupEventListeners() {
+      // Logout
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        localStorage.removeItem('adminToken');
+        window.location.href = 'login.html';
+      });
+
+      // Change Password Flow
+      document.getElementById('change-password-btn').addEventListener('click', openPasswordModal);
+      // Forgot password link
+      const forgotLink = document.getElementById('forgot-password-link');
+      if (forgotLink) {
+        forgotLink.addEventListener('click', () => {
+          document.getElementById('password-modal-step1').classList.add('hidden');
+          document.getElementById('password-modal-step1').classList.remove('flex');
+          openForgotModal();
+        });
+      }
+      
+      // Step 1: Send verification code
+      document.getElementById('password-step1-form').addEventListener('submit', sendVerificationCode);
+      document.getElementById('close-password-modal-1').addEventListener('click', closeAllModals);
+      document.getElementById('cancel-step1-btn').addEventListener('click', closeAllModals);
+
+      // Step 2: Verify code
+      document.getElementById('password-step2-form').addEventListener('submit', verifyCode);
+      document.getElementById('close-password-modal-2').addEventListener('click', closeAllModals);
+      document.getElementById('cancel-step2-btn').addEventListener('click', closeAllModals);
+      const resendCpBtn = document.getElementById('resend-code-btn');
+      if (resendCpBtn) resendCpBtn.addEventListener('click', resendVerificationCode);
+
+      // Code input restrictions for change-password flow
+      setupCodeInput('verification-code');
+
+      // Step 3: Update password
+      document.getElementById('password-step3-form').addEventListener('submit', updatePassword);
+      document.getElementById('close-password-modal-3').addEventListener('click', closeAllModals);
+      document.getElementById('cancel-step3-btn').addEventListener('click', closeAllModals);
+
+      // Password visibility toggles
+      setupPasswordToggle('toggle-current-password', 'current-password');
+      setupPasswordToggle('toggle-new-password', 'new-password');
+      setupPasswordToggle('toggle-confirm-password', 'confirm-password');
+      setupPasswordToggle('toggle-emp-password', 'emp-password');
+      // Forgot flow toggles (if present)
+      const forgotNew = document.getElementById('toggle-forgot-new');
+      const forgotConfirm = document.getElementById('toggle-forgot-confirm');
+      if (forgotNew && forgotConfirm) {
+        setupPasswordToggle('toggle-forgot-new', 'forgot-new-password');
+        setupPasswordToggle('toggle-forgot-confirm', 'forgot-confirm-password');
+      }
+
+      // Employee form
+      document.getElementById('employee-form').addEventListener('submit', createEmployee);
+      document.getElementById('clear-employee-form').addEventListener('click', clearEmployeeForm);
+
+      // Employee password reset form (admin only)
+      const resetForm = document.getElementById('employee-reset-form');
+      if (resetForm) {
+        resetForm.addEventListener('submit', resetEmployeePassword);
+      }
+
+      // Forgot password step 1
+      const forgotForm1 = document.getElementById('forgot-step1-form');
+      if (forgotForm1) {
+        forgotForm1.addEventListener('submit', sendResetCode);
+        document.getElementById('close-forgot-modal-1').addEventListener('click', () => {
+          document.getElementById('forgot-modal-step1').classList.add('hidden');
+          document.getElementById('forgot-modal-step1').classList.remove('flex');
+        });
+        document.getElementById('cancel-forgot1-btn').addEventListener('click', () => {
+          document.getElementById('forgot-modal-step1').classList.add('hidden');
+          document.getElementById('forgot-modal-step1').classList.remove('flex');
+        });
+      }
+
+      // Forgot password step 2
+      const forgotForm2 = document.getElementById('forgot-step2-form');
+      if (forgotForm2) {
+        forgotForm2.addEventListener('submit', resetPasswordWithCode);
+        document.getElementById('close-forgot-modal-2').addEventListener('click', () => {
+          document.getElementById('forgot-modal-step2').classList.add('hidden');
+          document.getElementById('forgot-modal-step2').classList.remove('flex');
+        });
+        document.getElementById('cancel-forgot2-btn').addEventListener('click', () => {
+          document.getElementById('forgot-modal-step2').classList.add('hidden');
+          document.getElementById('forgot-modal-step2').classList.remove('flex');
+        });
+        const resendFpBtn = document.getElementById('resend-reset-code-btn');
+        if (resendFpBtn) resendFpBtn.addEventListener('click', resendForgotCode);
+
+        // Code input restrictions for forgot-password flow
+        setupCodeInput('reset-code');
+      }
+    }
+
+    function setupPasswordToggle(buttonId, inputId) {
+      const button = document.getElementById(buttonId);
+      const input = document.getElementById(inputId);
+      button.addEventListener('click', () => {
+        const type = input.type === 'password' ? 'text' : 'password';
+        input.type = type;
+        button.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+      });
+    }
+
+    function openPasswordModal() {
+      document.getElementById('password-modal-step1').classList.remove('hidden');
+      document.getElementById('password-modal-step1').classList.add('flex');
+      document.getElementById('current-password').focus();
+    }
+
+    function openForgotModal() {
+      const emailInput = document.getElementById('forgot-email');
+      if (currentUser && currentUser.email) {
+        emailInput.value = currentUser.email;
+        emailInput.readOnly = true;
+        emailInput.classList.add('bg-gray-100');
+      }
+      document.getElementById('forgot-modal-step1').classList.remove('hidden');
+      document.getElementById('forgot-modal-step1').classList.add('flex');
+      emailInput.focus();
+    }
+
+    // Ensure only Forgot Step 2 is visible
+    function showForgotStep2() {
+      const hide = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      };
+      hide('password-modal-step1');
+      hide('password-modal-step2');
+      hide('password-modal-step3');
+      hide('forgot-modal-step1');
+      const step2 = document.getElementById('forgot-modal-step2');
+      step2.classList.remove('hidden');
+      step2.classList.add('flex');
+      const codeInput = document.getElementById('reset-code');
+      if (codeInput) codeInput.focus();
+    }
+
+    function closeAllModals() {
+      document.getElementById('password-modal-step1').classList.add('hidden');
+      document.getElementById('password-modal-step1').classList.remove('flex');
+      document.getElementById('password-modal-step2').classList.add('hidden');
+      document.getElementById('password-modal-step2').classList.remove('flex');
+      document.getElementById('password-modal-step3').classList.add('hidden');
+      document.getElementById('password-modal-step3').classList.remove('flex');
+      
+      // Clear forms
+      document.getElementById('password-step1-form').reset();
+      document.getElementById('password-step2-form').reset();
+      document.getElementById('password-step3-form').reset();
+      
+      // Clear errors
+      document.getElementById('step1-error').classList.add('hidden');
+      document.getElementById('step2-error').classList.add('hidden');
+      document.getElementById('step3-error').classList.add('hidden');
+    }
+
+    // Forgot password: send reset code
+    async function sendResetCode(e) {
+      e.preventDefault();
+      const email = (currentUser && currentUser.email ? currentUser.email : document.getElementById('forgot-email').value).trim().toLowerCase();
+      const btn = document.getElementById('send-reset-code-btn');
+      const errorEl = document.getElementById('forgot1-error');
+      errorEl.classList.add('hidden');
+
+      // basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        errorEl.textContent = 'Please enter a valid email address';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+
+      try {
+        const res = await fetch(`${API}/api/auth/forgotpassword`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.msg || 'Failed to send reset code');
+        }
+        forgotEmail = email;
+        // Proceed to step 2 (robustly ensure only step 2 is visible)
+        showForgotStep2();
+        startFpCooldown(60);
+      } catch (err) {
+        console.error('Error sending reset code:', err);
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Reset Code';
+      }
+    }
+
+    // Forgot password: reset using code
+    async function resetPasswordWithCode(e) {
+      e.preventDefault();
+      const code = document.getElementById('reset-code').value.trim();
+      const newPass = document.getElementById('forgot-new-password').value;
+      const confirmPass = document.getElementById('forgot-confirm-password').value;
+      const btn = document.getElementById('reset-password-btn');
+      const errorEl = document.getElementById('forgot2-error');
+
+      errorEl.classList.add('hidden');
+      if (!/^\d{6}$/.test(code)) {
+        errorEl.textContent = 'Enter a valid 6-digit code';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      if (newPass !== confirmPass) {
+        errorEl.textContent = 'Passwords do not match';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      if (newPass.length < 8) {
+        errorEl.textContent = 'Password must be at least 8 characters long';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class=\"fas fa-spinner fa-spin mr-2\"></i>Resetting...';
+
+      try {
+        const res = await fetch(`${API}/api/auth/resetpassword`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+          body: JSON.stringify({ token: code, password: newPass })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.msg || 'Failed to reset password');
+        }
+        document.getElementById('forgot-modal-step2').classList.add('hidden');
+        document.getElementById('forgot-modal-step2').classList.remove('flex');
+        showSuccessMessage('Password reset successfully! Please log in again.');
+        setTimeout(() => {
+          localStorage.removeItem('adminToken');
+          window.location.href = 'login.html';
+        }, 1200);
+      } catch (err) {
+        console.error('Error resetting password:', err);
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class=\"fas fa-save\"></i> Reset Password';
+      }
+    }
+
+    async function sendVerificationCode(e) {
+      e.preventDefault();
+      const currentPassword = document.getElementById('current-password').value;
+      const btn = document.getElementById('send-code-btn');
+      const errorEl = document.getElementById('step1-error');
+
+      errorEl.classList.add('hidden');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+
+      try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`${API}/api/admin/send-verification-code`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify({ currentPassword })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.msg || 'Failed to send verification code');
+        }
+
+        // Success - move to step 2
+        document.getElementById('password-modal-step1').classList.add('hidden');
+        document.getElementById('password-modal-step1').classList.remove('flex');
+        document.getElementById('password-modal-step2').classList.remove('hidden');
+        document.getElementById('password-modal-step2').classList.add('flex');
+        document.getElementById('verification-code').focus();
+        startCpCooldown(60);
+
+      } catch (error) {
+        console.error('Error sending verification code:', error);
+        errorEl.textContent = error.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Verification Code';
+      }
+    }
+
+    async function verifyCode(e) {
+      e.preventDefault();
+      const code = document.getElementById('verification-code').value.trim();
+      const btn = document.getElementById('verify-code-btn');
+      const errorEl = document.getElementById('step2-error');
+
+      errorEl.classList.add('hidden');
+      if (!/^\d{6}$/.test(code)) {
+        errorEl.textContent = 'Enter a valid 6-digit code';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Verifying...';
+
+      try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`${API}/api/admin/verify-code`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify({ code })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.msg || 'Invalid verification code');
+        }
+
+        // Store verification token
+        verificationToken = data.verificationToken || code;
+
+        // Success - move to step 3
+        document.getElementById('password-modal-step2').classList.add('hidden');
+        document.getElementById('password-modal-step2').classList.remove('flex');
+        document.getElementById('password-modal-step3').classList.remove('hidden');
+        document.getElementById('password-modal-step3').classList.add('flex');
+        document.getElementById('new-password').focus();
+
+      } catch (error) {
+        console.error('Error verifying code:', error);
+        errorEl.textContent = error.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> Verify Code';
+      }
+    }
+
+    // Restrict code inputs to digits, cap at 6 and trim spaces
+    function setupCodeInput(inputId) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.addEventListener('input', () => {
+        let v = input.value.replace(/\D/g, '').slice(0, 6);
+        input.value = v;
+      });
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        let text = (e.clipboardData || window.clipboardData).getData('text');
+        text = text.replace(/\D/g, '').slice(0, 6);
+        input.value = text;
+      });
+    }
+
+    async function updatePassword(e) {
+      e.preventDefault();
+      const newPassword = document.getElementById('new-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+      const btn = document.getElementById('update-password-btn');
+      const errorEl = document.getElementById('step3-error');
+
+      errorEl.classList.add('hidden');
+
+      // Validate passwords match
+      if (newPassword !== confirmPassword) {
+        errorEl.textContent = 'Passwords do not match';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      // Validate password strength
+      if (newPassword.length < 8) {
+        errorEl.textContent = 'Password must be at least 8 characters long';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+
+      try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`${API}/api/admin/update-password`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify({ 
+            newPassword,
+            verificationToken
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.msg || 'Failed to update password');
+        }
+
+        // Success: force re-login
+        closeAllModals();
+        showSuccessMessage('Password updated successfully! Please log in again.');
+        setTimeout(() => {
+          localStorage.removeItem('adminToken');
+          window.location.href = 'login.html';
+        }, 1200);
+
+      } catch (error) {
+        console.error('Error updating password:', error);
+        errorEl.textContent = error.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Update Password';
+      }
+    }
+
+    // Resend change-password verification code with cooldown
+    async function resendVerificationCode() {
+      const btn = document.getElementById('resend-code-btn');
+      const label = document.getElementById('resend-code-label');
+      const errorEl = document.getElementById('step2-error');
+      if (cpCooldown > 0) return;
+      errorEl.classList.add('hidden');
+      btn.disabled = true;
+      label.textContent = 'Sending...';
+      try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`${API}/api/admin/resend-verification-code`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to resend code');
+        startCpCooldown(60);
+      } catch (err) {
+        console.error('Error resending code:', err);
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        label.textContent = 'Resend Code';
+      }
+    }
+
+    function startCpCooldown(seconds) {
+      cpCooldown = seconds;
+      updateCpResendUI();
+      if (cpTimer) clearInterval(cpTimer);
+      cpTimer = setInterval(() => {
+        cpCooldown--;
+        updateCpResendUI();
+        if (cpCooldown <= 0) {
+          clearInterval(cpTimer);
+        }
+      }, 1000);
+    }
+
+    function updateCpResendUI() {
+      const btn = document.getElementById('resend-code-btn');
+      const label = document.getElementById('resend-code-label');
+      if (!btn || !label) return;
+      if (cpCooldown > 0) {
+        btn.disabled = true;
+        label.textContent = `Resend Code (${cpCooldown}s)`;
+      } else {
+        btn.disabled = false;
+        label.textContent = 'Resend Code';
+      }
+    }
+
+    // Resend forgot-password code with cooldown
+    async function resendForgotCode() {
+      const btn = document.getElementById('resend-reset-code-btn');
+      const label = document.getElementById('resend-reset-label');
+      const errorEl = document.getElementById('forgot2-error');
+      if (fpCooldown > 0) return;
+      const email = forgotEmail || (currentUser ? currentUser.email : '');
+      if (!email) {
+        errorEl.textContent = 'Missing email. Go back and enter your email.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      errorEl.classList.add('hidden');
+      btn.disabled = true;
+      label.textContent = 'Sending...';
+      try {
+        const res = await fetch(`${API}/api/auth/forgotpassword`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to resend code');
+        startFpCooldown(60);
+      } catch (err) {
+        console.error('Error resending reset code:', err);
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        label.textContent = 'Resend Code';
+      }
+    }
+
+    function startFpCooldown(seconds) {
+      fpCooldown = seconds;
+      updateFpResendUI();
+      if (fpTimer) clearInterval(fpTimer);
+      fpTimer = setInterval(() => {
+        fpCooldown--;
+        updateFpResendUI();
+        if (fpCooldown <= 0) {
+          clearInterval(fpTimer);
+        }
+      }, 1000);
+    }
+
+    function updateFpResendUI() {
+      const btn = document.getElementById('resend-reset-code-btn');
+      const label = document.getElementById('resend-reset-label');
+      if (!btn || !label) return;
+      if (fpCooldown > 0) {
+        btn.disabled = true;
+        label.textContent = `Resend Code (${fpCooldown}s)`;
+      } else {
+        btn.disabled = false;
+        label.textContent = 'Resend Code';
+      }
+    }
+
+    async function createEmployee(e) {
+      e.preventDefault();
+      const name = document.getElementById('emp-name').value.trim();
+      const email = document.getElementById('emp-email').value.trim().toLowerCase();
+      const password = document.getElementById('emp-password').value.trim();
+      const messageEl = document.getElementById('employee-message');
+
+      // Validate inputs
+      if (!name || !email || !password) {
+        showEmployeeMessage('All fields are required', 'error');
+        return;
+      }
+
+      if (password.length < 8) {
+        showEmployeeMessage('Password must be at least 8 characters long', 'error');
+        return;
+      }
+
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showEmployeeMessage('Please enter a valid email address', 'error');
+        return;
+      }
+
+      const form = document.getElementById('employee-form');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+
+      console.log('Creating employee:', { name, email, passwordLength: password.length });
+
+      try {
+        const token = localStorage.getItem('adminToken');
+        console.log('Token exists:', !!token);
+        
+        const res = await fetch(`${API}/api/admin/create-employee`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify({ name, email, password })
+        });
+
+        console.log('Response status:', res.status);
+        const data = await res.json();
+        console.log('Response data:', data);
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.msg || 'Failed to create employee');
+        }
+
+        // Success
+        showEmployeeMessage(`Employee "${name}" created successfully!`, 'success');
+        clearEmployeeForm();
+
+      } catch (error) {
+        console.error('Error creating employee:', error);
+        showEmployeeMessage(error.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Create Employee';
+      }
+    }
+
+    function clearEmployeeForm() {
+      document.getElementById('employee-form').reset();
+    }
+
+    function showEmployeeMessage(message, type) {
+      const messageEl = document.getElementById('employee-message');
+      messageEl.textContent = message;
+      messageEl.className = type === 'success' 
+        ? 'mt-4 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800'
+        : 'mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-600';
+      messageEl.classList.remove('hidden');
+      
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        messageEl.classList.add('hidden');
+      }, 5000);
+    }
+
+    async function resetEmployeePassword(e) {
+      e.preventDefault();
+      const email = document.getElementById('reset-emp-email').value.trim().toLowerCase();
+      const newPassword = document.getElementById('reset-emp-password').value;
+      const msgEl = document.getElementById('employee-reset-message');
+
+      // basic validations
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        msgEl.className = 'mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-600';
+        msgEl.textContent = 'Please enter a valid email address';
+        msgEl.classList.remove('hidden');
+        return;
+      }
+      if ((newPassword || '').length < 8) {
+        msgEl.className = 'mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-600';
+        msgEl.textContent = 'Password must be at least 8 characters long';
+        msgEl.classList.remove('hidden');
+        return;
+      }
+
+      msgEl.classList.add('hidden');
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      const original = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Resetting...';
+
+      try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`${API}/api/admin/reset-employee-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify({ email, newPassword })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to reset password');
+
+        msgEl.className = 'mt-4 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800';
+        msgEl.textContent = 'Employee password updated successfully';
+        msgEl.classList.remove('hidden');
+        // clear password field only
+        document.getElementById('reset-emp-password').value = '';
+      } catch (err) {
+        msgEl.className = 'mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-600';
+        msgEl.textContent = err.message;
+        msgEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      }
+    }
+
+    function showSuccessMessage(message) {
+      const container = document.getElementById('admin-profile-container');
+      const alert = document.createElement('div');
+      alert.className = 'fixed top-4 right-4 bg-green-50 border border-green-200 text-green-800 px-6 py-4 rounded-lg shadow-lg z-50 flex items-center gap-3';
+      alert.innerHTML = `
+        <i class="fas fa-check-circle text-xl"></i>
+        <span class="font-medium">${message}</span>
+      `;
+      document.body.appendChild(alert);
+      
+      setTimeout(() => {
+        alert.remove();
+      }, 5000);
+    }
+
+    function showLoading() {
+      const container = document.getElementById('admin-profile-container');
+      container.innerHTML = `
+        <div class="flex items-center justify-center h-64">
+          <div class="text-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+            <p class="text-gray-600">Loading profile...</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function hideLoading() {
+      // Loading is replaced by actual content when profile loads
+    }
+
+    function showError(message) {
+      const container = document.getElementById('admin-profile-container');
+      container.innerHTML = `
+        <div class="max-w-md mx-auto mt-8">
+          <div class="bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-lg">
+            <p class="font-medium">${message}</p>
+          </div>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>

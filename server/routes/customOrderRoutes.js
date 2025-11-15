@@ -53,9 +53,9 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({ 
-    storage, 
-    fileFilter, 
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+    storage,
+    fileFilter,
+    limits: { fileSize: 20 * 1024 * 1024 } // 20MB limit
 });
 // --- End Multer Config ---
 
@@ -83,11 +83,12 @@ router.route('/:id/final-payment')
     .put(protect, upload.single('designFile'), submitFinalPayment);    
 
 // Admin route: Get all custom orders
+// Allow employees to view custom orders list; admin retains write actions
 router.route('/admin')
-    .get(protect, authorize('admin'), getAdminCustomOrders);
+    .get(protect, authorize('admin','employee'), getAdminCustomOrders);
 
 router.route('/:id/quote')
-    .put(protect, authorize('admin'), updateCustomOrderQuote);
+    .put(protect, authorize('admin','employee'), updateCustomOrderQuote);
 
 router.route('/:id/accept')
     .put(protect, acceptCustomOrderQuote);
@@ -96,16 +97,16 @@ router.route('/:id')
     .get(protect, getSingleCustomOrder);
 
 router.route('/:id/reject')
-    .put(protect, authorize('admin'), rejectCustomOrderQuote);
+    .put(protect, authorize('admin','employee'), rejectCustomOrderQuote);
 
 router.route('/:id/verify-downpayment')
-    .put(protect, authorize('admin'), verifyDownPayment);    
+    .put(protect, authorize('admin','employee'), verifyDownPayment);    
 
 router.route('/:id/request-final-payment')
-    .put(protect, authorize('admin'), requestFinalPayment);
+    .put(protect, authorize('admin','employee'), requestFinalPayment);
 
 router.route('/:id/verify-final-payment')
-    .put(protect, authorize('admin'), verifyFinalPayment);
+    .put(protect, authorize('admin','employee'), verifyFinalPayment);
 
 // Customer chooses pickup or delivery
 router.route('/:id/fulfillment')
@@ -113,6 +114,6 @@ router.route('/:id/fulfillment')
 
 // Admin adds tracking or pickup details
 router.route('/:id/fulfillment-details')
-    .put(protect, authorize('admin'), updateFulfillmentDetails);
+    .put(protect, authorize('admin','employee'), updateFulfillmentDetails);
 
 module.exports = router;

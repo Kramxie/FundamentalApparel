@@ -69,6 +69,9 @@
           <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
             <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
           </a>
+          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
+          </a>
         </nav>
       </div>
     </div>
@@ -334,12 +337,10 @@
                   <p><strong>Garment:</strong> <span id="pro-garment"></span></p>
                   <p><strong>Location:</strong> <span id="pro-location"></span></p>
                 </div>
-                <div>
-                  <strong>Colors:</strong>
-                  <div class="flex gap-2 mt-1">
-                    <div id="pro-color-primary" class="w-8 h-8 rounded border-2 border-gray-300" title="Primary"></div>
-                    <div id="pro-color-secondary" class="w-8 h-8 rounded border-2 border-gray-300" title="Secondary"></div>
-                    <div id="pro-color-accent" class="w-8 h-8 rounded border-2 border-gray-300" title="Accent"></div>
+                <div id="colors-section">
+                  <strong>Colors Selected:</strong>
+                  <div id="colors-container" class="flex gap-3 mt-2 flex-wrap">
+                    <!-- Colors will be dynamically inserted here -->
                   </div>
                 </div>
                 <div id="pro-design-text-wrap" class="hidden">
@@ -994,43 +995,128 @@
           if (hasProData) {
             pro.classList.remove('hidden');
             const qp = order.quotePayload || {};
-            // Garment and location
-            document.getElementById('pro-garment').textContent = (order.garmentType || order.itemType || '-');
-            document.getElementById('pro-location').textContent = (order.selectedLocation || qp.selectedLocation || '-');
-            // Colors
+            
+            console.log('[Admin Modal] Full order data:', order);
+            console.log('[Admin Modal] garmentType:', order.garmentType);
+            console.log('[Admin Modal] colors:', order.colors);
+            console.log('[Admin Modal] designImagesMap:', order.designImagesMap);
+            console.log('[Admin Modal] designImage:', order.designImage);
+            
+            // Garment and location - Prefer human-readable label from quotePayload
+            const garmentLabel = (qp && qp.garmentLabel) ? qp.garmentLabel : null;
+            let garmentType = garmentLabel || order.garmentType || order.itemType || 'T-Shirt';
+            const lower = garmentType.toLowerCase();
+            const garmentEmoji = lower.includes('v-neck') || lower.includes('vneck') ? '👕' :
+                                lower.includes('round') || lower.includes('crew') ? '👕' :
+                                lower.includes('jersey') ? '🎽' : 
+                                lower.includes('shirt') ? '👕' : 
+                                lower.includes('short') ? '🩳' : '👔';
+            document.getElementById('pro-garment').innerHTML = `${garmentEmoji} ${garmentType}`;
+            
+            // Location - Show specific location with emoji
+            const location = order.selectedLocation || qp.selectedLocation || 'Not specified';
+            const locationText = location.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            document.getElementById('pro-location').innerHTML = `📍 ${locationText}`;
+            
+            // Colors - Prefer the single selected garment color from quotePayload
             const colors = order.colors || {};
-            if (colors.primary || colors.secondary || colors.accent) {
-              if (colors.primary) document.getElementById('pro-color-primary').style.backgroundColor = colors.primary;
-              if (colors.secondary) document.getElementById('pro-color-secondary').style.backgroundColor = colors.secondary;
-              if (colors.accent) document.getElementById('pro-color-accent').style.backgroundColor = colors.accent;
+            const colorsContainer = document.getElementById('colors-container');
+            const singleColorHex = (qp && (qp.garmentColorHex || qp.garmentColorName)) || null;
+            const singleColorName = (qp && qp.garmentColorName) || '';
+            if (singleColorHex) {
+              const title = [singleColorName, singleColorHex].filter(Boolean).join(' · ');
+              colorsContainer.innerHTML = `<div class="w-12 h-12 rounded-lg border-2 border-gray-300 shadow-sm" style="background-color: ${singleColorHex}" title="${title}"></div>`;
+            } else if (colors.primary || colors.secondary || colors.accent) {
+              let colorHTML = '';
+              if (colors.primary) {
+                colorHTML += `<div class=\"w-12 h-12 rounded-lg border-2 border-gray-300 shadow-sm\" style=\"background-color: ${colors.primary}\" title=\"${colors.primary}\"></div>`;
+              }
+              if (colors.secondary) {
+                colorHTML += `<div class=\"w-12 h-12 rounded-lg border-2 border-gray-300 shadow-sm\" style=\"background-color: ${colors.secondary}\" title=\"${colors.secondary}\"></div>`;
+              }
+              if (colors.accent) {
+                colorHTML += `<div class=\"w-12 h-12 rounded-lg border-2 border-gray-300 shadow-sm\" style=\"background-color: ${colors.accent}\" title=\"${colors.accent}\"></div>`;
+              }
+              colorsContainer.innerHTML = colorHTML;
+            } else {
+              colorsContainer.innerHTML = '<p class="text-sm text-gray-500">No colors specified</p>';
             }
-            // Design text
+            // Design text AND uploaded design placements
             const dtext = (order.designText || '');
+            const multi = order.designImagesMap || {};
+            const designKeys = Object.keys(multi);
+            
+            let designInfoHTML = '';
+            
+            // Show text placement if exists
             if (dtext) {
-              document.getElementById('pro-design-text').textContent = dtext;
+              const textLocation = order.selectedLocation || qp.selectedLocation || 'Unknown';
+              const formattedLocation = textLocation.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+              designInfoHTML += `<div class="mb-2">
+                <span class="font-semibold text-indigo-700">"${dtext}"</span> 
+                <span class="text-xs text-gray-600">- ${formattedLocation}</span>
+              </div>`;
+            }
+            
+            // Show uploaded design placements (include original filename when available)
+            if (designKeys.length > 0) {
+              const placements = designKeys.map(key => key.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())).join(', ');
+              let uploadedName = (qp && qp.uploadedDesignFilename) || '';
+              if (!uploadedName && order.designImage) {
+                try {
+                  const urlNoQuery = order.designImage.split('?')[0];
+                  uploadedName = urlNoQuery.substring(urlNoQuery.lastIndexOf('/') + 1) || '';
+                } catch(e) { uploadedName = ''; }
+              }
+              const namePart = uploadedName ? ` <span class=\"text-xs text-gray-500\">(${uploadedName})</span>` : '';
+              designInfoHTML += `<div>
+                <span class="font-semibold text-green-700">Uploaded Design</span>${namePart} 
+                <span class="text-xs text-gray-600">- ${placements}</span>
+              </div>`;
+            }
+            
+            if (designInfoHTML) {
+              document.getElementById('pro-design-text').innerHTML = designInfoHTML;
               document.getElementById('pro-design-text-wrap').classList.remove('hidden');
             } else {
               document.getElementById('pro-design-text-wrap').classList.add('hidden');
             }
             // Design images (single legacy + multi-location previews) - 2x2 grid
             const designWrap = document.getElementById('pro-design-image');
-            const multi = order.designImagesMap || {};
-            if (Object.keys(multi).length) {
+            // Use 'multi' from above (already declared for design text section)
+            
+            console.log('[Admin] Full order object:', order);
+            console.log('[Admin] Order designImagesMap:', multi);
+            console.log('[Admin] Order designImage:', order.designImage);
+            console.log('[Admin] designImagesMap keys:', Object.keys(multi));
+            console.log('[Admin] designImagesMap entries:', Object.entries(multi));
+            
+            if (multi && Object.keys(multi).length) {
               const entries = Object.entries(multi);
-              designWrap.innerHTML = entries.map(([loc,url]) => `
+              designWrap.innerHTML = entries.map(([loc,url]) => {
+                // Ensure URL is absolute
+                let finalUrl = url;
+                if (url && !url.startsWith('http') && !url.startsWith('data:')) {
+                  const API_BASE = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
+                  finalUrl = url.startsWith('/') ? `${API_BASE}${url}` : `${API_BASE}/${url}`;
+                }
+                
+                return `
                 <div class="bg-white p-3 rounded-lg border">
-                  <p class="text-xs font-semibold text-gray-700 mb-2">${loc.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</p>
-                  <a href="${url}" target="_blank" download class="block mb-2">
-                    <img src="${url}" class="w-full h-32 object-contain rounded border shadow-sm hover:shadow-md transition" alt="${loc} preview">
+                  <p class="text-xs font-semibold text-gray-700 mb-2 capitalize">${loc.replace(/-/g,' ')}</p>
+                  <a href="${finalUrl}" target="_blank" download class="block mb-2">
+                    <img src="${finalUrl}" class="w-full h-32 object-contain rounded border shadow-sm hover:shadow-md transition" alt="${loc} preview" onerror="this.parentElement.innerHTML='<div class=\\'text-red-500 text-xs\\'>Image failed to load</div>'">
                   </a>
-                  <a href="${url}" target="_blank" download class="block text-center px-2 py-1 text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 rounded hover:bg-indigo-100 transition">
+                  <a href="${finalUrl}" target="_blank" download class="block text-center px-2 py-1 text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 rounded hover:bg-indigo-100 transition">
                     <i class="fas fa-download mr-1"></i>Download
                   </a>
-                </div>`).join('');
+                </div>`
+              }).join('');
               document.getElementById('pro-design-image-wrap').classList.remove('hidden');
             } else if (order.designImage) {
               designWrap.innerHTML = `
                 <div class="col-span-2 bg-white p-3 rounded-lg border">
+                  <p class="text-xs font-semibold text-gray-700 mb-2">Uploaded Design</p>
                   <a href="${order.designImage}" target="_blank" download class="block mb-2">
                     <img src="${order.designImage}" class="w-full h-48 object-contain rounded border shadow-sm hover:shadow-md transition" alt="Design Image">
                   </a>
@@ -1042,9 +1128,13 @@
             } else {
               document.getElementById('pro-design-image-wrap').classList.add('hidden');
             }
-            // Printing, qty
-            document.getElementById('pro-printing-type').textContent = (qp.printingType || order.printingType || '-');
-            document.getElementById('pro-qty').textContent = (order.quantity != null ? order.quantity : '-');
+            // Printing, qty - Show specific details
+            const printingType = qp.printingType || order.printingType || 'Not specified';
+            document.getElementById('pro-printing-type').innerHTML = `🖨️ ${printingType}`;
+            
+            const quantity = order.quantity != null ? order.quantity : 0;
+            document.getElementById('pro-qty').innerHTML = `📦 ${quantity} ${quantity === 1 ? 'piece' : 'pieces'}`;
+            
             // Team entries
             const teamEntries = Array.isArray(qp.teamEntries) ? qp.teamEntries : [];
             const teamWrap = document.getElementById('pro-team-wrap');
@@ -1236,6 +1326,13 @@
                 fulfillmentInfo.innerHTML = `
                   <p class="font-semibold text-green-900">📦 Pick-Up Selected</p>
                   <p class="mt-1"><strong>Method:</strong> Customer will pick up at store</p>
+                  <p class="mt-2 bg-green-50 border border-green-200 rounded p-2">
+                    <strong class="text-green-900">📍 Pickup Location:</strong><br>
+                    <span class="text-sm text-gray-700">Fundamental Apparel Store</span><br>
+                    <span class="text-sm text-gray-600">123 Main Street, Barangay San Jose</span><br>
+                    <span class="text-sm text-gray-600">Manila, Metro Manila 1000</span><br>
+                    <span class="text-sm text-gray-600">📞 Contact: (02) 8123-4567</span>
+                  </p>
                   <p class="mt-1 text-sm text-gray-600">Delivery Fee: FREE</p>
                 `;
               } else {

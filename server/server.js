@@ -23,6 +23,7 @@ const customOrderRoutes = require('./routes/customOrderRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 connectDB();
 
@@ -77,6 +78,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/custom-orders', customOrderRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/admin/inventory', inventoryRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 
 // Socket.io authentication middleware

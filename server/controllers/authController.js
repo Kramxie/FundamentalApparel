@@ -72,11 +72,28 @@ exports.loginUser = async (req, res) => {
         if (!email || !password) return res.status(400).json({ success: false, msg: 'Please provide an email and password' });
         
         // --- MODIFIED: Kunin ang buong user info ---
-        const user = await User.findOne({ email }).select('+password');
-        if (!user) return res.status(401).json({ success: false, msg: 'Invalid credentials' });
+        const emailLC = String(email).trim().toLowerCase();
+        console.log('\n=== LOGIN DEBUG ===');
+        console.log('Login attempt: email=%s, pwd_len=%d', emailLC, password.length);
+        
+        const user = await User.findOne({ email: emailLC }).select('+password');
+        if (!user) {
+          console.log('User not found for email=%s', emailLC);
+          console.log('=== END LOGIN DEBUG ===\n');
+          return res.status(401).json({ success: false, msg: 'Invalid credentials' });
+        }
+        
+        console.log('User found: id=%s, email=%s, role=%s, isVerified=%s', user._id, user.email, user.role, user.isVerified);
 
         const isMatch = await user.matchPassword(password);
-        if (!isMatch) return res.status(401).json({ success: false, msg: 'Invalid credentials' });
+        console.log('Password match: %s', isMatch);
+        
+        if (!isMatch) {
+          console.log('=== END LOGIN DEBUG ===\n');
+          return res.status(401).json({ success: false, msg: 'Invalid credentials' });
+        }
+        
+        console.log('=== END LOGIN DEBUG ===\n');
 
         if (!user.isVerified && user.role !== 'admin') {
             return res.status(401).json({
@@ -140,12 +157,13 @@ exports.getMe = async (req, res) => {
     try {
         // Ang req.user ay galing na sa 'protect' middleware
         // at dapat ay buo na ang info nito
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.user.id).select('-password');
         if (!user) {
              return res.status(404).json({ success: false, msg: 'User not found' });
         }
         res.status(200).json({ success: true, data: user });
     } catch (error) {
+        console.error('getMe error:', error);
         res.status(500).json({ success: false, msg: 'Server Error' });
     }
 };
@@ -281,7 +299,7 @@ exports.forgotPassword = async (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, msg: 'There is no user with that email' });
         }
-        const resetToken = Math.floor(10000 + Math.random() * 90000).toString();
+        const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
         user.resetPasswordToken = resetToken;
         user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
         await user.save({ validateBeforeSave: false });
@@ -301,14 +319,14 @@ exports.forgotPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
     try {
-        const { token, password } = req.body;
+        const { resetToken, newPassword } = req.body;
         const user = await User.findOne({
-            resetPasswordToken: token,
+            resetPasswordToken: resetToken,
             resetPasswordExpire: { $gt: Date.now() }
         });
         if (!user) return res.status(400).json({ success: false, msg: 'Invalid or expired code' });
         
-        user.password = password;
+        user.password = newPassword;
         user.resetPasswordToken = undefined;
         user.resetPasswordExpire = undefined;
         await user.save();

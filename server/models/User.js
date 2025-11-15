@@ -77,7 +77,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'admin'],
+        enum: ['user', 'admin', 'employee'],
         default: 'user'
     },
     isVerified: {
@@ -109,6 +109,11 @@ userSchema.methods.matchPassword = async function(enteredPassword) {
     // Check muna kung may password ang user
     if (!this.password) return false;
     return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Alias for comparePassword (for consistency)
+userSchema.methods.comparePassword = async function(enteredPassword) {
+    return this.matchPassword(enteredPassword);
 };
 
 module.exports = mongoose.model('User', userSchema);

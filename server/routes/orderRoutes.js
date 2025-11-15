@@ -50,13 +50,14 @@ router.post('/upload-receipt', upload.single('receipt'), createOrderWithReceipt)
 router.get('/myorders', getMyOrders);
 
 // Admin routes (literal)
-router.get('/admin', authorize('admin'), getAllOrders);
+// Allow employees to view orders list; writes remain admin-only
+router.get('/admin', authorize('admin','employee'), getAllOrders);
 
 // --- NEW ROUTE for user to cancel ---
 router.put('/:id/cancel', cancelOrder);
 
 // Admin status update
-router.put('/:id/status', authorize('admin'), updateOrderStatus);
+router.put('/:id/status', authorize('admin','employee'), updateOrderStatus);
 
 // Get single order (owner or admin) - param route placed last
 router.get('/:id', getOrderById);

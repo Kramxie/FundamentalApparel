@@ -42,6 +42,9 @@
                     <i class="fas fa-comments mr-3"></i> Messages
                     <span id="sidebar-unread-badge" class="hidden ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1"></span>
                 </a>
+                <a href="profile.html" class="flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 rounded-md transition-colors">
+                    <i class="fas fa-user-circle mr-3"></i> Profile
+                </a>
             </div>
         </div>
 
@@ -220,8 +223,8 @@
                 const data = await response.json();
                 currentUser = data.data;
 
-                if (currentUser.role !== 'admin') {
-                    alert('Access denied');
+                if (currentUser.role !== 'admin' && currentUser.role !== 'employee') {
+                    alert('Access denied. Admin or employee privileges required.');
                     window.location.href = '../index.html';
                 }
             } catch (error) {
@@ -234,10 +237,16 @@
         async function loadConversations() {
             try {
                 const response = await fetch(`${API_BASE}/api/messages/conversations`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
                 });
 
                 if (!response.ok) {
+                    // Fallback: if employee gets 403 on older servers, build from messages
+                    if (response.status === 403 && currentUser && (currentUser.role === 'employee' || currentUser.role === 'admin')) {
+                        console.warn('Conversations 403; falling back to building from messages');
+                        await buildConversationsFromMessages();
+                        return;
+                    }
                     throw new Error('Failed to load conversations');
                 }
 
@@ -251,6 +260,62 @@
                     <div class="p-8 text-center text-red-500">
                         <i class="fas fa-exclamation-triangle text-4xl mb-2"></i>
                         <p>Failed to load conversations</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Fallback builder: derive conversations from /api/messages for staff
+        async function buildConversationsFromMessages() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/messages`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
+                });
+                if (!resp.ok) throw new Error('Failed to load messages for fallback');
+                const msgPayload = await resp.json();
+                const msgs = msgPayload.data || [];
+
+                const map = new Map();
+                for (const m of msgs) {
+                    // Only consider conversations with customers (role === 'user')
+                    let other = null;
+                    if (m.sender && m.sender.role === 'user') other = m.sender;
+                    else if (m.recipient && m.recipient.role === 'user') other = m.recipient;
+                    if (!other) continue;
+
+                    const key = other._id;
+                    if (!map.has(key)) {
+                        map.set(key, {
+                            _id: { _id: other._id, name: other.name, email: other.email, avatar: other.avatar },
+                            lastMessage: m.message || '📷 Image',
+                            lastMessageDate: m.createdAt,
+                            unreadCount: 0
+                        });
+                    } else {
+                        const conv = map.get(key);
+                        if (new Date(m.createdAt) > new Date(conv.lastMessageDate)) {
+                            conv.lastMessage = m.message || '📷 Image';
+                            conv.lastMessageDate = m.createdAt;
+                        }
+                    }
+
+                    // Unread count: messages from user to current staff not read
+                    const isToStaff = m.recipient && m.recipient._id === currentUser._id;
+                    const fromUser = m.sender && m.sender.role === 'user';
+                    if (fromUser && isToStaff && m.isRead === false) {
+                        map.get(key).unreadCount += 1;
+                    }
+                }
+
+                conversations = Array.from(map.values())
+                    .sort((a, b) => new Date(b.lastMessageDate) - new Date(a.lastMessageDate));
+                renderConversations();
+            } catch (e) {
+                console.error('Fallback conversations build failed:', e);
+                document.getElementById('conversations-container').innerHTML = `
+                    <div class="p-8 text-center text-red-500">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-2"></i>
+                        <p>Failed to build conversations</p>
                     </div>
                 `;
             }
@@ -396,12 +461,14 @@
                 // Build image HTML if imageUrl exists
                 let imageHtml = '';
                 if (msg.imageUrl) {
+                    // Check if imageUrl already contains full URL or just path
+                    const fullImageUrl = msg.imageUrl.startsWith('http') ? msg.imageUrl : `${API_BASE}${msg.imageUrl}`;
                     imageHtml = `
                         <div class="mt-2">
-                            <img src="${API_BASE}/${msg.imageUrl}" 
+                            <img src="${fullImageUrl}" 
                                  alt="Uploaded image" 
                                  class="max-w-xs rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
-                                 onclick="window.open('${API_BASE}/${msg.imageUrl}', '_blank')"
+                                 onclick="window.open('${fullImageUrl}', '_blank')"
                                  loading="lazy">
                         </div>
                     `;

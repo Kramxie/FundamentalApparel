@@ -832,11 +832,16 @@ exports.submitQuote = async (req, res) => {
     // Extract form fields
     const {
       garmentType,
+      garmentLabel,
+      neckStyle,
       selectedLocation,
+      garmentColorName,
+      garmentColorHex,
       primaryColor,
       secondaryColor,
       accentColor,
       designText,
+      designTextWithPlacements,
       quantity,
       totalPrice,
       unitPrice,
@@ -885,11 +890,16 @@ exports.submitQuote = async (req, res) => {
     
     // Handle image uploads (single legacy + multi-location previews)
     let designImageUrl = null;
+    let designImageOriginalName = null;
     let designImagesMap = {};
     if (Array.isArray(req.files) && req.files.length) {
       req.files.forEach(f => {
         if (f.fieldname === 'designImage') {
           designImageUrl = `${BASE_URL}/uploads/custom-designs/${f.filename}`;
+          // Capture original filename for admin display
+          if (f.originalname) {
+            designImageOriginalName = f.originalname;
+          }
         } else if (f.fieldname.startsWith('designImage_')) {
           // fieldname: designImage_front, designImage_back, designImage_left-sleeve
           const key = f.fieldname.replace('designImage_', '');
@@ -898,6 +908,9 @@ exports.submitQuote = async (req, res) => {
       });
     } else if (req.file) {
       designImageUrl = `${BASE_URL}/uploads/custom-designs/${req.file.filename}`;
+      if (req.file.originalname) {
+        designImageOriginalName = req.file.originalname;
+      }
     }
     
     // Parse JSON-like fields if provided as strings
@@ -905,6 +918,7 @@ exports.submitQuote = async (req, res) => {
     let parsedDesignElements = [];
     let parsedPricingBreakdown = null;
     let parsedDesignElementsMap = undefined;
+    let parsedTextWithPlacements = [];
     // Safe parse helpers returning explicit 400 errors when malformed
     const safeParse = (label, value, fallback, isRequired=false) => {
       if (value === undefined || value === null || value === '') return fallback;
@@ -925,6 +939,7 @@ exports.submitQuote = async (req, res) => {
       parsedDesignElements = safeParse('designElements', designElements, []);
       parsedPricingBreakdown = safeParse('pricingBreakdown', pricingBreakdown, null);
       parsedDesignElementsMap = safeParse('designElementsMap', req.body.designElementsMap, undefined);
+      parsedTextWithPlacements = safeParse('designTextWithPlacements', designTextWithPlacements, []);
     } catch(parseErr) {
       if (parseErr.type === 'parse') {
         return res.status(400).json({ success:false, msg: parseErr.message });
@@ -971,7 +986,17 @@ exports.submitQuote = async (req, res) => {
         designElements: parsedDesignElements,
         // Persist per-location design elements map if provided (already parsed)
         designElementsMap: parsedDesignElementsMap,
-        pricingBreakdown: parsedPricingBreakdown
+        pricingBreakdown: parsedPricingBreakdown,
+        // Additional display metadata from client
+        garmentLabel: garmentLabel || undefined,
+        neckStyle: neckStyle || undefined,
+        // Selected garment color (single swatch for admin display)
+        garmentColorName: garmentColorName || undefined,
+        garmentColorHex: garmentColorHex || garmentColorName || undefined,
+        // Original uploaded design filename (if provided)
+        uploadedDesignFilename: designImageOriginalName || undefined,
+        // Design text elements with their actual placements
+        designTextWithPlacements: parsedTextWithPlacements.length > 0 ? parsedTextWithPlacements : undefined
       }
     });
     

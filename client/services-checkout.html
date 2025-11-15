@@ -131,12 +131,24 @@
                 <div class="flex items-center gap-3">
                   <input id="method-pickup" type="radio" name="delivery-method" value="pickup" class="h-4 w-4 text-green-600">
                   <div>
-                    <p class="font-medium text-sm">Pick-Up</p>
+                    <p class="font-medium text-sm">📦 Pick-Up</p>
                     <p class="text-xs text-gray-500">Pick-up at store - No delivery fee</p>
                   </div>
                 </div>
-                <div class="font-semibold text-green-600">FREE</div>
+                <span class="text-sm font-semibold text-green-600">FREE</span>
               </label>
+              
+              <!-- Pickup Location Info (shows when pickup selected) -->
+              <div id="pickup-location-info" class="hidden mt-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p class="font-semibold text-green-900 mb-2">📍 Pickup Location:</p>
+                <div class="text-sm text-gray-700 space-y-1">
+                  <p class="font-medium">Fundamental Apparel Store</p>
+                  <p>123 Main Street, Barangay San Jose</p>
+                  <p>Manila, Metro Manila 1000</p>
+                  <p class="mt-2">📞 Contact: (02) 8123-4567</p>
+                  <p>🕒 Store Hours: Mon-Sat 9:00 AM - 6:00 PM</p>
+                </div>
+              </div>
             </div>
           </section>
         </div>
@@ -271,6 +283,24 @@
       return '₱' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); 
     }
 
+    // Helper: Get garment emoji
+    function getGarmentEmoji(garmentType) {
+      if (!garmentType) return '👕';
+      const type = garmentType.toLowerCase();
+      if (type.includes('v-neck') || type.includes('vneck')) return '👕';
+      if (type.includes('round') || type.includes('crew')) return '👕';
+      if (type.includes('jersey')) return '🏽';
+      if (type.includes('shirt')) return '👕';
+      if (type.includes('short')) return '🩳';
+      return '👔';
+    }
+
+    // Helper: Format location text
+    function formatLocation(location) {
+      if (!location) return '';
+      return location.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
     // State
     let serviceData = null;
     let orderReference = null;
@@ -338,14 +368,19 @@
       const standardRadio = document.getElementById('method-standard');
       const pickupRadio = document.getElementById('method-pickup');
       const shippingSection = document.querySelector('section:has(#shipping-form)');
+      const pickupLocationInfo = document.getElementById('pickup-location-info');
       
       function updateDeliveryUI() {
         if (pickupRadio.checked) {
           // Hide shipping address for pickup
           shippingSection.style.display = 'none';
+          // Show pickup location info
+          if (pickupLocationInfo) pickupLocationInfo.classList.remove('hidden');
         } else {
           // Show shipping address for delivery
           shippingSection.style.display = 'block';
+          // Hide pickup location info
+          if (pickupLocationInfo) pickupLocationInfo.classList.add('hidden');
         }
         // Recalculate total amount with delivery fee
         updatePaymentAmounts(serviceData);
@@ -441,6 +476,11 @@
      */
     function renderServiceSummary(data) {
       const container = document.getElementById('service-summary');
+      const qp = data.quotePayload || {};
+      const garmentLabel = qp.garmentLabel || data.garmentType || data.itemType || 'T-Shirt';
+      const garmentEmoji = getGarmentEmoji(garmentLabel);
+      const singleColorHex = qp.garmentColorHex || qp.garmentColorName || null;
+      const singleColorName = qp.garmentColorName || '';
       
       const html = `
         <div class="border-b pb-3 mb-3">
@@ -458,28 +498,67 @@
         <div class="grid grid-cols-2 gap-3 text-sm mt-4">
           <div>
             <span class="text-gray-600">Garment Type:</span>
-            <p class="font-medium">${data.garmentType || 'T-Shirt'}</p>
+            <p class="font-medium">${garmentEmoji} ${garmentLabel}</p>
           </div>
           <div>
             <span class="text-gray-600">Quantity:</span>
-            <p class="font-medium">${data.quantity || 1} pcs</p>
+            <p class="font-medium">📦 ${data.quantity || 1} ${(data.quantity || 1) === 1 ? 'piece' : 'pieces'}</p>
           </div>
-          ${data.designText ? `
+          ${(() => {
+            const qp = data.quotePayload || {};
+            // Prefer precomputed placements from backend
+            let textPlacements = Array.isArray(qp.designTextWithPlacements) ? qp.designTextWithPlacements : [];
+            // Derive from designElementsMap if not provided
+            if ((!textPlacements || textPlacements.length === 0) && qp.designElementsMap && typeof qp.designElementsMap === 'object') {
+              const derived = [];
+              Object.entries(qp.designElementsMap).forEach(([loc, arr]) => {
+                (arr || []).filter(e => e && e.type === 'text' && e.text).forEach(e => {
+                  derived.push({ text: e.text, placement: loc });
+                });
+              });
+              textPlacements = derived;
+            }
+            if (textPlacements && textPlacements.length > 0) {
+              const formatted = textPlacements.map(tp => `\"${tp.text}\" <span class=\\\"text-xs text-gray-600\\\">- ${formatLocation(tp.placement)}</span>`).join('<br>');
+              return `
           <div class="col-span-2">
             <span class="text-gray-600">Design Text:</span>
-            <p class="font-medium">${data.designText}</p>
+            <p class="font-medium text-indigo-700">${formatted}</p>
           </div>
-          ` : ''}
-          ${data.colors && (data.colors.primary || data.colors.secondary || data.colors.accent) ? `
+              `;
+            } else if (data.designText) {
+              return `
           <div class="col-span-2">
-            <span class="text-gray-600">Colors:</span>
-            <div class="flex gap-2 mt-1">
-              ${data.colors.primary ? `<div class="flex items-center gap-1"><div class="w-6 h-6 rounded border" style="background-color: ${data.colors.primary}"></div><span class="text-xs">Primary</span></div>` : ''}
-              ${data.colors.secondary ? `<div class="flex items-center gap-1"><div class="w-6 h-6 rounded border" style="background-color: ${data.colors.secondary}"></div><span class="text-xs">Secondary</span></div>` : ''}
-              ${data.colors.accent ? `<div class="flex items-center gap-1"><div class="w-6 h-6 rounded border" style="background-color: ${data.colors.accent}"></div><span class="text-xs">Accent</span></div>` : ''}
+            <span class="text-gray-600">Design Text:</span>
+            <p class="font-medium text-indigo-700">"${data.designText}" ${data.selectedLocation ? `<span class=\"text-xs text-gray-600\">- ${formatLocation(data.selectedLocation)}</span>` : ''}</p>
+          </div>
+              `;
+            }
+            return '';
+          })()}
+          ${singleColorHex ? `
+          <div class="col-span-2">
+            <span class="text-gray-600">Colors Selected:</span>
+            <div class="flex gap-3 mt-2 flex-wrap">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg border-2 shadow-sm" style="background-color: ${singleColorHex}"></div>
+                <div class="text-xs">
+                  <span class="text-gray-600">${singleColorName || 'Selected'}</span><br>
+                  <span class="text-gray-400 font-mono text-[10px]">${singleColorHex}</span>
+                </div>
+              </div>
             </div>
           </div>
-          ` : ''}
+          ` : (data.colors && (data.colors.primary || data.colors.secondary || data.colors.accent) ? `
+          <div class="col-span-2">
+            <span class="text-gray-600">Colors Selected:</span>
+            <div class="flex gap-3 mt-2 flex-wrap">
+              ${data.colors.primary ? `<div class=\"flex items-center gap-2\"><div class=\"w-8 h-8 rounded-lg border-2 shadow-sm\" style=\"background-color: ${data.colors.primary}\"></div><div class=\"text-xs\"><span class=\"text-gray-600\">Primary</span><br><span class=\"text-gray-400 font-mono text-[10px]\">${data.colors.primary}</span></div></div>` : ''}
+              ${data.colors.secondary ? `<div class=\"flex items-center gap-2\"><div class=\"w-8 h-8 rounded-lg border-2 shadow-sm\" style=\"background-color: ${data.colors.secondary}\"></div><div class=\"text-xs\"><span class=\"text-gray-600\">Secondary</span><br><span class=\"text-gray-400 font-mono text-[10px]\">${data.colors.secondary}</span></div></div>` : ''}
+              ${data.colors.accent ? `<div class=\"flex items-center gap-2\"><div class=\"w-8 h-8 rounded-lg border-2 shadow-sm\" style=\"background-color: ${data.colors.accent}\"></div><div class=\"text-xs\"><span class=\"text-gray-600\">Accent</span><br><span class=\"text-gray-400 font-mono text-[10px]\">${data.colors.accent}</span></div></div>` : ''}
+            </div>
+          </div>
+          ` : '')}
         </div>
 
         ${data.notes ? `
@@ -499,6 +578,15 @@
     function renderDesignPreviews(data) {
       console.log('[DEBUG] renderDesignPreviews called with:', data);
       console.log('[DEBUG] designImagesMap:', data.designImagesMap);
+      console.log('[DEBUG] designImagesMap keys:', data.designImagesMap ? Object.keys(data.designImagesMap) : 'none');
+      
+      // Log each key's actual value
+      if (data.designImagesMap) {
+        Object.keys(data.designImagesMap).forEach(key => {
+          console.log(`[DEBUG] designImagesMap["${key}"] = `, data.designImagesMap[key]);
+        });
+      }
+      
       console.log('[DEBUG] designPreviews:', data.designPreviews);
       console.log('[DEBUG] designImage:', data.designImage);
       
@@ -508,8 +596,8 @@
         const placementMappings = [
           { display: 'Front', keys: ['Front', 'front'] },
           { display: 'Back', keys: ['Back', 'back'] },
-          { display: 'Left Sleeve', keys: ['Left Sleeve', 'left-sleeve', 'leftSleeve'] },
-          { display: 'Right Sleeve', keys: ['Right Sleeve', 'right-sleeve', 'rightSleeve'] }
+          { display: 'Left Sleeve', keys: ['Left', 'left-sleeve', 'leftSleeve', 'left sleeve'] },
+          { display: 'Right Sleeve', keys: ['Right', 'right-sleeve', 'rightSleeve', 'right sleeve'] }
         ];
         
         const images = [];
@@ -518,9 +606,18 @@
           // Try to find image with any of the possible key names
           for (const key of mapping.keys) {
             if (data.designImagesMap[key]) {
+              let imageUrl = data.designImagesMap[key];
+              
+              // Fix URL: add API_BASE if it's a relative path
+              if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('data:')) {
+                imageUrl = imageUrl.startsWith('/') ? `${API_BASE}${imageUrl}` : `${API_BASE}/${imageUrl}`;
+              }
+              
+              console.log(`[DEBUG] Found image for ${mapping.display} with key: ${key}, URL: ${imageUrl}`);
+              
               images.push({
                 location: mapping.display,
-                url: data.designImagesMap[key]
+                url: imageUrl
               });
               break; // Found it, move to next placement
             }
@@ -614,7 +711,6 @@
      * Update payment amounts display with delivery fee
      */
     function updatePaymentAmounts(data) {
-      const basePrice = data.unitPrice || data.basePrice || 530;
       const quantity = data.quantity || 1;
       const serviceFee = 0; // No additional service fee for now
       const paymentOption = data.paymentOption || 'full';
@@ -623,16 +719,27 @@
       const deliveryMethod = document.querySelector('input[name="delivery-method"]:checked');
       const deliveryFee = deliveryMethod && deliveryMethod.value === 'pickup' ? 0 : 80;
       
-      // Calculate total including delivery fee
-      const subtotal = basePrice * quantity + serviceFee;
-      const fullAmount = data.totalPrice || subtotal;
-      const fullAmountWithDelivery = fullAmount + deliveryFee;
-      const displayAmount = paymentOption === 'downpayment' 
-        ? fullAmountWithDelivery * 0.5 
-        : fullAmountWithDelivery;
+      // Determine subtotal semantics:
+      // - If unitPrice is provided, subtotal = unitPrice * qty
+      // - Else if totalPrice provided, subtotal = totalPrice (already for whole order)
+      // - Else if basePrice provided, treat it as a whole-order amount
+      let subtotal;
+      if (typeof data.unitPrice === 'number' && data.unitPrice > 0) {
+        subtotal = (data.unitPrice * quantity) + serviceFee;
+      } else if (typeof data.totalPrice === 'number' && data.totalPrice > 0) {
+        subtotal = data.totalPrice + serviceFee;
+      } else if (typeof data.basePrice === 'number' && data.basePrice > 0) {
+        subtotal = data.basePrice + serviceFee;
+      } else {
+        subtotal = 0;
+      }
+
+      // Full amount before delivery should be the subtotal (for full) or 50% of it (for downpayment)
+      const amountBeforeDelivery = paymentOption === 'downpayment' ? (subtotal * 0.5) : subtotal;
+      const displayAmount = amountBeforeDelivery + deliveryFee;
 
       // Update displays
-      document.getElementById('base-price').textContent = (basePrice * quantity).toLocaleString();
+      document.getElementById('base-price').textContent = (subtotal).toLocaleString();
       document.getElementById('delivery-fee-amount').textContent = `₱${deliveryFee.toLocaleString()}`;
       document.getElementById('total-amount').textContent = displayAmount.toLocaleString();
       

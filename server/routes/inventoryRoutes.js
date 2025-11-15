@@ -46,30 +46,29 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB per file
 });
 
-// All routes require admin authentication
+// All routes require authentication; restrict per-route by role
 router.use(protect);
-router.use(authorize('admin'));
 
-// Get inventory statistics
-router.get('/stats', getInventoryStats);
+// Get inventory statistics (read-only for admin and employee)
+router.get('/stats', authorize('admin','employee'), getInventoryStats);
 
-// Bulk update quantities
-router.post('/bulk-update', bulkUpdateQuantities);
+// Bulk update quantities (admin and employee)
+router.post('/bulk-update', authorize('admin','employee'), bulkUpdateQuantities);
 
 // CRUD operations
 router.route('/')
-    .get(getAllInventory)
-    .post(upload.fields([
+    .get(authorize('admin','employee'), getAllInventory)
+    .post(authorize('admin','employee'), upload.fields([
         { name: 'mainImage', maxCount: 1 },
         { name: 'galleryImages', maxCount: 10 }
     ]), createInventoryItem);
 
 router.route('/:id')
-    .get(getInventoryItem)
-    .patch(upload.fields([
+    .get(authorize('admin','employee'), getInventoryItem)
+    .patch(authorize('admin','employee'), upload.fields([
         { name: 'mainImage', maxCount: 1 },
         { name: 'galleryImages', maxCount: 10 }
     ]), updateInventoryItem)
-    .delete(deleteInventoryItem);
+    .delete(authorize('admin','employee'), deleteInventoryItem);
 
 module.exports = router;
