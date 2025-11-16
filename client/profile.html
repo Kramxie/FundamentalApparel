@@ -373,6 +373,8 @@
             const purchasesTabs = document.getElementById('purchases-tabs');
             const purchasesList = document.getElementById('purchases-list');
             let currentCancelOrderId = null;
+            let purchasesCache = [];
+            let isPurchasesSyncing = false;
             const cancelModal = document.getElementById('cancel-modal');
             const cancelModalClose = document.getElementById('cancel-modal-close');
             const cancelModalConfirm = document.getElementById('cancel-modal-confirm');
@@ -667,11 +669,37 @@
                     const json = await apiRequest(`/api/orders/myorders?tab=${encodeURIComponent(tabFilter)}`);
                     if (!json.success) throw new Error(json.msg || 'Could not load purchases');
                     renderPurchases(json.data || [], tabFilter);
+                    // After rendering, try to auto-sync any pending orders with an active session
+                    autoSyncPending(json.data || [], tabFilter);
                 } catch (err) {
                     purchasesList.innerHTML = `<p class="text-red-500 text-center py-8">${err.message}</p>`;
                 }
             }
+            async function autoSyncPending(orders, tabFilter) {
+                const pendings = (orders || []).filter(o => o.paymentStatus === 'Pending' && o.paymentIntentId);
+                if (pendings.length === 0 || isPurchasesSyncing) return;
+                isPurchasesSyncing = true;
+                try {
+                    const results = [];
+                    for (const o of pendings) {
+                        try {
+                            const res = await apiRequest(`/api/payments/sync/${encodeURIComponent(o.paymentIntentId)}`);
+                            results.push(res);
+                        } catch (e) {
+                            // ignore per-order errors
+                        }
+                    }
+                    const anyUpdated = results.some(r => r && r.success && r.data && r.data.updated);
+                    if (anyUpdated) {
+                        const activeTab = purchasesTabs.querySelector('.tab-active')?.dataset.tabFilter || tabFilter;
+                        fetchPurchases(activeTab);
+                    }
+                } finally {
+                    isPurchasesSyncing = false;
+                }
+            }
             function renderPurchases(orders, tabFilter) {
+                purchasesCache = Array.isArray(orders) ? orders : [];
                 if (!orders || orders.length === 0) {
                     purchasesList.innerHTML = `<p class="text-gray-500 text-center py-10">No orders found in ${tabFilter}.</p>`;
                     return;
@@ -688,15 +716,17 @@
                 </div>`).join('');
                     let statusLabel = ''; let statusColor = 'text-gray-700';
                     if (order.status === 'Cancelled') { statusLabel = 'CANCELLED'; statusColor = 'text-red-600'; }
+                    else if (order.paymentStatus === 'Pending' && order.paymentIntentId) { statusLabel = 'PROCESSING PAYMENT'; statusColor = 'text-yellow-600'; }
                     else if (order.paymentStatus === 'Pending') { statusLabel = 'TO PAY'; statusColor = 'text-red-600'; }
                     else if (order.status === 'Accepted') { statusLabel = 'TO SHIP'; statusColor = 'text-blue-600'; }
                     else if (order.status === 'Shipped') { statusLabel = 'TO RECEIVE'; statusColor = 'text-blue-600'; }
                     else if (order.status === 'Delivered') { statusLabel = 'COMPLETED'; statusColor = 'text-green-600'; }
+                    const showSpinner = isPurchasesSyncing && order.paymentStatus === 'Pending' && !!order.paymentIntentId;
                     let buttonsHtml = '';
                     if (order.status === 'Cancelled') {
                         buttonsHtml = `<button data-order-id="${order._id}" data-reason="${order.cancellationReason}" data-by="${order.cancelledBy}" class="btn-details px-4 py-2 border rounded text-sm">Cancellation Details</button>`;
                     } else if (order.paymentStatus === 'Pending') {
-                        buttonsHtml = `<button class="btn-pay-now px-4 py-2 bg-indigo-600 text-white rounded text-sm">Pay Now</button>
+                        buttonsHtml = `<button data-order-id="${order._id}" class="btn-pay-now px-4 py-2 bg-indigo-600 text-white rounded text-sm">Pay Now</button>
                                      <button data-order-id="${order._id}" class="btn-cancel px-4 py-2 border rounded text-sm">Cancel Order</button>`;
                     } else {
                         buttonsHtml = `<a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>`;
@@ -705,7 +735,7 @@
                 <div class="bg-white rounded-lg shadow-sm border">
                     <div class="p-4 flex justify-between items-center">
                         <span class="text-sm font-medium">Order ID: <span class="font-mono">${order._id.slice(0, 10)}...</span></span>
-                        <span class="text-sm font-semibold ${statusColor}">${statusLabel}</span>
+                        <span class="text-sm font-semibold ${statusColor}">${statusLabel}${showSpinner ? ' <i class=\"fas fa-spinner fa-spin\"></i>' : ''}</span>
                     </div>
                     ${itemsHtml}
                     ${order.status === 'Shipped' || order.status === 'Delivered' ? `
@@ -755,11 +785,29 @@
                 const filter = btn.dataset.tabFilter;
                 fetchPurchases(filter);
             });
-            purchasesList.addEventListener('click', (e) => {
+                        purchasesList.addEventListener('click', async (e) => {
                 const payNowBtn = e.target.closest('.btn-pay-now');
                 const cancelBtn = e.target.closest('.btn-cancel');
                 const detailsBtn = e.target.closest('.btn-details');
-                if (payNowBtn) { alert('Payment gateway not yet integrated. Please coordinate with the admin for payment.'); }
+                                if (payNowBtn) {
+                                        const orderId = payNowBtn.getAttribute('data-order-id');
+                                        const order = purchasesCache.find(o => o._id === orderId);
+                                        if (!order) { alert('Order not found. Please refresh and try again.'); return; }
+                                        try {
+                                                payNowBtn.disabled = true;
+                                                payNowBtn.textContent = 'Redirecting...';
+
+                                                const json = await apiRequest(`/api/payments/create-order-existing/${orderId}`, {
+                                                    method: 'POST'
+                                                });
+                                                if (!json.success || !json.data?.checkoutUrl) throw new Error(json.msg || 'Failed to create payment session');
+                                                window.location.href = json.data.checkoutUrl;
+                                        } catch (err) {
+                                                alert(err.message || 'Failed to start payment.');
+                                                payNowBtn.disabled = false;
+                                                payNowBtn.textContent = 'Pay Now';
+                                        }
+                                }
                 if (cancelBtn) {
                     currentCancelOrderId = cancelBtn.dataset.orderId;
                     cancelModal.classList.remove('hidden'); cancelModal.classList.add('flex');

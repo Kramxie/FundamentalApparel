@@ -12,6 +12,12 @@
     body {
       font-family: 'Inter', sans-serif;
     }
+    /* Print only the receipt section when printing */
+    @media print {
+      body * { visibility: hidden; }
+      #receipt-wrap, #receipt-wrap * { visibility: visible; }
+      #receipt-wrap { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+    }
 
     /* --- FIX PARA SA @APPLY WARNING --- */
     .admin-tab {
@@ -181,16 +187,70 @@
             <div class="flex justify-between"><span>Delivery Fee</span> <span id="modal-delivery">0</span></div>
             <div class="flex justify-between font-semibold"><span>Total</span> <span id="modal-total">0</span></div>
           </div>
+          <div class="mt-3">
+            <button id="modal-receipt-btn" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm border rounded hover:bg-gray-50"><i class="fas fa-receipt text-green-600"></i>View Receipt</button>
+          </div>
+          <!-- Receipt-like section (toggle within modal) moved under Order Summary -->
+          <div id="receipt-wrap" class="hidden mt-4 border rounded-lg overflow-hidden">
+            <div class="p-4 bg-gray-50 flex items-center justify-between">
+              <div>
+                <p class="text-xs text-gray-500">Reference Number</p>
+                <p id="receipt-reference" class="font-mono font-semibold text-gray-800">-</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="receipt-copy-ref" class="px-2 py-1 text-xs border rounded hover:bg-gray-100" title="Copy reference"><i class="fas fa-copy mr-1"></i>Copy</button>
+                <button id="receipt-print" class="px-2 py-1 text-xs border rounded hover:bg-gray-100" title="Print receipt"><i class="fas fa-print mr-1"></i>Print</button>
+                <a id="receipt-open-url" href="#" target="_blank" class="hidden px-2 py-1 text-xs border rounded hover:bg-gray-100" title="Open gateway receipt"><i class="fas fa-external-link-alt mr-1"></i>Open</a>
+              </div>
+            </div>
+            <div class="p-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <p class="text-sm text-gray-500">Payment amount</p>
+                  <p id="receipt-amount" class="text-3xl font-extrabold text-green-600">₱0.00</p>
+                  <div class="mt-2 text-sm space-y-1">
+                    <div class="flex justify-between"><span class="text-gray-600">Payment date</span><span id="receipt-date" class="font-medium"></span></div>
+                    <div class="flex justify-between"><span class="text-gray-600">Payment method</span><span id="receipt-method" class="font-medium"></span></div>
+                  </div>
+                  <div class="mt-3">
+                    <p class="font-semibold">Payment for</p>
+                    <p class="text-sm text-gray-700">Order #<span id="receipt-shortid"></span></p>
+                    <p class="text-xs text-gray-500">Customer: <span id="receipt-customer"></span></p>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center">
+                  <div class="text-center">
+                    <div class="text-green-500 text-5xl"><i class="fas fa-check-circle"></i></div>
+                    <p id="receipt-status" class="text-green-700 font-semibold mt-2">Payment received</p>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-4">
+                <table class="w-full text-sm">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="text-left px-2 py-2">Item name</th>
+                      <th class="text-left px-2 py-2">Qty</th>
+                      <th class="text-right px-2 py-2">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody id="receipt-items"></tbody>
+                </table>
+                <div class="mt-3 text-sm">
+                  <div class="flex justify-between"><span>Delivery Fee</span><span id="receipt-delivery">₱0.00</span></div>
+                  <div class="flex justify-between font-semibold"><span>Total</span><span id="receipt-total">₱0.00</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div>
           <h4 class="font-semibold mb-2">Payment and Shipping</h4>
           <div class="text-sm space-y-2">
             <div><span class="text-gray-500">Payment Method:</span> <span id="modal-paymentMethod"></span></div>
             <div><span class="text-gray-500">Shipping Method:</span> <span id="modal-shippingMethod"></span></div>
-          </div>
-          <div class="mt-4">
-            <h5 class="font-medium mb-2">Receipt</h5>
-            <img id="modal-receipt" class="w-full max-h-64 object-contain border rounded" alt="Receipt">
+            <div><span class="text-gray-500">Payment Status:</span> <span id="modal-paymentStatus"></span></div>
+            <div><span class="text-gray-500">Payment Reference:</span> <span id="modal-paymentRef" class="font-mono"></span></div>
           </div>
           <div class="mt-4">
             <h5 class="font-medium mb-2">Shipping Address</h5>
@@ -563,6 +623,8 @@
         </div>
       </div>
   </div>
+
+  <!-- Payment Details Modal removed: payment info now shown directly in Order Details modal -->
   <script>
     const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev'; // O ang ngrok URL mo
 
@@ -593,7 +655,23 @@
         modalTotal: document.getElementById('modal-total'),
         modalPaymentMethod: document.getElementById('modal-paymentMethod'),
         modalShippingMethod: document.getElementById('modal-shippingMethod'),
-        modalReceipt: document.getElementById('modal-receipt'),
+        modalPaymentStatus: document.getElementById('modal-paymentStatus'),
+        modalPaymentRef: document.getElementById('modal-paymentRef'),
+        modalReceiptBtn: document.getElementById('modal-receipt-btn'),
+        receiptWrap: document.getElementById('receipt-wrap'),
+        receiptReference: document.getElementById('receipt-reference'),
+        receiptAmount: document.getElementById('receipt-amount'),
+        receiptDate: document.getElementById('receipt-date'),
+        receiptMethod: document.getElementById('receipt-method'),
+        receiptShortId: document.getElementById('receipt-shortid'),
+        receiptCustomer: document.getElementById('receipt-customer'),
+        receiptStatus: document.getElementById('receipt-status'),
+        receiptItems: document.getElementById('receipt-items'),
+        receiptDelivery: document.getElementById('receipt-delivery'),
+        receiptTotal: document.getElementById('receipt-total'),
+        receiptCopyRef: document.getElementById('receipt-copy-ref'),
+        receiptPrint: document.getElementById('receipt-print'),
+        receiptOpenUrl: document.getElementById('receipt-open-url'),
         modalAddress: document.getElementById('modal-address'),
         formPaymentStatus: document.getElementById('form-paymentStatus'),
         formStatus: document.getElementById('form-status'),
@@ -644,6 +722,9 @@
       let allCustomOrders = [];
       let selectedOrder = null; // Para sa regular order
       let selectedCustomOrder = null; // Para sa custom order
+      // Payment modal removed; payment info is shown directly in Order Details modal
+
+      // Payment Info modal removed; no modal helpers needed
 
       function badge(text, type) {
         const map = {
@@ -683,7 +764,9 @@
             <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
             <td class="px-4 py-3">${o.trackingCode || '-'}</td>
             <td class="px-4 py-3 text-right">
-              <button data-id="${o._id}" class="edit-btn text-indigo-600 hover:text-indigo-800"><i class="fas fa-pen"></i></button>
+              <div class="inline-flex gap-3 items-center justify-end">
+                <button data-id="${o._id}" class="edit-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
+              </div>
             </td>
           </tr>
         `).join('');
@@ -725,15 +808,24 @@
                       <td class="px-4 py-3">${o.quantity}</td>
                       <td class="px-4 py-3">${statusBadge}</td>
                       <td class="px-4 py-3 text-xs max-w-xs truncate">${details}</td>
-                      <td class="px-4 py-3 text-right">
-                          <button data-id="${o._id}" class="edit-custom-btn text-indigo-600 hover:text-indigo-800"><i class="fas fa-pen"></i></button>
-                      </td>
+                        <td class="px-4 py-3 text-right">
+                          <div class="inline-flex gap-3 items-center justify-end">
+                            <button data-id="${o._id}" class="edit-custom-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
+                          </div>
+                        </td>
                   </tr>
               `;
         }).join('');
         els.customOrdersBody.innerHTML = rows || '<tr><td colspan="7" class="px-4 py-6 text-center text-gray-500">No custom orders found.</td></tr>';
         els.customCount.textContent = allCustomOrders.length;
       }
+
+      // Removed: Payment Info button in table; details shown directly in modal
+      // Removed: Custom Payment Info action (aligning with Orders behavior)
+
+      // Payment Info button removed; payment data is rendered directly in the modal
+
+      // Removed: payment details loader; payment data comes from the order payload
 
       async function loadRegularOrders() {
         try {
@@ -772,6 +864,38 @@
       function openModal(order) {
         // ... (ang function na ito ay pareho pa rin) ...
         selectedOrder = order;
+        // expose globally for fallback inline delegation
+        window.selectedOrder = order;
+        // Display payment info directly
+        els.modalPaymentStatus.textContent = order.paymentStatus || 'Pending';
+        els.modalPaymentRef.textContent = order.paymentIntentId || '-';
+        // Prepare receipt view
+        els.receiptWrap.classList.add('hidden');
+        els.receiptReference.textContent = order.paymentIntentId || '-';
+        els.receiptAmount.textContent = peso(order.totalPrice || 0);
+        const paidAt = order.paidAt || order.updatedAt || order.createdAt;
+        els.receiptDate.textContent = paidAt ? new Date(paidAt).toLocaleString() : '-';
+        els.receiptMethod.textContent = order.paymentMethod || '-';
+        els.receiptShortId.textContent = shortId(order._id);
+        els.receiptCustomer.textContent = order.user?.name || '-';
+        els.receiptStatus.textContent = (order.paymentStatus === 'Received') ? 'Payment received' : (order.paymentStatus || 'Pending');
+        // Items table
+        els.receiptItems.innerHTML = (order.orderItems || []).map(it => `
+          <tr>
+            <td class="px-2 py-1">${it.name || 'Item'}</td>
+            <td class="px-2 py-1">${it.quantity || 0}</td>
+            <td class="px-2 py-1 text-right">${peso((it.price || 0) * (it.quantity || 0))}</td>
+          </tr>
+        `).join('');
+        els.receiptDelivery.textContent = peso(order.deliveryFee || 0);
+        els.receiptTotal.textContent = peso(order.totalPrice || 0);
+        // Optional gateway receipt URL
+        if (order.receiptUrl) {
+          els.receiptOpenUrl.href = order.receiptUrl;
+          els.receiptOpenUrl.classList.remove('hidden');
+        } else {
+          els.receiptOpenUrl.classList.add('hidden');
+        }
         els.modal.classList.remove('hidden'); els.modal.classList.add('flex');
         els.modalItems.innerHTML = (order.orderItems || []).map(it => `<div class="flex items-center justify-between"><div class="flex items-center gap-3"><img src="${it.imageUrl || ''}" class="w-10 h-10 rounded object-cover bg-gray-100" /><div><div class="font-medium">${it.name || 'Item'}</div><div class="text-gray-500 text-xs">₱${Number(it.price || 0).toLocaleString()} x ${it.quantity || 0}</div></div></div><div class="font-medium">${peso((it.price || 0) * (it.quantity || 0))}</div></div>`).join('');
         const subtotal = (order.orderItems || []).reduce((s, i) => s + (i.price || 0) * (i.quantity || 0), 0);
@@ -780,11 +904,14 @@
         els.modalTotal.textContent = peso(order.totalPrice || 0);
         els.modalPaymentMethod.textContent = order.paymentMethod || '-';
         els.modalShippingMethod.textContent = order.shippingMethod || '-';
-        els.modalReceipt.src = order.receiptUrl ? `${order.receiptUrl}` : '';
+        // Receipt upload deprecated in PayMongo flow
         const a = order.shippingAddress || {};
         els.modalAddress.innerHTML = `<div>${[a.block, a.lot].filter(Boolean).join(' ')} ${a.street || ''}</div><div>${a.building || ''}</div><div>${a.city || ''}, ${a.province || ''} ${a.zip || ''}</div><div>${a.phone || ''}</div>`;
         els.formPaymentStatus.value = order.paymentStatus || 'Pending';
         els.formStatus.value = order.status || 'Processing';
+        // If PayMongo session exists, lock payment status (webhook/sync controls it)
+        els.formPaymentStatus.disabled = !!order.paymentIntentId;
+        els.formPaymentStatus.title = order.paymentIntentId ? 'Payment status is managed by PayMongo' : '';
         els.formShippingService.value = order.shippingService || '';
         els.formTrackingCode.value = order.trackingCode || '';
         els.modalError.textContent = '';
@@ -1580,7 +1707,24 @@
       els.modalClose.addEventListener('click', () => els.modal.classList.add('hidden'));
       els.modal.addEventListener('click', (e) => { if (e.target === els.modal) els.modal.classList.add('hidden'); });
       els.modalSave.addEventListener('click', saveModal);
-
+      // Receipt controls
+      if (els.modalReceiptBtn) {
+        els.modalReceiptBtn.addEventListener('click', () => {
+          els.receiptWrap.classList.toggle('hidden');
+          if (!els.receiptWrap.classList.contains('hidden')) {
+            els.receiptWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        });
+      }
+      if (els.receiptCopyRef) {
+        els.receiptCopyRef.addEventListener('click', async () => {
+          const txt = (els.receiptReference.textContent || '').trim();
+          try { await navigator.clipboard.writeText(txt); } catch (_) {}
+        });
+      }
+      if (els.receiptPrint) {
+        els.receiptPrint.addEventListener('click', () => window.print());
+      }
       // --- MODIFIED: Custom Modal Events ---
       els.customModalClose.addEventListener('click', () => els.customModal.classList.add('hidden'));
       els.customModal.addEventListener('click', (e) => { if (e.target === els.customModal) els.customModal.classList.add('hidden'); });

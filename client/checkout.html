@@ -210,6 +210,9 @@
     let itemIdsToCheckout = null;
     let savedDefaultAddress = null;
     let savedUserPhone = '';
+    let savedUserEmail = '';
+    let savedUserName = '';
+    let cartItems = [];
 
     document.addEventListener('DOMContentLoaded', () => {
       const token = localStorage.getItem('token');
@@ -263,10 +266,12 @@
               const res = await fetch(`${API_BASE}/api/auth/me`, {
                   headers: { 'Authorization': `Bearer ${token}` }
               });
-              const json = await res.json();
-              if (json.success) {
+                const json = await res.json();
+                if (json.success) {
                   const user = json.data;
                   savedUserPhone = user.contactNumber || '';
+                  savedUserEmail = (user.email || '').trim().toLowerCase();
+                  savedUserName = user.name || 'Customer';
                   if (user.shippingAddresses && user.shippingAddresses.length > 0) {
                       savedDefaultAddress = user.shippingAddresses.find(addr => addr.isDefault);
                   }
@@ -320,6 +325,18 @@
             updateTotals(0);
             return;
           }
+          // Normalize items for payment payload
+          cartItems = cart.items.map(it => {
+            const p = it.product || {};
+            const price = it.price ?? p.price ?? 0;
+            return {
+              productId: p._id || it.productId,
+              name: p.name || it.name || 'Product',
+              price: price,
+              quantity: it.quantity || 1,
+              image: p.imageUrl || it.image || ''
+            };
+          });
           const itemsHtml = cart.items.map(it => {
             const p = it.product || {};
             const qty = it.quantity || 0;
@@ -363,7 +380,7 @@
           return;
         }
         
-        const shippingAddress = {
+        const shippingAddressForm = {
           block: document.getElementById('ship-block')?.value || '',
           lot: document.getElementById('ship-lot')?.value || '',
           street: document.getElementById('ship-street')?.value || '',
@@ -376,7 +393,7 @@
         
         const required = ['street','province','city','zip','phone'];
         for (const k of required) {
-          if (!shippingAddress[k]) {
+          if (!shippingAddressForm[k]) {
             alert(`Please fill ${k} in shipping address.`);
             placeOrderBtn.disabled = false;
             placeOrderBtn.innerHTML = originalBtnHtml;
@@ -392,19 +409,38 @@
         const comment = orderComment.value || '';
         
         try {
+          // Build a single-line address for API validation
+          const addressLine = [
+            shippingAddressForm.block,
+            shippingAddressForm.lot,
+            shippingAddressForm.building,
+            shippingAddressForm.street,
+            shippingAddressForm.city,
+            shippingAddressForm.province,
+            shippingAddressForm.zip
+          ].filter(Boolean).join(', ');
+
           // Prepare PayMongo checkout payload
-          const payload = {
+            const payload = {
             orderType: 'product',
             amount: totalAmount,
-            shippingAddress: shippingAddress,
+            items: cartItems,
+            shippingAddress: {
+              fullName: savedUserName || 'Customer',
+              address: addressLine,
+              province: shippingAddressForm.province,
+              city: shippingAddressForm.city,
+              zip: shippingAddressForm.zip,
+              phone: shippingAddressForm.phone
+            },
             shippingMethod: shippingMethod,
             paymentMethod: paymentMethod,
             deliveryFee: deliveryFee,
             comment: comment,
             customerInfo: {
-              name: shippingAddress.building || 'Customer',
-              email: req.user?.email || '',
-              phone: shippingAddress.phone
+              name: savedUserName || 'Customer',
+              email: savedUserEmail || '',
+              phone: shippingAddressForm.phone
             },
             successUrl: `${window.location.origin}/client/payment-success.html`,
             cancelUrl: `${window.location.origin}/client/payment-cancel.html`

@@ -1,5 +1,6 @@
 const CustomOrder = require('../models/CustomOrder');
 const Order = require('../models/Order');
+const Cart = require('../models/Cart');
 
 // PayMongo API configuration
 // Use environment variables for production
@@ -222,7 +223,10 @@ exports.createOrderPaymentSession = async (req, res) => {
       items,
       shippingAddress,
       amount,
-      paymentMethod
+      paymentMethod,
+      shippingMethod,
+      deliveryFee = 0,
+      comment
     } = req.body;
 
     console.log('[PayMongo] Creating checkout session for product order, user:', userId);
@@ -269,6 +273,21 @@ exports.createOrderPaymentSession = async (req, res) => {
       description: `Product ID: ${item.productId || 'N/A'}`
     }));
 
+    // Append delivery fee as a separate line item if any
+    const deliveryFeeNumber = Number(deliveryFee) || 0;
+    if (deliveryFeeNumber > 0) {
+      lineItems.push({
+        currency: 'PHP',
+        amount: Math.round(deliveryFeeNumber * 100),
+        name: 'Delivery Fee',
+        quantity: 1,
+        description: `${shippingMethod || 'Standard'} Delivery`
+      });
+    }
+
+    // Normalize payment method to match Order schema enum
+    const normalizedPaymentMethod = paymentMethod === 'gcash' ? 'GCash' : paymentMethod;
+
     // Create new Order
     const order = new Order({
       user: userId,
@@ -277,7 +296,7 @@ exports.createOrderPaymentSession = async (req, res) => {
         name: item.name,
         price: item.price,
         quantity: item.quantity,
-        imageUrl: item.image || item.imageUrl || ''
+        imageUrl: item.image || item.imageUrl || 'https://placehold.co/80x80'
       })),
       totalPrice: amount,
       shippingAddress: {
@@ -287,7 +306,10 @@ exports.createOrderPaymentSession = async (req, res) => {
         zip: shippingAddress.zipCode || shippingAddress.zip,
         phone: shippingAddress.phone
       },
-      paymentMethod: paymentMethod,
+      shippingMethod: (shippingMethod === 'Pick-Up' ? 'Pick-Up' : 'Standard'),
+      deliveryFee: deliveryFeeNumber,
+      comment: comment || '',
+      paymentMethod: normalizedPaymentMethod,
       paymentStatus: 'Pending',
       status: 'Processing'
     });
@@ -379,6 +401,121 @@ exports.createOrderPaymentSession = async (req, res) => {
 };
 
 /**
+ * Create PayMongo Checkout Session for an existing Order
+ * Reuses an existing order and attaches a new checkout session.
+ * @route   POST /api/payments/create-order-existing/:orderId
+ * @access  Private
+ */
+exports.createExistingOrderPaymentSession = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { orderId } = req.params;
+
+    if (!orderId) {
+      return res.status(400).json({ success: false, msg: 'orderId is required' });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, msg: 'Order not found' });
+    }
+    if (order.user.toString() !== userId.toString()) {
+      return res.status(403).json({ success: false, msg: 'Not authorized to access this order' });
+    }
+
+    if (order.paymentStatus && ['Received', 'paid', 'Paid'].includes(order.paymentStatus)) {
+      return res.status(400).json({ success: false, msg: 'Order is already paid' });
+    }
+
+    // Prepare line items consistent with createOrderPaymentSession
+    const lineItems = (order.orderItems || []).map(item => ({
+      currency: 'PHP',
+      amount: Math.round((item.price || 0) * (item.quantity || 1) * 100),
+      name: item.name || 'Product',
+      quantity: item.quantity || 1,
+      description: `Product ID: ${item.product || 'N/A'}`
+    }));
+
+    // Add delivery fee if present on the order
+    const deliveryFeeNumber = Number(order.deliveryFee) || 0;
+    if (deliveryFeeNumber > 0) {
+      lineItems.push({
+        currency: 'PHP',
+        amount: Math.round(deliveryFeeNumber * 100),
+        name: 'Delivery Fee',
+        quantity: 1,
+        description: `${order.shippingMethod || 'Standard'} Delivery`
+      });
+    }
+
+    if (!lineItems.length) {
+      return res.status(400).json({ success: false, msg: 'Order has no items' });
+    }
+
+    const orderRef = order._id.toString().slice(-8).toUpperCase();
+    const finalSuccessUrl = `${BASE_URL}/client/payment-success.html?ref=${orderRef}&type=order`;
+    const finalCancelUrl = `${BASE_URL}/client/payment-cancel.html?ref=${orderRef}&type=order`;
+
+    const pm = (order.paymentMethod || '').toString().toLowerCase();
+    const paymentMethodTypes = pm === 'card' ? ['card'] : ['gcash'];
+
+    const checkoutPayload = {
+      data: {
+        attributes: {
+          line_items: lineItems,
+          payment_method_types: paymentMethodTypes,
+          description: `Order #${orderRef}`,
+          success_url: finalSuccessUrl,
+          cancel_url: finalCancelUrl,
+          billing: {
+            name: req.user.name || 'Customer',
+            email: req.user.email || '',
+            phone: order.shippingAddress?.phone || ''
+          },
+          reference_number: orderRef,
+          send_email_receipt: true
+        }
+      }
+    };
+
+    const paymongoResponse = await fetch(`${PAYMONGO_API_URL}/checkout_sessions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${Buffer.from(PAYMONGO_SECRET_KEY + ':').toString('base64')}`
+      },
+      body: JSON.stringify(checkoutPayload)
+    });
+
+    const paymongoData = await paymongoResponse.json();
+
+    if (!paymongoResponse.ok) {
+      console.error('[PayMongo] API Error:', paymongoData);
+      return res.status(500).json({ success: false, msg: paymongoData.errors?.[0]?.detail || 'Failed to create payment session' });
+    }
+
+    order.paymentIntentId = paymongoData.data.id;
+    // ensure pending status for unpaid order
+    order.paymentStatus = 'Pending';
+    await order.save();
+
+    return res.status(201).json({
+      success: true,
+      msg: 'Payment session created successfully',
+      data: {
+        checkoutUrl: paymongoData.data.attributes.checkout_url,
+        sessionId: paymongoData.data.id,
+        orderId: order._id,
+        orderReference: orderRef
+      }
+    });
+  } catch (error) {
+    console.error('[PayMongo] Create existing order session error:', error);
+    return res.status(500).json({ success: false, msg: 'Failed to create payment session', error: error.message });
+  }
+};
+
+/**
  * Handle PayMongo Webhook (for payment status updates)
  * @route   POST /api/payments/webhook
  * @access  Public (webhook endpoint)
@@ -458,6 +595,16 @@ async function handlePaymentSuccess(eventData) {
       order.status = 'Processing'; // Move to processing
       order.isPaid = true;
       order.paidAt = new Date();
+      // Clear user's cart after successful payment
+      try {
+        await Cart.findOneAndUpdate(
+          { user: order.user },
+          { $set: { items: [] } },
+          { new: true }
+        );
+      } catch (e) {
+        console.error('[PayMongo] Failed to clear cart after payment:', e.message);
+      }
     } else {
       // Service order - check payment option
       order.paymentStatus = 'paid';
@@ -568,5 +715,178 @@ exports.verifyPaymentStatus = async (req, res) => {
       msg: 'Failed to verify payment',
       error: error.message
     });
+  }
+};
+
+/**
+ * Verify and sync payment status (on-demand check)
+ * @route   GET /api/payments/sync/:sessionId
+ * @access  Private
+ */
+exports.syncPaymentStatus = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const paymongoResponse = await fetch(`${PAYMONGO_API_URL}/checkout_sessions/${sessionId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(PAYMONGO_SECRET_KEY + ':').toString('base64')}`
+      }
+    });
+
+    const paymongoData = await paymongoResponse.json();
+    if (!paymongoResponse.ok) {
+      return res.status(500).json({ success: false, msg: 'Failed to fetch checkout session' });
+    }
+
+    const piStatus = paymongoData.data.attributes.payment_intent?.attributes?.status;
+    const ref = paymongoData.data.attributes.reference_number;
+
+    // Find order by session id across both models
+    let order = await Order.findOne({ paymentIntentId: sessionId });
+    let orderType = 'product';
+    if (!order) {
+      order = await CustomOrder.findOne({ paymentIntentId: sessionId });
+      orderType = 'service';
+    }
+
+    if (!order) {
+      return res.status(404).json({ success: false, msg: 'Order not found for this session' });
+    }
+
+    let updated = false;
+    if (orderType === 'product') {
+      if (piStatus === 'succeeded' && order.paymentStatus !== 'Received') {
+        order.paymentStatus = 'Received';
+        order.status = 'Processing';
+        order.isPaid = true;
+        order.paidAt = new Date();
+        await order.save();
+        // Clear cart as a safety (if webhook missed)
+        await Cart.findOneAndUpdate({ user: order.user }, { $set: { items: [] } });
+        updated = true;
+      }
+    } else {
+      if (piStatus === 'succeeded' && order.paymentStatus !== 'paid') {
+        order.paymentStatus = 'paid';
+        order.status = 'In Production';
+        order.downPaymentPaid = true;
+        if (order.paymentOption === 'full') order.finalPaymentPaid = true;
+        await order.save();
+        updated = true;
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        updated,
+        orderType,
+        orderId: order._id,
+        paymentStatus: order.paymentStatus,
+        status: order.status,
+        piStatus,
+        reference: ref
+      }
+    });
+  } catch (error) {
+    console.error('[PayMongo] Sync payment error:', error);
+    return res.status(500).json({ success: false, msg: 'Failed to sync payment', error: error.message });
+  }
+};
+
+/**
+ * Admin: Get PayMongo payment details for a regular Order
+ * @route   GET /api/payments/details/order/:orderId
+ * @access  Private/Admin or Employee
+ */
+exports.getOrderPaymentDetails = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId).populate('user','name email');
+    if (!order) return res.status(404).json({ success: false, msg: 'Order not found' });
+    if (!order.paymentIntentId) return res.status(400).json({ success: false, msg: 'No payment session linked to this order' });
+
+    const paymongoResponse = await fetch(`${PAYMONGO_API_URL}/checkout_sessions/${order.paymentIntentId}`, {
+      method: 'GET',
+      headers: { 'Authorization': `Basic ${Buffer.from(PAYMONGO_SECRET_KEY + ':').toString('base64')}` }
+    });
+    const data = await paymongoResponse.json();
+    if (!paymongoResponse.ok) {
+      return res.status(500).json({ success: false, msg: 'Failed to fetch PayMongo details', error: data });
+    }
+    const a = data.data.attributes;
+    const lineItems = Array.isArray(a.line_items) ? a.line_items : [];
+    const deliveryFeeCents = lineItems
+      .filter(li => (li.name || '').toLowerCase().includes('delivery fee'))
+      .reduce((s, li) => s + (li.amount || 0), 0);
+    const totalCents = lineItems.reduce((s, li) => s + (li.amount || 0), 0);
+    const itemsTotalCents = Math.max(0, totalCents - deliveryFeeCents);
+    return res.status(200).json({
+      success: true,
+      data: {
+        sessionId: data.data.id,
+        referenceNumber: a.reference_number,
+        paymentMethodUsed: a.payment_method_used,
+        status: a.payment_intent?.attributes?.status,
+        amount: totalCents / 100,
+        itemsTotal: itemsTotalCents / 100,
+        deliveryFee: deliveryFeeCents / 100,
+        checkoutUrl: a.checkout_url,
+        billing: a.billing,
+        createdAt: a.created_at,
+      }
+    });
+  } catch (error) {
+    console.error('[PayMongo] Get order payment details error:', error);
+    return res.status(500).json({ success: false, msg: 'Failed to get payment details', error: error.message });
+  }
+};
+
+/**
+ * Admin: Get PayMongo payment details for a CustomOrder
+ * @route   GET /api/payments/details/custom/:orderId
+ * @access  Private/Admin or Employee
+ */
+exports.getCustomOrderPaymentDetails = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await CustomOrder.findById(orderId).populate('user','name email');
+    if (!order) return res.status(404).json({ success: false, msg: 'Custom order not found' });
+    if (!order.paymentIntentId) return res.status(400).json({ success: false, msg: 'No payment session linked to this custom order' });
+
+    const paymongoResponse = await fetch(`${PAYMONGO_API_URL}/checkout_sessions/${order.paymentIntentId}`, {
+      method: 'GET',
+      headers: { 'Authorization': `Basic ${Buffer.from(PAYMONGO_SECRET_KEY + ':').toString('base64')}` }
+    });
+    const data = await paymongoResponse.json();
+    if (!paymongoResponse.ok) {
+      return res.status(500).json({ success: false, msg: 'Failed to fetch PayMongo details', error: data });
+    }
+    const a = data.data.attributes;
+    const lineItems = Array.isArray(a.line_items) ? a.line_items : [];
+    const deliveryFeeCents = lineItems
+      .filter(li => (li.name || '').toLowerCase().includes('delivery fee'))
+      .reduce((s, li) => s + (li.amount || 0), 0);
+    const totalCents = lineItems.reduce((s, li) => s + (li.amount || 0), 0);
+    const itemsTotalCents = Math.max(0, totalCents - deliveryFeeCents);
+    return res.status(200).json({
+      success: true,
+      data: {
+        sessionId: data.data.id,
+        referenceNumber: a.reference_number,
+        paymentMethodUsed: a.payment_method_used,
+        status: a.payment_intent?.attributes?.status,
+        amount: totalCents / 100,
+        itemsTotal: itemsTotalCents / 100,
+        deliveryFee: deliveryFeeCents / 100,
+        checkoutUrl: a.checkout_url,
+        billing: a.billing,
+        createdAt: a.created_at,
+      }
+    });
+  } catch (error) {
+    console.error('[PayMongo] Get custom order payment details error:', error);
+    return res.status(500).json({ success: false, msg: 'Failed to get payment details', error: error.message });
   }
 };
