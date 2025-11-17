@@ -39,6 +39,7 @@
           <option>Pending Final Verification</option>
           <option>Completed</option>
           <option>Ready for Pickup/Delivery</option>
+          <option>Out for Delivery</option>
           <option>Cancelled</option>
         </select>
       </div>
@@ -46,6 +47,19 @@
 
     <div id="list" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 items-stretch"></div>
   </main>
+
+  <!-- Order Details Modal -->
+  <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+        <h2 class="text-xl font-bold text-gray-900">Order Details</h2>
+        <button onclick="closeDetailsModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div id="modalContent" class="p-6"></div>
+    </div>
+  </div>
 
   <template id="cardTpl">
     <div class="bg-white border rounded-xl p-4 flex flex-col gap-3 h-full">
@@ -96,6 +110,7 @@
         case 'Pending Final Verification': return 'bg-teal-100 text-teal-800';
         case 'Completed': return 'bg-green-100 text-green-800';
         case 'Ready for Pickup/Delivery': return 'bg-green-100 text-green-800';
+        case 'Out for Delivery': return 'bg-blue-100 text-blue-800';
         case 'Cancelled': return 'bg-red-100 text-red-800';
         default: return 'bg-gray-100 text-gray-800';
       }
@@ -223,16 +238,35 @@
       const wrap = document.createElement('div');
       wrap.className = 'flex flex-col gap-3';
 
+      // View Details button (always available)
+      const detailsBtn = document.createElement('button');
+      detailsBtn.className = 'px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition';
+      detailsBtn.innerHTML = '<i class="fas fa-eye mr-1"></i> View Details';
+      detailsBtn.onclick = () => openDetailsModal(order);
+      wrap.appendChild(detailsBtn);
+
       if (order.status === 'Quote Sent'){
         const info = document.createElement('div');
-        info.className = 'text-sm text-gray-700';
+        info.className = 'text-sm text-gray-700 mb-2';
         info.textContent = 'Please review the quote and accept to proceed with payment.';
-        const btn = document.createElement('button');
-        btn.className = 'px-3 py-2 bg-blue-600 text-white rounded text-sm w-fit';
-        btn.textContent = 'Accept Quote';
-        btn.onclick = async ()=>{ await acceptQuote(order._id); };
+        
+        const btnContainer = document.createElement('div');
+        btnContainer.className = 'flex gap-2';
+        
+        const acceptBtn = document.createElement('button');
+        acceptBtn.className = 'px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition';
+        acceptBtn.textContent = 'Accept Quote';
+        acceptBtn.onclick = async ()=>{ await acceptQuote(order._id); };
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition';
+        cancelBtn.textContent = 'Cancel Quote';
+        cancelBtn.onclick = async ()=>{ await cancelQuote(order._id); };
+        
+        btnContainer.appendChild(acceptBtn);
+        btnContainer.appendChild(cancelBtn);
         wrap.appendChild(info);
-        wrap.appendChild(btn);
+        wrap.appendChild(btnContainer);
       }
       else if (order.status === 'Pending Downpayment'){
         // Check if payment was already made (PayMongo completed but admin hasn't verified yet)
@@ -314,38 +348,125 @@
         `;
       }
       else if (order.status === 'Completed'){
-        const box = document.createElement('div');
-        box.className = 'p-3 bg-green-50 border border-green-200 rounded';
-        box.innerHTML = `
-          <div class="text-sm font-medium text-green-800 mb-2">Choose Fulfillment</div>
-          <div class="flex items-center gap-3 mb-2 text-sm">
-            <label class="inline-flex items-center gap-1">
-              <input type="radio" name="fulfill-${order._id}" value="pickup" checked>
-              <span>Pickup</span>
-            </label>
-            <label class="inline-flex items-center gap-1">
-              <input type="radio" name="fulfill-${order._id}" value="delivery">
-              <span>Delivery</span>
-            </label>
+        // Order completed - show confirmation
+        wrap.innerHTML = `
+          <div class="p-4 bg-green-50 border border-green-200 rounded text-sm">
+            <div class="flex items-center gap-2 mb-2">
+              <i class="fas fa-check-circle text-green-600 text-lg"></i>
+              <strong class="text-green-800">Order Completed!</strong>
+            </div>
+            <p class="text-gray-700">Thank you for confirming receipt of your order. We hope you enjoy your custom apparel!</p>
+            <div class="mt-3 pt-3 border-t border-green-300 text-xs text-gray-600">
+              <div>Completed on: <strong>${new Date(order.updatedAt).toLocaleDateString()}</strong></div>
+            </div>
           </div>
-          <div class="mb-2">
-            <input type="text" class="w-full px-3 py-2 border rounded text-sm hidden" placeholder="Delivery address" data-address>
-          </div>
-          <button class="px-3 py-2 bg-green-600 text-white rounded text-sm" data-submit>Set Fulfillment</button>
         `;
-        const addressInput = box.querySelector('[data-address]');
-        box.querySelectorAll(`input[name="fulfill-${order._id}"]`).forEach(r => {
-          r.addEventListener('change', ()=>{
-            if (r.value === 'delivery' && r.checked) addressInput.classList.remove('hidden');
-            if (r.value === 'pickup' && r.checked) addressInput.classList.add('hidden');
-          });
-        });
-        box.querySelector('[data-submit]').addEventListener('click', async ()=>{
-          const chosen = [...box.querySelectorAll(`input[name="fulfill-${order._id}"]`)].find(i=>i.checked)?.value;
-          const addr = addressInput.value.trim();
-          if (chosen === 'delivery' && !addr){ alert('Please enter a delivery address'); return; }
-          await setFulfillment(order._id, chosen, addr);
-        });
+      }
+      else if (order.status === 'Ready for Pickup/Delivery'){
+        // Show fulfillment details and "Confirm Receipt" button
+        const box = document.createElement('div');
+        box.className = 'p-4 bg-green-50 border border-green-200 rounded text-sm';
+        
+        // Show fulfillment info
+        let fulfillmentInfo = '';
+        if (order.fulfillmentMethod === 'pickup') {
+          fulfillmentInfo = `
+            <div class="mb-3">
+              <div class="flex items-center gap-2 mb-1">
+                <i class="fas fa-store text-green-600"></i>
+                <strong>Pickup Location:</strong>
+              </div>
+              <p class="text-gray-700 ml-6">${order.pickupLocation || 'Our store location'}</p>
+            </div>
+          `;
+        } else if (order.fulfillmentMethod === 'delivery') {
+          fulfillmentInfo = `
+            <div class="mb-3">
+              <div class="flex items-center gap-2 mb-1">
+                <i class="fas fa-truck text-green-600"></i>
+                <strong>Delivery Address:</strong>
+              </div>
+              <p class="text-gray-700 ml-6">${order.deliveryAddress || 'Your address'}</p>
+              ${order.trackingNumber ? `
+                <div class="mt-2 ml-6">
+                  <span class="text-xs text-gray-600">Tracking: <strong>${order.trackingNumber}</strong></span>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+        
+        box.innerHTML = `
+          <div class="flex items-center gap-2 mb-3">
+            <i class="fas fa-box-open text-green-600 text-lg"></i>
+            <strong class="text-green-800">Your order is ready!</strong>
+          </div>
+          ${fulfillmentInfo}
+          <div class="pt-3 border-t border-green-300">
+            <p class="text-gray-700 mb-3">Have you received your order?</p>
+            <button onclick="confirmReceipt('${order._id}')" class="px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition w-full">
+              <i class="fas fa-check-circle mr-2"></i>Confirm Receipt & Complete Order
+            </button>
+          </div>
+        `;
+        wrap.appendChild(box);
+      }
+      else if (order.status === 'Out for Delivery'){
+        // Show delivery tracking info with "Confirm Receipt" button
+        const box = document.createElement('div');
+        box.className = 'p-4 bg-blue-50 border border-blue-200 rounded text-sm';
+        
+        box.innerHTML = `
+          <div class="flex items-center gap-2 mb-3">
+            <i class="fas fa-shipping-fast text-blue-600 text-lg"></i>
+            <strong class="text-blue-800">Out for Delivery</strong>
+          </div>
+          <div class="space-y-2 mb-3">
+            <div class="flex items-start gap-2">
+              <i class="fas fa-map-marker-alt text-blue-600 mt-1"></i>
+              <div class="flex-1">
+                <p class="text-xs text-gray-600">Delivery Address:</p>
+                <p class="text-gray-900 font-medium">${order.deliveryAddress || 'Your address'}</p>
+              </div>
+            </div>
+            ${order.courier ? `
+            <div class="flex items-center gap-2">
+              <i class="fas fa-truck text-blue-600"></i>
+              <div class="flex-1">
+                <p class="text-xs text-gray-600">Courier:</p>
+                <p class="text-gray-900 font-medium">${order.courier}</p>
+              </div>
+            </div>
+            ` : ''}
+            ${order.trackingNumber ? `
+            <div class="flex items-center gap-2 bg-white rounded p-2 border border-blue-300">
+              <i class="fas fa-barcode text-blue-600"></i>
+              <div class="flex-1">
+                <p class="text-xs text-gray-600">Tracking Number:</p>
+                <p class="text-gray-900 font-mono font-bold">${order.trackingNumber}</p>
+              </div>
+              <button onclick="navigator.clipboard.writeText('${order.trackingNumber}')" class="text-blue-600 hover:text-blue-800 px-2">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+            ` : ''}
+            ${order.estimatedDeliveryDate ? `
+            <div class="flex items-center gap-2">
+              <i class="fas fa-calendar-alt text-blue-600"></i>
+              <div class="flex-1">
+                <p class="text-xs text-gray-600">Estimated Delivery:</p>
+                <p class="text-gray-900 font-medium">${new Date(order.estimatedDeliveryDate).toLocaleDateString()}</p>
+              </div>
+            </div>
+            ` : ''}
+          </div>
+          <div class="pt-3 border-t border-blue-300">
+            <p class="text-gray-700 mb-3">Once you receive your order, please confirm:</p>
+            <button onclick="confirmReceipt('${order._id}')" class="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition w-full">
+              <i class="fas fa-check-circle mr-2"></i>Confirm Receipt & Complete Order
+            </button>
+          </div>
+        `;
         wrap.appendChild(box);
       }
       else if (order.status === 'Cancelled'){
@@ -578,6 +699,230 @@
       alert('Fulfillment set. We will provide details soon.');
       fetchMine();
     }
+
+    async function confirmReceipt(orderId) {
+      if (!confirm('Have you received your order? This will mark the order as completed.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/custom-orders/${orderId}/confirm-receipt`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        
+        const json = await res.json();
+        
+        if (!json.success) {
+          alert(json.msg || 'Failed to confirm receipt');
+          return;
+        }
+        
+        alert('Thank you! Your order has been marked as completed.');
+        fetchMine(); // Refresh the list
+      } catch (err) {
+        console.error('Error confirming receipt:', err);
+        alert('An error occurred. Please try again.');
+      }
+    }
+
+    async function cancelQuote(orderId) {
+      if (!confirm('Are you sure you want to cancel this quote? This action cannot be undone.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/custom-orders/${orderId}/cancel`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        
+        const json = await res.json();
+        
+        if (!json.success) {
+          alert(json.msg || 'Failed to cancel quote');
+          return;
+        }
+        
+        alert('Quote cancelled successfully.');
+        fetchMine();
+      } catch (err) {
+        console.error('Cancel quote error:', err);
+        alert('An error occurred. Please try again.');
+      }
+    }
+
+    function openDetailsModal(order) {
+      const modal = document.getElementById('detailsModal');
+      const content = document.getElementById('modalContent');
+      
+      const orderRef = order._id.toString().slice(-8).toUpperCase();
+      const statusBadge = `<span class="px-3 py-1 rounded-full text-sm font-medium ${badgeClass(order.status)}">${order.status}</span>`;
+      
+      let html = `
+        <div class="space-y-6">
+          <!-- Header -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-lg font-semibold text-gray-900">Quote #${orderRef}</h3>
+              ${statusBadge}
+            </div>
+            <p class="text-sm text-gray-500">Updated: ${new Date(order.updatedAt).toLocaleString()}</p>
+          </div>
+
+          <!-- Product Info -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-900 mb-3">Product Information</h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="text-gray-500">Product:</span>
+                <p class="font-medium">${order.product || order.productName || 'N/A'}</p>
+              </div>
+              <div>
+                <span class="text-gray-500">Item:</span>
+                <p class="font-medium">${order.item || order.itemType || order.garmentType || 'N/A'}</p>
+              </div>
+              <div>
+                <span class="text-gray-500">Quantity:</span>
+                <p class="font-medium">${order.quantity || 0}</p>
+              </div>
+              <div>
+                <span class="text-gray-500">Price:</span>
+                <p class="font-medium">${order.price ? `₱${order.price.toLocaleString()} (₱${(order.price).toLocaleString()} each)` : 'Pending'}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Product Preview Images (Multiple Views) -->
+          ${order.designImagesMap && Object.keys(order.designImagesMap).length > 0 ? `
+          <div>
+            <h4 class="font-semibold text-gray-900 mb-3">Product Preview (Multiple Views)</h4>
+            <div class="grid grid-cols-2 gap-3">
+              ${Object.entries(order.designImagesMap).map(([location, imgPath]) => `
+                <div class="border rounded-lg overflow-hidden bg-white">
+                  <img src="${imgPath}" alt="${location}" class="w-full h-48 object-contain bg-gray-50">
+                  <div class="px-2 py-1 bg-gray-100 text-xs text-center font-medium capitalize">${location}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ` : order.designImage ? `
+          <div>
+            <h4 class="font-semibold text-gray-900 mb-3">Design/Product Image</h4>
+            <div class="border rounded-lg overflow-hidden">
+              <img src="${order.designImage}" alt="Design" class="w-full h-auto max-h-96 object-contain bg-gray-100">
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Additional Info -->
+          ${order.additionalInfo ? `
+          <div>
+            <h4 class="font-semibold text-gray-900 mb-2">Additional Information</h4>
+            <p class="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 rounded p-3">${order.additionalInfo}</p>
+          </div>
+          ` : ''}
+
+          <!-- Pricing Breakdown -->
+          ${order.autoPricingBreakdown ? `
+          <div>
+            <h4 class="font-semibold text-gray-900 mb-2">Pricing Breakdown</h4>
+            <pre class="text-xs bg-gray-50 rounded p-3 whitespace-pre-wrap border">${typeof order.autoPricingBreakdown === 'string' ? order.autoPricingBreakdown : JSON.stringify(order.autoPricingBreakdown, null, 2)}</pre>
+          </div>
+          ` : ''}
+
+          <!-- Payment Info -->
+          ${order.paymentAmount || order.paymentMethod ? `
+          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <h4 class="font-semibold text-blue-900 mb-3">Payment Information</h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              ${order.paymentMethod ? `
+              <div>
+                <span class="text-blue-700">Payment Method:</span>
+                <p class="font-medium text-blue-900">${order.paymentMethod}</p>
+              </div>
+              ` : ''}
+              ${order.paymentAmount ? `
+              <div>
+                <span class="text-blue-700">Amount Paid:</span>
+                <p class="font-medium text-blue-900">₱${order.paymentAmount.toLocaleString()}</p>
+              </div>
+              ` : ''}
+              ${order.downPaymentPaid ? '<div class="col-span-2"><span class="inline-flex items-center gap-1 text-green-700"><i class="fas fa-check-circle"></i> Down Payment Confirmed</span></div>' : ''}
+              ${order.balancePaid ? '<div class="col-span-2"><span class="inline-flex items-center gap-1 text-green-700"><i class="fas fa-check-circle"></i> Final Payment Confirmed</span></div>' : ''}
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Fulfillment Info -->
+          ${order.fulfillmentMethod ? `
+          <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+            <h4 class="font-semibold text-green-900 mb-3">Fulfillment Information</h4>
+            <div class="text-sm space-y-2">
+              <div>
+                <span class="text-green-700">Method:</span>
+                <p class="font-medium text-green-900">${order.fulfillmentMethod === 'pickup' ? 'Pickup' : 'Delivery'}</p>
+              </div>
+              ${order.fulfillmentMethod === 'delivery' && order.deliveryAddress ? `
+              <div>
+                <span class="text-green-700">Delivery Address:</span>
+                <p class="font-medium text-green-900">${order.deliveryAddress}</p>
+              </div>
+              ` : ''}
+              ${order.trackingNumber ? `
+              <div>
+                <span class="text-green-700">Tracking Number:</span>
+                <p class="font-medium text-green-900">${order.trackingNumber}</p>
+              </div>
+              ` : ''}
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Completion Info -->
+          ${order.completedAt ? `
+          <div class="bg-green-50 rounded-lg p-4 border border-green-200 text-center">
+            <i class="fas fa-check-circle text-green-600 text-3xl mb-2"></i>
+            <p class="font-semibold text-green-900">Order Completed</p>
+            <p class="text-sm text-green-700">${new Date(order.completedAt).toLocaleString()}</p>
+          </div>
+          ` : ''}
+
+          <!-- Cancellation Info -->
+          ${order.status === 'Cancelled' ? `
+          <div class="bg-red-50 rounded-lg p-4 border border-red-200 text-center">
+            <i class="fas fa-times-circle text-red-600 text-3xl mb-2"></i>
+            <p class="font-semibold text-red-900">Order Cancelled</p>
+            ${order.cancelledAt ? `<p class="text-sm text-red-700">${new Date(order.cancelledAt).toLocaleString()}</p>` : ''}
+          </div>
+          ` : ''}
+        </div>
+      `;
+      
+      content.innerHTML = html;
+      modal.classList.remove('hidden');
+    }
+
+    function closeDetailsModal() {
+      const modal = document.getElementById('detailsModal');
+      modal.classList.add('hidden');
+    }
+
+    // Close modal when clicking outside
+    document.addEventListener('click', (e) => {
+      const modal = document.getElementById('detailsModal');
+      if (e.target === modal) {
+        closeDetailsModal();
+      }
+    });
   </script>
 </body>
 </html>

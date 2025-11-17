@@ -19,7 +19,9 @@ const {
     updateFulfillmentDetails,
     submitQuote,
     rejectCustomOrderQuote,
-    getSingleCustomOrder
+    getSingleCustomOrder,
+    confirmReceipt,
+    cancelQuote
 } = require('../controllers/customOrderController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -115,5 +117,13 @@ router.route('/:id/fulfillment')
 // Admin adds tracking or pickup details
 router.route('/:id/fulfillment-details')
     .put(protect, authorize('admin','employee'), updateFulfillmentDetails);
+
+// Customer confirms receipt (final completion)
+router.route('/:id/confirm-receipt')
+    .put(protect, confirmReceipt);
+
+// Customer cancels quote
+router.route('/:id/cancel')
+    .put(protect, cancelQuote);
 
 module.exports = router;

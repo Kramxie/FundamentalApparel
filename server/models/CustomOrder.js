@@ -173,7 +173,7 @@ const CustomOrderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Pending Quote', 'Quote Sent', 'Pending Downpayment', 'In Production', 'Pending Balance', 'Pending Final Verification', 'Completed', 'Ready for Pickup/Delivery', 'Cancelled'],
+        enum: ['Pending Quote', 'Quote Sent', 'Pending Downpayment', 'In Production', 'Pending Balance', 'Pending Final Verification', 'Completed', 'Ready for Pickup/Delivery', 'Out for Delivery', 'Cancelled'],
         default: 'Pending Quote'
     },
     // I-a-update ito ng admin sa Phase 2
@@ -228,6 +228,10 @@ const CustomOrderSchema = new mongoose.Schema({
     },
     trackingNumber: {
         type: String
+    },
+    courier: {
+        type: String,
+        default: ''
     },
     estimatedDeliveryDate: {
         type: Date

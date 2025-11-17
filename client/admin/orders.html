@@ -571,6 +571,26 @@
             
             <!-- For Delivery -->
             <div id="fulfillment-delivery-fields" class="hidden space-y-2">
+              <!-- Show delivery address -->
+              <div id="fulfillment-delivery-address" class="bg-white p-2 rounded border text-sm">
+                <span class="font-medium text-gray-700">Delivery Address:</span>
+                <p id="delivery-address-text" class="text-gray-900 mt-1"></p>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium mb-1">Courier Service</label>
+                <select id="fulfillment-courier" class="w-full border rounded px-3 py-2 text-sm">
+                  <option value="">Select Courier</option>
+                  <option value="J&T Express">J&T Express</option>
+                  <option value="LBC">LBC</option>
+                  <option value="JRS Express">JRS Express</option>
+                  <option value="Grab Express">Grab Express</option>
+                  <option value="Lalamove">Lalamove</option>
+                  <option value="Ninja Van">Ninja Van</option>
+                  <option value="Flash Express">Flash Express</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
               <div>
                 <label class="block text-sm font-medium mb-1">Tracking Number</label>
                 <input id="fulfillment-tracking" type="text" class="w-full border rounded px-3 py-2 text-sm" placeholder="Enter tracking number">
@@ -594,7 +614,7 @@
             </div>
 
             <button id="custom-modal-save-fulfillment" class="bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-2 rounded text-sm w-full">
-              Save Fulfillment Details
+              <i class="fas fa-paper-plane mr-2"></i>Submit Tracking Details
             </button>
           </div>
         </div>
@@ -618,7 +638,7 @@
             <i class="fas fa-money-bill-wave mr-2"></i>Request Final Payment
           </button>
           <button id="custom-modal-verify-final" class="hidden bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2.5 rounded-lg transition">
-            <i class="fas fa-check-double mr-2"></i>Verify Final & Complete
+            <i class="fas fa-check-circle mr-2"></i>Verify Final Payment
           </button>
         </div>
       </div>
@@ -1511,7 +1531,7 @@
         fulfillmentSection.classList.add('hidden');
         fulfillmentForm.classList.add('hidden');
 
-        if (order.status === 'Completed' || order.status === 'Ready for Pickup/Delivery') {
+        if (order.status === 'Completed' || order.status === 'Ready for Pickup/Delivery' || order.status === 'Out for Delivery') {
           fulfillmentSection.classList.remove('hidden');
 
           if (order.fulfillmentMethod === 'pending' || !order.fulfillmentMethod) {
@@ -1553,6 +1573,7 @@
             fulfillmentInfo.innerHTML = `
               <p class="font-semibold text-blue-900">🚚 Delivery Selected</p>
               <p class="mt-1"><strong>Address:</strong> ${order.deliveryAddress || 'N/A'}</p>
+              ${order.courier ? `<p class="mt-1"><strong>Courier:</strong> <span class="font-medium text-blue-700">${order.courier}</span></p>` : ''}
               ${order.trackingNumber ? `<p class="mt-1"><strong>Tracking #:</strong> <span class="font-mono text-green-700">${order.trackingNumber}</span></p>` : '<p class="mt-1 text-yellow-600">⚠️ Tracking number not set yet</p>'}
               ${order.estimatedDeliveryDate ? `<p class="mt-1"><strong>Est. Delivery:</strong> ${new Date(order.estimatedDeliveryDate).toLocaleDateString()}</p>` : ''}
             `;
@@ -1562,6 +1583,10 @@
               deliveryFields.classList.remove('hidden');
               pickupFields.classList.add('hidden');
               
+              // Populate delivery address
+              document.getElementById('delivery-address-text').textContent = order.deliveryAddress || 'N/A';
+              
+              document.getElementById('fulfillment-courier').value = order.courier || '';
               document.getElementById('fulfillment-tracking').value = order.trackingNumber || '';
               document.getElementById('fulfillment-delivery-date').value = order.estimatedDeliveryDate ? order.estimatedDeliveryDate.split('T')[0] : '';
             }
@@ -1625,7 +1650,7 @@
       async function verifyFinalPayment() {
           if (!selectedCustomOrder) return;
 
-          if (!confirm('Are you sure you want to verify this FINAL payment and mark the order as Completed? This action cannot be undone.')) {
+          if (!confirm('Are you sure you want to verify this FINAL payment? The order will be marked as Ready for Pickup/Delivery. This action cannot be undone.')) {
               return;
           }
 
@@ -1652,7 +1677,7 @@
               els.customModalError.classList.remove('hidden');
           } finally {
               els.customModalVerifyFinal.disabled = false;
-              els.customModalVerifyFinal.textContent = 'Verify Final & Complete';
+              els.customModalVerifyFinal.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Verify Final Payment';
           }
       }
 
@@ -1812,10 +1837,21 @@
         const data = {};
 
         if (fulfillmentMethod === 'delivery') {
+          const courier = document.getElementById('fulfillment-courier').value.trim();
           const trackingNumber = document.getElementById('fulfillment-tracking').value.trim();
           const deliveryDate = document.getElementById('fulfillment-delivery-date').value;
 
-          if (trackingNumber) data.trackingNumber = trackingNumber;
+          if (!courier) {
+            alert('Please select a courier service.');
+            return;
+          }
+          if (!trackingNumber) {
+            alert('Please enter a tracking number.');
+            return;
+          }
+
+          data.courier = courier;
+          data.trackingNumber = trackingNumber;
           if (deliveryDate) data.estimatedDeliveryDate = deliveryDate;
         } else if (fulfillmentMethod === 'pickup') {
           const pickupDate = document.getElementById('fulfillment-pickup-date').value;
@@ -1843,7 +1879,7 @@
           const result = await res.json();
           if (!res.ok || !result.success) throw new Error(result.msg || 'Failed to save fulfillment details');
 
-          alert(result.msg || 'Fulfillment details saved!');
+          alert(result.msg || 'Fulfillment details saved! Status updated to "Out for Delivery".');
           
           // Update local list
           const idx = allCustomOrders.findIndex(o => o._id === selectedCustomOrder._id);
@@ -1856,7 +1892,7 @@
           alert('Error: ' + err.message);
         } finally {
           saveBtn.disabled = false;
-          saveBtn.textContent = 'Save Fulfillment Details';
+          saveBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Submit Tracking Details';
         }
       }
 

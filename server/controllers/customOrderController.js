@@ -491,26 +491,49 @@ exports.verifyDownPayment = async (req, res) => {
     const isFullPayment = order.balancePaid === true || order.paymentType === 'full';
     
     if (isFullPayment) {
-      // 100% payment - skip to Completed, ready for fulfillment
-      order.status = "Completed";
+      // 100% payment - go directly to Ready for Pickup/Delivery
+      order.status = "Ready for Pickup/Delivery";
       order.downPaymentPaid = true;
       order.balancePaid = true;
+      
+      // Auto-set fulfillment method based on checkout selection
+      if (order.shippingMethod === 'Pick-Up') {
+        order.fulfillmentMethod = 'pickup';
+      } else if (order.shippingAddress || order.deliveryAddress) {
+        order.fulfillmentMethod = 'delivery';
+        // Use shippingAddress from checkout if available, otherwise use deliveryAddress
+        if (order.shippingAddress && !order.deliveryAddress) {
+          const addr = order.shippingAddress;
+          order.deliveryAddress = `${addr.street || ''}${addr.building ? ', ' + addr.building : ''}, ${addr.city || ''}, ${addr.province || ''} ${addr.zip || ''}`;
+        }
+      } else {
+        // Fallback: default to delivery if no method specified
+        order.fulfillmentMethod = 'delivery';
+      }
+      
       const updatedOrder = await order.save();
       
-      // Notify customer: Full payment verified, order completed
+      // Notify customer: Full payment verified, ready for fulfillment
       try {
         const populated = await updatedOrder.populate('user', 'name email');
         const code = populated._id.toString().slice(-8).toUpperCase();
         const profileUrl = `${BASE_URL}/client/my-quotes.html`;
+        
+        let fulfillmentMsg = '';
+        if (order.fulfillmentMethod === 'pickup') {
+          fulfillmentMsg = '<p>Your order is ready for <strong>pickup</strong> at our store.</p>';
+        } else {
+          fulfillmentMsg = '<p>Your order is being prepared for <strong>delivery</strong> to your address.</p>';
+        }
+        
         await sendEmail({
           email: populated.user?.email,
-          subject: `Payment Verified – Order Completed (Ref ${code})`,
+          subject: `Payment Verified \u2013 Order Ready (Ref ${code})`,
           message: `
             <div style=\"font-family:Inter,Segoe UI,Arial,sans-serif;font-size:14px;color:#111\">
               <p>Excellent! Your full payment for order <strong>${code}</strong> is verified.</p>
-              <p>Your order is now <strong>Completed</strong> and in production. Please choose your fulfillment method:
-                <a href=\"${profileUrl}\" style=\"color:#4f46e5\">Choose Fulfillment</a>
-              </p>
+              ${fulfillmentMsg}
+              <p>Track your order: <a href=\"${profileUrl}\" style=\"color:#4f46e5\">View Order</a></p>
               <p style=\"color:#6b7280\">Fundamental Apparel</p>
             </div>
           `
@@ -518,7 +541,7 @@ exports.verifyDownPayment = async (req, res) => {
       } catch (e) {
         console.error('Email (Full Payment Verified) failed:', e.message);
       }
-      return res.status(200).json({ success: true, data: updatedOrder, msg: 'Full payment verified. Order completed!' });
+      return res.status(200).json({ success: true, data: updatedOrder, msg: 'Full payment verified. Order ready for fulfillment!' });
     }
     
     // Regular 50% downpayment flow
@@ -693,26 +716,58 @@ exports.verifyFinalPayment = async (req, res) => {
             return res.status(400).json({ success: false, msg: 'This order is not awaiting final payment verification.' });
         }
         
-        // Update the order
-        order.status = 'Completed';
+        // Update the order - go directly to Ready for Pickup/Delivery
+        order.status = 'Ready for Pickup/Delivery';
         order.balancePaid = true;
+        
+        // Auto-set fulfillment method based on checkout selection
+        if (order.shippingMethod === 'Pick-Up') {
+          order.fulfillmentMethod = 'pickup';
+        } else if (order.shippingAddress || order.deliveryAddress) {
+          order.fulfillmentMethod = 'delivery';
+          // Use shippingAddress from checkout if available, otherwise use deliveryAddress
+          if (order.shippingAddress && !order.deliveryAddress) {
+            const addr = order.shippingAddress;
+            // Format complete address with all fields
+            const parts = [];
+            if (addr.block) parts.push(`Block ${addr.block}`);
+            if (addr.lot) parts.push(`Lot ${addr.lot}`);
+            if (addr.street) parts.push(addr.street);
+            if (addr.building) parts.push(addr.building);
+            if (addr.city) parts.push(addr.city);
+            if (addr.province) parts.push(addr.province);
+            if (addr.zip) parts.push(addr.zip);
+            if (addr.phone) parts.push(`Tel: ${addr.phone}`);
+            order.deliveryAddress = parts.join(', ');
+          }
+        } else {
+          // Fallback: default to delivery if no method specified
+          order.fulfillmentMethod = 'delivery';
+        }
         
         const updatedOrder = await order.save();
 
-        // Notify customer: Final payment verified and order completed
+        // Notify customer: Final payment verified and ready for fulfillment
         try {
           const populated = await updatedOrder.populate('user', 'name email');
           const profileUrl = `${BASE_URL}/client/my-quotes.html`;
           const code = populated._id.toString().slice(-8).toUpperCase();
+          
+          let fulfillmentMsg = '';
+          if (order.fulfillmentMethod === 'pickup') {
+            fulfillmentMsg = '<p>Your order is ready for <strong>pickup</strong> at our store.</p>';
+          } else {
+            fulfillmentMsg = '<p>Your order is being prepared for <strong>delivery</strong> to your address.</p>';
+          }
+          
           await sendEmail({
             email: populated.user?.email,
-            subject: `Payment Verified – Order Completed (Ref ${code})`,
+            subject: `Payment Verified – Order Ready (Ref ${code})`,
             message: `
               <div style=\"font-family:Inter,Segoe UI,Arial,sans-serif;font-size:14px;color:#111\">
-                <p>Your final payment for order <strong>${code}</strong> is verified. Your order is now completed.</p>
-                <p>Please choose your fulfillment method (pickup or delivery):
-                  <a href=\"${profileUrl}\" style=\"color:#4f46e5\">Choose Fulfillment</a>
-                </p>
+                <p>Your final payment for order <strong>${code}</strong> is verified!</p>
+                ${fulfillmentMsg}
+                <p>Track your order status: <a href=\"${profileUrl}\" style=\"color:#4f46e5\">View Order</a></p>
                 <p style=\"color:#6b7280\">Fundamental Apparel</p>
               </div>
             `
@@ -805,12 +860,102 @@ exports.setFulfillmentMethod = async (req, res) => {
   }
 };
 
+// @desc    Customer confirms receipt of order (marks as completed)
+// @route   PUT /api/custom-orders/:id/confirm-receipt
+// @access  Private (Customer only)
+exports.confirmReceipt = async (req, res) => {
+  try {
+    const order = await CustomOrder.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, msg: 'Custom order not found' });
+    }
+
+    // Check if user owns this order
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, msg: 'Not authorized' });
+    }
+
+    // Check if order is ready for receipt confirmation
+    if (order.status !== 'Ready for Pickup/Delivery' && order.status !== 'Out for Delivery') {
+      return res.status(400).json({ 
+        success: false, 
+        msg: 'Order must be ready for pickup/delivery or out for delivery to confirm receipt' 
+      });
+    }
+
+    // Mark as completed
+    order.status = 'Completed';
+    order.completedAt = new Date();
+    await order.save();
+
+    // Optional: Notify admin that customer confirmed receipt
+    try {
+      const populated = await order.populate('user', 'name email');
+      const code = populated._id.toString().slice(-8).toUpperCase();
+      // You can add admin email notification here if needed
+      console.log(`[Order ${code}] Customer confirmed receipt - marked as Completed`);
+    } catch (e) {
+      console.error('Logging failed:', e.message);
+    }
+
+    res.json({
+      success: true,
+      msg: 'Order marked as completed. Thank you!',
+      data: order
+    });
+  } catch (err) {
+    console.error('confirmReceipt error:', err);
+    res.status(500).json({ success: false, msg: 'Server error' });
+  }
+};
+
+// @desc    Customer cancels a quote
+// @route   PUT /api/custom-orders/:id/cancel
+// @access  Private/Customer
+exports.cancelQuote = async (req, res) => {
+  try {
+    const order = await CustomOrder.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, msg: 'Custom order not found' });
+    }
+
+    // Check if user owns this order
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, msg: 'Not authorized' });
+    }
+
+    // Only allow cancellation for Quote Sent and Pending Downpayment (before payment)
+    if (order.status !== 'Quote Sent' && !(order.status === 'Pending Downpayment' && !order.downPaymentPaid)) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: 'Cannot cancel order at this stage' 
+      });
+    }
+
+    order.status = 'Cancelled';
+    order.cancelledAt = new Date();
+    order.cancelledBy = 'customer';
+    await order.save();
+
+    res.json({
+      success: true,
+      msg: 'Quote cancelled successfully',
+      data: order
+    });
+  } catch (err) {
+    console.error('cancelQuote error:', err);
+    res.status(500).json({ success: false, msg: 'Server error' });
+  }
+};
+
 // @desc    Admin adds fulfillment details (tracking number or pickup date)
 // @route   PUT /api/custom-orders/:id/fulfillment-details
 // @access  Private/Admin
 exports.updateFulfillmentDetails = async (req, res) => {
   try {
-    const { trackingNumber, estimatedDeliveryDate, pickupDate, pickupLocation } =
+    const { trackingNumber, estimatedDeliveryDate, pickupDate, pickupLocation, courier } =
       req.body;
     const order = await CustomOrder.findById(req.params.id);
 
@@ -828,11 +973,15 @@ exports.updateFulfillmentDetails = async (req, res) => {
 
     if (order.fulfillmentMethod === "delivery") {
       if (trackingNumber) order.trackingNumber = trackingNumber;
+      if (courier) order.courier = courier;
       if (estimatedDeliveryDate)
         order.estimatedDeliveryDate = estimatedDeliveryDate;
+      // Change status to "Out for Delivery" when admin submits tracking details
+      order.status = "Out for Delivery";
     } else if (order.fulfillmentMethod === "pickup") {
       if (pickupDate) order.pickupDate = pickupDate;
       if (pickupLocation) order.pickupLocation = pickupLocation;
+      // For pickup, keep status as "Ready for Pickup/Delivery"
     }
 
     await order.save();

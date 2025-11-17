@@ -1884,8 +1884,8 @@
                 const ref = (data && data.data && (data.data.quoteNumber || data.data.orderNumber)) || 'N/A';
                 alert(`✓ Quote submitted successfully! Check your order in Quote inside the Profile Page\nReference: ${ref}\nAn admin will review and send final pricing with payment options.`);
                 
-                // Optional: Reset form or redirect
-                // window.location.href = '/order-confirmation.html?orderId=' + data.data.orderId;
+                // Redirect to Quotes & Orders page
+                window.location.href = '/client/my-quotes.html';
 
             } catch (error) {
                 console.error('Quote submit failed:', error);

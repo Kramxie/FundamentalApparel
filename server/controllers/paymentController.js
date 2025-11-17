@@ -674,7 +674,8 @@ async function handlePaymentSuccess(eventData) {
           order.paymentType = 'downpayment';
         }
         // 5. Fallback: if downpayment already paid but balance not paid, treat as remaining
-        else if (order.downPaymentPaid && !order.balancePaid) {
+        // ONLY if status is 'Pending Balance' (not for Pending Downpayment!)
+        else if (order.status === 'Pending Balance' && order.downPaymentPaid && !order.balancePaid) {
           console.log('[PayMongo] Detected remaining balance (fallback) - awaiting admin verification');
           order.status = 'Pending Final Verification';
           order.paymentAmount = paidAmount;
@@ -682,10 +683,10 @@ async function handlePaymentSuccess(eventData) {
           order.balancePaid = true;
         }
         else {
-          // Last resort fallback - keep current status
-          console.log('[PayMongo] Fallback: recording payment, keeping current status');
-          order.paymentAmount = paidAmount;
-          order.paymentType = order.paymentType || 'full';
+          // Last resort fallback - keep current status and just record payment info
+          console.log('[PayMongo] Fallback: recording payment, keeping current status:', order.status);
+          if (paidAmount) order.paymentAmount = paidAmount;
+          if (!order.paymentType) order.paymentType = order.downPaymentPaid ? 'remaining' : 'downpayment';
         }
 
         // Determine payment method from PayMongo session attributes
