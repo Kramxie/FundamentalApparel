@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jersey Customizer - Fundamental</title>
+    <title>Apparel Customizer - Fundamental</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -267,42 +267,15 @@
                 
                 <!-- Product Categories -->
                 <div id="product-categories" class="space-y-3">
-                    <div class="product-category cursor-pointer p-3 rounded-lg hover:bg-gray-100 transition" onclick="showSubcategories('tshirt')">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="font-semibold text-gray-900">👕 T-Shirt</p>
-                                <p class="text-xs text-gray-500">Classic & Premium</p>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-400"></i>
-                        </div>
-                    </div>
-
-                    <div class="product-category cursor-pointer p-3 rounded-lg hover:bg-gray-100 transition" onclick="showSubcategories('jersey')">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="font-semibold text-gray-900">🏀 Jersey</p>
-                                <p class="text-xs text-gray-500">Casual & Athletic</p>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-400"></i>
-                        </div>
-                    </div>
-
-                    <div class="product-category cursor-pointer p-3 rounded-lg hover:bg-gray-100 transition" onclick="showSubcategories('hoodie')">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="font-semibold text-gray-900">🧥 Hoodie/Jacket</p>
-                                <p class="text-xs text-gray-500">Comfortable Wear</p>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-400"></i>
-                        </div>
-                    </div>
+                    <button onclick="openProductCatalog()" class="w-full px-6 py-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span class="font-semibold">Change Product</span>
+                    </button>
                 </div>
 
                 <!-- Selected Product Info -->
                 <div id="selected-product-info" class="hidden mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                    <p class="text-sm font-semibold text-gray-900 mb-2" id="selected-product-name"></p>
-                    <img id="selected-product-image" src="" class="w-full h-32 object-cover rounded-lg mb-2">
-                    <p class="text-xs text-gray-600" id="selected-product-description"></p>
+                    <p class="text-sm text-gray-700 leading-relaxed" id="selected-product-description"></p>
                 </div>
             </div>
 
@@ -313,7 +286,13 @@
                 </h3>
 
                 <div class="bg-gray-50 rounded-xl p-4 flex items-center justify-center relative" style="min-height: 500px;">
-                    <img id="garment-image" src="" alt="Product Preview" class="max-w-full h-auto rounded-lg" style="max-height: 500px;" />
+                    <img id="garment-image" src="" alt="Product Preview" class="max-w-full h-auto rounded-lg" style="max-height: 500px; display: none;" />
+                    <!-- Placeholder when no product selected -->
+                    <div id="no-product-placeholder" class="text-center">
+                        <i class="fas fa-shirt text-gray-300 text-6xl mb-4"></i>
+                        <p class="text-xl font-semibold text-gray-400">Choose A Product</p>
+                        <p class="text-sm text-gray-400 mt-2">Click "Change Product" to get started</p>
+                    </div>
                     <!-- Design Area Overlay Box -->
                     <div id="design-area-box" class="absolute border-2 border-dashed border-indigo-500 rounded" style="display: none;"></div>
                 </div>
@@ -344,12 +323,17 @@
                     
                     <div class="space-y-3">
                         <div>
-                            <label class="block text-xs font-semibold text-gray-700 mb-2">Garment Color</label>
+                            <label class="block text-xs font-semibold text-gray-700 mb-2">Available Colors</label>
                             <select id="garment-color" class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg" onchange="updatePreview()">
                                 <option value="Green">Green</option>
                                 <option value="Black">Black</option>
                             </select>
-                            <p class="text-xs text-gray-500 mt-1">More colors coming soon</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-2">Custom Color Request (Optional)</label>
+                            <input type="text" id="custom-color" class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm" 
+                                placeholder="e.g., Navy Blue, Maroon, etc.">
+                            <p class="text-xs text-gray-500 mt-1">If you need a color not listed above, specify it here</p>
                         </div>
                     </div>
                 </div>
@@ -384,6 +368,7 @@
                         <p><strong>Text:</strong> <span id="summary-text">None</span></p>
                         <p><strong>Design:</strong> <span id="summary-design">None</span></p>
                         <p><strong>Print Type:</strong> <span id="summary-print">Dye Sublimation</span></p>
+                        <p><strong>Fabric:</strong> <span id="summary-fabric">Cotton</span></p>
                         <p><strong>Team Names:</strong> <span id="summary-team">None</span></p>
                         <div class="mt-3 p-2 bg-gray-50 border rounded">
                             <p class="font-semibold text-gray-700 mb-1">Pricing</p>
@@ -397,6 +382,104 @@
     </div>
 
     <!-- MODALS -->
+
+    <!-- Product Catalog Modal -->
+    <div id="product-catalog-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto">
+        <div class="min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-7xl mx-auto my-8">
+                <!-- Modal Header -->
+                <div class="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-t-xl z-10">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold">Select Product</h2>
+                        <button onclick="closeProductCatalog()" class="text-white hover:text-gray-200 text-2xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="flex">
+                    <!-- Categories Sidebar -->
+                    <div class="w-64 bg-gray-50 p-4 border-r overflow-y-auto" style="max-height: 600px;">
+                        <div class="space-y-2">
+                            <button onclick="filterProductCategory('all')" data-category="all" class="product-cat-btn w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 transition font-semibold bg-indigo-100 text-indigo-700">
+                                All
+                            </button>
+                            <button onclick="filterProductCategory('shirts')" data-category="shirts" class="product-cat-btn w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 transition">
+                                All Shirts
+                            </button>
+                            <div class="ml-4 space-y-1 text-sm">
+                                <button onclick="filterProductCategory('polo-shirt')" data-category="polo-shirt" class="product-cat-btn w-full text-left px-2 py-1 rounded hover:bg-gray-100 text-gray-700">
+                                    - Polo Shirt
+                                </button>
+                                <button onclick="filterProductCategory('cotton')" data-category="cotton" class="product-cat-btn w-full text-left px-2 py-1 rounded hover:bg-gray-100 text-gray-700">
+                                    - Cotton
+                                </button>
+                                <button onclick="filterProductCategory('active-wear')" data-category="active-wear" class="product-cat-btn w-full text-left px-2 py-1 rounded hover:bg-gray-100 text-gray-700">
+                                    - Active Wear
+                                </button>
+                                <button onclick="filterProductCategory('2tone-polo')" data-category="2tone-polo" class="product-cat-btn w-full text-left px-2 py-1 rounded hover:bg-gray-100 text-gray-700">
+                                    - 2 Tone Polo Shirt
+                                </button>
+                            </div>
+                            <button onclick="filterProductCategory('jackets')" data-category="jackets" class="product-cat-btn w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 transition">
+                                Jackets
+                            </button>
+                            <div class="ml-4 space-y-1 text-sm">
+                                <button onclick="filterProductCategory('pullup-jacket')" data-category="pullup-jacket" class="product-cat-btn w-full text-left px-2 py-1 rounded hover:bg-gray-100 text-gray-700">
+                                    - Pull-Up Jacket
+                                </button>
+                                <button onclick="filterProductCategory('zipper-jacket')" data-category="zipper-jacket" class="product-cat-btn w-full text-left px-2 py-1 rounded hover:bg-gray-100 text-gray-700">
+                                    - Zipper Jacket
+                                </button>
+                            </div>
+                            <button onclick="filterProductCategory('shorts-pants')" data-category="shorts-pants" class="product-cat-btn w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 transition">
+                                Shorts & Jogging Pants
+                            </button>
+                            <div class="ml-4 space-y-1 text-sm">
+                                <button onclick="filterProductCategory('drifit-short')" data-category="drifit-short" class="product-cat-btn w-full text-left px-2 py-1 rounded hover:bg-gray-100 text-gray-700">
+                                    - Drifit Short
+                                </button>
+                                <button onclick="filterProductCategory('jogging-pants')" data-category="jogging-pants" class="product-cat-btn w-full text-left px-2 py-1 rounded hover:bg-gray-100 text-gray-700">
+                                    - Jogging Pants
+                                </button>
+                            </div>
+                            <button onclick="filterProductCategory('workwear')" data-category="workwear" class="product-cat-btn w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 transition">
+                                Workwear
+                            </button>
+                            <div class="ml-4 space-y-1 text-sm">
+                                <button onclick="filterProductCategory('scrub-suit')" data-category="scrub-suit" class="product-cat-btn w-full text-left px-2 py-1 rounded hover:bg-gray-100 text-gray-700">
+                                    - Scrub Suit
+                                </button>
+                            </div>
+                            <button onclick="filterProductCategory('banner')" data-category="banner" class="product-cat-btn w-full text-left px-3 py-2 rounded-lg hover:bg-indigo-50 transition">
+                                Banner
+                            </button>
+                            <div class="ml-4 space-y-1 text-sm">
+                                <button onclick="filterProductCategory('fabric-banner')" data-category="fabric-banner" class="product-cat-btn w-full text-left px-2 py-1 rounded hover:bg-gray-100 text-gray-700">
+                                    - Fabric Banner
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Products Grid -->
+                    <div class="flex-1 p-6 overflow-y-auto" style="max-height: 600px;">
+                        <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Products will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="bg-gray-50 px-6 py-4 rounded-b-xl border-t">
+                    <button onclick="closeProductCatalog()" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Product Selector Modal -->
     <div id="product-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -513,7 +596,7 @@
         <div class="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto">
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-gray-900 mb-4">Team Entries</h2>
-                <p class="text-xs text-gray-600 mb-4">Add player name, number and size. Quantity auto-calculates from entries.</p>
+                <p class="text-xs text-gray-600 mb-4">Add player name (required), number (optional), and size. Quantity auto-calculates from entries.</p>
                 <div id="team-entries-list" class="space-y-2"></div>
                 <button onclick="addTeamEntry()" class="w-full mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
                     <i class="fas fa-plus mr-1"></i>Add Entry
@@ -537,7 +620,7 @@
             designText: '',
             designImage: null,
             quantity: 1,
-            basePrice: 530,
+            // Quote-based system - no basePrice needed, admin provides quote
             // tshirt style: 'vneck' or 'round'
             neckStyle: 'vneck',
             // Deprecated single-location array (kept for backward compatibility when submitting front design only)
@@ -555,29 +638,216 @@
                 'heat-transfer': 40,
                 'vinyl-print': 60
             },
-            sizeSurcharges: { XS: 0, S: 0, M: 0, L: 10, XL: 15 }
+            sizeSurcharges: { XS: 0, S: 0, M: 0, L: 10, XL: 15 },
+            // Fabric type (set automatically by product selection)
+            fabricType: 'Cotton',
+            // Available colors for selected product
+            availableColors: ['Black'],
+            // Folder path for loading images
+            folderPath: '/images/products/All-Shirts/cotton/V_Neck_T-Shirt'
         };
 
-        // Product Data
+        // Product Data (Legacy structure for backward compatibility)
         const products = {
             tshirt: {
                 classic: { name: 'V-Neck T-Shirt', price: 530, image: 'https://via.placeholder.com/200x200?text=Classic+Tshirt' },
                 premium: { name: 'Round-Neck T-Shirt', price: 630, image: 'https://via.placeholder.com/200x200?text=Premium+Tshirt' }
                 
             },
-            jersey: {
-                casual: { name: 'Casual Jersey', price: 630, image: 'https://via.placeholder.com/200x200?text=Casual+Jersey' },
-                athletic: { name: 'Athletic Jersey', price: 730, image: 'https://via.placeholder.com/200x200?text=Athletic+Jersey' }
+            polo: {
+                classic: { name: 'Classic Polo Shirt', price: 680, image: 'https://via.placeholder.com/200x200?text=Classic+Polo' },
+                performance: { name: 'Performance Polo Shirt', price: 780, image: 'https://via.placeholder.com/200x200?text=Performance+Polo' }
             },
             hoodie: {
                 basic: { name: 'Basic Hoodie', price: 830, image: 'https://via.placeholder.com/200x200?text=Basic+Hoodie' }
             }
         };
 
+        // Comprehensive Product Catalog for Modal
+        const productCatalog = [
+            // COTTON T-SHIRTS
+            {
+                id: 'vneck-tshirt',
+                category: 'cotton-tshirt',
+                categoryGroup: 'shirts',
+                garmentType: 'vneck-tshirt',
+                folderPath: '/images/products/All-Shirts/cotton/V_Neck_T-Shirt',
+                fabricType: 'Cotton',
+                name: 'V-Neck T-Shirt',
+                code: 'CT-01',
+                availableColors: ['Black', 'Green', 'White'],
+                image: '/images/products/All-Shirts/cotton/V_Neck_T-Shirt/Black/V-Front_T-shirt.jpg',
+                description: 'Classic V-Neck cotton t-shirt. Comfortable and breathable.'
+            },
+            {
+                id: 'round-tshirt',
+                category: 'cotton-tshirt',
+                categoryGroup: 'shirts',
+                garmentType: 'round-tshirt',
+                folderPath: '/images/products/All-Shirts/cotton/Round_Neck_T-Shirt',
+                fabricType: 'Cotton',
+                name: 'Round Neck T-Shirt',
+                code: 'CT-02',
+                availableColors: ['Black', 'Green', 'White'],
+                image: '/images/products/All-Shirts/cotton/Round_Neck_T-Shirt/Black/Front.jpg',
+                description: 'Classic round neck cotton t-shirt. Soft and durable.'
+            },
+            {
+                id: 'raglan-shirt',
+                category: 'cotton-tshirt',
+                categoryGroup: 'shirts',
+                garmentType: 'raglan',
+                folderPath: '/images/products/All-Shirts/cotton/Raglan_3-4_RoundNeck_Shirt',
+                fabricType: 'Cotton',
+                name: 'Raglan 3/4 Round Neck Shirt',
+                code: 'CT-03',
+                availableColors: ['black-white', 'emeraldGreen-white', 'red-white', 'royalBlue-white', 'violet-white', 'yellow-white'],
+                image: '/images/products/All-Shirts/cotton/Raglan_3-4_RoundNeck_Shirt/black-white/Front.jpg',
+                description: 'Raglan sleeve design with 3/4 length sleeves.'
+            },
+            // POLO SHIRTS
+            {
+                id: 'classic-polo',
+                category: 'polo-shirt',
+                categoryGroup: 'shirts',
+                garmentType: 'classic-polo',
+                folderPath: '/images/products/All-Shirts/poloShirt/Classic_Polo_Shirt',
+                fabricType: 'Cotton',
+                name: 'Classic Polo Shirt',
+                code: 'PS-01',
+                availableColors: ['appleGreen', 'aquaBlue', 'black', 'canaryYellow', 'emeraldGreen', 'pink', 'red', 'royalBlue', 'violet', 'white'],
+                image: '/images/products/All-Shirts/poloShirt/Classic_Polo_Shirt/black/Front.jpg',
+                description: 'Premium classic polo shirt with collar.'
+            },
+            {
+                id: 'drifit-polo',
+                category: 'polo-shirt',
+                categoryGroup: 'shirts',
+                garmentType: 'drifit-polo',
+                folderPath: '/images/products/All-Shirts/poloShirt/Drifit_Polo_Shirt',
+                fabricType: 'Dry Fit',
+                name: 'Dri-Fit Polo Shirt',
+                code: 'PS-02',
+                availableColors: ['black', 'canaryYellow', 'gray', 'navyBlue', 'neonGreen', 'neonOrange', 'red', 'white'],
+                image: '/images/products/All-Shirts/poloShirt/Drifit_Polo_Shirt/black/Front.jpg',
+                description: 'Moisture-wicking performance polo shirt.'
+            },
+            // 2-TONE POLO
+            {
+                id: '2tone-polo-unisex',
+                category: '2-tone-polo',
+                categoryGroup: 'shirts',
+                garmentType: '2tone-polo',
+                folderPath: '/images/products/All-Shirts/2tonePoloShirt/2tone-whiteBody',
+                fabricType: 'Cotton',
+                name: '2 Tone Polo Shirt (Unisex)',
+                code: 'PS-03',
+                availableColors: ['white-green-black', 'white-orange-black', 'white-pink-black', 'white-red-black', 'white-royalBlue-black', 'white-violet-black', 'white-yellow-black'],
+                image: '/images/products/All-Shirts/2tonePoloShirt/2tone-whiteBody/white-green-black/Front.jpg',
+                description: 'Two-tone polo with white body and contrasting colors.'
+            },
+            {
+                id: '2tone-polo-ladies',
+                category: '2-tone-polo',
+                categoryGroup: 'shirts',
+                garmentType: '2tone-polo-ladies',
+                folderPath: '/images/products/All-Shirts/2tonePoloShirt/2tone-whiteBody_Ladies',
+                fabricType: 'Cotton',
+                name: '2 Tone Polo Shirt (Ladies)',
+                code: 'PS-04',
+                availableColors: ['white-green-yellow', 'white-red-black', 'white-royalBlue-back', 'white-violet-black'],
+                image: '/images/products/All-Shirts/2tonePoloShirt/2tone-whiteBody_Ladies/white-green-yellow/Front.jpg',
+                description: 'Two-tone polo designed for ladies fit.'
+            },
+            // ACTIVE WEAR
+            {
+                id: 'drifit-vneck',
+                category: 'active-wear',
+                categoryGroup: 'shirts',
+                garmentType: 'drifit-vneck',
+                folderPath: '/images/products/All-Shirts/activewear/Drifit_V-Neck',
+                fabricType: 'Dry Fit',
+                name: 'Dri-Fit V-Neck Shirt',
+                code: 'DF-01',
+                availableColors: ['Black', 'Red', 'White'],
+                image: '/images/products/All-Shirts/activewear/Drifit_V-Neck/Black/Front.jpg',
+                description: 'High-performance Dri-Fit V-neck for sports.'
+            },
+            // JACKETS
+            {
+                id: 'pullup-jacket',
+                category: 'pull-up-jacket',
+                categoryGroup: 'jackets',
+                garmentType: 'pullup-jacket',
+                folderPath: '/images/products/jackets/Pull-Up_Jacket',
+                fabricType: 'Polyester',
+                name: 'Pull-Up Jacket',
+                code: 'JK-01',
+                availableColors: ['black', 'red', 'white'],
+                image: '/images/products/jackets/Pull-Up_Jacket/black/Front.jpg',
+                description: 'Comfortable pull-up jacket with hood.'
+            },
+            {
+                id: 'hoodie-jacket',
+                category: 'zipper-jacket',
+                categoryGroup: 'jackets',
+                garmentType: 'hoodie-jacket',
+                folderPath: '/images/products/jackets/Polycotton_hoodieJacket',
+                fabricType: 'Polycotton',
+                name: 'Polycotton Hoodie Jacket',
+                code: 'JK-02',
+                availableColors: ['black', 'white'],
+                image: '/images/products/jackets/Polycotton_hoodieJacket/black/Front.jpg',
+                description: 'Polycotton hoodie jacket with zipper.'
+            },
+            // SHORTS
+            {
+                id: 'drifit-short',
+                category: 'drifit-short',
+                categoryGroup: 'shorts-pants',
+                garmentType: 'drifit-short',
+                folderPath: '/images/products/shorts/Drifit-short',
+                fabricType: 'Dry Fit',
+                name: 'Dri-Fit Athletic Shorts',
+                code: 'SH-01',
+                availableColors: ['black'],
+                image: '/images/products/shorts/Drifit-short/black/Front.jpg',
+                description: 'Moisture-wicking athletic shorts.'
+            },
+            // JOGGING PANTS
+            {
+                id: 'jogging-pants',
+                category: 'jogging-pants',
+                categoryGroup: 'shorts-pants',
+                garmentType: 'jogging-pants',
+                folderPath: '/images/products/joggingPants',
+                fabricType: 'Cotton',
+                name: 'Jogging Pants',
+                code: 'JP-01',
+                availableColors: ['black', 'red', 'yellow'],
+                image: '/images/products/joggingPants/black/Front.jpg',
+                description: 'Comfortable jogging pants for training.'
+            }
+        ];
+
         const locations = {
-            tshirt: ['Front', 'Back', 'Left Sleeve', 'Right Sleeve'],
-            jersey: ['Front', 'Back', 'Left Chest', 'Right Chest', 'Shoulders'],
-            hoodie: ['Front', 'Back', 'Left Sleeve', 'Right Sleeve', 'Hood']
+            // Cotton T-Shirts - have Front, Back, Left Sleeve, Right Sleeve
+            'vneck-tshirt': ['Front', 'Back', 'Left Sleeve', 'Right Sleeve'],
+            'round-tshirt': ['Front', 'Back', 'Left Sleeve', 'Right Sleeve'],
+            'raglan': ['Front', 'Back', 'Left Sleeve', 'Right Sleeve'],
+            // Polo Shirts - have Front, Back only
+            'classic-polo': ['Front', 'Back'],
+            'drifit-polo': ['Front', 'Back'],
+            '2tone-polo': ['Front', 'Back'],
+            '2tone-polo-ladies': ['Front', 'Back'],
+            // Active Wear - have Front, Back only
+            'drifit-vneck': ['Front', 'Back'],
+            // Jackets - have Front, Back, Left, Right
+            'pullup-jacket': ['Front', 'Back', 'Left', 'Right'],
+            'hoodie-jacket': ['Front', 'Back', 'Left', 'Right'],
+            // Shorts & Pants - have Front, Back only
+            'drifit-short': ['Front', 'Back'],
+            'jogging-pants': ['Front', 'Back']
         };
 
         // Available colors per neck style (adjust as assets are added)
@@ -585,6 +855,121 @@
             vneck: ['Green', 'Black', 'White'],
             round: ['Black', 'Green', 'White']
         };
+
+        // Product Catalog Modal Functions
+        let currentCatalogFilter = 'all';
+
+        function openProductCatalog() {
+            const modal = document.getElementById('product-catalog-modal');
+            modal.classList.remove('hidden');
+            currentCatalogFilter = 'all';
+            renderProductCatalog('all');
+        }
+
+        function closeProductCatalog() {
+            const modal = document.getElementById('product-catalog-modal');
+            modal.classList.add('hidden');
+        }
+
+        function filterProductCategory(category) {
+            currentCatalogFilter = category;
+            
+            // Update active button styling
+            document.querySelectorAll('[onclick^="filterProductCategory"]').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('text-gray-700', 'hover:bg-gray-100');
+            });
+            event.target.classList.remove('text-gray-700', 'hover:bg-gray-100');
+            event.target.classList.add('bg-indigo-600', 'text-white');
+            
+            renderProductCatalog(category);
+        }
+
+        function renderProductCatalog(category) {
+            const grid = document.getElementById('products-grid');
+            
+            let filteredProducts;
+            if (category === 'all') {
+                filteredProducts = productCatalog;
+            } else if (category === 'shirts') {
+                filteredProducts = productCatalog.filter(p => p.categoryGroup === 'shirts');
+            } else if (category === 'cotton') {
+                // Show all cotton products (cotton-tshirt category)
+                filteredProducts = productCatalog.filter(p => p.category === 'cotton-tshirt');
+            } else if (category === 'active-wear') {
+                // Show all active wear products
+                filteredProducts = productCatalog.filter(p => p.category === 'activewear');
+            } else {
+                filteredProducts = productCatalog.filter(p => p.category === category);
+            }
+            
+            if (filteredProducts.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500">No products available in this category.</div>';
+                return;
+            }
+            
+            let html = '';
+            filteredProducts.forEach(product => {
+                html += `
+                    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                        <div class="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                            <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover" 
+                                onerror="this.src='https://via.placeholder.com/300x300?text=${encodeURIComponent(product.name)}'">
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-semibold text-gray-900 text-sm">${product.name}</h3>
+                                <span class="text-xs text-gray-500">${product.code}</span>
+                            </div>
+                            <p class="text-xs text-gray-600 mb-3 line-clamp-2">${product.description}</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-semibold text-orange-600">Quote: Pending</span>
+                                <button onclick='selectProductFromCatalog(${JSON.stringify(product)})' 
+                                    class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">
+                                    Select
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            grid.innerHTML = html;
+        }
+
+        function selectProductFromCatalog(product) {
+            // Update state with selected product
+            state.garmentType = product.garmentType;
+            state.fabricType = product.fabricType || 'Cotton'; // Set fabric from product
+            state.availableColors = product.availableColors || ['Black']; // Store available colors
+            state.folderPath = product.folderPath; // Store folder path for image loading
+            
+            // Handle neck style for tshirt/drifit products
+            if (product.neckStyle) {
+                state.neckStyle = product.neckStyle;
+            } else if (product.garmentType === 'polo') {
+                state.neckStyle = 'vneck'; // Default for polo
+            } else {
+                state.neckStyle = 'vneck'; // Default fallback
+            }
+            
+            // Update UI elements
+            document.getElementById('selected-product-description').textContent = product.description;
+            document.getElementById('selected-product-info').classList.remove('hidden');
+            document.getElementById('summary-product').textContent = product.name;
+            
+            // Update locations based on garment type
+            updateLocations(product.garmentType);
+            
+            // Update available colors
+            populateColorOptions();
+            
+            // Close modal and load preview
+            closeProductCatalog();
+            loadGarmentImage();
+            
+            console.log('Selected product:', product);
+        }
 
         // Initialize Image Loading
         function initCanvas() {
@@ -638,38 +1023,117 @@
             
             const garmentType = state.garmentType;
             const colorSelect = document.getElementById('garment-color');
-            const color = colorSelect ? colorSelect.value : 'Green';
+            const color = colorSelect ? colorSelect.value : state.availableColors[0];
             const location = state.selectedLocation;
+            const folderPath = state.folderPath;
             
-            // Build image path based on garment type
-            if (garmentType === 'tshirt') {
-                const paths = buildImageCandidates(state.neckStyle, color, location);
-                tryLoadImage(garmentImage, paths);
-                return;
-            } else if (garmentType === 'jersey') {
-                // Placeholder - jersey not available yet
-                console.log('Jersey images not available yet');
-                return;
-            } else if (garmentType === 'hoodie') {
-                // Placeholder - hoodie not available yet
-                console.log('Hoodie images not available yet');
+            if (!folderPath) {
+                console.log('No folder path set for product');
                 return;
             }
-            // If not tshirt, nothing to load yet
+            
+            // Build image path based on product folder structure
+            let imagePath = '';
+            
+            // Different products have different file naming patterns
+            if (garmentType === 'vneck-tshirt') {
+                // V-Neck: V-Front_T-shirt.jpg, V-Back_T-shirt.jpg, V-LeftSleeve_T-shirt.jpg, V-RightSleeve_T-shirt.jpg
+                const locationMap = {
+                    'Front': 'V-Front_T-shirt.jpg',
+                    'Back': 'V-Back_T-shirt.jpg',
+                    'Left Sleeve': 'V-LeftSleeve_T-shirt.jpg',
+                    'Right Sleeve': 'V-RightSleeve_T-shirt.jpg'
+                };
+                imagePath = `${folderPath}/${color}/${locationMap[location] || 'V-Front_T-shirt.jpg'}`;
+            } else if (garmentType === 'round-tshirt') {
+                // Round-Neck: Try simple names first (Black/Green), then fallback to legacy names (White)
+                const simpleMap = {
+                    'Front': 'Front.jpg',
+                    'Back': 'Back.jpg',
+                    'Left Sleeve': 'Left.jpg',
+                    'Right Sleeve': 'Right.jpg'
+                };
+                const legacyMap = {
+                    'Front': 'Round-Front_T-shirt.jpg',
+                    'Back': 'Round-Back_T-shirt.jpg',
+                    'Left Sleeve': 'Left-Side.jpg',
+                    'Right Sleeve': 'Right-Side.jpg'
+                };
+                // Try simple name first
+                imagePath = `${folderPath}/${color}/${simpleMap[location] || 'Front.jpg'}`;
+                // Store fallback path for onerror
+                const fallbackPath = `${folderPath}/${color}/${legacyMap[location] || 'Round-Front_T-shirt.jpg'}`;
+                
+                const placeholder = document.getElementById('no-product-placeholder');
+                garmentImage.src = imagePath;
+                garmentImage.style.display = 'block';
+                if (placeholder) placeholder.style.display = 'none';
+                
+                garmentImage.onerror = function() {
+                    console.log('Simple name failed, trying legacy name:', fallbackPath);
+                    this.onerror = function() {
+                        console.error('Both naming patterns failed for:', color, location);
+                        this.style.display = 'none';
+                        if (placeholder) placeholder.style.display = 'block';
+                    };
+                    this.src = fallbackPath;
+                };
+                return; // Exit early since we handled the image loading
+            } else if (garmentType === 'raglan' || garmentType === 'pullup-jacket' || garmentType === 'hoodie-jacket') {
+                // Raglan and Jackets: Front.jpg, Back.jpg, Left.jpg, Right.jpg
+                const locationMap = {
+                    'Front': 'Front.jpg',
+                    'Back': 'Back.jpg',
+                    'Left Sleeve': 'Left.jpg',
+                    'Right Sleeve': 'Right.jpg',
+                    'Left': 'Left.jpg',
+                    'Right': 'Right.jpg'
+                };
+                imagePath = `${folderPath}/${color}/${locationMap[location] || 'Front.jpg'}`;
+            } else {
+                // Default: Front.jpg, Back.jpg (for polos, shorts, pants, drifit)
+                const locationMap = {
+                    'Front': 'Front.jpg',
+                    'Back': 'Back.jpg'
+                };
+                imagePath = `${folderPath}/${color}/${locationMap[location] || 'Front.jpg'}`;
+            }
+            
+            console.log('Loading image:', imagePath);
+            
+            const placeholder = document.getElementById('no-product-placeholder');
+            
+            garmentImage.src = imagePath;
+            garmentImage.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+            
+            garmentImage.onerror = function() {
+                console.error('Failed to load image:', imagePath);
+                this.style.display = 'none';
+                if (placeholder) {
+                    placeholder.style.display = 'block';
+                }
+            };
         }
 
         // Populate color dropdown based on current neck style
         function populateColorOptions() {
             const select = document.getElementById('garment-color');
             if (!select) return;
-            const colors = availableColors[state.neckStyle] || ['Green'];
+            
+            // Get colors from current product in state
+            const colors = state.availableColors || ['Black'];
             const current = select.value;
             select.innerHTML = '';
+            
             colors.forEach(c => {
                 const opt = document.createElement('option');
-                opt.value = c; opt.textContent = c; select.appendChild(opt);
+                opt.value = c; 
+                opt.textContent = c.replace(/-/g, ' ').replace(/([A-Z])/g, ' $1').trim(); // Format color name
+                select.appendChild(opt);
             });
-            // keep current if still available, else pick first
+            
+            // Keep current if still available, else pick first
             if (colors.includes(current)) {
                 select.value = current;
             } else {
@@ -712,9 +1176,7 @@
                 state.neckStyle = (key === 'premium') ? 'round' : 'vneck';
             }
             
-            document.getElementById('selected-product-name').textContent = product.name;
-            document.getElementById('selected-product-image').src = product.image;
-            document.getElementById('selected-product-description').textContent = 'Quote: Pending admin review';
+            document.getElementById('selected-product-description').textContent = product.description;
             document.getElementById('selected-product-info').classList.remove('hidden');
             document.getElementById('summary-product').textContent = product.name;
 
@@ -731,7 +1193,7 @@
 
         function updateLocations(garmentType) {
             const locationOptions = document.getElementById('location-options');
-            const locs = locations[garmentType];
+            const locs = locations[garmentType] || ['Front', 'Back']; // Default fallback
             
             let html = '';
             locs.forEach((loc, index) => {
@@ -774,6 +1236,8 @@
         function openColorPicker() {
             // Color picker is already visible in right panel
         }
+
+        // setFabricType function removed - fabric type now set automatically by product selection
 
         function addTextToDesign() {
             const text = document.getElementById('text-input').value.trim();
@@ -1234,9 +1698,7 @@
         async function addToCart() {
             const inputQty = parseInt(document.getElementById('qty-input').value);
             const effectiveQty = state.teamMode ? (state.teamEntries.length || 1) : inputQty;
-            // Use Phase 2 computed pricing
-            const totalPrice = computeTotalPrice();
-            const unitPrice = computeUnitPrice();
+            // Quote-based system - no price calculation, admin will provide quote
 
             // Validate required fields
             if (!state.garmentType || !state.selectedLocation) {
@@ -1261,23 +1723,18 @@
                 const backendGarmentType = (state.garmentType === 'tshirt') ? 't-shirt' : state.garmentType;
                 formData.append('garmentType', backendGarmentType);
                 // Send human-readable garment label for admin display
-                let garmentLabel = '';
-                if (state.garmentType === 'tshirt') {
-                    garmentLabel = (state.neckStyle === 'round') ? 'Round-Neck T-Shirt' : 'V-Neck T-Shirt';
-                } else if (state.garmentType === 'jersey') {
-                    garmentLabel = 'Jersey';
-                } else if (state.garmentType === 'hoodie') {
-                    garmentLabel = 'Hoodie';
-                } else {
-                    garmentLabel = backendGarmentType;
-                }
+                const garmentLabel = state.garmentType;
                 formData.append('garmentLabel', garmentLabel);
                 formData.append('neckStyle', state.neckStyle || '');
                 formData.append('selectedLocation', state.selectedLocation);
                 // Include the garment color selected by the customer (name + css)
                 const colorSelectEl = document.getElementById('garment-color');
+                const customColorEl = document.getElementById('custom-color');
                 const garmentColorName = colorSelectEl ? colorSelectEl.value : '';
+                const customColorRequest = customColorEl ? customColorEl.value.trim() : '';
                 const garmentColorHex = garmentColorName; // CSS color names are fine
+                formData.append('garmentColor', garmentColorName);
+                formData.append('customColor', customColorRequest);
                 formData.append('garmentColorName', garmentColorName);
                 formData.append('garmentColorHex', garmentColorHex);
                 formData.append('primaryColor', state.primaryColor);
@@ -1294,20 +1751,20 @@
                 formData.append('designTextWithPlacements', JSON.stringify(textWithPlacements));
                 formData.append('requestType', 'quote');
                 formData.append('quantity', effectiveQty);
-                formData.append('totalPrice', totalPrice);
-                formData.append('unitPrice', unitPrice);
-                // pricing breakdown for backend transparency
-                const breakdown = {
-                    basePrice: state.basePrice,
+                // No totalPrice or unitPrice - this is a quote request
+                formData.append('totalPrice', 0); // Placeholder, admin will set actual price
+                formData.append('unitPrice', 0); // Placeholder, admin will set actual price
+                // Quote request info for admin
+                const quoteInfo = {
                     printingType: state.printingType,
-                    printingSurcharge: state.printingTypeSurcharges[state.printingType] || 0,
-                    sizeSurcharges: state.teamEntries.map(e=>({size:e.size,surcharge: state.sizeSurcharges[e.size]||0})),
-                    unitPrice: unitPrice,
-                    totalPrice: totalPrice,
-                    quantity: effectiveQty
+                    fabricType: state.fabricType,
+                    quantity: effectiveQty,
+                    teamMode: state.teamMode,
+                    teamEntries: state.teamEntries
                 };
-                formData.append('pricingBreakdown', JSON.stringify(breakdown));
+                formData.append('quoteInfo', JSON.stringify(quoteInfo));
                 formData.append('printingType', state.printingType);
+                formData.append('fabricType', state.fabricType || '');
                 formData.append('teamMode', state.teamMode ? 'true' : 'false');
                 formData.append('teamEntries', JSON.stringify(state.teamEntries));
                                 // Serialize design elements (current location + full map)
@@ -1512,7 +1969,7 @@
                 row.className = 'grid grid-cols-12 gap-2 items-center';
                 row.innerHTML = `
                     <input placeholder="Name" value="${e.name}" class="col-span-5 px-2 py-1 border rounded text-xs" oninput="updateTeamField('${e.id}','name',this.value)">
-                    <input placeholder="#" value="${e.number}" class="col-span-2 px-2 py-1 border rounded text-xs" oninput="updateTeamField('${e.id}','number',this.value)">
+                    <input placeholder="# (optional)" value="${e.number}" class="col-span-2 px-2 py-1 border rounded text-xs" oninput="updateTeamField('${e.id}','number',this.value)">
                     <select class="col-span-3 px-2 py-1 border rounded text-xs" oninput="updateTeamField('${e.id}','size',this.value)">
                         <option value="XS" ${e.size==='XS'?'selected':''}>XS</option>
                         <option value="S" ${e.size==='S'?'selected':''}>S</option>
@@ -1543,7 +2000,7 @@
             // Quote-first flow: keep price hidden
             document.getElementById('price-display').textContent = 'Quote: Pending admin review';
         }
-        // Validate team entries: name non-empty, number 1-3 digits, size in allowed list
+        // Validate team entries: name non-empty, number optional (1-3 digits if provided), size in allowed list
         function validateTeamEntries(){
             const allowedSizes = ['XS','S','M','L','XL'];
             if (state.teamEntries.length === 0){
@@ -1554,9 +2011,13 @@
             const numbersSeen = new Set();
             state.teamEntries.forEach((e,i)=>{
                 if (!e.name || !e.name.trim()) issues.push(`Row ${i+1}: name required`);
-                if (!e.number || !/^[0-9]{1,3}$/.test(e.number)) issues.push(`Row ${i+1}: number 1-3 digits`);
+                // Number is now optional - only validate format if provided
+                if (e.number && e.number.trim() && !/^[0-9]{1,3}$/.test(e.number)) {
+                    issues.push(`Row ${i+1}: number must be 1-3 digits`);
+                }
                 if (!allowedSizes.includes(e.size)) issues.push(`Row ${i+1}: invalid size`);
-                if (e.number) {
+                // Check for duplicate numbers only if number is provided
+                if (e.number && e.number.trim()) {
                     if (numbersSeen.has(e.number)) issues.push(`Row ${i+1}: duplicate number ${e.number}`);
                     numbersSeen.add(e.number);
                 }

@@ -54,8 +54,8 @@ exports.createPaymentSession = async (req, res) => {
       });
     }
     
-    // Validate shipping address if Standard Delivery
-    if (shippingMethod === 'Standard' && (!shippingAddress || !shippingAddress.street)) {
+    // Validate shipping address if Standard Delivery (skip for remaining-balance payments)
+    if (shippingMethod === 'Standard' && paymentOption !== 'balance' && (!shippingAddress || !shippingAddress.street)) {
       return res.status(400).json({
         success: false,
         msg: 'Shipping address is required for Standard Delivery'
@@ -66,9 +66,10 @@ exports.createPaymentSession = async (req, res) => {
     const amountInCents = Math.round(amount * 100);
     
     // Determine payment description based on payment option
+    const normalizedOption = (paymentOption === 'balance') ? 'full' : (paymentOption || 'full');
     const paymentDesc = paymentOption === 'downpayment' 
       ? '50% Downpayment' 
-      : '100% Full Payment';
+      : (paymentOption === 'balance' ? 'Remaining Balance' : '100% Full Payment');
 
     // Prepare line items for PayMongo
     const lineItems = [{
@@ -99,12 +100,15 @@ exports.createPaymentSession = async (req, res) => {
       }
 
       // Update order with payment intent and shipping info
+      // IMPORTANT: Don't change status here - preserve current status (e.g., 'Pending Balance' for final payments)
       order.paymentStatus = 'pending';
       order.totalPrice = baseAmount || amount;
-      order.paymentOption = paymentOption || 'full';
+      order.paymentOption = normalizedOption;
       order.shippingMethod = shippingMethod || 'Standard';
       order.shippingAddress = shippingAddress || null;
       order.deliveryFee = deliveryFee || 0;
+      // Preserve existing status - don't overwrite (especially for 'Pending Balance')
+      // order.status stays as-is
       order.quotePayload = {
         ...order.quotePayload,
         ...serviceData,
@@ -121,7 +125,7 @@ exports.createPaymentSession = async (req, res) => {
         selectedLocation: serviceData?.selectedLocation || 'Front',
         quantity: serviceData?.quantity || 1,
         totalPrice: baseAmount || amount,
-        paymentOption: paymentOption || 'full',
+        paymentOption: normalizedOption,
         shippingMethod: shippingMethod || 'Standard',
         shippingAddress: shippingAddress || null,
         deliveryFee: deliveryFee || 0,
@@ -136,10 +140,11 @@ exports.createPaymentSession = async (req, res) => {
 
     await order.save();
 
-    // Build success and cancel URLs with order reference
+    // Build success and cancel URLs with order reference and payment type
     const orderRef = order._id.toString().slice(-8).toUpperCase();
-    const finalSuccessUrl = successUrl || `${BASE_URL}/client/payment-success.html?ref=${orderRef}`;
-    const finalCancelUrl = cancelUrl || `${BASE_URL}/client/payment-cancel.html?ref=${orderRef}`;
+    const paymentTypeParam = paymentOption === 'balance' ? 'balance' : (paymentOption === 'downpayment' ? 'downpayment' : 'full');
+    const finalSuccessUrl = successUrl || `${BASE_URL}/client/payment-success.html?ref=${orderRef}&type=${paymentTypeParam}`;
+    const finalCancelUrl = cancelUrl || `${BASE_URL}/client/payment-cancel.html?ref=${orderRef}&type=${paymentTypeParam}`;
 
     // PayMongo Checkout Session payload
     const checkoutPayload = {
@@ -561,33 +566,26 @@ async function handlePaymentSuccess(eventData) {
     const sessionId = eventData.id;
     const referenceNumber = eventData.attributes?.reference_number;
 
-    console.log('[PayMongo] Processing payment success for:', referenceNumber);
+    console.log('[PayMongo] Processing payment success for:', referenceNumber, 'Session ID:', sessionId);
 
-    // Try to find CustomOrder first (services)
-    let order = await CustomOrder.findOne({
-      $or: [
-        { paymentIntentId: sessionId },
-        { _id: { $regex: new RegExp(referenceNumber, 'i') } }
-      ]
-    });
+    // Find order by paymentIntentId (most reliable)
+    // Note: reference_number is last 8 chars of _id, but searching by regex can match wrong orders
+    let order = await CustomOrder.findOne({ paymentIntentId: sessionId });
 
     let isProductOrder = false;
 
     // If not found, try to find regular Order (products)
     if (!order) {
-      order = await Order.findOne({
-        $or: [
-          { paymentIntentId: sessionId },
-          { _id: { $regex: new RegExp(referenceNumber, 'i') } }
-        ]
-      });
+      order = await Order.findOne({ paymentIntentId: sessionId });
       isProductOrder = true;
     }
 
     if (!order) {
-      console.error('[PayMongo] Order not found for reference:', referenceNumber);
+      console.error('[PayMongo] Order not found for session:', sessionId, 'Reference:', referenceNumber);
       return;
     }
+    
+    console.log('[PayMongo] Found order:', order._id, 'Current status:', order.status);
 
     // Update order status based on type
     if (isProductOrder) {
@@ -607,18 +605,92 @@ async function handlePaymentSuccess(eventData) {
       }
     } else {
       // Service order - check payment option
-      order.paymentStatus = 'paid';
-      
-      if (order.paymentOption === 'downpayment') {
-        // 50% downpayment paid
-        order.status = 'In Production';
-        order.downPaymentPaid = true;
-      } else {
-        // 100% full payment paid
-        order.status = 'In Production';
-        order.downPaymentPaid = true;
-        order.finalPaymentPaid = true;
-      }
+        order.paymentStatus = 'paid';
+
+        // Derive actual paid amount from PayMongo event line items
+        const lineItems = Array.isArray(eventData.attributes?.line_items) ? eventData.attributes.line_items : [];
+        const totalPaidCents = lineItems.reduce((sum, li) => sum + (Number(li.amount) || 0), 0);
+        const paidAmount = totalPaidCents / 100;
+
+        // Compute configured totals for comparison
+        const itemsAmount = Number(order.price || order.totalPrice || 0);
+        const deliveryFee = Number(order.deliveryFee || 0);
+        const totalAmount = itemsAmount + deliveryFee;
+
+        console.log('[PayMongo] Webhook payment analysis:', {
+          orderId: order._id,
+          currentStatus: order.status,
+          downPaymentPaid: order.downPaymentPaid,
+          balancePaid: order.balancePaid,
+          paidAmount,
+          totalAmount,
+          itemsAmount,
+          deliveryFee
+        });
+
+        // Decide payment type based on current status and amount
+        const epsilon = 0.01; // floating safety
+        const halfAmount = totalAmount * 0.5;
+        
+        // Check payment scenarios in CORRECT order:
+        // IMPORTANT: Payments should be VERIFIED by admin, not auto-approved!
+        
+        // 1. Downpayment (50%) - check by status first
+        // Keep at 'Pending Downpayment' so admin can verify
+        if (order.status === 'Pending Downpayment' && !order.downPaymentPaid) {
+          console.log('[PayMongo] Detected 50% downpayment - awaiting admin verification');
+          // Don't change status! Admin must verify via "Verify Downpayment" button
+          // order.status stays 'Pending Downpayment'
+          order.downPaymentPaid = true; // Mark as paid so admin can verify
+          order.paymentAmount = paidAmount;
+          order.paymentType = 'downpayment';
+        }
+        // 2. Full payment in one go (100%) - check if amount matches total
+        // Keep at 'Pending Downpayment' so admin can verify and skip to completion
+        else if (!order.downPaymentPaid && Math.abs(paidAmount - totalAmount) <= (totalAmount * 0.05 + epsilon)) {
+          console.log('[PayMongo] Detected 100% full payment - awaiting admin verification');
+          // Don't change status! Admin must verify via "Verify Downpayment" button
+          // order.status stays 'Pending Downpayment'
+          order.downPaymentPaid = true; // Mark as paid
+          order.balancePaid = true; // Mark both as paid for 100%
+          order.paymentAmount = paidAmount;
+          order.paymentType = 'full';
+        }
+        // 3. Remaining balance payment (final 50%) - ONLY if status is 'Pending Balance'
+        // Change to 'Pending Final Verification' so admin can verify
+        else if (order.status === 'Pending Balance' && order.downPaymentPaid && !order.balancePaid) {
+          console.log('[PayMongo] Detected remaining balance payment - awaiting admin verification');
+          order.status = 'Pending Final Verification'; // This one DOES change status
+          order.paymentAmount = paidAmount;
+          order.paymentType = 'remaining';
+          order.balancePaid = true;
+        }
+        // 4. Downpayment by amount (if status check failed but amount matches ~50%)
+        else if (!order.downPaymentPaid && Math.abs(paidAmount - halfAmount) <= (totalAmount * 0.1)) {
+          console.log('[PayMongo] Detected 50% downpayment by amount - awaiting admin verification');
+          // Keep at current status for admin verification
+          order.downPaymentPaid = true;
+          order.paymentAmount = paidAmount;
+          order.paymentType = 'downpayment';
+        }
+        // 5. Fallback: if downpayment already paid but balance not paid, treat as remaining
+        else if (order.downPaymentPaid && !order.balancePaid) {
+          console.log('[PayMongo] Detected remaining balance (fallback) - awaiting admin verification');
+          order.status = 'Pending Final Verification';
+          order.paymentAmount = paidAmount;
+          order.paymentType = 'remaining';
+          order.balancePaid = true;
+        }
+        else {
+          // Last resort fallback - keep current status
+          console.log('[PayMongo] Fallback: recording payment, keeping current status');
+          order.paymentAmount = paidAmount;
+          order.paymentType = order.paymentType || 'full';
+        }
+
+        // Determine payment method from PayMongo session attributes
+        const paymentMethodUsed = eventData.attributes?.payment_method_used || 'card';
+        order.paymentMethod = paymentMethodUsed;
     }
 
     await order.save();
@@ -840,6 +912,122 @@ exports.getOrderPaymentDetails = async (req, res) => {
   } catch (error) {
     console.error('[PayMongo] Get order payment details error:', error);
     return res.status(500).json({ success: false, msg: 'Failed to get payment details', error: error.message });
+  }
+};
+
+/**
+ * Manually sync payment status from PayMongo (for localhost testing without webhooks)
+ * @route   POST /api/payments/sync/:orderId
+ * @access  Private (Customer or Admin)
+ */
+exports.syncPaymentStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    // Try CustomOrder first
+    let order = await CustomOrder.findById(orderId);
+    let isCustomOrder = true;
+    
+    if (!order) {
+      order = await Order.findById(orderId);
+      isCustomOrder = false;
+    }
+    
+    if (!order) {
+      return res.status(404).json({ success: false, msg: 'Order not found' });
+    }
+    
+    // Check authorization
+    if (order.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, msg: 'Not authorized' });
+    }
+    
+    if (!order.paymentIntentId) {
+      return res.status(400).json({ success: false, msg: 'No payment session to sync' });
+    }
+    
+    console.log('[Payment Sync] Manually checking PayMongo status for order:', orderId);
+    
+    // Fetch current payment status from PayMongo
+    const paymongoResponse = await fetch(`${PAYMONGO_API_URL}/checkout_sessions/${order.paymentIntentId}`, {
+      method: 'GET',
+      headers: { 
+        'Authorization': `Basic ${Buffer.from(PAYMONGO_SECRET_KEY + ':').toString('base64')}` 
+      }
+    });
+    
+    const data = await paymongoResponse.json();
+    
+    if (!paymongoResponse.ok) {
+      console.error('[Payment Sync] PayMongo API error:', data);
+      return res.status(500).json({ 
+        success: false, 
+        msg: 'Failed to fetch payment status from PayMongo',
+        error: data 
+      });
+    }
+    
+    const attributes = data.data.attributes;
+    const paymentStatus = attributes.payment_intent?.attributes?.status;
+    const payments = attributes.payment_intent?.attributes?.payments || [];
+    
+    console.log('[Payment Sync] PayMongo status:', paymentStatus, 'Payments:', payments.length);
+    
+    if (paymentStatus === 'succeeded' && payments.length > 0) {
+      // Payment was successful - simulate webhook processing
+      console.log('[Payment Sync] Payment succeeded, updating order...');
+      
+      // Construct event data similar to webhook
+      const eventData = {
+        id: order.paymentIntentId,
+        attributes: {
+          reference_number: attributes.reference_number,
+          payment_method_used: attributes.payment_method_used || payments[0]?.attributes?.source?.type || 'card',
+          line_items: attributes.line_items || []
+        }
+      };
+      
+      // Call the same handler as webhook
+      await handlePaymentSuccess(eventData);
+      
+      // Fetch updated order
+      if (isCustomOrder) {
+        order = await CustomOrder.findById(orderId);
+      } else {
+        order = await Order.findById(orderId);
+      }
+      
+      return res.status(200).json({
+        success: true,
+        msg: 'Payment status synced successfully',
+        data: {
+          status: order.status,
+          paymentStatus: order.paymentStatus,
+          paymentType: order.paymentType,
+          paymentAmount: order.paymentAmount
+        }
+      });
+    } else if (paymentStatus === 'failed') {
+      return res.status(200).json({
+        success: false,
+        msg: 'Payment failed',
+        data: { status: 'failed' }
+      });
+    } else {
+      return res.status(200).json({
+        success: false,
+        msg: 'Payment still pending or not completed',
+        data: { status: paymentStatus || 'pending' }
+      });
+    }
+    
+  } catch (error) {
+    console.error('[Payment Sync] Error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      msg: 'Failed to sync payment status',
+      error: error.message 
+    });
   }
 };
 

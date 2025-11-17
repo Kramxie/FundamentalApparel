@@ -423,7 +423,13 @@ exports.submitDownPayment = async (req, res) => {
         });
     }
 
-    order.downPaymentReceiptUrl = `${BASE_URL}/uploads/custom-designs/${req.file.filename}`;
+    // Store receipt URL and payment details
+    const receiptUrl = `${BASE_URL}/uploads/custom-designs/${req.file.filename}`;
+    order.downPaymentReceiptUrl = receiptUrl; // Keep for backward compatibility
+    order.receiptUrl = receiptUrl; // New unified field
+    order.paymentAmount = (order.price || order.totalPrice || 0) * 0.5; // 50% downpayment
+    order.paymentType = 'downpayment';
+    order.paymentMethod = 'manual'; // Manual receipt upload
     order.status = "Pending Downpayment"; // Admin must now verify
     await order.save();
     
@@ -479,7 +485,44 @@ exports.verifyDownPayment = async (req, res) => {
           success: false,
           msg: "This order is not awaiting down payment verification.",
         });
-    } // Update the order
+    } 
+    
+    // Check if this was a 100% full payment (both downpayment and balance paid)
+    const isFullPayment = order.balancePaid === true || order.paymentType === 'full';
+    
+    if (isFullPayment) {
+      // 100% payment - skip to Completed, ready for fulfillment
+      order.status = "Completed";
+      order.downPaymentPaid = true;
+      order.balancePaid = true;
+      const updatedOrder = await order.save();
+      
+      // Notify customer: Full payment verified, order completed
+      try {
+        const populated = await updatedOrder.populate('user', 'name email');
+        const code = populated._id.toString().slice(-8).toUpperCase();
+        const profileUrl = `${BASE_URL}/client/my-quotes.html`;
+        await sendEmail({
+          email: populated.user?.email,
+          subject: `Payment Verified – Order Completed (Ref ${code})`,
+          message: `
+            <div style=\"font-family:Inter,Segoe UI,Arial,sans-serif;font-size:14px;color:#111\">
+              <p>Excellent! Your full payment for order <strong>${code}</strong> is verified.</p>
+              <p>Your order is now <strong>Completed</strong> and in production. Please choose your fulfillment method:
+                <a href=\"${profileUrl}\" style=\"color:#4f46e5\">Choose Fulfillment</a>
+              </p>
+              <p style=\"color:#6b7280\">Fundamental Apparel</p>
+            </div>
+          `
+        });
+      } catch (e) {
+        console.error('Email (Full Payment Verified) failed:', e.message);
+      }
+      return res.status(200).json({ success: true, data: updatedOrder, msg: 'Full payment verified. Order completed!' });
+    }
+    
+    // Regular 50% downpayment flow
+    // Update the order
     order.status = "In Production";
     order.downPaymentPaid = true;
     const updatedOrder = await order.save();
@@ -545,8 +588,8 @@ exports.requestFinalPayment = async (req, res) => {
         subject: `Final Payment Requested – Ref ${code}`,
         message: `
           <div style=\"font-family:Inter,Segoe UI,Arial,sans-serif;font-size:14px;color:#111\">
-            <p>Your order <strong>${code}</strong> is finished. Please upload your final payment receipt to proceed.</p>
-            <p><a href=\"${profileUrl}\" style=\"color:#4f46e5\">Upload Final Payment</a></p>
+            <p>Your order <strong>${code}</strong> is finished. Please pay your remaining balance to proceed.</p>
+            <p><a href=\"${profileUrl}\" style=\"color:#4f46e5\">Pay Final Payment</a></p>
             <p style=\"color:#6b7280\">Fundamental Apparel</p>
           </div>
         `
@@ -585,8 +628,23 @@ exports.submitFinalPayment = async (req, res) => {
           return res.status(400).json({ success: false, msg: 'This order is not ready for final payment.' });
         }
 
-        // Store as public URL for consistency
-        order.finalPaymentReceiptUrl = `${BASE_URL}/uploads/custom-designs/${req.file.filename}`;
+        // Store receipt URL and payment details
+        const receiptUrl = `${BASE_URL}/uploads/custom-designs/${req.file.filename}`;
+        order.finalPaymentReceiptUrl = receiptUrl; // Keep for backward compatibility
+        order.receiptUrl = receiptUrl; // New unified field (overwrites downpayment receipt if this is final payment)
+        
+        // Calculate payment amount based on whether downpayment was already made
+        if (order.downPaymentPaid) {
+          // This is the remaining 50%
+          order.paymentAmount = (order.price || order.totalPrice || 0) * 0.5;
+          order.paymentType = 'remaining';
+        } else {
+          // This is full 100% payment
+          order.paymentAmount = order.price || order.totalPrice || 0;
+          order.paymentType = 'full';
+        }
+        
+        order.paymentMethod = 'manual'; // Manual receipt upload
         order.status = 'Pending Final Verification'; // Admin must now verify
         
         await order.save();
@@ -832,6 +890,9 @@ exports.submitQuote = async (req, res) => {
     // Extract form fields
     const {
       garmentType,
+      garmentColor,
+      customColor,
+      fabricType,
       garmentLabel,
       neckStyle,
       selectedLocation,
@@ -864,6 +925,9 @@ exports.submitQuote = async (req, res) => {
     // Normalize garmentType (UI may send 'tshirt')
     let normalizedGarmentType = garmentType;
     if (garmentType === 'tshirt') normalizedGarmentType = 't-shirt';
+    
+    console.log('[submitQuote] Raw garmentType:', garmentType);
+    console.log('[submitQuote] Normalized garmentType:', normalizedGarmentType);
 
     // Basic field presence validation
     if (!normalizedGarmentType || !selectedLocation || typeof quantity === 'undefined') {
@@ -879,8 +943,15 @@ exports.submitQuote = async (req, res) => {
       return res.status(400).json({ success: false, msg: 'Quantity must be a positive number' });
     }
 
-    // Garment type enum validation (match model)
-    const allowedGarments = ['t-shirt','jersey','hoodie'];
+    // Garment type enum validation (match model and product catalog)
+    const allowedGarments = [
+      't-shirt', 'jersey', 'hoodie',
+      'vneck-tshirt', 'round-tshirt', 'raglan',
+      'classic-polo', 'drifit-polo', '2tone-polo', '2tone-polo-ladies',
+      'drifit-vneck',
+      'pullup-jacket', 'hoodie-jacket',
+      'drifit-short', 'jogging-pants'
+    ];
     if (!allowedGarments.includes(normalizedGarmentType)) {
       return res.status(400).json({ success: false, msg: `Invalid garmentType '${normalizedGarmentType}'. Allowed: ${allowedGarments.join(', ')}` });
     }
@@ -962,6 +1033,9 @@ exports.submitQuote = async (req, res) => {
       
       // Professional customizer fields
       garmentType: normalizedGarmentType,
+      garmentColor: garmentColor || undefined,
+      customColor: customColor || undefined,
+      fabricType: fabricType || undefined,
       selectedLocation: selectedLocation,
       colors: {
         primary: primaryColor || '#000000',

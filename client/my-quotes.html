@@ -235,31 +235,83 @@
         wrap.appendChild(btn);
       }
       else if (order.status === 'Pending Downpayment'){
-        // Show payment options after quote acceptance
+        // Check if payment was already made (PayMongo completed but admin hasn't verified yet)
+        if (order.downPaymentPaid || order.paymentIntentId) {
+          // Payment completed, waiting for admin verification
+          const info = document.createElement('div');
+          info.className = 'p-4 bg-blue-50 border border-blue-200 rounded text-sm';
+          info.innerHTML = `
+            <div class="flex items-center gap-2 mb-2">
+              <i class="fas fa-clock text-blue-600"></i>
+              <strong class="text-blue-800">Payment Received</strong>
+            </div>
+            <p class="text-gray-700">Your ${order.paymentType === 'full' ? '100%' : '50%'} payment has been received and is being verified by our admin team. You'll be notified once verified and production begins.</p>
+            <div class="mt-3 pt-3 border-t border-blue-200 text-xs text-gray-600">
+              <div>Payment Method: <strong>${order.paymentMethod || 'N/A'}</strong></div>
+              <div>Amount Paid: <strong>₱${(order.paymentAmount || 0).toLocaleString()}</strong></div>
+            </div>
+          `;
+          wrap.appendChild(info);
+        } else {
+          // No payment yet, show payment options
+          const info = document.createElement('div');
+          info.className = 'text-sm text-gray-700 mb-3';
+          info.innerHTML = '<strong>Quote Accepted!</strong> Choose your payment option:';
+          wrap.appendChild(info);
+          
+          // Pay 50% Downpayment Button
+          const btn50 = document.createElement('button');
+          btn50.className = 'px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition';
+          btn50.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Pay 50% Downpayment';
+          btn50.onclick = ()=> proceedToPayment(order, 'downpayment');
+          wrap.appendChild(btn50);
+          
+          // Pay 100% Full Payment Button
+          const btn100 = document.createElement('button');
+          btn100.className = 'px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition';
+          btn100.innerHTML = '<i class="fas fa-money-bill-wave mr-2"></i>Pay 100% Full Amount';
+          btn100.onclick = ()=> proceedToPayment(order, 'full');
+          wrap.appendChild(btn100);
+        }
+      }
+      else if (order.status === 'In Production'){
+        // Order is being produced/admin has verified payment
         const info = document.createElement('div');
-        info.className = 'text-sm text-gray-700 mb-3';
-        info.innerHTML = '<strong>Quote Accepted!</strong> Choose your payment option:';
+        info.className = 'p-4 bg-green-50 border border-green-200 rounded text-sm';
+        info.innerHTML = `
+          <div class="flex items-center gap-2 mb-2">
+            <i class="fas fa-check-circle text-green-600"></i>
+            <strong class="text-green-800">Payment Verified - In Production</strong>
+          </div>
+          <p class="text-gray-700">Your payment has been verified and your order is now in production. We'll notify you when it's ready!</p>
+        `;
         wrap.appendChild(info);
-        
-        // Pay 50% Downpayment Button
-        const btn50 = document.createElement('button');
-        btn50.className = 'px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition';
-        btn50.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Pay 50% Downpayment';
-        btn50.onclick = ()=> proceedToPayment(order, 'downpayment');
-        wrap.appendChild(btn50);
-        
-        // Pay 100% Full Payment Button
-        const btn100 = document.createElement('button');
-        btn100.className = 'px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition';
-        btn100.innerHTML = '<i class="fas fa-money-bill-wave mr-2"></i>Pay 100% Full Amount';
-        btn100.onclick = ()=> proceedToPayment(order, 'full');
-        wrap.appendChild(btn100);
       }
       else if (order.status === 'Pending Balance'){
-        wrap.appendChild(uploadRow('Upload Final Payment Receipt', (file)=>submitFinalPayment(order._id, file)));
+        // For final payment, use PayMongo like downpayment/full
+        const info = document.createElement('div');
+        info.className = 'text-sm text-gray-700 mb-3';
+        info.innerHTML = '<strong>Final Payment Requested.</strong> Please pay the remaining balance to proceed.';
+        wrap.appendChild(info);
+
+        const btnPayFinal = document.createElement('button');
+        btnPayFinal.className = 'px-4 py-2 bg-purple-600 text-white rounded text-sm font-medium hover:bg-purple-700 transition';
+        btnPayFinal.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Pay Final Payment';
+        btnPayFinal.onclick = ()=> proceedToPayment(order, 'balance');
+        wrap.appendChild(btnPayFinal);
       }
       else if (order.status === 'Pending Final Verification'){
-        wrap.innerHTML = '<div class="text-sm text-gray-600">Awaiting final payment verification…</div>';
+        // Clarify final payment received status for PayMongo flow
+        wrap.innerHTML = `
+          <div class="p-4 bg-indigo-50 border border-indigo-200 rounded text-sm">
+            <div class="flex items-center gap-2 mb-2">
+              <i class="fas fa-check text-indigo-600"></i>
+              <strong class="text-indigo-800">Final Payment Received</strong>
+            </div>
+            <p class="text-gray-700 mb-2">We received your final payment. It is now waiting for admin verification.</p>
+            <p class="text-xs text-gray-500">Reference will update once verified. Thank you!</p>
+          </div>
+        `;
       }
       else if (order.status === 'Completed'){
         const box = document.createElement('div');
@@ -398,7 +450,9 @@
         totalPrice: order.price || order.totalPrice || 0,
         // Provide unitPrice for clearer subtotal when available
         unitPrice: (order.quantity && (order.price || order.totalPrice)) ? ((order.price || order.totalPrice) / (order.quantity || 1)) : undefined,
-        paymentOption: paymentOption,
+        paymentOption: paymentOption, // 'downpayment' | 'full' | 'balance'
+        alreadyPaidAmount: Number(order.paymentAmount || 0),
+        previousDeliveryFee: Number(order.deliveryFee || 0),
         garmentType: order.garmentType || order.itemType || 't-shirt',
         selectedLocation: order.selectedLocation || 'Front',
         designDetails: order.designDetails || '',
@@ -411,7 +465,11 @@
       };
       
       localStorage.setItem('pendingServiceCheckout', JSON.stringify(checkoutData));
-      window.location.href = 'services-checkout.html';
+      if (paymentOption === 'balance') {
+        window.location.href = 'services-checkout-final.html';
+      } else {
+        window.location.href = 'services-checkout.html';
+      }
     }
 
     document.getElementById('statusFilter').addEventListener('change', fetchMine);
@@ -433,6 +491,81 @@
     })();
 
     fetchMine();
+
+    // Check if returning from payment (PayMongo redirect)
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentReturn = urlParams.get('payment');
+    const orderRef = urlParams.get('ref');
+    
+    if (paymentReturn === 'success' && orderRef) {
+      console.log('[Payment Return] Detected payment success, syncing status...');
+      // Show loading indicator
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      toast.innerHTML = '<i class="fas fa-sync fa-spin mr-2"></i>Verifying payment status...';
+      document.body.appendChild(toast);
+      
+      // Poll for status update (webhooks can't reach localhost)
+      let pollCount = 0;
+      const maxPolls = 10;
+      const pollInterval = setInterval(async () => {
+        pollCount++;
+        try {
+          const res = await fetch('/api/custom-orders/my-custom-orders', {
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'ngrok-skip-browser-warning': 'true'
+            }
+          });
+          const data = await res.json();
+          if (data.success && data.data) {
+            // Find the order by reference (last 8 chars of _id)
+            const order = data.data.find(o => {
+              const orderId = (o._id || '').toString();
+              const last8 = orderId.slice(-8).toUpperCase();
+              return last8 === orderRef.toUpperCase();
+            });
+            if (order) {
+              // Call sync endpoint to force payment status check from PayMongo
+              const syncRes = await fetch(`/api/payments/sync/${order._id}`, {
+                method: 'POST',
+                headers: { 
+                  'Authorization': `Bearer ${token}`,
+                  'ngrok-skip-browser-warning': 'true'
+                }
+              });
+              const syncData = await syncRes.json();
+              
+              if (syncData.success && (syncData.data.status === 'In Production' || syncData.data.status === 'Pending Final Verification')) {
+                // Payment processed!
+                clearInterval(pollInterval);
+                toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                toast.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Payment verified successfully!';
+                setTimeout(() => {
+                  toast.remove();
+                  // Clear URL params and reload
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                  fetchMine();
+                }, 2000);
+                return;
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[Payment Polling] Error:', err);
+        }
+        
+        if (pollCount >= maxPolls) {
+          clearInterval(pollInterval);
+          toast.className = 'fixed top-4 right-4 bg-yellow-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+          toast.innerHTML = '<i class="fas fa-clock mr-2"></i>Payment processing... Please refresh in a moment.';
+          setTimeout(() => {
+            toast.remove();
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }, 3000);
+        }
+      }, 2000); // Poll every 2 seconds
+    }
 
     async function setFulfillment(id, method, address){
       const res = await fetch(`/api/custom-orders/${id}/fulfillment`, {

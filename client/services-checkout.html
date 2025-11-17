@@ -346,14 +346,21 @@
       const shippingInputs = document.querySelectorAll('#shipping-form input');
       
       function updateAddressFields() {
+        const isBalance = (serviceData && serviceData.paymentOption === 'balance');
         shippingInputs.forEach(input => {
-          input.disabled = defaultRadio.checked;
-          if (defaultRadio.checked) {
+          const disabled = isBalance || defaultRadio.checked;
+          input.disabled = disabled;
+          if (disabled) {
             input.classList.add('bg-gray-100', 'cursor-not-allowed');
           } else {
             input.classList.remove('bg-gray-100', 'cursor-not-allowed');
           }
         });
+        if (isBalance) {
+          // Lock the radio toggles too
+          if (defaultRadio) defaultRadio.disabled = true;
+          if (newRadio) newRadio.disabled = true;
+        }
       }
       
       defaultRadio.addEventListener('change', updateAddressFields);
@@ -371,7 +378,24 @@
       const pickupLocationInfo = document.getElementById('pickup-location-info');
       
       function updateDeliveryUI() {
-        if (pickupRadio.checked) {
+        const isBalance = (serviceData && serviceData.paymentOption === 'balance');
+        if (isBalance) {
+          // Lock delivery mode; use original method from prior payment
+          const prior = (serviceData && (serviceData.shippingMethod || 'Standard'));
+          if (prior === 'Pick-Up') {
+            if (pickupRadio) pickupRadio.checked = true;
+            if (standardRadio) standardRadio.checked = false;
+            if (shippingSection) shippingSection.style.display = 'none';
+            if (pickupLocationInfo) pickupLocationInfo.classList.remove('hidden');
+          } else {
+            if (standardRadio) standardRadio.checked = true;
+            if (pickupRadio) pickupRadio.checked = false;
+            if (shippingSection) shippingSection.style.display = 'block';
+            if (pickupLocationInfo) pickupLocationInfo.classList.add('hidden');
+          }
+          if (standardRadio) standardRadio.disabled = true;
+          if (pickupRadio) pickupRadio.disabled = true;
+        } else if (pickupRadio.checked) {
           // Hide shipping address for pickup
           shippingSection.style.display = 'none';
           // Show pickup location info
@@ -717,7 +741,9 @@
       
       // Get delivery fee based on selected method
       const deliveryMethod = document.querySelector('input[name="delivery-method"]:checked');
-      const deliveryFee = deliveryMethod && deliveryMethod.value === 'pickup' ? 0 : 80;
+      // For remaining-balance payment, do not add a new delivery fee; use the original fee for computation only
+      const selectedDeliveryFee = deliveryMethod && deliveryMethod.value === 'pickup' ? 0 : 80;
+      const previousDeliveryFee = Number(data.previousDeliveryFee || 0);
       
       // Determine subtotal semantics:
       // - If unitPrice is provided, subtotal = unitPrice * qty
@@ -735,12 +761,27 @@
       }
 
       // Full amount before delivery should be the subtotal (for full) or 50% of it (for downpayment)
-      const amountBeforeDelivery = paymentOption === 'downpayment' ? (subtotal * 0.5) : subtotal;
-      const displayAmount = amountBeforeDelivery + deliveryFee;
+      let displayAmount;
+      if (paymentOption === 'downpayment') {
+        // Downpayment is 50% of (items + selected delivery fee)
+        displayAmount = (subtotal + selectedDeliveryFee) * 0.5;
+      } else if (paymentOption === 'balance') {
+        const totalWithOriginalDelivery = subtotal + previousDeliveryFee;
+        // If DB didn't store the paid amount (older orders), infer 50%
+        let alreadyPaid = Number(data.alreadyPaidAmount || 0);
+        if (!alreadyPaid || alreadyPaid <= 0) {
+          alreadyPaid = totalWithOriginalDelivery * 0.5;
+        }
+        displayAmount = Math.max(totalWithOriginalDelivery - alreadyPaid, 0);
+      } else {
+        displayAmount = subtotal + selectedDeliveryFee;
+      }
 
       // Update displays
       document.getElementById('base-price').textContent = (subtotal).toLocaleString();
-      document.getElementById('delivery-fee-amount').textContent = `₱${deliveryFee.toLocaleString()}`;
+      // For balance payments, surface 0 and note that fee was already included before
+      const effectiveDelivery = paymentOption === 'balance' ? 0 : selectedDeliveryFee;
+      document.getElementById('delivery-fee-amount').textContent = `₱${effectiveDelivery.toLocaleString()}`;
       document.getElementById('total-amount').textContent = displayAmount.toLocaleString();
       
       // Remove existing payment option badge if any
@@ -758,6 +799,15 @@
         const badge = document.createElement('div');
         badge.className = 'payment-option-badge bg-green-50 border border-green-300 rounded-lg p-3 text-xs text-green-800 mt-3';
         badge.innerHTML = '<i class="fas fa-check-circle mr-1"></i><strong>100% Full Payment</strong> - Complete payment, no balance due';
+        billingSection.querySelector('.space-y-3').after(badge);
+      } else if (paymentOption === 'balance') {
+        const badge = document.createElement('div');
+        badge.className = 'payment-option-badge bg-purple-50 border border-purple-300 rounded-lg p-3 text-xs text-purple-800 mt-3';
+        let alreadyPaid = Number(data.alreadyPaidAmount || 0);
+        if (!alreadyPaid || alreadyPaid <= 0) {
+          alreadyPaid = (subtotal + previousDeliveryFee) * 0.5;
+        }
+        badge.innerHTML = `<i class=\"fas fa-wallet mr-1\"></i><strong>Remaining Balance</strong> — Previous payment: ₱${alreadyPaid.toLocaleString()}. Delivery fee already included previously.`;
         billingSection.querySelector('.space-y-3').after(badge);
       }
     }
@@ -830,8 +880,12 @@
         
         // Get delivery method and fee
         const deliveryMethodElem = document.querySelector('input[name="delivery-method"]:checked');
-        const deliveryMethod = deliveryMethodElem?.value === 'pickup' ? 'Pick-Up' : 'Standard';
-        const deliveryFee = deliveryMethod === 'Pick-Up' ? 0 : 80;
+        const paymentOption = serviceData.paymentOption || 'full';
+        const deliveryMethod = paymentOption === 'balance'
+          ? (serviceData.shippingMethod || 'Standard')
+          : (deliveryMethodElem?.value === 'pickup' ? 'Pick-Up' : 'Standard');
+        // Do not pass a new delivery fee for remaining-balance payments
+        const deliveryFee = paymentOption === 'balance' ? 0 : (deliveryMethod === 'Pick-Up' ? 0 : 80);
         
         // Get shipping address (only if not pick-up)
         let shippingAddress = null;
@@ -849,13 +903,23 @@
           };
         }
         
-        // Calculate total amount with delivery fee
-        const baseAmount = serviceData.totalPrice || 0;
-        const totalAmountWithDelivery = baseAmount + deliveryFee;
-        const paymentOption = serviceData.paymentOption || 'full';
-        const finalAmount = paymentOption === 'downpayment' 
-          ? totalAmountWithDelivery * 0.5 
-          : totalAmountWithDelivery;
+        // Calculate charge amount
+        const baseAmount = Number(serviceData.totalPrice || 0);
+        const previousDeliveryFee = Number(serviceData.previousDeliveryFee || 0);
+        const totalAmountWithDelivery = baseAmount + (paymentOption === 'balance' ? previousDeliveryFee : deliveryFee);
+        let finalAmount;
+        if (paymentOption === 'downpayment') {
+          finalAmount = totalAmountWithDelivery * 0.5;
+        } else if (paymentOption === 'balance') {
+          let alreadyPaid = Number(serviceData.alreadyPaidAmount || 0);
+          if (!alreadyPaid || alreadyPaid <= 0) {
+            // Infer 50% already paid when DB does not have it
+            alreadyPaid = (baseAmount + previousDeliveryFee) * 0.5;
+          }
+          finalAmount = Math.max((baseAmount + previousDeliveryFee) - alreadyPaid, 0);
+        } else {
+          finalAmount = totalAmountWithDelivery;
+        }
         
         // Prepare payment payload
         const payload = {
@@ -866,7 +930,7 @@
           baseAmount: baseAmount,
           deliveryFee: deliveryFee,
           paymentMethod: paymentMethod,
-          paymentOption: paymentOption, // 'downpayment' or 'full'
+          paymentOption: paymentOption, // 'downpayment' | 'full' | 'balance'
           shippingMethod: deliveryMethod,
           shippingAddress: shippingAddress,
           customerInfo: {
@@ -875,9 +939,8 @@
             phone: document.getElementById('contact-phone').value.trim(),
             notes: document.getElementById('contact-notes').value.trim()
           },
-          serviceData: serviceData,
-          successUrl: `${window.location.origin}/client/payment-success.html`,
-          cancelUrl: `${window.location.origin}/client/payment-cancel.html`
+          serviceData: serviceData
+          // successUrl and cancelUrl will be generated by backend with proper order reference
         };
 
         // Create PayMongo checkout session
@@ -953,8 +1016,9 @@
       // Validate shipping address if Standard Delivery is selected
       const deliveryMethodElem = document.querySelector('input[name="delivery-method"]:checked');
       const deliveryMethod = deliveryMethodElem?.value;
+      const paymentOption = (serviceData && serviceData.paymentOption) || 'full';
       
-      if (deliveryMethod === 'standard') {
+      if (paymentOption !== 'balance' && deliveryMethod === 'standard') {
         const street = document.getElementById('ship-street').value.trim();
         const province = document.getElementById('ship-province').value.trim();
         const city = document.getElementById('ship-city').value.trim();

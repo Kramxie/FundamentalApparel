@@ -61,10 +61,16 @@
             </div>
             <div class="flex justify-between">
               <span class="text-gray-600">Order Status:</span>
-              <span class="font-medium text-blue-600" id="order-status">Processing</span>
+              <span class="font-medium" id="order-status">
+                <i class="fas fa-sync fa-spin mr-1"></i>
+                Verifying payment...
+              </span>
             </div>
           </div>
         </div>
+
+        <!-- Status Message (dynamically updated) -->
+        <div id="status-message" class="mb-6"></div>
 
         <!-- Next Steps -->
         <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-6 mb-6 text-left">
@@ -82,7 +88,7 @@
 
         <!-- Action Buttons -->
         <div class="flex flex-col sm:flex-row gap-3 justify-center">
-          <a href="profile.html" class="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
+          <a id="view-orders-btn" href="my-quotes.html" class="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
             <i class="fas fa-user mr-2"></i>
             View My Orders
           </a>
@@ -108,17 +114,22 @@
     const API_BASE = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Get order reference from URL params or localStorage
+      // Get order reference from URL params
       const urlParams = new URLSearchParams(window.location.search);
-      const orderRef = urlParams.get('ref') || localStorage.getItem('lastOrderId');
+      const orderRef = urlParams.get('ref');
+      const paymentType = urlParams.get('type'); // 'downpayment', 'full', or 'balance'
       
       if (orderRef) {
         document.getElementById('order-reference').textContent = orderRef;
+        // Ensure "View My Orders" passes context back for auto-sync on that page
+        const viewBtn = document.getElementById('view-orders-btn');
+        if (viewBtn) viewBtn.href = `my-quotes.html?payment=success&ref=${encodeURIComponent(orderRef)}`;
         
-        // Optionally fetch full order details
-        fetchOrderDetails(orderRef);
+        // Trigger payment sync and fetch order details
+        syncAndFetchOrder(orderRef, paymentType);
       } else {
         document.getElementById('order-reference').textContent = 'N/A';
+        document.getElementById('order-status').textContent = 'Processing';
       }
 
       // Clear any pending checkout data
@@ -126,35 +137,210 @@
       localStorage.removeItem('lastOrderId');
     });
 
-    async function fetchOrderDetails(orderRef) {
+    async function syncAndFetchOrder(orderRef, paymentType) {
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        showError('Please log in to view order details');
+        return;
+      }
 
       try {
-        const res = await fetch(`${API_BASE}/api/custom-orders/my-custom-orders`, {
+        // Step 1: Find the order by reference
+        // Fetch only the current user's custom orders
+        const listRes = await fetch(`${API_BASE}/api/custom-orders/my-custom-orders`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'ngrok-skip-browser-warning': 'true'
           }
         });
 
-        if (!res.ok) return;
-
-        const json = await res.json();
-        if (json.success && json.data && json.data.length > 0) {
-          // Find the matching order
-          const order = json.data.find(o => 
-            o._id === orderRef || 
-            o._id.toString().slice(-8).toUpperCase() === orderRef
-          );
-
-          if (order) {
-            document.getElementById('order-status').textContent = order.status || 'Processing';
-          }
+        if (!listRes.ok) {
+          throw new Error('Failed to fetch orders');
         }
+
+        const listData = await listRes.json();
+        if (!listData.success || !listData.data) {
+          throw new Error('No orders found');
+        }
+
+        // Find order by reference (last 8 chars of _id)
+        const order = listData.data.find(o => {
+          const orderId = (o._id || '').toString();
+          const last8 = orderId.slice(-8).toUpperCase();
+          return last8 === orderRef.toUpperCase();
+        });
+
+        if (!order) {
+          console.error('[Payment Success] Order not found for ref:', orderRef);
+          console.log('[Payment Success] Available orders:', listData.data.map(o => ({
+            id: o._id,
+            ref: (o._id || '').toString().slice(-8).toUpperCase()
+          })));
+          showError('Order not found');
+          return;
+        }
+        
+        console.log('[Payment Success] Found order:', order._id, 'Status:', order.status);
+
+        // Step 2: Trigger payment sync
+        const syncRes = await fetch(`${API_BASE}/api/payments/sync/${order._id}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+
+        const syncData = await syncRes.json();
+
+        // Step 3: Update UI based on sync result
+        if (syncData.success) {
+          const status = syncData.data.status;
+          const paymentTypeActual = syncData.data.paymentType;
+          
+          // Update order status display
+          const statusEl = document.getElementById('order-status');
+          statusEl.innerHTML = `<span class="text-green-600">${status}</span>`;
+          
+          // Show appropriate message based on payment type and status
+          const messageEl = document.getElementById('status-message');
+          
+          if (status === 'Pending Downpayment') {
+            // Downpayment received, waiting for admin to verify
+            if (paymentTypeActual === 'full') {
+              messageEl.innerHTML = `
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                  <h3 class="font-semibold text-blue-900 mb-2 flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Full Payment Received!
+                  </h3>
+                  <p class="text-sm text-blue-800">
+                    Your 100% payment has been received. Our admin team is verifying it now. 
+                    Once verified, your order will move to production.
+                  </p>
+                  <p class="text-xs text-blue-700 mt-2">Redirecting to your orders page...</p>
+                </div>
+              `;
+            } else {
+              messageEl.innerHTML = `
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                  <h3 class="font-semibold text-blue-900 mb-2 flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Downpayment Received!
+                  </h3>
+                  <p class="text-sm text-blue-800">
+                    Your 50% downpayment has been received. Our admin team is verifying it now. 
+                    Once verified, your order will move to production.
+                  </p>
+                  <p class="text-xs text-blue-700 mt-2">Redirecting to your orders page...</p>
+                </div>
+              `;
+            }
+            // Auto-redirect after 3 seconds
+            setTimeout(() => window.location.href = 'my-quotes.html', 3000);
+          }
+          else if (status === 'In Production') {
+            if (paymentTypeActual === 'full') {
+              messageEl.innerHTML = `
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-left">
+                  <h3 class="font-semibold text-green-900 mb-2 flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Full Payment Verified!
+                  </h3>
+                  <p class="text-sm text-green-800">
+                    Your 100% payment has been confirmed. Your order is now in production. 
+                    You'll receive updates as it progresses.
+                  </p>
+                  <p class="text-xs text-green-700 mt-2">Redirecting to your orders page...</p>
+                </div>
+              `;
+              // Auto-redirect after 3 seconds
+              setTimeout(() => window.location.href = 'my-quotes.html', 3000);
+            } else {
+              messageEl.innerHTML = `
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-left">
+                  <h3 class="font-semibold text-green-900 mb-2 flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Downpayment Verified!
+                  </h3>
+                  <p class="text-sm text-green-800">
+                    Your 50% downpayment has been confirmed. Your order is now in production. 
+                    You'll be notified when the final balance is due.
+                  </p>
+                  <p class="text-xs text-green-700 mt-2">Redirecting to your orders page...</p>
+                </div>
+              `;
+              // Auto-redirect after 3 seconds
+              setTimeout(() => window.location.href = 'my-quotes.html', 3000);
+            }
+          } else if (status === 'Pending Final Verification') {
+            messageEl.innerHTML = `
+              <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 text-left">
+                <h3 class="font-semibold text-purple-900 mb-2 flex items-center">
+                  <i class="fas fa-check-circle mr-2"></i>
+                  Final Payment Received!
+                </h3>
+                <p class="text-sm text-purple-800">
+                  Your final payment has been received successfully. Our admin team is verifying it now. 
+                  You'll be notified once verified and your order will be ready for fulfillment.
+                </p>
+                <p class="text-xs text-purple-700 mt-2">Redirecting to your orders page...</p>
+              </div>
+            `;
+            // Auto-redirect after 3 seconds
+            setTimeout(() => window.location.href = 'my-quotes.html', 3000);
+          } else {
+            messageEl.innerHTML = `
+              <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 text-left">
+                <h3 class="font-semibold text-indigo-900 mb-2 flex items-center">
+                  <i class="fas fa-info-circle mr-2"></i>
+                  Payment Confirmed
+                </h3>
+                <p class="text-sm text-indigo-800">
+                  Your payment has been received and is being processed. Check your orders page for updates.
+                </p>
+              </div>
+            `;
+          }
+        } else {
+          // Sync failed or payment still pending
+          showWarning('Payment is being processed. Please check your orders page in a moment.');
+        }
+
       } catch (err) {
-        console.error('Error fetching order details:', err);
+        console.error('Error syncing payment:', err);
+        showError('Unable to verify payment status. Please check your orders page.');
       }
+    }
+
+    function showError(message) {
+      const statusEl = document.getElementById('order-status');
+      statusEl.innerHTML = `<span class="text-yellow-600">Verifying...</span>`;
+      
+      const messageEl = document.getElementById('status-message');
+      messageEl.innerHTML = `
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
+          <p class="text-sm text-yellow-800">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            ${message}
+          </p>
+        </div>
+      `;
+    }
+
+    function showWarning(message) {
+      const statusEl = document.getElementById('order-status');
+      statusEl.innerHTML = `<span class="text-blue-600">Processing...</span>`;
+      
+      const messageEl = document.getElementById('status-message');
+      messageEl.innerHTML = `
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+          <p class="text-sm text-blue-800">
+            <i class="fas fa-clock mr-2"></i>
+            ${message}
+          </p>
+        </div>
+      `;
     }
   </script>
 </body>

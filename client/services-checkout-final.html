@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Final Payment • Fundamental</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <header class="bg-white shadow">
+    <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="/client/my-quotes.html" class="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-indigo-600">
+        <i class="fas fa-arrow-left"></i>
+        Back to Quotes
+      </a>
+      <a href="/client/index.html" class="text-indigo-600 font-semibold">Fundamental</a>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-6 py-6">
+    <h1 class="text-2xl font-bold text-gray-900 mb-4">Pay Final Payment</h1>
+    <p class="text-sm text-gray-500 mb-6">This page is exclusively for paying your remaining balance. Shipping address and delivery method are locked since they were already captured during downpayment.</p>
+
+    <div id="warn" class="hidden mb-4 p-3 rounded border border-yellow-300 bg-yellow-50 text-sm text-yellow-900"></div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Order Summary -->
+      <section class="bg-white border rounded-xl p-4">
+        <h2 class="text-sm font-semibold text-gray-900 mb-3">Order Summary</h2>
+        <div class="space-y-2 text-sm" id="summary">
+          <div class="flex justify-between"><span class="text-gray-600">Service:</span><span id="sum-service">—</span></div>
+          <div class="flex justify-between"><span class="text-gray-600">Garment:</span><span id="sum-garment">—</span></div>
+          <div class="flex justify-between"><span class="text-gray-600">Quantity:</span><span id="sum-qty">—</span></div>
+          <hr class="my-2">
+          <div class="flex justify-between"><span class="text-gray-600">Items Total:</span><span id="sum-items">₱0</span></div>
+          <div class="flex justify-between"><span class="text-gray-600">Delivery Fee (original):</span><span id="sum-delivery">₱0</span></div>
+          <div class="flex justify-between font-semibold"><span>Total:</span><span id="sum-total">₱0</span></div>
+          <div class="flex justify-between text-green-700"><span>Already Paid:</span><span id="sum-paid">₱0</span></div>
+          <div class="flex justify-between text-purple-700 font-bold text-lg"><span>Final Amount Due:</span><span id="sum-due">₱0</span></div>
+        </div>
+      </section>
+
+      <!-- Customer & Delivery (Locked) -->
+      <section class="bg-white border rounded-xl p-4">
+        <h2 class="text-sm font-semibold text-gray-900 mb-3">Delivery & Contact</h2>
+        <div class="space-y-2 text-sm">
+          <div><span class="text-gray-600">Delivery Method:</span> <span id="delivery-method" class="font-medium">—</span> <span class="ml-2 text-xs text-gray-500">(locked)</span></div>
+          <div>
+            <div class="text-gray-600">Shipping Address (locked):</div>
+            <div id="shipping-address" class="font-medium">—</div>
+          </div>
+          <div><span class="text-gray-600">Contact:</span> <span id="contact" class="font-medium">—</span></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="mt-6 flex items-center justify-between">
+      <div class="text-xs text-gray-500">By continuing, you agree this payment is for the remaining balance of your order.</div>
+      <button id="payBtn" class="px-5 py-3 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50">
+        <i class="fas fa-lock mr-2"></i>Proceed to Secure Payment
+      </button>
+    </div>
+  </main>
+
+  <script>
+    const warn = (msg)=>{ const el=document.getElementById('warn'); el.textContent = msg; el.classList.remove('hidden'); };
+
+    const peso = n => `₱${Number(n||0).toLocaleString()}`;
+
+    let checkoutData = null;
+
+    function loadCheckoutData(){
+      try {
+        const raw = localStorage.getItem('pendingServiceCheckout');
+        checkoutData = raw ? JSON.parse(raw) : null;
+      } catch(e){ checkoutData = null; }
+      if (!checkoutData){ warn('Missing checkout context. Please start from My Quotes > Pay Final Payment.'); document.getElementById('payBtn').disabled = true; }
+      return checkoutData;
+    }
+
+    function computeDue(){
+      // items total is basePrice (price set by admin). Delivery fee is original captured fee.
+      const items = Number(checkoutData?.basePrice || checkoutData?.totalPrice || 0);
+      const delivery = Number(checkoutData?.previousDeliveryFee || 0);
+      const total = items + delivery;
+      let alreadyPaid = Number(checkoutData?.alreadyPaidAmount || 0);
+      // If DB didn't store previous payment yet, infer 50%
+      if (alreadyPaid <= 0){ alreadyPaid = Math.round((total * 0.5) * 100)/100; }
+      // Remaining due
+      let due = Math.max(0, total - alreadyPaid);
+      // Guard against rounding
+      due = Math.round(due * 100)/100;
+      return { items, delivery, total, alreadyPaid, due };
+    }
+
+    function render(){
+      const d = checkoutData; if (!d) return;
+      const { items, delivery, total, alreadyPaid, due } = computeDue();
+      document.getElementById('sum-service').textContent = d.serviceName || 'Custom Service';
+      document.getElementById('sum-garment').textContent = (d.garmentType || 't-shirt') + ' • ' + (d.selectedLocation || 'Front');
+      document.getElementById('sum-qty').textContent = d.quantity || 1;
+      document.getElementById('sum-items').textContent = peso(items);
+      document.getElementById('sum-delivery').textContent = peso(delivery);
+      document.getElementById('sum-total').textContent = peso(total);
+      document.getElementById('sum-paid').textContent = peso(alreadyPaid);
+      document.getElementById('sum-due').textContent = peso(due);
+
+      // Delivery & contact (locked)
+      const addr = d.quotePayload?.shippingAddress || d.shippingAddress || {};
+      const full = [addr.street, addr.building, addr.city, addr.province, addr.zip].filter(Boolean).join(', ');
+      document.getElementById('delivery-method').textContent = (d.shippingMethod || 'Standard');
+      document.getElementById('shipping-address').textContent = full || 'N/A';
+      const ci = d.quotePayload?.customerInfo || d.customerInfo || {};
+      document.getElementById('contact').textContent = [ci.name, ci.email, ci.phone].filter(Boolean).join(' • ');
+    }
+
+    async function createPaymongoSession(){
+      const token = localStorage.getItem('token');
+      if (!token){ warn('You must be logged in to pay the final balance.'); return; }
+      const d = checkoutData; if (!d){ return; }
+      const { items, delivery, total, alreadyPaid, due } = computeDue();
+
+      const payload = {
+        orderId: d.orderId,
+        orderReference: d.orderReference,
+        serviceType: d.serviceType || 'customize-jersey',
+        amount: due,
+        baseAmount: total, // store full for reference
+        deliveryFee: delivery,
+        paymentOption: 'balance',
+        shippingMethod: d.shippingMethod || 'Standard',
+        shippingAddress: d.quotePayload?.shippingAddress || d.shippingAddress || null,
+        customerInfo: d.quotePayload?.customerInfo || d.customerInfo || {},
+        serviceData: {
+          serviceName: d.serviceName || 'Custom Service',
+          garmentType: d.garmentType || 't-shirt',
+          selectedLocation: d.selectedLocation || 'Front',
+          quantity: d.quantity || 1
+        }
+      };
+
+      const btn = document.getElementById('payBtn');
+      const original = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating session...'; btn.disabled = true;
+      try{
+        const res = await fetch('/api/payments/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (!json.success){ throw new Error(json.msg || 'Failed to create payment session'); }
+        // Redirect to PayMongo
+        window.location.href = json.data.checkoutUrl;
+      } catch(e){
+        console.error(e); warn(e.message || 'Unable to start payment.');
+        btn.innerHTML = original; btn.disabled = false;
+      }
+    }
+
+    // init
+    document.addEventListener('DOMContentLoaded', ()=>{
+      if (!loadCheckoutData()) return; render();
+      document.getElementById('payBtn').addEventListener('click', createPaymongoSession);
+    });
+  </script>
+</body>
+</html>

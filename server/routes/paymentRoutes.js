@@ -34,9 +34,9 @@ router.route('/webhook')
 router.route('/verify/:sessionId')
   .get(protect, verifyPaymentStatus);
 
-// Sync payment status with PayMongo and update DB (fallback if webhook delayed)
-router.route('/sync/:sessionId')
-  .get(protect, syncPaymentStatus);
+// Sync payment status with PayMongo and update DB (fallback if webhook delayed/localhost testing)
+router.route('/sync/:orderId')
+  .post(protect, syncPaymentStatus);
 
 // Admin payment details lookups
 router.route('/details/order/:orderId')

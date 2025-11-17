@@ -24,7 +24,12 @@ const CustomOrderSchema = new mongoose.Schema({
     // Item Type (Jersey, Jacket, etc.)
     itemType: {
         type: String,
-        enum: ['t-shirt', 'jersey', 'hoodie', 'jacket', 'shorts', 'other'],
+        enum: [
+            't-shirt', 'jersey', 'hoodie', 'polo', 'drifit', 'longsleeve', 'raglan',
+            'jacket', 'pullup-jacket', 'zipper-jacket', 
+            'shorts', 'drifit-short', 'jogging-pants',
+            'scrub-suit', 'fabric-banner', 'other'
+        ],
         default: 'jersey'
     },
     
@@ -113,10 +118,27 @@ const CustomOrderSchema = new mongoose.Schema({
     // garmentType: Type of garment being customized (t-shirt, jersey, hoodie)
     garmentType: {
         type: String,
-        enum: ['t-shirt', 'jersey', 'hoodie']
+        enum: [
+            't-shirt', 'jersey', 'hoodie', 'polo', 'drifit', 'longsleeve', 'raglan',
+            'pullup-jacket', 'zipper-jacket', 'drifit-short', 'jogging-pants',
+            'scrub-suit', 'fabric-banner',
+            // New actual product types
+            'vneck-tshirt', 'round-tshirt', 'classic-polo', 'drifit-polo',
+            '2tone-polo', '2tone-polo-ladies', 'drifit-vneck', 'hoodie-jacket'
+        ]
+    },
+    // fabricType: Type of fabric for the garment (Cotton, Dry Fit, Polyester)
+    fabricType: {
+        type: String,
+        enum: ['Cotton', 'Dry Fit', 'Polyester', 'Mixed', 'Polycotton'],
+        default: 'Cotton'
     },
     // selectedLocation: Placement location (Front, Back, Sleeves, etc.)
     selectedLocation: String,
+    // Selected garment color from dropdown
+    garmentColor: String,
+    // Custom color requested by customer (optional)
+    customColor: String,
     // colors: Hex color values for garment customization
     colors: {
         primary: String,
@@ -227,11 +249,21 @@ const CustomOrderSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
-    // PayMongo payment integration fields
-    paymentIntentId: {
+    // Payment integration fields
+    paymentIntentId: { 
+        type: String 
+    }, // PayMongo checkout session ID
+    receiptUrl: { 
+        type: String 
+    }, // For manual payment receipts (GCash/Bank Transfer)
+    paymentAmount: { 
+        type: Number 
+    }, // Actual amount paid (50% or 100%)
+    paymentType: {
         type: String,
+        enum: ['downpayment', 'full', 'remaining'],
         default: null
-    },
+    }, // Track if this was down payment or full payment
     paymentStatus: {
         type: String,
         enum: ['pending', 'paid', 'failed', 'refunded'],

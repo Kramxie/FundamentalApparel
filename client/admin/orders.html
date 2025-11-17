@@ -624,6 +624,23 @@
       </div>
   </div>
 
+  <!-- Payment Receipt Modal for Custom Orders -->
+  <div id="custom-payment-receipt-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 class="text-lg font-semibold flex items-center gap-2">
+          <i class="fas fa-receipt text-green-600"></i>View Receipt
+        </h3>
+        <button onclick="closeCustomPaymentModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div id="custom-payment-receipt-content" class="p-6">
+        <!-- Receipt content will be inserted here -->
+      </div>
+    </div>
+  </div>
+
   <!-- Payment Details Modal removed: payment info now shown directly in Order Details modal -->
   <script>
     const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev'; // O ang ngrok URL mo
@@ -1378,15 +1395,28 @@
           els.customModalPriceDisplay.textContent = `₱${order.price.toLocaleString()}`;
           els.customModalInfoText.textContent = "User has submitted a down payment receipt.";
 
-          // Ipakita ang DP receipt section
+          // Show DP receipt section
           els.customModalDpSection.classList.remove('hidden');
+          
+          // Check both old (downPaymentReceiptUrl) and new (receiptUrl/paymentIntentId) fields
           if (order.downPaymentReceiptUrl) {
+            // Old manual upload system
             els.customModalDpReceipt.innerHTML = `<a href="${order.downPaymentReceiptUrl}" target="_blank" class="text-indigo-600 font-medium hover:underline">Click to View Down Payment Receipt</a>`;
+          } else if (order.paymentIntentId || order.receiptUrl) {
+            // New PayMongo system - show View Receipt button
+            els.customModalDpReceipt.innerHTML = `
+              <button onclick="viewCustomOrderPayment('${order._id}')" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                <i class="fas fa-receipt"></i>View Receipt
+              </button>
+              <p class="text-xs text-gray-500 mt-2">
+                <i class="fas fa-check-circle text-green-600"></i> Payment: ${order.paymentMethod || 'N/A'} • Amount: ₱${(order.paymentAmount || 0).toLocaleString()}
+              </p>
+            `;
           } else {
             els.customModalDpReceipt.innerHTML = `<span class="text-red-500">User submitted, but receipt URL is missing.</span>`;
           }
 
-          // Ipakita ang "Verify" button
+          // Show "Verify" button
           els.customModalVerifyDp.classList.remove('hidden');
         }
 
@@ -1395,29 +1425,70 @@
           els.customModalPriceDisplay.textContent = `₱${order.price.toLocaleString()}`;
           els.customModalInfoText.textContent = "Order is currently in production.";
           els.customModalDpSection.classList.remove('hidden');
+          
+          // Check both old and new payment fields
           if (order.downPaymentReceiptUrl) {
+            // Old manual upload
             els.customModalDpReceipt.innerHTML = `<a href="${order.downPaymentReceiptUrl}" target="_blank" class="text-gray-500 hover:underline">View Verified DP Receipt</a>`;
+          } else if (order.paymentIntentId || order.receiptUrl) {
+            // New PayMongo system
+            els.customModalDpReceipt.innerHTML = `
+              <button onclick="viewCustomOrderPayment('${order._id}')" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                <i class="fas fa-receipt"></i>View Receipt
+              </button>
+              <p class="text-xs text-gray-500 mt-2">
+                <i class="fas fa-check-circle text-green-600"></i> Verified • Payment: ${order.paymentMethod || 'N/A'} • ₱${(order.paymentAmount || 0).toLocaleString()}
+              </p>
+            `;
           } else {
             els.customModalDpReceipt.innerHTML = `<span>DP Verified (No Receipt)</span>`;
           }
-          // Ipakita ang "Request Final Payment" button
-          els.customModalRequestFinal.classList.remove('hidden');
+          // Show "Request Final Payment" button ONLY if balance not yet paid (i.e., not 100% payment)
+          if (!order.balancePaid && order.paymentType !== 'full') {
+            els.customModalRequestFinal.classList.remove('hidden');
+          } else {
+            // 100% payment already received - show completion option instead
+            const completeInfo = document.createElement('div');
+            completeInfo.className = 'mt-3 p-3 bg-green-50 border border-green-200 rounded text-sm';
+            completeInfo.innerHTML = `
+              <p class="font-semibold text-green-800 mb-2"><i class="fas fa-check-circle"></i> Full Payment Received (100%)</p>
+              <p class="text-gray-700 text-xs">This order was paid in full. Ready to mark as completed and arrange fulfillment.</p>
+            `;
+            els.customModalDpSection.after(completeInfo);
+          }
         }
         else if (order.status === 'Pending Final Verification') {
               els.customModalInfoBox.classList.remove('hidden');
               els.customModalPriceDisplay.textContent = `₱${order.price.toLocaleString()}`;
-              els.customModalInfoText.textContent = "User has submitted final payment receipt.";
+              // Updated messaging for PayMongo final payment flow
+              els.customModalInfoText.textContent = "Final payment received via PayMongo. Awaiting admin verification.";
 
-              // Ipakita ang verified DP receipt
+              // Show Downpayment section (legacy/manual vs PayMongo)
               els.customModalDpSection.classList.remove('hidden');
-              els.customModalDpReceipt.innerHTML = `<a href="${order.downPaymentReceiptUrl}" target="_blank" class="text-gray-500 hover:underline">View Verified DP Receipt</a>`;
+              if (order.downPaymentReceiptUrl) {
+                els.customModalDpReceipt.innerHTML = `<a href="${order.downPaymentReceiptUrl}" target="_blank" class="text-gray-500 hover:underline">View Verified Downpayment Receipt</a>`;
+              } else {
+                // For PayMongo downpayment we may have no manual receipt; indicate verified status
+                els.customModalDpReceipt.innerHTML = `<span class="text-xs text-gray-500"><i class="fas fa-check-circle text-green-600"></i> Downpayment verified via PayMongo</span>`;
+              }
 
-              // Ipakita ang FINAL receipt section
+              // Final payment section
               els.customModalFpSection.classList.remove('hidden');
               if (order.finalPaymentReceiptUrl) {
-                  els.customModalFpReceipt.innerHTML = `<a href="${order.finalPaymentReceiptUrl}" target="_blank" class="text-indigo-600 font-medium hover:underline">Click to View Final Payment Receipt</a>`;
+                // Manual upload path (backward compat)
+                els.customModalFpReceipt.innerHTML = `<a href="${order.finalPaymentReceiptUrl}" target="_blank" class="text-indigo-600 font-medium hover:underline">Click to View Final Payment Receipt</a>`;
+              } else if (order.paymentIntentId || order.receiptUrl) {
+                // PayMongo final payment
+                els.customModalFpReceipt.innerHTML = `
+                  <button onclick="viewCustomOrderPayment('${order._id}')" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                    <i class="fas fa-receipt"></i>View Final Payment Receipt
+                  </button>
+                  <p class="text-xs text-gray-500 mt-2">
+                    <i class="fas fa-credit-card text-indigo-600"></i> Method: ${order.paymentMethod || 'N/A'} • Amount: ₱${(order.paymentAmount || 0).toLocaleString()}
+                  </p>
+                `;
               } else {
-                  els.customModalFpReceipt.innerHTML = `<span class="text-red-500">User submitted, but receipt URL is missing.</span>`;
+                els.customModalFpReceipt.innerHTML = `<span class="text-red-500 text-xs">No final payment receipt data found.</span>`;
               }
               
               // Ipakita ang "Verify Final" button
@@ -1794,6 +1865,157 @@
       // --- Initial load ---
       loadRegularOrders();
     });
+
+    // Custom Order Payment Receipt Viewer
+    async function viewCustomOrderPayment(orderId) {
+      try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`${API}/api/custom-orders/${orderId}`, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+        const json = await res.json();
+        
+        if (!json.success || !json.data) {
+          alert('Failed to load payment details');
+          return;
+        }
+        
+        const order = json.data;
+        const code = (order._id || '').toString().slice(-8).toUpperCase();
+        
+        // Calculate payment breakdown
+        const totalAmount = Number(order.price || 0);
+        const deliveryFee = Number(order.deliveryFee || 0);
+        const grandTotal = totalAmount + deliveryFee;
+        let paymentType = order.paymentType || order.paymentOption || 'downpayment'; // 'downpayment' or 'full'
+        // Use actual PayMongo payment amount when available; fallback to PayMongo details if DB missing
+        let amountPaid = Number(order.paymentAmount || 0);
+        if ((!amountPaid || amountPaid <= 0) && order.paymentIntentId) {
+          try {
+            const detRes = await fetch(`${API}/api/payments/details/custom/${order._id}`, {
+              headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
+            });
+            const detJson = await detRes.json();
+            if (detJson.success && detJson.data) {
+              amountPaid = Number(detJson.data.amount || amountPaid);
+              if (!order.paymentType) {
+                paymentType = Math.abs(amountPaid - grandTotal) < 1 ? 'full' : 'downpayment';
+              }
+            }
+          } catch (e) {
+            console.warn('Payment details fallback failed:', e);
+          }
+        }
+        const remainingBalance = Math.max(0, grandTotal - amountPaid);
+        
+        let receiptHtml = `
+          <div class="space-y-4">
+            <div class="text-center pb-4 border-b">
+              <div class="text-xs text-gray-500 mb-1">Reference Number</div>
+              <div class="font-mono font-bold text-lg">${code}</div>
+              <button onclick="copyToClipboard('${code}')" class="text-xs text-indigo-600 hover:underline mt-1">
+                <i class="fas fa-copy"></i> Copy
+              </button>
+            </div>
+            
+            <div>
+              <div class="text-xs text-gray-500 mb-1">Payment Type</div>
+              <div class="text-lg font-semibold text-indigo-600 mb-3">${paymentType === 'full' ? '100% Full Payment' : '50% Downpayment'}</div>
+              
+              <div class="text-xs text-gray-500 mb-1">Amount Paid</div>
+              <div class="text-3xl font-bold text-green-600">₱${amountPaid.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <div class="text-xs text-gray-500 mb-1">Payment</div>
+                <div class="font-medium">${new Date(order.updatedAt || order.createdAt).toLocaleDateString('en-US', {month: 'numeric', day: 'numeric', year: 'numeric'})}, ${new Date(order.updatedAt || order.createdAt).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: true})}</div>
+              </div>
+              <div>
+                <div class="text-xs text-gray-500 mb-1">Payment method</div>
+                <div class="font-medium capitalize">${order.paymentMethod || 'N/A'}</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between py-3 px-4 bg-green-50 rounded-lg">
+              <span class="text-sm font-medium text-gray-700">Payment received</span>
+              <i class="fas fa-check-circle text-2xl text-green-600"></i>
+            </div>
+            
+            <div class="border-t pt-3">
+              <div class="text-xs text-gray-500 mb-2">Payment for</div>
+              <div class="font-medium mb-1">${order.productName || 'Custom Order'} • Ref ${code}</div>
+              <div class="text-xs text-gray-500">Service: ${order.serviceType || 'customize-jersey'}</div>
+            </div>
+            
+            <div class="border-t pt-3">
+              <div class="flex justify-between text-sm mb-1">
+                <span class="text-gray-600">Item name</span>
+                <span class="text-gray-600">Qty</span>
+                <span class="text-gray-600">Price</span>
+              </div>
+              <div class="flex justify-between items-center py-2">
+                <span class="font-medium">${order.productName || 'Custom Order'}</span>
+                <span class="font-medium">${order.quantity || 1}</span>
+                <span class="font-medium">₱${totalAmount.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              </div>
+            </div>
+            
+            <div class="border-t pt-3 space-y-1 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Subtotal</span>
+                <span class="font-medium">₱${totalAmount.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Delivery Fee</span>
+                <span class="font-medium">₱${deliveryFee.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              </div>
+              <div class="flex justify-between font-bold text-base pt-2 border-t">
+                <span>Total Amount</span>
+                <span>₱${grandTotal.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              </div>
+              <div class="flex justify-between text-green-600 font-semibold">
+                <span>Amount Paid (${paymentType === 'full' ? '100%' : '50%'})</span>
+                <span>₱${amountPaid.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              </div>
+              ${remainingBalance > 0 ? `
+              <div class="flex justify-between text-orange-600 font-semibold">
+                <span>Remaining Balance</span>
+                <span>₱${remainingBalance.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              </div>
+              ` : ''}
+            </div>
+            
+            ${order.paymentIntentId ? `
+            <div class="text-xs text-gray-500 text-center pt-2 border-t">
+              <i class="fas fa-shield-alt"></i> Secured by PayMongo<br/>
+              Session ID: ${order.paymentIntentId.slice(0, 30)}...
+            </div>
+            ` : ''}
+          </div>
+        `;
+        
+        document.getElementById('custom-payment-receipt-content').innerHTML = receiptHtml;
+        document.getElementById('custom-payment-receipt-modal').classList.remove('hidden');
+        
+      } catch (error) {
+        console.error('Error loading payment receipt:', error);
+        alert('Failed to load payment details');
+      }
+    }
+    
+    function closeCustomPaymentModal() {
+      document.getElementById('custom-payment-receipt-modal').classList.add('hidden');
+    }
+    
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Reference number copied!');
+      });
+    }
   </script>
 </body>
 
