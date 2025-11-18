@@ -1,6 +1,6 @@
 # --- Server ---
 # Ignore all .env files in the server folder
-server/.env
+**/*.env
 
 # Ignore all log files
 *.log
