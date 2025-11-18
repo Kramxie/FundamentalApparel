@@ -20,7 +20,7 @@
 
   <main class="max-w-4xl mx-auto px-6 py-6">
     <h1 class="text-2xl font-bold text-gray-900 mb-4">Pay Final Payment</h1>
-    <p class="text-sm text-gray-500 mb-6">This page is exclusively for paying your remaining balance. Shipping address and delivery method are locked since they were already captured during downpayment.</p>
+    <p class="text-sm text-gray-500 mb-6">This page is for paying your remaining balance. Delivery method is locked, but you can update your shipping address below if needed.</p>
 
     <div id="warn" class="hidden mb-4 p-3 rounded border border-yellow-300 bg-yellow-50 text-sm text-yellow-900"></div>
 
@@ -41,15 +41,33 @@
         </div>
       </section>
 
-      <!-- Customer & Delivery (Locked) -->
+      <!-- Delivery & Contact -->
       <section class="bg-white border rounded-xl p-4">
         <h2 class="text-sm font-semibold text-gray-900 mb-3">Delivery & Contact</h2>
-        <div class="space-y-2 text-sm">
+        <div class="space-y-3 text-sm">
           <div><span class="text-gray-600">Delivery Method:</span> <span id="delivery-method" class="font-medium">—</span> <span class="ml-2 text-xs text-gray-500">(locked)</span></div>
-          <div>
-            <div class="text-gray-600">Shipping Address (locked):</div>
-            <div id="shipping-address" class="font-medium">—</div>
+
+          <!-- Address Form (shown for Standard delivery) -->
+          <div id="address-form" class="space-y-2">
+            <div class="text-gray-600">Shipping Address (editable):</div>
+            <div class="grid grid-cols-2 gap-2">
+              <input id="addr-block" type="text" placeholder="Block" class="px-3 py-2 border rounded" />
+              <input id="addr-lot" type="text" placeholder="Lot" class="px-3 py-2 border rounded" />
+              <input id="addr-street" type="text" placeholder="Street" class="px-3 py-2 border rounded col-span-2" />
+              <input id="addr-building" type="text" placeholder="Building / Subdivision" class="px-3 py-2 border rounded col-span-2" />
+              <input id="addr-city" type="text" placeholder="City/Municipality" class="px-3 py-2 border rounded" />
+              <input id="addr-province" type="text" placeholder="Province" class="px-3 py-2 border rounded" />
+              <input id="addr-zip" type="text" placeholder="ZIP" class="px-3 py-2 border rounded" />
+              <input id="addr-phone" type="text" placeholder="Phone" class="px-3 py-2 border rounded" />
+            </div>
+            <p class="text-xs text-gray-500">Tip: Leave fields unchanged to keep your previous address.</p>
           </div>
+
+          <!-- Placeholder when Pick-Up -->
+          <div id="pickup-note" class="hidden text-sm text-green-700 bg-green-50 rounded p-2">
+            Pickup is selected. No shipping address is required.
+          </div>
+
           <div><span class="text-gray-600">Contact:</span> <span id="contact" class="font-medium">—</span></div>
         </div>
       </section>
@@ -106,11 +124,31 @@
       document.getElementById('sum-paid').textContent = peso(alreadyPaid);
       document.getElementById('sum-due').textContent = peso(due);
 
-      // Delivery & contact (locked)
-      const addr = d.quotePayload?.shippingAddress || d.shippingAddress || {};
-      const full = [addr.street, addr.building, addr.city, addr.province, addr.zip].filter(Boolean).join(', ');
-      document.getElementById('delivery-method').textContent = (d.shippingMethod || 'Standard');
-      document.getElementById('shipping-address').textContent = full || 'N/A';
+      // Delivery & contact
+      const method = (d.shippingMethod || 'Standard');
+      document.getElementById('delivery-method').textContent = method;
+      const addressForm = document.getElementById('address-form');
+      const pickupNote = document.getElementById('pickup-note');
+      const isPickup = /pick/i.test(method);
+      if (isPickup){
+        addressForm.classList.add('hidden');
+        pickupNote.classList.remove('hidden');
+      } else {
+        addressForm.classList.remove('hidden');
+        pickupNote.classList.add('hidden');
+        const addr = d.quotePayload?.shippingAddress || d.shippingAddress || {};
+        const set = (id, v)=>{ const el = document.getElementById(id); if (el) el.value = v || ''; };
+        set('addr-block', addr.block);
+        set('addr-lot', addr.lot);
+        set('addr-street', addr.street);
+        set('addr-building', addr.building);
+        set('addr-city', addr.city);
+        set('addr-province', addr.province);
+        set('addr-zip', addr.zip);
+        // Prefer existing phone from address; fallback to customer info
+        const ciTmp = d.quotePayload?.customerInfo || d.customerInfo || {};
+        set('addr-phone', addr.phone || ciTmp.phone);
+      }
       const ci = d.quotePayload?.customerInfo || d.customerInfo || {};
       document.getElementById('contact').textContent = [ci.name, ci.email, ci.phone].filter(Boolean).join(' • ');
     }
@@ -121,6 +159,25 @@
       const d = checkoutData; if (!d){ return; }
       const { items, delivery, total, alreadyPaid, due } = computeDue();
 
+      // Collect shipping address only for delivery methods that require it
+      const method = d.shippingMethod || 'Standard';
+      let shippingAddress = null;
+      if (!/pick/i.test(method)){
+        const get = (id)=>{ const el = document.getElementById(id); return (el && el.value ? el.value.trim() : ''); };
+        shippingAddress = {
+          block: get('addr-block'),
+          lot: get('addr-lot'),
+          street: get('addr-street'),
+          building: get('addr-building'),
+          city: get('addr-city'),
+          province: get('addr-province'),
+          zip: get('addr-zip'),
+          phone: get('addr-phone')
+        };
+        const allEmpty = Object.values(shippingAddress).every(v=>!v);
+        if (allEmpty){ shippingAddress = d.quotePayload?.shippingAddress || d.shippingAddress || null; }
+      }
+
       const payload = {
         orderId: d.orderId,
         orderReference: d.orderReference,
@@ -130,7 +187,7 @@
         deliveryFee: delivery,
         paymentOption: 'balance',
         shippingMethod: d.shippingMethod || 'Standard',
-        shippingAddress: d.quotePayload?.shippingAddress || d.shippingAddress || null,
+        shippingAddress,
         customerInfo: d.quotePayload?.customerInfo || d.customerInfo || {},
         serviceData: {
           serviceName: d.serviceName || 'Custom Service',

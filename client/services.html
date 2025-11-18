@@ -119,7 +119,7 @@
                     <p class="text-lg text-gray-600">Select the service that best fits your needs</p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
                     <!-- Customize Jersey Card -->
                     <div onclick="selectServiceCategory('customize-jersey')" class="group cursor-pointer">
                         <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 h-full transform hover:scale-105">
@@ -139,27 +139,10 @@
                         </div>
                     </div>
 
-                    <!-- Layout Creation Card -->
-                    <div onclick="selectServiceCategory('layout-creation')" class="group cursor-pointer">
-                        <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 h-full transform hover:scale-105">
-                            <div class="text-center">
-                                <i class="fas fa-palette text-6xl text-purple-600 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
-                                <h3 class="text-2xl font-bold text-gray-900 mb-3">Pre-Made Apparel</h3>
-                                <p class="text-gray-600 mb-6">Select from professionally designed Pre-Made templates. Customize basic details and get your apparel design faster and hassle-free</p>
-                                <div class="space-y-2 text-sm text-gray-500 mb-6">
-                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Ready-Made Professional Designs</p>
-                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Easy Customization</p>
-                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Multiple Minor Revisions</p>
-                                </div>
-                                <button class="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition">
-                                    Get Started
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    
 
                     <!-- Printing Only Card -->
-                    <div onclick="selectServiceCategory('printing-only')" class="group cursor-pointer">
+                    <a href="printing-only.html" class="group cursor-pointer block">
                         <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 h-full transform hover:scale-105">
                             <div class="text-center">
                                 <i class="fas fa-print text-6xl text-pink-600 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
@@ -175,7 +158,7 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
 
@@ -542,68 +525,7 @@
                 </div>
             </div>
 
-            <!-- LAYOUT CREATION SECTION -->
-            <div id="layout-creation-section" class="service-section hidden">
-                <button onclick="goBackToCategories()" class="mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2">
-                    <i class="fas fa-arrow-left"></i>Back to Categories
-                </button>
-                <div class="bg-white rounded-2xl shadow-2xl p-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-3xl font-bold text-gray-900">Pre-Made Apparel Service</h2>
-                        <button onclick="openServiceLearnMore('layout')" class="px-6 py-2 bg-purple-100 text-purple-700 rounded-lg font-semibold hover:bg-purple-200 transition">
-                            <i class="fas fa-info-circle mr-2"></i>Learn More
-                        </button>
-                    </div>
-
-                    <form id="layout-form" class="max-w-2xl mx-auto space-y-6">
-                        <div class="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl">
-                            <i class="fas fa-palette text-4xl text-purple-500 mb-3"></i>
-                            <p class="text-gray-700">
-                                Select from professionally designed Pre-Made templates. Customize basic details and get your apparel design faster and hassle-free.
-                            </p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-3">Inspiration Image</label>
-                            <input type="file" id="inspiration-upload" accept="image/*" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-                            <div id="inspiration-preview" class="mt-3 hidden">
-                                <img src="" alt="Preview" class="max-h-64 rounded-lg shadow-lg mx-auto">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-2">Team Name</label>
-                            <input type="text" id="team-name" required 
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-3">Color Palette (2-5 colors)</label>
-                            <div class="grid grid-cols-5 gap-3">
-                                <input type="color" value="#3B82F6" class="w-full h-16 rounded-lg cursor-pointer">
-                                <input type="color" value="#8B5CF6" class="w-full h-16 rounded-lg cursor-pointer">
-                                <input type="color" value="#EC4899" class="w-full h-16 rounded-lg cursor-pointer">
-                                <input type="color" value="#F59E0B" class="w-full h-16 rounded-lg cursor-pointer">
-                                <input type="color" value="#10B981" class="w-full h-16 rounded-lg cursor-pointer">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-2">Design Requirements</label>
-                            <textarea rows="4" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg"
-                                placeholder="Describe your vision, style preferences, and any specific elements you want..."></textarea>
-                        </div>
-
-                        <button type="submit" 
-                            class="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-purple-600 hover:to-pink-700 transition-all shadow-lg">
-                            <i class="fas fa-paper-plane mr-2"></i>
-                            Submit Layout Request
-                        </button>
-                    </form>
-                </div>
-            </div>
+            
 
             <!-- PRINTING ONLY SECTION -->
             <div id="printing-only-section" class="service-section hidden">
@@ -779,85 +701,7 @@
                 </div>
             </div>
 
-            <!-- Layout Creation Modal -->
-            <div id="modal-layout" class="modal-content hidden bg-white rounded-2xl max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
-                <div class="sticky top-0 bg-gradient-to-r from-purple-500 to-pink-600 p-6 text-white flex justify-between items-center z-10">
-                    <h3 class="text-2xl font-bold">
-                        <i class="fas fa-palette mr-2"></i>Layout Creation Service
-                    </h3>
-                    <button onclick="closeServiceLearnMore()" class="text-white hover:text-gray-200 text-2xl">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="p-8">
-                    <div class="mb-6">
-                        <img src="https://via.placeholder.com/800x400?text=Layout+Creation+Examples" alt="Layout Examples" 
-                            class="w-full rounded-xl shadow-lg mb-4">
-                        <p class="text-gray-700 text-lg leading-relaxed">
-                            Let our professional design team create a unique, eye-catching layout tailored to your team's identity. Provide inspiration images and color preferences, and we'll handle the rest.
-                        </p>
-                    </div>
-
-                    <div class="bg-purple-50 p-6 rounded-xl mb-6">
-                        <h4 class="font-bold text-lg mb-4 text-purple-900">
-                            <i class="fas fa-list-ol mr-2"></i>How It Works
-                        </h4>
-                        <ol class="space-y-3 text-gray-700">
-                            <li class="flex items-start">
-                                <span class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">1</span>
-                                <span><strong>Upload Inspiration:</strong> Share images of designs you like or reference materials</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">2</span>
-                                <span><strong>Choose Colors:</strong> Select 2-5 colors for your team's palette</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">3</span>
-                                <span><strong>Provide Details:</strong> Tell us about your team name, preferences, and requirements</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">4</span>
-                                <span><strong>Design Phase:</strong> Our designers create multiple concepts (3-5 business days)</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">5</span>
-                                <span><strong>Revisions:</strong> Request changes until you're 100% satisfied</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">6</span>
-                                <span><strong>Finalization:</strong> Receive high-resolution files ready for printing</span>
-                            </li>
-                        </ol>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div class="bg-gray-50 p-5 rounded-xl">
-                            <h5 class="font-bold text-lg mb-3 text-gray-900">
-                                <i class="fas fa-clock text-purple-500 mr-2"></i>Timeline
-                            </h5>
-                            <p class="text-gray-700">Initial concepts: 3-5 business days<br>Total project: 7-14 days (with revisions)</p>
-                        </div>
-                        <div class="bg-gray-50 p-5 rounded-xl">
-                            <h5 class="font-bold text-lg mb-3 text-gray-900">
-                                <i class="fas fa-tag text-purple-500 mr-2"></i>Investment
-                            </h5>
-                            <p class="text-gray-700">Starting at ₱1,500<br>Includes 3 revision rounds</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-gradient-to-r from-purple-500 to-pink-600 text-white p-6 rounded-xl">
-                        <h5 class="font-bold text-lg mb-2">Service Includes:</h5>
-                        <ul class="grid grid-cols-2 gap-2 text-sm">
-                            <li><i class="fas fa-check mr-2"></i>Professional designer</li>
-                            <li><i class="fas fa-check mr-2"></i>3+ initial concepts</li>
-                            <li><i class="fas fa-check mr-2"></i>3 revision rounds</li>
-                            <li><i class="fas fa-check mr-2"></i>High-res files</li>
-                            <li><i class="fas fa-check mr-2"></i>Print-ready formats</li>
-                            <li><i class="fas fa-check mr-2"></i>Source files</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+            
 
             <!-- Printing Only Modal -->
             <div id="modal-printing" class="modal-content hidden bg-white rounded-2xl max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">

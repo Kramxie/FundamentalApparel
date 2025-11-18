@@ -831,6 +831,14 @@
                             ${item.supplier ? escapeHtml(item.supplier) : '-'}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            ${!item.isProduct && item.type === 'product' ? `
+                                <button 
+                                    onclick="openCatalogAddModal('${item._id}')" 
+                                    class="text-green-600 hover:text-green-800 mr-3"
+                                    title="Add Item in Customize Apparel" aria-label="Add to Catalog">
+                                    <i class="fas fa-plus-circle"></i>
+                                </button>
+                            ` : ''}
                             <button 
                                 onclick="openEditModal('${item._id}')" 
                                 class="text-indigo-600 hover:text-indigo-900 mr-3"
@@ -1250,6 +1258,25 @@
         // Make functions globally available
         window.openEditModal = openEditModal;
         window.openDeleteModal = openDeleteModal;
+        
+        // Quick action: open edit modal with Product sync pre-enabled
+        async function openCatalogAddModal(itemId) {
+            try {
+                await openEditModal(itemId);
+                const checkbox = document.getElementById('is-product-checkbox');
+                const productFields = document.getElementById('product-fields');
+                if (checkbox && productFields) {
+                    checkbox.checked = true;
+                    productFields.classList.remove('hidden');
+                }
+                // Hint: encourage filling required fields
+                showSuccess('Marking as sellable product. Please set Category and upload an image, then Save.');
+            } catch (e) {
+                console.error('Failed to open catalog add modal:', e);
+                showError('Could not open item for catalog setup');
+            }
+        }
+        window.openCatalogAddModal = openCatalogAddModal;
     </script>
 </body>
 </html>

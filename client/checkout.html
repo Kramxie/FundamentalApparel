@@ -167,6 +167,11 @@
         <section class="bg-white rounded-lg shadow p-6">
           <h2 class="text-xl font-semibold mb-4">Billing Summary</h2>
           <div class="space-y-3">
+            <div class="flex items-center gap-2 mb-2">
+              <input id="voucher-code" type="text" class="border rounded px-3 py-2 w-1/2" placeholder="Enter voucher code">
+              <button id="apply-voucher" class="bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-2 rounded">Apply</button>
+              <span id="voucher-message" class="text-sm ml-2"></span>
+            </div>
             <div class="flex justify-between text-gray-600">
               <span>Subtotal</span>
               <span>₱<span id="subtotal">0</span></span>
@@ -363,11 +368,59 @@
           placeOrderBtn.disabled = true;
         }
       }
+      let appliedVoucher = null;
       function updateTotals(subtotal) {
         subtotalEl.textContent = subtotal.toLocaleString();
-        deliveryFeeEl.textContent = Number(deliveryFeeEl.textContent.replace(/,/g, '') || 0).toLocaleString();
-        grandTotalEl.textContent = Number(subtotal + (Number(deliveryFeeEl.textContent.replace(/,/g, '') || 0))).toLocaleString();
+        let discount = 0;
+        if (appliedVoucher) {
+          if (appliedVoucher.type === 'percentage') {
+            discount = Math.floor(subtotal * (appliedVoucher.value / 100));
+          } else if (appliedVoucher.type === 'fixed') {
+            discount = Math.min(subtotal, appliedVoucher.value);
+          } else if (appliedVoucher.type === 'free_shipping') {
+            discount = 0;
+            deliveryFeeEl.textContent = '0';
+          }
+        }
+        document.getElementById('discount').textContent = discount.toLocaleString();
+        const deliveryFee = Number(deliveryFeeEl.textContent.replace(/,/g, '') || 0);
+        grandTotalEl.textContent = (subtotal - discount + deliveryFee).toLocaleString();
       }
+            // Voucher logic
+            const voucherInput = document.getElementById('voucher-code');
+            const applyVoucherBtn = document.getElementById('apply-voucher');
+            const voucherMsg = document.getElementById('voucher-message');
+            applyVoucherBtn.addEventListener('click', async () => {
+              const code = voucherInput.value.trim();
+              if (!code) {
+                voucherMsg.textContent = 'Enter a voucher code.';
+                voucherMsg.className = 'text-sm text-red-600 ml-2';
+                return;
+              }
+              voucherMsg.textContent = 'Checking...';
+              voucherMsg.className = 'text-sm text-gray-600 ml-2';
+              try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`${API_BASE}/api/vouchers/validate?code=${encodeURIComponent(code)}`, {
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const json = await res.json();
+                if (!res.ok || !json.success) throw new Error(json.msg || 'Invalid voucher');
+                appliedVoucher = json.data;
+                voucherMsg.textContent = `Voucher applied: ${appliedVoucher.description}`;
+                voucherMsg.className = 'text-sm text-green-600 ml-2';
+                // Recompute totals
+                const subtotal = Number(subtotalEl.textContent.replace(/,/g, ''));
+                updateTotals(subtotal);
+              } catch (err) {
+                appliedVoucher = null;
+                voucherMsg.textContent = err.message || 'Invalid voucher code.';
+                voucherMsg.className = 'text-sm text-red-600 ml-2';
+                document.getElementById('discount').textContent = '0';
+                const subtotal = Number(subtotalEl.textContent.replace(/,/g, ''));
+                updateTotals(subtotal);
+              }
+            });
       async function submitOrder() {
         placeOrderBtn.disabled = true;
         const originalBtnHtml = placeOrderBtn.innerHTML;
@@ -405,7 +458,8 @@
         const paymentMethod = document.getElementById('pay-card')?.checked ? 'card' : 'gcash';
         const deliveryFee = Number(document.getElementById('delivery-fee')?.textContent.replace(/,/g, '') || 0);
         const subtotal = Number(subtotalEl.textContent.replace(/,/g, '') || 0);
-        const totalAmount = subtotal + deliveryFee;
+        const discount = Number(document.getElementById('discount')?.textContent.replace(/,/g, '') || 0);
+        const totalAmount = subtotal - discount + deliveryFee;
         const comment = orderComment.value || '';
         
         try {
@@ -420,8 +474,9 @@
             shippingAddressForm.zip
           ].filter(Boolean).join(', ');
 
+
           // Prepare PayMongo checkout payload
-            const payload = {
+          const payload = {
             orderType: 'product',
             amount: totalAmount,
             items: cartItems,
@@ -445,7 +500,9 @@
             successUrl: `${window.location.origin}/client/payment-success.html`,
             cancelUrl: `${window.location.origin}/client/payment-cancel.html`
           };
-          
+          if (appliedVoucher && appliedVoucher.code) {
+            payload.voucherCode = appliedVoucher.code;
+          }
           if (itemIdsToCheckout) {
             payload.itemIds = itemIdsToCheckout;
           }

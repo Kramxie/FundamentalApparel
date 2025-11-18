@@ -1,6 +1,12 @@
 const CustomOrder = require('../models/CustomOrder');
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
+const Product = require('../models/Product');
+const Inventory = require('../models/Inventory');
+const User = require('../models/User');
+const WebhookEvent = require('../models/WebhookEvent');
+const crypto = require('crypto');
+const mongoose = require('mongoose');
 
 // PayMongo API configuration
 // Use environment variables for production
@@ -72,12 +78,17 @@ exports.createPaymentSession = async (req, res) => {
       : (paymentOption === 'balance' ? 'Remaining Balance' : '100% Full Payment');
 
     // Prepare line items for PayMongo
+    // IMPORTANT: Our `amount` already represents the total charge for the whole order
+    // (including downpayment/balance logic and delivery if applicable).
+    // PayMongo expects `amount` to be per-item when `quantity > 1`.
+    // To avoid unintended multiplication, we force quantity to 1 and include
+    // the actual order quantity in the item name for clarity.
     const lineItems = [{
       currency: 'PHP',
       amount: amountInCents,
       name: `${serviceData?.serviceName || 'Custom Jersey Service'} - ${paymentDesc}`,
-      quantity: serviceData?.quantity || 1,
-      description: `${serviceType || 'customize-jersey'} - Ref: ${orderReference || 'PENDING'} - ${shippingMethod || 'Standard'} Delivery`
+      quantity: 1,
+      description: `Total charge for custom service — ${serviceType || 'customize-jersey'} — Ref: ${orderReference || 'PENDING'} — ${shippingMethod || 'Standard'} Delivery`
     }];
 
     // Create or update CustomOrder
@@ -194,6 +205,8 @@ exports.createPaymentSession = async (req, res) => {
     order.paymentIntentId = paymongoData.data.id;
     await order.save();
 
+    // NOTE: Voucher consumption is handled after payment confirmation (webhook)
+
     // Return checkout URL to client
     res.status(201).json({
       success: true,
@@ -221,55 +234,80 @@ exports.createPaymentSession = async (req, res) => {
  * @route   POST /api/payments/create-order
  * @access  Private
  */
+
+// --- PATCH: Add voucher support ---
 exports.createOrderPaymentSession = async (req, res) => {
   try {
     const userId = req.user._id;
-    const {
+    let {
       items,
       shippingAddress,
       amount,
       paymentMethod,
       shippingMethod,
       deliveryFee = 0,
-      comment
+      comment,
+      voucherCode
     } = req.body;
 
     console.log('[PayMongo] Creating checkout session for product order, user:', userId);
 
+
     // Validation
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        msg: 'Order items are required'
-      });
+      return res.status(400).json({ success: false, msg: 'Order items are required' });
     }
-
     if (!amount || amount <= 0) {
-      return res.status(400).json({
-        success: false,
-        msg: 'Invalid payment amount'
-      });
+      return res.status(400).json({ success: false, msg: 'Invalid payment amount' });
     }
-
     if (!shippingAddress || !shippingAddress.fullName || !shippingAddress.address) {
-      return res.status(400).json({
-        success: false,
-        msg: 'Shipping address is required'
-      });
+      return res.status(400).json({ success: false, msg: 'Shipping address is required' });
+    }
+    if (!paymentMethod || !['gcash', 'card'].includes(paymentMethod)) {
+      return res.status(400).json({ success: false, msg: 'Payment method must be either gcash or card' });
     }
 
-    // Validate payment method
-    if (!paymentMethod || !['gcash', 'card'].includes(paymentMethod)) {
-      return res.status(400).json({
-        success: false,
-        msg: 'Payment method must be either gcash or card'
-      });
+
+    // --- Voucher logic ---
+    let appliedVoucher = null;
+    let discount = 0;
+    if (voucherCode && typeof voucherCode === 'string' && voucherCode.trim()) {
+      const user = await require('../models/User').findById(userId);
+      if (user) {
+        const v = user.vouchers.find(v => v.code.toLowerCase() === voucherCode.trim().toLowerCase());
+        if (v) {
+          appliedVoucher = v;
+          const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0);
+          if (v.type === 'percentage') {
+            discount = Math.floor(subtotal * (v.value / 100));
+          } else if (v.type === 'fixed') {
+            discount = Math.min(subtotal, v.value);
+          } else if (v.type === 'free_shipping') {
+            discount = 0;
+            deliveryFee = 0;
+          }
+        }
+      }
     }
+    // Compute subtotal and delivery fee number
+    const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0);
+    const deliveryFeeNumber = Number(deliveryFee) || 0;
+
+    // Cap discount so total is never less than 1 (₱1)
+    let maxDiscount = subtotal + deliveryFeeNumber - 1; // keep at least ₱1
+    if (discount > maxDiscount) {
+      discount = maxDiscount;
+    }
+
+    // Authoritative server-side amount: subtotal + delivery - discount
+    amount = Math.max(1, subtotal + deliveryFeeNumber - discount);
 
     // Convert amount to centavos (PayMongo expects integer in cents)
     const amountInCents = Math.round(amount * 100);
 
-    // Prepare line items for PayMongo
+
+
+    // Prepare line items for PayMongo (NO negative discount line item)
     const lineItems = items.map(item => ({
       currency: 'PHP',
       amount: Math.round((item.price || 0) * (item.quantity || 1) * 100),
@@ -277,9 +315,7 @@ exports.createOrderPaymentSession = async (req, res) => {
       quantity: item.quantity || 1,
       description: `Product ID: ${item.productId || 'N/A'}`
     }));
-
     // Append delivery fee as a separate line item if any
-    const deliveryFeeNumber = Number(deliveryFee) || 0;
     if (deliveryFeeNumber > 0) {
       lineItems.push({
         currency: 'PHP',
@@ -292,6 +328,7 @@ exports.createOrderPaymentSession = async (req, res) => {
 
     // Normalize payment method to match Order schema enum
     const normalizedPaymentMethod = paymentMethod === 'gcash' ? 'GCash' : paymentMethod;
+
 
     // Create new Order
     const order = new Order({
@@ -316,26 +353,45 @@ exports.createOrderPaymentSession = async (req, res) => {
       comment: comment || '',
       paymentMethod: normalizedPaymentMethod,
       paymentStatus: 'Pending',
-      status: 'Processing'
+      status: 'Processing',
+      voucher: appliedVoucher ? {
+        code: appliedVoucher.code,
+        type: appliedVoucher.type,
+        value: appliedVoucher.value,
+        description: appliedVoucher.description
+      } : undefined,
+      discount: discount > 0 ? discount : undefined
     });
 
     await order.save();
 
     // Build success and cancel URLs with order reference
     const orderRef = order._id.toString().slice(-8).toUpperCase();
-    const finalSuccessUrl = `${BASE_URL}/client/payment-success.html?ref=${orderRef}&type=order`;
-    const finalCancelUrl = `${BASE_URL}/client/payment-cancel.html?ref=${orderRef}&type=order`;
+    // Include full orderId and session placeholder (will be replaced after session creation)
+    const pendingSuccessParams = `ref=${orderRef}&type=order&oid=${order._id}`;
+    const finalSuccessUrl = `${BASE_URL}/client/payment-success.html?${pendingSuccessParams}`;
+    const finalCancelUrl = `${BASE_URL}/client/payment-cancel.html?${pendingSuccessParams}`;
 
     // Determine payment method types based on selection
     const paymentMethodTypes = paymentMethod === 'card' 
       ? ['card'] 
       : ['gcash'];
 
+    // For PayMongo display, use a single summary line item equal to the final payable amount.
+    // Sending individual product line items would sum to the pre-discount subtotal and not reflect the applied voucher.
+    const summaryLineItems = [{
+      currency: 'PHP',
+      amount: amountInCents,
+      name: `Order #${orderRef}`,
+      quantity: 1,
+      description: `Final charge for order ${orderRef}`
+    }];
+
     // PayMongo Checkout Session payload
     const checkoutPayload = {
       data: {
         attributes: {
-          line_items: lineItems,
+          line_items: summaryLineItems,
           payment_method_types: paymentMethodTypes,
           description: `Order #${orderRef}`,
           success_url: finalSuccessUrl,
@@ -382,6 +438,10 @@ exports.createOrderPaymentSession = async (req, res) => {
     // Store payment intent ID in order
     order.paymentIntentId = paymongoData.data.id;
     await order.save();
+
+    // Append session id to success URL for more reliable lookup (optional)
+    const successUrlWithSession = `${finalSuccessUrl}&sid=${paymongoData.data.id}`;
+    const cancelUrlWithSession = `${finalCancelUrl}&sid=${paymongoData.data.id}`;
 
     // Return checkout URL to client
     res.status(201).json({
@@ -458,8 +518,9 @@ exports.createExistingOrderPaymentSession = async (req, res) => {
     }
 
     const orderRef = order._id.toString().slice(-8).toUpperCase();
-    const finalSuccessUrl = `${BASE_URL}/client/payment-success.html?ref=${orderRef}&type=order`;
-    const finalCancelUrl = `${BASE_URL}/client/payment-cancel.html?ref=${orderRef}&type=order`;
+    const pendingParams = `ref=${orderRef}&type=order&oid=${order._id}`;
+    const finalSuccessUrl = `${BASE_URL}/client/payment-success.html?${pendingParams}`;
+    const finalCancelUrl = `${BASE_URL}/client/payment-cancel.html?${pendingParams}`;
 
     const pm = (order.paymentMethod || '').toString().toLowerCase();
     const paymentMethodTypes = pm === 'card' ? ['card'] : ['gcash'];
@@ -504,6 +565,9 @@ exports.createExistingOrderPaymentSession = async (req, res) => {
     order.paymentStatus = 'Pending';
     await order.save();
 
+    const successUrlWithSession = `${finalSuccessUrl}&sid=${paymongoData.data.id}`;
+    const cancelUrlWithSession = `${finalCancelUrl}&sid=${paymongoData.data.id}`;
+
     return res.status(201).json({
       success: true,
       msg: 'Payment session created successfully',
@@ -527,34 +591,129 @@ exports.createExistingOrderPaymentSession = async (req, res) => {
  */
 exports.handlePaymongoWebhook = async (req, res) => {
   try {
-    const event = req.body;
-    
-    console.log('[PayMongo] Webhook received:', event.data?.type);
+    // raw body is available at req.rawBody (set by route middleware)
+    const rawBody = req.rawBody || req.body;
+    let rawString = rawBody;
+    if (Buffer.isBuffer(rawBody)) rawString = rawBody.toString('utf8');
 
-    // Verify webhook signature (recommended for production)
-    // Implementation depends on PayMongo's webhook signature verification
-
-    switch (event.data?.type) {
-      case 'checkout_session.payment.paid':
-        await handlePaymentSuccess(event.data);
-        break;
-      
-      case 'checkout_session.payment.failed':
-        await handlePaymentFailure(event.data);
-        break;
-
-      default:
-        console.log('[PayMongo] Unhandled webhook type:', event.data?.type);
+    // Try parse JSON safely
+    let event = null;
+    try {
+      event = typeof rawString === 'string' ? JSON.parse(rawString) : rawString;
+    } catch (parseErr) {
+      console.error('[PayMongo] Failed to parse webhook JSON:', parseErr.message);
+      // Persist unverified event
+      await WebhookEvent.create({ raw: rawString, verified: false, eventType: 'parse_error' });
+      return res.status(400).send('Invalid payload');
     }
 
-    res.status(200).json({ received: true });
+    const eventType = event.data?.type || event.type || 'unknown';
+    const externalId = event.data?.id || event.id || null;
+
+    console.log('[PayMongo] Webhook received:', eventType, 'id:', externalId);
+
+    // Signature verification
+    const webhookSecret = process.env.PAYMONGO_WEBHOOK_SECRET;
+    const sigHeaderName = (process.env.PAYMONGO_SIGNATURE_HEADER || 'paymongo-signature').toLowerCase();
+    const headerSig = req.headers[sigHeaderName] || req.headers[sigHeaderName.toLowerCase()] || req.headers['paymongo-signature'] || req.headers['x-paymongo-signature'];
+
+    console.log('[PayMongo] Webhook debug - Secret present:', !!webhookSecret, 'Header present:', !!headerSig);
+    console.log('[PayMongo] Webhook debug - Header name:', sigHeaderName, 'Header value length:', headerSig ? headerSig.length : 0);
+
+    let verified = false;
+    if (!webhookSecret) {
+      console.warn('[PayMongo] PAYMONGO_WEBHOOK_SECRET not set; skipping signature verification (not recommended)');
+    } else if (!headerSig) {
+      console.warn('[PayMongo] No signature header present on webhook');
+    } else {
+      try {
+        // Prefer the raw Buffer captured by the body parser (`server.js` verify)
+        // Falls back to other representations only as last resort.
+        let rawBuffer;
+        if (req.rawBody && Buffer.isBuffer(req.rawBody)) {
+          rawBuffer = req.rawBody;
+        } else if (Buffer.isBuffer(rawString)) {
+          rawBuffer = rawString;
+        } else if (typeof rawString === 'string') {
+          rawBuffer = Buffer.from(rawString, 'utf8');
+        } else {
+          // Last resort: stringify the parsed event. Note: this may not match the
+          // provider's original byte ordering and could cause a verification mismatch.
+          rawBuffer = Buffer.from(JSON.stringify(event), 'utf8');
+        }
+
+        console.log('[PayMongo] Webhook debug - Raw buffer length:', rawBuffer.length);
+
+        const expected = crypto.createHmac('sha256', webhookSecret).update(rawBuffer).digest('hex');
+        const a = Buffer.from(expected, 'utf8');
+        const b = Buffer.from(String(headerSig), 'utf8');
+
+        console.log('[PayMongo] Webhook debug - Expected HMAC (first 8):', expected.substring(0, 8), '...');
+        console.log('[PayMongo] Webhook debug - Received HMAC (first 8):', String(headerSig).substring(0, 8), '...');
+
+        if (a.length === b.length && crypto.timingSafeEqual(a, b)) verified = true;
+      } catch (sigErr) {
+        console.error('[PayMongo] Signature verification error:', sigErr && sigErr.message ? sigErr.message : sigErr);
+      }
+    }
+
+    // Persist webhook event for audit
+    const webhookDoc = await WebhookEvent.create({
+      provider: 'paymongo',
+      externalId,
+      eventType,
+      raw: event,
+      verified: Boolean(verified)
+    });
+
+    if (!verified) {
+      console.warn('[PayMongo] Webhook signature NOT verified for event id:', externalId);
+      // Record failed verification and respond 200 to avoid retries (configurable policy)
+      // The webhook event is already persisted with verified=false
+      return res.status(200).json({ success: false, msg: 'Signature verification failed - event recorded' });
+    }
+
+    // Idempotency: if we already processed this external event, ack
+    if (externalId) {
+      const existing = await WebhookEvent.findOne({ externalId, processed: true });
+      if (existing) {
+        console.log('[PayMongo] Event already processed, skipping. externalId:', externalId);
+        return res.status(200).json({ received: true, skipped: true });
+      }
+    }
+
+    // Route event types
+    try {
+      switch (eventType) {
+        case 'checkout_session.payment.paid':
+          console.log('[PayMongo] Processing checkout_session.payment.paid event');
+          await handlePaymentSuccess(event.data);
+          console.log('[PayMongo] handlePaymentSuccess completed');
+          break;
+        case 'checkout_session.payment.failed':
+          await handlePaymentFailure(event.data);
+          break;
+        default:
+          console.log('[PayMongo] Unhandled webhook type:', eventType);
+      }
+
+      // mark as processed
+      webhookDoc.processed = true;
+      webhookDoc.processedAt = new Date();
+      webhookDoc.result = { processedBy: 'handlePaymongoWebhook', processedAt: new Date() };
+      await webhookDoc.save();
+
+      return res.status(200).json({ received: true });
+    } catch (handlerErr) {
+      console.error('[PayMongo] Error handling webhook event:', handlerErr);
+      webhookDoc.result = { error: handlerErr.message };
+      await webhookDoc.save();
+      return res.status(500).json({ success: false, error: handlerErr.message });
+    }
 
   } catch (error) {
-    console.error('[PayMongo] Webhook error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    console.error('[PayMongo] Webhook top-level error:', error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -584,25 +743,100 @@ async function handlePaymentSuccess(eventData) {
       console.error('[PayMongo] Order not found for session:', sessionId, 'Reference:', referenceNumber);
       return;
     }
-    
-    console.log('[PayMongo] Found order:', order._id, 'Current status:', order.status);
+
+    console.log('[PayMongo] Found order:', order._id, 'Type:', isProductOrder ? 'Product' : 'Custom', 'Current status:', order.status, 'Current paymentStatus:', order.paymentStatus);
 
     // Update order status based on type
     if (isProductOrder) {
-      order.paymentStatus = 'Received';
-      order.status = 'Processing'; // Move to processing
-      order.isPaid = true;
-      order.paidAt = new Date();
-      // Clear user's cart after successful payment
+      // Try to perform order update, stock deduction, voucher marking and cart clearing in a transaction
+      let session = null;
       try {
-        await Cart.findOneAndUpdate(
-          { user: order.user },
-          { $set: { items: [] } },
-          { new: true }
-        );
-      } catch (e) {
-        console.error('[PayMongo] Failed to clear cart after payment:', e.message);
+        session = await mongoose.startSession();
+        await session.withTransaction(async () => {
+          // Reload order inside session
+          const orderInSession = await Order.findById(order._id).session(session);
+          if (!orderInSession) throw new Error('Order not found in transaction');
+
+          orderInSession.paymentStatus = 'Received';
+          orderInSession.status = 'Accepted';
+          orderInSession.isPaid = true;
+          orderInSession.paidAt = new Date();
+
+          // Deduct stock for each item
+          for (const item of orderInSession.orderItems) {
+            if (!item.product) continue;
+            const product = await Product.findById(item.product).session(session);
+            if (!product) continue;
+            const newStock = Math.max(0, product.countInStock - item.quantity);
+            product.countInStock = newStock;
+            await product.save({ session });
+            console.log(`[Stock] Deducted ${item.quantity} from Product ${product.name}. New stock: ${newStock}`);
+
+            const inventoryItem = await Inventory.findOne({ productId: product._id }).session(session);
+            if (inventoryItem) {
+              inventoryItem.quantity = newStock;
+              await inventoryItem.save({ session });
+              console.log(`[Stock] Synced Inventory for ${product.name}. New quantity: ${newStock}`);
+            }
+          }
+
+          // Clear cart
+          await Cart.findOneAndUpdate({ user: orderInSession.user }, { $set: { items: [] } }, { session });
+
+          // Mark voucher as used if present
+          if (orderInSession.voucher && orderInSession.voucher.code) {
+            await User.updateOne(
+              { _id: orderInSession.user, 'vouchers.code': orderInSession.voucher.code },
+              { $set: { 'vouchers.$.used': true, 'vouchers.$.usedAt': new Date(), 'vouchers.$.usedByOrder': orderInSession._id.toString() } },
+              { session }
+            );
+            console.log(`[Voucher] Marked voucher ${orderInSession.voucher.code} as used for user ${orderInSession.user}`);
+          }
+
+          // Save order changes
+          await orderInSession.save({ session });
+        });
+        console.log('[PayMongo] Transaction completed successfully for order:', order._id);
+      } catch (txErr) {
+        console.warn('[PayMongo] Transactional update failed, falling back to non-transactional updates:', txErr.message);
+        // Fallback to non-transactional behavior
+        try {
+          order.paymentStatus = 'Received';
+          order.status = 'Accepted';
+          order.isPaid = true;
+          order.paidAt = new Date();
+
+          for (const item of order.orderItems) {
+            if (!item.product) continue;
+            const product = await Product.findById(item.product);
+            if (product) {
+              const newStock = Math.max(0, product.countInStock - item.quantity);
+              product.countInStock = newStock;
+              await product.save();
+              const inventoryItem = await Inventory.findOne({ productId: product._id });
+              if (inventoryItem) {
+                inventoryItem.quantity = newStock;
+                await inventoryItem.save();
+              }
+            }
+          }
+
+          await Cart.findOneAndUpdate({ user: order.user }, { $set: { items: [] } }, { new: true });
+
+          if (order.voucher && order.voucher.code) {
+            await User.updateOne(
+              { _id: order.user, 'vouchers.code': order.voucher.code },
+              { $set: { 'vouchers.$.used': true, 'vouchers.$.usedAt': new Date(), 'vouchers.$.usedByOrder': order._id.toString() } }
+            );
+            console.log(`[Voucher] Marked voucher ${order.voucher.code} as used for user ${order.user}`);
+          }
+        } catch (fallbackErr) {
+          console.error('[PayMongo] Fallback update failed:', fallbackErr);
+        }
+      } finally {
+        if (session) session.endSession();
       }
+      console.log('[PayMongo] Order updated successfully:', order._id, 'New status:', order.status, 'New paymentStatus:', order.paymentStatus);
     } else {
       // Service order - check payment option
         order.paymentStatus = 'paid';
@@ -831,7 +1065,7 @@ exports.syncPaymentStatus = async (req, res) => {
     if (orderType === 'product') {
       if (piStatus === 'succeeded' && order.paymentStatus !== 'Received') {
         order.paymentStatus = 'Received';
-        order.status = 'Processing';
+        order.status = 'Accepted';
         order.isPaid = true;
         order.paidAt = new Date();
         await order.save();
@@ -1077,5 +1311,36 @@ exports.getCustomOrderPaymentDetails = async (req, res) => {
   } catch (error) {
     console.error('[PayMongo] Get custom order payment details error:', error);
     return res.status(500).json({ success: false, msg: 'Failed to get payment details', error: error.message });
+  }
+};
+
+/**
+ * Admin: List recent webhook events (audit)
+ * @route   GET /api/payments/webhooks/recent
+ * @access  Private/Admin
+ */
+exports.getRecentWebhooks = async (req, res) => {
+  try {
+    const limitParam = Math.min(200, Math.max(1, Number(req.query.limit) || 50));
+    const filter = {};
+    if (typeof req.query.verified !== 'undefined') {
+      const v = String(req.query.verified).toLowerCase();
+      filter.verified = (v === 'true' || v === '1');
+    }
+    if (typeof req.query.processed !== 'undefined') {
+      const p = String(req.query.processed).toLowerCase();
+      filter.processed = (p === 'true' || p === '1');
+    }
+
+    const docs = await WebhookEvent.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(limitParam)
+      .lean()
+      .exec();
+
+    return res.status(200).json({ success: true, count: docs.length, data: docs });
+  } catch (error) {
+    console.error('[PayMongo] Get recent webhooks error:', error);
+    return res.status(500).json({ success: false, msg: 'Failed to fetch webhooks', error: error.message });
   }
 };

@@ -116,6 +116,23 @@
       }
     }
 
+    // Build a displayable delivery address using deliveryAddress or structured shippingAddress
+    function getDisplayAddress(order){
+      if (order && order.deliveryAddress && order.deliveryAddress.trim()) return order.deliveryAddress;
+      const addr = order && (order.shippingAddress || (order.quotePayload && order.quotePayload.shippingAddress));
+      if (!addr) return 'Your address';
+      const parts = [];
+      if (addr.block) parts.push(`Block ${addr.block}`);
+      if (addr.lot) parts.push(`Lot ${addr.lot}`);
+      if (addr.street) parts.push(addr.street);
+      if (addr.building) parts.push(addr.building);
+      if (addr.city) parts.push(addr.city);
+      if (addr.province) parts.push(addr.province);
+      if (addr.zip) parts.push(addr.zip);
+      if (addr.phone) parts.push(`Tel: ${addr.phone}`);
+      return parts.length ? parts.join(', ') : 'Your address';
+    }
+
     async function fetchMine(){
       const token = localStorage.getItem('token');
       if (!token){ window.location.href = '/client/login.html'; return; }
@@ -386,7 +403,7 @@
                 <i class="fas fa-truck text-green-600"></i>
                 <strong>Delivery Address:</strong>
               </div>
-              <p class="text-gray-700 ml-6">${order.deliveryAddress || 'Your address'}</p>
+              <p class="text-gray-700 ml-6">${getDisplayAddress(order)}</p>
               ${order.trackingNumber ? `
                 <div class="mt-2 ml-6">
                   <span class="text-xs text-gray-600">Tracking: <strong>${order.trackingNumber}</strong></span>
@@ -426,7 +443,7 @@
               <i class="fas fa-map-marker-alt text-blue-600 mt-1"></i>
               <div class="flex-1">
                 <p class="text-xs text-gray-600">Delivery Address:</p>
-                <p class="text-gray-900 font-medium">${order.deliveryAddress || 'Your address'}</p>
+                <p class="text-gray-900 font-medium">${getDisplayAddress(order)}</p>
               </div>
             </div>
             ${order.courier ? `
@@ -760,12 +777,35 @@
       }
     }
 
-    function openDetailsModal(order) {
+    async function openDetailsModal(order) {
       const modal = document.getElementById('detailsModal');
       const content = document.getElementById('modalContent');
       
       const orderRef = order._id.toString().slice(-8).toUpperCase();
       const statusBadge = `<span class="px-3 py-1 rounded-full text-sm font-medium ${badgeClass(order.status)}">${order.status}</span>`;
+      const serviceType = order.serviceType || 'customize-jersey';
+      const serviceLabel = serviceType === 'printing-only' ? 'Printing Only' : (serviceType === 'layout-creation' ? 'Layout Creation' : 'Customize Apparel');
+      const methodMap = { 'dye-sublimation': 'Dye-Sublimation', 'heat-transfer': 'Heat Transfer', 'vinyl-print': 'Vinyl Print' };
+      const printingMethod = methodMap[order.printingMethod] || order.printingMethod || '';
+
+      // Prepare team entries (from saved array or uploaded .txt/.csv)
+      let parsedTeam = Array.isArray(order.teamMembers) ? order.teamMembers : [];
+      if ((!parsedTeam || parsedTeam.length === 0) && order.teamNamesFileUrl) {
+        try {
+          const res = await fetch(order.teamNamesFileUrl, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+          const text = await res.text();
+          parsedTeam = text.split(/\r?\n/).filter(Boolean).map(ln => {
+            const parts = ln.split(/[,|\t]/);
+            return { name: (parts[0]||'').trim(), jerseyNumber: (parts[1]||'').trim(), size: (parts[2]||'').trim() };
+          });
+        } catch (e) { /* ignore */ }
+      }
+
+      const hasTeam = !!(order.includeTeamMembers && parsedTeam && parsedTeam.length);
+      const maxTeamVisible = 12;
+      const teamRowsHtml = (parsedTeam||[]).map(m => `<tr><td class="border px-2 py-1">${(m.name||'')}</td><td class="border px-2 py-1">${(m.jerseyNumber||m.number||'')}</td><td class="border px-2 py-1">${(m.size||'')}</td></tr>`).join('');
+      const teamBodyId = `team-tbody-${order._id}`;
+      const teamToggleId = `team-toggle-${order._id}`;
       
       let html = `
         <div class="space-y-6">
@@ -801,6 +841,18 @@
             </div>
           </div>
 
+          <!-- Service Details -->
+          <div class="bg-white rounded-lg p-4 border">
+            <h4 class="font-semibold text-gray-900 mb-3">Service Details</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div><span class="text-gray-500">Services:</span> <span class="font-medium">${serviceLabel}</span></div>
+              ${printingMethod ? `<div><span class="text-gray-500">Print Type:</span> <span class="font-medium">${printingMethod}</span></div>` : ''}
+              ${order.fabricType ? `<div><span class="text-gray-500">Fabric:</span> <span class="font-medium">${order.fabricType}</span></div>` : ''}
+              ${order.garmentType ? `<div><span class="text-gray-500">Garment:</span> <span class="font-medium">${order.garmentType}</span></div>` : ''}
+              ${!hasTeam && order.garmentSize ? `<div><span class="text-gray-500">Size:</span> <span class="font-medium">${order.garmentSize}</span></div>` : ''}
+            </div>
+          </div>
+
           <!-- Product Preview Images (Multiple Views) -->
           ${order.designImagesMap && Object.keys(order.designImagesMap).length > 0 ? `
           <div>
@@ -820,6 +872,33 @@
             <div class="border rounded-lg overflow-hidden">
               <img src="${order.designImage}" alt="Design" class="w-full h-auto max-h-96 object-contain bg-gray-100">
             </div>
+          </div>
+          ` : ''}
+
+          <!-- Uploaded Design File (non-image) -->
+          ${order.designFileUrl ? `
+          <div>
+            <h4 class="font-semibold text-gray-900 mb-2">Design File</h4>
+            <a href="${order.designFileUrl}" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 border rounded hover:bg-gray-50 text-sm">
+              <i class="fas fa-file-download text-indigo-600"></i> View/Download Design File
+            </a>
+          </div>
+          ` : ''}
+
+          <!-- Team Entries -->
+          ${hasTeam ? `
+          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <h4 class="font-semibold text-blue-900 mb-2">Team Entries</h4>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-xs border bg-white">
+                <thead class="bg-blue-100">
+                  <tr><th class="border px-2 py-1 text-left">Name</th><th class="border px-2 py-1 text-left">Number</th><th class="border px-2 py-1 text-left">Size</th></tr>
+                </thead>
+                <tbody id="${teamBodyId}"></tbody>
+              </table>
+            </div>
+            ${(parsedTeam||[]).length > maxTeamVisible ? `<button id="${teamToggleId}" class="mt-2 px-3 py-1 text-xs border rounded hover:bg-gray-50">Show all (${parsedTeam.length})</button>` : ''}
+            ${order.teamNamesFileUrl ? `<div class="mt-2"><a href="${order.teamNamesFileUrl}" target="_blank" class="text-xs text-blue-700 hover:underline">Download original list</a></div>`: ''}
           </div>
           ` : ''}
 
@@ -862,8 +941,8 @@
           </div>
           ` : ''}
 
-          <!-- Fulfillment Info -->
-          ${order.fulfillmentMethod ? `
+          <!-- Fulfillment Info (show only when fulfillment is relevant) -->
+          ${(['Ready for Pickup/Delivery','Out for Delivery','Completed'].includes(order.status)) ? `
           <div class="bg-green-50 rounded-lg p-4 border border-green-200">
             <h4 class="font-semibold text-green-900 mb-3">Fulfillment Information</h4>
             <div class="text-sm space-y-2">
@@ -871,10 +950,10 @@
                 <span class="text-green-700">Method:</span>
                 <p class="font-medium text-green-900">${order.fulfillmentMethod === 'pickup' ? 'Pickup' : 'Delivery'}</p>
               </div>
-              ${order.fulfillmentMethod === 'delivery' && order.deliveryAddress ? `
+              ${order.fulfillmentMethod === 'delivery' && (order.deliveryAddress || order.shippingAddress || (order.quotePayload && order.quotePayload.shippingAddress)) ? `
               <div>
                 <span class="text-green-700">Delivery Address:</span>
-                <p class="font-medium text-green-900">${order.deliveryAddress}</p>
+                <p class="font-medium text-green-900">${getDisplayAddress(order)}</p>
               </div>
               ` : ''}
               ${order.trackingNumber ? `
@@ -908,6 +987,24 @@
       `;
       
       content.innerHTML = html;
+      // Populate team rows with limited view and toggle
+      if (hasTeam) {
+        const tbody = document.getElementById(teamBodyId);
+        if (tbody) {
+          const rowsAll = teamRowsHtml;
+          const limited = rowsAll.split('</tr>').slice(0, maxTeamVisible).join('</tr>');
+          tbody.innerHTML = (parsedTeam.length > maxTeamVisible) ? limited : rowsAll;
+          const toggleBtn = document.getElementById(teamToggleId);
+          if (toggleBtn) {
+            let expanded = false;
+            toggleBtn.onclick = () => {
+              expanded = !expanded;
+              tbody.innerHTML = expanded ? rowsAll : limited;
+              toggleBtn.textContent = expanded ? 'Show less' : `Show all (${parsedTeam.length})`;
+            };
+          }
+        }
+      }
       modal.classList.remove('hidden');
     }
 

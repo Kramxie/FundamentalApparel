@@ -52,6 +52,11 @@
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h2 class="text-xl font-bold text-gray-800 mb-6">Filters</h2>
                     <form id="filter-form">
+                        <!-- Search box: live text search over name and description -->
+                        <div class="mb-4">
+                            <label for="search" class="block text-sm font-medium text-gray-700">Search</label>
+                            <input id="search" name="search" type="search" placeholder="Search products..." class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
                         <!-- Category Filter -->
                         <div class="mb-6">
                             <h3 class="font-semibold text-gray-700 mb-3">Category</h3>
@@ -76,7 +81,29 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 transition">Apply Filters</button>
+                        <!-- Rating & Reviews Filter -->
+                        <div class="mb-6">
+                            <h3 class="font-semibold text-gray-700 mb-3">Rating & Reviews</h3>
+                            <div class="flex items-center gap-3">
+                                <label for="min-rating" class="sr-only">Min rating</label>
+                                <select id="min-rating" name="min-rating" class="px-3 py-2 border rounded">
+                                    <option value="0">Any rating</option>
+                                    <option value="1">1+ stars</option>
+                                    <option value="2">2+ stars</option>
+                                    <option value="3">3+ stars</option>
+                                    <option value="4">4+ stars</option>
+                                    <option value="5">5 stars</option>
+                                </select>
+                                <input id="min-reviews" name="min-reviews" type="number" min="0" placeholder="# reviews" class="px-3 py-2 border rounded w-32">
+                            </div>
+                        </div>
+
+                        <!-- Clear Filters -->
+                        <div class="mb-4">
+                            <button type="button" id="clear-filters" class="w-full bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md hover:bg-gray-300">Clear Filters</button>
+                        </div>
+
+                        <!-- Filters now auto-apply on change; removed manual Apply Filters button -->
                     </form>
                 </div>
             </aside>
@@ -111,6 +138,10 @@
             const priceRange = document.getElementById('price-range');
             const priceValue = document.getElementById('price-value');
             const sortBy = document.getElementById('sort-by');
+            const searchInput = document.getElementById('search');
+            const minRatingSelect = document.getElementById('min-rating');
+            const minReviewsInput = document.getElementById('min-reviews');
+            const clearFiltersBtn = document.getElementById('clear-filters');
             const cartCountSpan = document.getElementById('cart-count');
 
             // NEW: Selectors for auth links
@@ -210,6 +241,15 @@
                 });
             }
 
+            // Simple debounce helper for search input
+            function debounce(fn, wait) {
+                let t = null;
+                return (...args) => {
+                    clearTimeout(t);
+                    t = setTimeout(() => fn(...args), wait);
+                };
+            }
+
             function applyFiltersAndSort() {
                 let filteredProducts = [...allProducts];
                 const formData = new FormData(filterForm);
@@ -217,11 +257,31 @@
                 const maxPrice = parseInt(priceRange.value, 10);
                 const sortValue = sortBy.value;
 
+                // Search filter (name or description)
+                const query = (searchInput && searchInput.value || '').trim().toLowerCase();
+                if (query) {
+                    filteredProducts = filteredProducts.filter(p => {
+                        const name = (p.name || '').toLowerCase();
+                        const desc = (p.description || '').toLowerCase();
+                        return name.includes(query) || desc.includes(query);
+                    });
+                }
+
                 if (category) {
                     filteredProducts = filteredProducts.filter(p => p.category === category);
                 }
 
                 filteredProducts = filteredProducts.filter(p => p.price <= maxPrice);
+
+                // Rating & reviews filters
+                const minRating = parseFloat(minRatingSelect ? minRatingSelect.value : 0) || 0;
+                const minReviews = parseInt(minReviewsInput ? minReviewsInput.value : 0, 10) || 0;
+                if (minRating > 0) {
+                    filteredProducts = filteredProducts.filter(p => (parseFloat(p.rating) || 0) >= minRating);
+                }
+                if (minReviews > 0) {
+                    filteredProducts = filteredProducts.filter(p => (parseInt(p.numReviews || 0, 10) || 0) >= minReviews);
+                }
 
                 if (sortValue === 'price-asc') {
                     filteredProducts.sort((a, b) => a.price - b.price);
@@ -252,12 +312,60 @@
 
             priceRange.addEventListener('input', () => {
                 priceValue.textContent = `₱${parseInt(priceRange.value, 10).toLocaleString()}`;
+                // Auto-apply filters as the user adjusts the price range
+                applyFiltersAndSort();
             });
 
+            // Auto-apply when category radio changes
+            document.querySelectorAll('input[name="category"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    applyFiltersAndSort();
+                });
+            });
+
+            // Auto-apply when rating/min reviews change
+            if (minRatingSelect) minRatingSelect.addEventListener('change', applyFiltersAndSort);
+            if (minReviewsInput) minReviewsInput.addEventListener('input', applyFiltersAndSort);
+
+            // Debounced search input
+            if (searchInput) {
+                const debounced = debounce(() => applyFiltersAndSort(), 250);
+                searchInput.addEventListener('input', debounced);
+            }
+
+            // Keep submit handler harmless in case form is submitted by Enter key
             filterForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 applyFiltersAndSort();
             });
+
+            // Clear filters handler: reset form controls and reapply defaults
+            function clearFilters() {
+                // reset the native form controls
+                filterForm.reset();
+
+                // ensure price range goes back to max
+                try {
+                    const defaultMax = priceRange.max || '50000';
+                    priceRange.value = defaultMax;
+                    priceValue.textContent = `₱${parseInt(priceRange.value, 10).toLocaleString()}`;
+                } catch (err) { /* ignore */ }
+
+                // ensure category 'All' radio is selected
+                const allRadio = document.querySelector('input[name="category"][value=""]');
+                if (allRadio) allRadio.checked = true;
+
+                // clear search and rating/review inputs explicitly
+                if (searchInput) searchInput.value = '';
+                if (minRatingSelect) minRatingSelect.value = '0';
+                if (minReviewsInput) minReviewsInput.value = '';
+
+                applyFiltersAndSort();
+            }
+
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', clearFilters);
+            }
             
             sortBy.addEventListener('change', applyFiltersAndSort);
 

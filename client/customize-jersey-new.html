@@ -663,8 +663,8 @@
             }
         };
 
-        // Comprehensive Product Catalog for Modal
-        const productCatalog = [
+        // Comprehensive Product Catalog for Modal (static fallback). Will be extended with API products.
+        let productCatalog = [
             // COTTON T-SHIRTS
             {
                 id: 'vneck-tshirt',
@@ -735,7 +735,7 @@
             // 2-TONE POLO
             {
                 id: '2tone-polo-unisex',
-                category: '2-tone-polo',
+                category: '2tone-polo',
                 categoryGroup: 'shirts',
                 garmentType: '2tone-polo',
                 folderPath: '/images/products/All-Shirts/2tonePoloShirt/2tone-whiteBody',
@@ -748,7 +748,7 @@
             },
             {
                 id: '2tone-polo-ladies',
-                category: '2-tone-polo',
+                category: '2tone-polo',
                 categoryGroup: 'shirts',
                 garmentType: '2tone-polo-ladies',
                 folderPath: '/images/products/All-Shirts/2tonePoloShirt/2tone-whiteBody_Ladies',
@@ -776,7 +776,7 @@
             // JACKETS
             {
                 id: 'pullup-jacket',
-                category: 'pull-up-jacket',
+                category: 'pullup-jacket',
                 categoryGroup: 'jackets',
                 garmentType: 'pullup-jacket',
                 folderPath: '/images/products/jackets/Pull-Up_Jacket',
@@ -827,6 +827,34 @@
                 availableColors: ['black', 'red', 'yellow'],
                 image: '/images/products/joggingPants/black/Front.jpg',
                 description: 'Comfortable jogging pants for training.'
+            },
+            // WORKWEAR
+            {
+                id: 'scrub-suit',
+                category: 'scrub-suit',
+                categoryGroup: 'workwear',
+                garmentType: 'scrub-suit',
+                folderPath: '/images/products/workwear',
+                fabricType: 'Cotton',
+                name: 'Scrub Suit',
+                code: 'WW-01',
+                availableColors: ['blue', 'green', 'pink'],
+                image: 'https://via.placeholder.com/300x300?text=Scrub+Suit',
+                description: 'Professional medical scrub suit.'
+            },
+            // BANNER
+            {
+                id: 'fabric-banner',
+                category: 'fabric-banner',
+                categoryGroup: 'banner',
+                garmentType: 'fabric-banner',
+                folderPath: '/images/products/banner',
+                fabricType: 'Fabric',
+                name: 'Fabric Banner',
+                code: 'BN-01',
+                availableColors: ['custom'],
+                image: '/images/products/banner/fabric-banner.jpg',
+                description: 'High-quality fabric banner for events and promotions.'
             }
         ];
 
@@ -847,7 +875,11 @@
             'hoodie-jacket': ['Front', 'Back', 'Left', 'Right'],
             // Shorts & Pants - have Front, Back only
             'drifit-short': ['Front', 'Back'],
-            'jogging-pants': ['Front', 'Back']
+            'jogging-pants': ['Front', 'Back'],
+            // Workwear - have Front, Back only
+            'scrub-suit': ['Front', 'Back'],
+            // Banner - single view
+            'fabric-banner': ['Front']
         };
 
         // Available colors per neck style (adjust as assets are added)
@@ -858,12 +890,63 @@
 
         // Product Catalog Modal Functions
         let currentCatalogFilter = 'all';
+        let catalogLoadedFromAPI = false;
+
+        // Map backend product.category to UI categoryGroup and garmentType (best-effort)
+        function mapCategoryMeta(cat) {
+            const c = (cat || '').toLowerCase();
+            if (c.includes('jacket') || c.includes('hoodie')) return { group: 'jackets', garment: 'pullup-jacket' };
+            if (c.includes('polo')) return { group: 'shirts', garment: 'classic-polo' };
+            if (c.includes('raglan')) return { group: 'shirts', garment: 'raglan' };
+            if (c.includes('active')) return { group: 'shirts', garment: 'drifit-vneck' };
+            if (c.includes('short') || c.includes('pants') || c.includes('jogging')) return { group: 'shorts-pants', garment: 'drifit-short' };
+            if (c.includes('workwear') || c.includes('scrub')) return { group: 'workwear', garment: 'scrub-suit' };
+            if (c.includes('banner')) return { group: 'banner', garment: 'fabric-banner' };
+            // default to shirts
+            return { group: 'shirts', garment: 'vneck-tshirt' };
+        }
+
+        async function loadProductsFromAPI() {
+            if (catalogLoadedFromAPI) return;
+            try {
+                const res = await fetch('/api/products', {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
+                if (!res.ok) throw new Error('Failed loading products');
+                const json = await res.json();
+                const items = (json && json.data) || [];
+                const mapped = items.map(p => {
+                    const meta = mapCategoryMeta(p.category);
+                    return {
+                        id: p._id,
+                        category: p.category || 'Uncategorized',
+                        categoryGroup: meta.group,
+                        garmentType: meta.garment,
+                        folderPath: null, // dynamic products use direct image URL
+                        fabricType: p.material || '',
+                        name: p.name,
+                        code: (p._id || '').slice(-6).toUpperCase(),
+                        availableColors: Array.isArray(p.colors) && p.colors.length ? p.colors : ['Black'],
+                        image: p.imageUrl,
+                        description: p.description || '',
+                        isDynamic: true,
+                        dynamicImageUrl: p.imageUrl
+                    };
+                }).filter(x => !!x.image);
+                // Merge: API first to show latest items, then static fallback
+                productCatalog = [...mapped, ...productCatalog];
+                catalogLoadedFromAPI = true;
+            } catch (e) {
+                console.warn('Failed to load products from API:', e);
+            }
+        }
 
         function openProductCatalog() {
             const modal = document.getElementById('product-catalog-modal');
             modal.classList.remove('hidden');
             currentCatalogFilter = 'all';
-            renderProductCatalog('all');
+            // Load dynamic products, then render
+            loadProductsFromAPI().finally(() => renderProductCatalog('all'));
         }
 
         function closeProductCatalog() {
@@ -898,7 +981,19 @@
                 filteredProducts = productCatalog.filter(p => p.category === 'cotton-tshirt');
             } else if (category === 'active-wear') {
                 // Show all active wear products
-                filteredProducts = productCatalog.filter(p => p.category === 'activewear');
+                filteredProducts = productCatalog.filter(p => p.category === 'active-wear');
+            } else if (category === 'workwear') {
+                // Show all workwear products
+                filteredProducts = productCatalog.filter(p => p.categoryGroup === 'workwear');
+            } else if (category === 'banner') {
+                // Show all banner products
+                filteredProducts = productCatalog.filter(p => p.categoryGroup === 'banner');
+            } else if (category === 'jackets') {
+                // Show all jacket products
+                filteredProducts = productCatalog.filter(p => p.categoryGroup === 'jackets');
+            } else if (category === 'shorts-pants') {
+                // Show all shorts and pants products
+                filteredProducts = productCatalog.filter(p => p.categoryGroup === 'shorts-pants');
             } else {
                 filteredProducts = productCatalog.filter(p => p.category === category);
             }
@@ -942,7 +1037,8 @@
             state.garmentType = product.garmentType;
             state.fabricType = product.fabricType || 'Cotton'; // Set fabric from product
             state.availableColors = product.availableColors || ['Black']; // Store available colors
-            state.folderPath = product.folderPath; // Store folder path for image loading
+            state.folderPath = product.folderPath; // Store folder path for image loading (static only)
+            state.dynamicImageUrl = product.isDynamic ? (product.dynamicImageUrl || product.image) : null;
             
             // Handle neck style for tshirt/drifit products
             if (product.neckStyle) {
@@ -959,7 +1055,7 @@
             document.getElementById('summary-product').textContent = product.name;
             
             // Update locations based on garment type
-            updateLocations(product.garmentType);
+            updateLocations(product.garmentType || 'tshirt');
             
             // Update available colors
             populateColorOptions();
@@ -1026,9 +1122,24 @@
             const color = colorSelect ? colorSelect.value : state.availableColors[0];
             const location = state.selectedLocation;
             const folderPath = state.folderPath;
+            const dynamicUrl = state.dynamicImageUrl;
             
+            // If dynamic product, use direct image URL and keep same image across locations
+            if (dynamicUrl) {
+                const placeholder = document.getElementById('no-product-placeholder');
+                garmentImage.src = dynamicUrl;
+                garmentImage.style.display = 'block';
+                if (placeholder) placeholder.style.display = 'none';
+                garmentImage.onerror = function() {
+                    console.error('Failed to load dynamic image:', dynamicUrl);
+                    this.style.display = 'none';
+                    if (placeholder) placeholder.style.display = 'block';
+                };
+                return;
+            }
+
             if (!folderPath) {
-                console.log('No folder path set for product');
+                console.log('No folder path set for product (static)');
                 return;
             }
             

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Returns & Refunds</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gray-100">
+  <div class="flex h-screen bg-gray-100">
+    <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+      <div class="flex items-center justify-center h-16 bg-white shadow-md">
+        <span class="text-2xl font-bold text-indigo-600">Admin Panel</span>
+      </div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span></a>
+          <a href="returns.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md"><i class="fas fa-undo w-6"></i><span class="ml-3">Returns</span></a>
+        </nav>
+      </div>
+    </div>
+
+    <div class="flex flex-col flex-1 overflow-hidden">
+      <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
+        <h1 class="text-xl font-semibold text-gray-800">Returns & Refunds</h1>
+        <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"><i class="fas fa-sign-out-alt mr-2"></i>Logout</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6">
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <input id="search" type="text" placeholder="Search by order id, user, reason..." class="border rounded px-3 py-2 text-sm w-80">
+              <select id="filter-status" class="border rounded px-3 py-2 text-sm">
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Refunded">Refunded</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div class="text-sm text-gray-500"><span id="count">0</span> requests</div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600">
+              <tr>
+                <th class="text-left px-4 py-3">ID</th>
+                <th class="text-left px-4 py-3">Order</th>
+                <th class="text-left px-4 py-3">Customer</th>
+                <th class="text-left px-4 py-3">Reason</th>
+                <th class="text-left px-4 py-3">Status</th>
+                <th class="text-left px-4 py-3">Amount</th>
+                <th class="text-right px-4 py-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="body" class="divide-y"></tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-lg shadow max-w-4xl w-full overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b">
+        <h3 class="font-semibold text-gray-800">Return Request</h3>
+        <button id="modal-close" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="p-5 space-y-4" id="modal-content"></div>
+      <div class="px-5 py-3 border-t flex items-center justify-end gap-3">
+        <button id="btn-reject" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Reject</button>
+        <button id="btn-approve" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Approve</button>
+        <button id="btn-refund" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">Refund</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
+
+    function shortId(id){ return id ? id.slice(0,8) : '-'; }
+    function peso(n){ return '₱' + Number(n||0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('adminToken');
+      if (!token) { window.location.href = 'login.html'; return; }
+
+      document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('adminToken'); window.location.href='login.html'; });
+
+      const els = {
+        body: document.getElementById('body'),
+        count: document.getElementById('count'),
+        search: document.getElementById('search'),
+        filterStatus: document.getElementById('filter-status'),
+        modal: document.getElementById('modal'),
+        modalContent: document.getElementById('modal-content'),
+        modalClose: document.getElementById('modal-close'),
+        btnApprove: document.getElementById('btn-approve'),
+        btnReject: document.getElementById('btn-reject'),
+        btnRefund: document.getElementById('btn-refund')
+      };
+
+      let items = [];
+      let selected = null;
+
+      els.search.addEventListener('input', render);
+      els.filterStatus.addEventListener('change', render);
+
+      els.modalClose.addEventListener('click', () => els.modal.classList.add('hidden'));
+
+      els.btnApprove.addEventListener('click', async () => {
+        if (!selected) return;
+        const note = prompt('Optional admin note:') || '';
+        try {
+          const res = await fetch(`${API}/api/returns/${selected._id}/approve`, { method: 'PUT', headers: { 'Content-Type':'application/json','Authorization':`Bearer ${token}` }, body: JSON.stringify({ adminNotes: note, refundMethod: 'manual' }) });
+          const data = await res.json(); if (!res.ok) throw new Error(data.msg || 'Failed');
+          alert('Approved'); await load();
+        } catch (e) { alert('Approve failed: ' + e.message); }
+      });
+
+      els.btnReject.addEventListener('click', async () => {
+        if (!selected) return;
+        const note = prompt('Optional rejection note:') || '';
+        try {
+          const res = await fetch(`${API}/api/returns/${selected._id}/reject`, { method: 'PUT', headers: { 'Content-Type':'application/json','Authorization':`Bearer ${token}` }, body: JSON.stringify({ adminNotes: note }) });
+          const data = await res.json(); if (!res.ok) throw new Error(data.msg || 'Failed');
+          alert('Rejected'); await load();
+        } catch (e) { alert('Reject failed: ' + e.message); }
+      });
+
+      els.btnRefund.addEventListener('click', async () => {
+        if (!selected) return;
+        if (!confirm('Proceed to refund this request now?')) return;
+        try {
+          const res = await fetch(`${API}/api/returns/${selected._id}/refund`, { method: 'POST', headers: { 'Authorization':`Bearer ${token}` } });
+          const data = await res.json(); if (!res.ok) throw new Error(data.msg || JSON.stringify(data));
+          alert('Refund processed'); await load();
+        } catch (e) { alert('Refund failed: ' + e.message); }
+      });
+
+      async function load(){
+        try {
+          const res = await fetch(`${API}/api/returns`, { headers: { 'Authorization': `Bearer ${token}` } });
+          if (res.status === 401) { localStorage.removeItem('adminToken'); window.location.href='login.html'; return; }
+          const data = await res.json(); if (!data.success) throw new Error(data.msg || 'Failed');
+          items = data.data || [];
+          render();
+        } catch (e) { alert('Load failed: ' + e.message); }
+      }
+
+      function render(){
+        const q = (els.search.value||'').trim().toLowerCase();
+        const f = els.filterStatus.value;
+        const filtered = items.filter(it => {
+          if (f && it.status !== f) return false;
+          const hay = [it._id, it.order?._id, it.user?.name, it.reason, it.adminNotes].filter(Boolean).join(' ').toLowerCase();
+          if (q && !hay.includes(q)) return false;
+          return true;
+        });
+        els.count.textContent = filtered.length;
+        els.body.innerHTML = filtered.map(it => `
+          <tr>
+            <td class="px-4 py-3 font-mono">${shortId(it._id)}</td>
+            <td class="px-4 py-3">${it.order?._id? shortId(it.order._id) : '-'}</td>
+            <td class="px-4 py-3">${it.user?.name || (it.user?.email||'-')}</td>
+            <td class="px-4 py-3 text-sm max-w-xs truncate">${it.reason}</td>
+            <td class="px-4 py-3">${it.status}</td>
+            <td class="px-4 py-3">${peso(it.amount)}</td>
+            <td class="px-4 py-3 text-right">
+              <div class="inline-flex gap-2 items-center justify-end">
+                <button data-id="${it._id}" class="view-btn text-indigo-600 hover:text-indigo-800 text-sm">View</button>
+              </div>
+            </td>
+          </tr>
+        `).join('') || '<tr><td colspan="7" class="px-4 py-6 text-center text-gray-500">No requests.</td></tr>';
+
+        // attach handlers
+        Array.from(document.getElementsByClassName('view-btn')).forEach(b => b.addEventListener('click', async (e) => {
+          const id = e.currentTarget.dataset.id;
+          selected = items.find(x=>x._id===id);
+          if (!selected) return;
+          // build modal content
+          const orderHtml = selected.order ? `Order: <a class="text-indigo-600" href="/client/admin/orders.html?oid=${selected.order._id}">${shortId(selected.order._id)}</a>` : 'Order: -';
+          const userHtml = selected.user ? `${selected.user.name||'-'} <span class="text-xs text-gray-500">${selected.user.email||''}</span>` : '-';
+          const vids = (selected.videos||[]).map(u=>`<a href="${u}" target="_blank" class="text-indigo-600">View</a>`).join(' ');
+          const imgs = (selected.images||[]).map(u=>`<a href="${u}" target="_blank" class="text-indigo-600">View</a>`).join(' ');
+          els.modalContent.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p class="text-sm text-gray-600">${orderHtml}</p>
+                <p class="text-sm text-gray-600 mt-2">Customer: ${userHtml}</p>
+                <p class="text-sm text-gray-600 mt-2">Amount: <strong>${peso(selected.amount)}</strong></p>
+                <p class="text-sm text-gray-600 mt-2">Status: <strong>${selected.status}</strong></p>
+                <p class="text-sm text-gray-600 mt-2">Reason: <span class="block mt-1">${selected.reason}</span></p>
+                <p class="text-sm text-gray-600 mt-2">Details: <span class="block mt-1">${selected.details||'-'}</span></p>
+                <p class="text-sm text-gray-600 mt-2">Admin Notes: <span class="block mt-1">${selected.adminNotes||'-'}</span></p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-600">Videos: ${vids || '-'}</p>
+                <p class="text-sm text-gray-600 mt-2">Images: ${imgs || '-'}</p>
+                <p class="text-sm text-gray-600 mt-4">Created: ${new Date(selected.createdAt).toLocaleString()}</p>
+              </div>
+            </div>
+          `;
+          els.modal.classList.remove('hidden');
+        }));
+      }
+
+      load();
+    });
+  </script>
+</body>
+</html>

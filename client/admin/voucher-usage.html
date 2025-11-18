@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin - Voucher Usage</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+  <div class="min-h-screen flex">
+    <aside class="hidden md:block w-64 bg-white shadow">
+      <div class="p-6 border-b"> <span class="text-xl font-bold text-indigo-600">Admin Panel</span> </div>
+      <nav class="p-4 space-y-2">
+        <a href="index.html" class="block px-4 py-2 rounded hover:bg-gray-100">Dashboard</a>
+        <a href="vouchers.html" class="block px-4 py-2 rounded hover:bg-gray-100">Manage Vouchers</a>
+        <a href="voucher-usage.html" class="block px-4 py-2 rounded bg-indigo-600 text-white">Voucher Usage</a>
+      </nav>
+    </aside>
+
+    <main class="flex-1 p-6">
+      <div class="max-w-6xl mx-auto">
+        <div class="flex items-center justify-between mb-6">
+          <h1 class="text-2xl font-semibold">Voucher Usage History</h1>
+          <div class="flex items-center gap-3">
+            <input id="codeFilter" type="text" placeholder="Code" class="px-3 py-2 border rounded" />
+            <input id="startFilter" type="date" class="px-3 py-2 border rounded" />
+            <input id="endFilter" type="date" class="px-3 py-2 border rounded" />
+            <button id="refreshBtn" class="px-3 py-2 bg-indigo-600 text-white rounded">Refresh</button>
+          </div>
+        </div>
+
+        <div id="tableContainer" class="bg-white rounded shadow overflow-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Used By</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Used At</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order</th>
+              </tr>
+            </thead>
+            <tbody id="tbody" class="bg-white divide-y divide-gray-200"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    async function fetchHistory() {
+      const token = localStorage.getItem('adminToken');
+      if (!token) { window.location.href = 'login.html'; return; }
+      const t = document.getElementById('tbody');
+      t.innerHTML = '<tr><td colspan="7" class="p-6 text-center">Loading...</td></tr>';
+      try {
+        // Build query params from filters
+        const code = document.getElementById('codeFilter').value.trim();
+        const start = document.getElementById('startFilter').value;
+        const end = document.getElementById('endFilter').value;
+        const params = new URLSearchParams();
+        if (code) params.set('code', code);
+        if (start) params.set('start', start);
+        if (end) params.set('end', end);
+        const url = `${window.location.origin}/api/vouchers/history` + (params.toString() ? `?${params.toString()}` : '');
+
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.msg || 'Failed to load history');
+        const rows = json.data.map(h => `
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${h.code}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${h.description || ''}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${h.type}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${h.type === 'percentage' ? h.value + '%' : (h.type === 'fixed' ? '₱' + h.value : 'Free Shipping')}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${h.userName || ''} <br/><span class="text-xs text-gray-400">${h.userEmail || ''}</span></td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${h.usedAt ? new Date(h.usedAt).toLocaleString() : '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-indigo-600">${h.usedByOrder ? `<a href="orders.html?order=${h.usedByOrder}" class="underline">${h.usedByOrder}</a>` : '-'}</td>
+          </tr>
+        `).join('');
+        t.innerHTML = rows || '<tr><td colspan="7" class="p-6 text-center">No used vouchers found.</td></tr>';
+      } catch (err) {
+        t.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-red-600">${err.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', fetchHistory);
+    // Allow Enter in code input to trigger refresh
+    document.getElementById('codeFilter').addEventListener('keydown', (e) => { if (e.key === 'Enter') fetchHistory(); });
+    fetchHistory();
+  </script>
+</body>
+</html>

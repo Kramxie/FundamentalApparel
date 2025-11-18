@@ -12,7 +12,9 @@ const {
     updateOrderStatus,
     getOrderById,
     cancelOrder // <-- NEW
+    ,completeOrder
 } = require('../controllers/orderController');
+const { createReturnRequest } = require('../controllers/returnController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -34,6 +36,25 @@ const fileFilter = (req, file, cb) => {
     cb(null, true);
 };
 const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
+// Dedicated uploader for return requests (videos/images)
+const returnsDir = path.join(__dirname, '..', 'uploads', 'returns');
+fs.mkdirSync(returnsDir, { recursive: true });
+const returnsStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, returnsDir),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const safe = `${Date.now()}-${Math.round(Math.random()*1e9)}${ext}`;
+        cb(null, safe);
+    }
+});
+const returnsFileFilter = (req, file, cb) => {
+    const allowedVideo = ['.mp4', '.mov', '.webm', '.mkv'];
+    const allowedImage = ['.png', '.jpg', '.jpeg', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedVideo.includes(ext) || allowedImage.includes(ext)) return cb(null, true);
+    return cb(new Error('Only video/image files allowed for returns'));
+};
+const returnsUpload = multer({ storage: returnsStorage, fileFilter: returnsFileFilter, limits: { fileSize: 50 * 1024 * 1024 } });
 
 // All routes here are protected
 router.use(protect);
@@ -46,6 +67,9 @@ router.route('/')
 // Create order with uploaded receipt (must come BEFORE /:id)
 router.post('/upload-receipt', upload.single('receipt'), createOrderWithReceipt);
 
+// Create a return/refund request for an order (user) - supports video/images
+router.post('/:id/returns', returnsUpload.fields([{ name: 'videos' }, { name: 'images' }]), createReturnRequest);
+
 // User orders
 router.get('/myorders', getMyOrders);
 
@@ -55,6 +79,8 @@ router.get('/admin', authorize('admin','employee'), getAllOrders);
 
 // --- NEW ROUTE for user to cancel ---
 router.put('/:id/cancel', cancelOrder);
+// --- NEW ROUTE for user to mark as complete ---
+router.put('/:id/complete', completeOrder);
 
 // Admin status update
 router.put('/:id/status', authorize('admin','employee'), updateOrderStatus);

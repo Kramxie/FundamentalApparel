@@ -145,6 +145,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const detailsHtml = product.productDetails ? `<p class="text-gray-700 leading-relaxed">${product.productDetails}</p>` : `<p class="text-gray-500">No details provided.</p>`;
     const faqsHtml = product.faqs ? `<p class="text-gray-700 leading-relaxed">${product.faqs}</p>` : `<p class="text-gray-500">No FAQs yet.</p>`;
 
+    const avgRatingDisplay = product.numReviews > 0 ? `<div class="flex items-center gap-2 mb-4">
+        <span class="text-yellow-500">${'★'.repeat(Math.round(product.averageRating))}${'☆'.repeat(5-Math.round(product.averageRating))}</span>
+        <span class="text-sm text-gray-600">${product.averageRating.toFixed(1)} / 5 (${product.numReviews} review${product.numReviews>1?'s':''})</span>
+    </div>` : '<div class="text-sm text-gray-500 mb-4">No ratings yet.</div>';
+    const reviewsHtml = (product.reviews && product.reviews.length > 0) ? product.reviews.map(r => `
+        <div class="border-b py-4">
+            <div class="flex items-center justify-between">
+                <div class="font-medium text-gray-800">${r.userName || 'User'}</div>
+                <div class="text-yellow-500 text-sm flex items-center">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+            </div>
+            ${r.comment ? `<p class="text-sm text-gray-700 mt-2">${r.comment}</p>` : ''}
+            <p class="text-xs text-gray-400 mt-1">${new Date(r.createdAt).toLocaleDateString()}</p>
+        </div>
+    `).join('') : '<p class="text-gray-500">No reviews yet.</p>';
     const productHtml = `
       <div class="bg-white p-8 rounded-lg shadow-lg">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -153,10 +167,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div id="thumbnail-container" class="mt-4 flex gap-3 items-center">${thumbnailsHtml}</div>
           </div>
           <div>
-            <h1 class="text-3xl font-bold">${product.name}</h1>
-            <div class="text-sm text-gray-500 mb-4">${product.category || ''}</div>
+            <div class="flex items-start justify-between">
+              <div>
+                <h1 class="text-3xl font-bold">${product.name}</h1>
+                <div class="text-sm text-gray-500 mb-4">${product.category || ''}</div>
+              </div>
+              <div class="ml-4">
+                <button id="back-to-products" class="text-sm bg-gray-100 border border-gray-300 px-3 py-2 rounded-md hover:bg-gray-200">← Back to Products</button>
+              </div>
+            </div>
             <div class="text-2xl font-bold text-indigo-600 mb-4">₱${Number(product.price||0).toLocaleString()}</div>
             <div class="text-gray-700 mb-4">${product.description || ''}</div>
+            ${avgRatingDisplay}
 
             <div class="mb-4">
               <div class="text-sm text-gray-600 mb-1">Select Color</div>
@@ -192,7 +214,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       <div class="mt-8">
         <section id="tab-details">${detailsHtml}</section>
-        <section id="tab-reviews" class="hidden"><p class="text-gray-500">No reviews yet.</p></section>
+        <section id="tab-reviews" class="hidden">${reviewsHtml}</section>
         <section id="tab-faqs" class="hidden">${faqsHtml}</section>
       </div>
     `;
@@ -309,6 +331,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         addToCartBtn.innerHTML = originalText;
       }
     });
+
+    // Back button behavior: prefer history.back when coming from products list, otherwise go to products.html
+    const backBtn = document.getElementById('back-to-products');
+    if (backBtn) {
+      backBtn.addEventListener('click', (e) => {
+        try {
+          const ref = document.referrer || '';
+          if (ref.includes('products.html')) {
+            window.history.back();
+          } else {
+            window.location.href = 'products.html';
+          }
+        } catch (err) {
+          window.location.href = 'products.html';
+        }
+      });
+    }
 
     document.querySelectorAll('[data-tab]').forEach(btn => {
       btn.addEventListener('click', () => {

@@ -26,9 +26,13 @@ const CustomOrderSchema = new mongoose.Schema({
         type: String,
         enum: [
             't-shirt', 'jersey', 'hoodie', 'polo', 'drifit', 'longsleeve', 'raglan',
-            'jacket', 'pullup-jacket', 'zipper-jacket', 
+            'jacket', 'pullup-jacket', 'zipper-jacket', 'hoodie-jacket',
             'shorts', 'drifit-short', 'jogging-pants',
-            'scrub-suit', 'fabric-banner', 'other'
+            'scrub-suit', 'fabric-banner',
+            // New product types
+            'vneck-tshirt', 'round-tshirt', 'classic-polo', 'drifit-polo', 
+            '2tone-polo', '2tone-polo-ladies', 'drifit-vneck',
+            'other'
         ],
         default: 'jersey'
     },
@@ -90,6 +94,8 @@ const CustomOrderSchema = new mongoose.Schema({
     },
     shortsDesignDetails: String,
     shortsDesignFileUrl: String,
+    // Optional: uploaded team names list file (txt/csv)
+    teamNamesFileUrl: String,
     
     // Para sa template: "Design: Legend, Colors: ..., Text: ..."
     designDetails: {
@@ -110,7 +116,7 @@ const CustomOrderSchema = new mongoose.Schema({
     // Printing Only specific fields
     printingMethod: {
         type: String,
-        enum: ['sublimation', 'upload-design', 'direct-to-garment'],
+        enum: ['sublimation', 'dye-sublimation', 'heat-transfer', 'vinyl-print', 'upload-design', 'direct-to-garment'],
     },
     garmentSize: String,
     

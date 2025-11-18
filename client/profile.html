@@ -342,6 +342,41 @@
         </div>
     </div>
 
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-lg font-semibold">Product Feedback</h3>
+                <button id="feedback-modal-close" class="text-gray-500">&times;</button>
+            </div>
+            <div class="p-4 space-y-4">
+                <p class="text-sm text-gray-600">Rate and review the product you received.</p>
+                <div id="feedback-product-select-wrapper" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Select Product</label>
+                    <select id="feedback-product-select" class="w-full border p-2 rounded"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                    <select id="feedback-rating" class="w-full border p-2 rounded">
+                        <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                        <option value="4">⭐⭐⭐⭐ (4)</option>
+                        <option value="3">⭐⭐⭐ (3)</option>
+                        <option value="2">⭐⭐ (2)</option>
+                        <option value="1">⭐ (1)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Comment (optional)</label>
+                    <textarea id="feedback-comment" rows="4" class="w-full border p-2 rounded" placeholder="Share your experience..."></textarea>
+                </div>
+                <div id="feedback-error" class="text-red-500 text-sm hidden"></div>
+            </div>
+            <div class="p-4 bg-gray-50 flex justify-end gap-3">
+                <button id="feedback-submit" class="bg-indigo-600 text-white px-4 py-2 rounded">Submit Review</button>
+            </div>
+        </div>
+    </div>
+
     
 
     <script>
@@ -720,7 +755,7 @@
                     else if (order.paymentStatus === 'Pending') { statusLabel = 'TO PAY'; statusColor = 'text-red-600'; }
                     else if (order.status === 'Accepted') { statusLabel = 'TO SHIP'; statusColor = 'text-blue-600'; }
                     else if (order.status === 'Shipped') { statusLabel = 'TO RECEIVE'; statusColor = 'text-blue-600'; }
-                    else if (order.status === 'Delivered') { statusLabel = 'COMPLETED'; statusColor = 'text-green-600'; }
+                    else if (order.status === 'Delivered' || order.status === 'Completed') { statusLabel = 'COMPLETED'; statusColor = 'text-green-600'; }
                     const showSpinner = isPurchasesSyncing && order.paymentStatus === 'Pending' && !!order.paymentIntentId;
                     let buttonsHtml = '';
                     if (order.status === 'Cancelled') {
@@ -728,6 +763,14 @@
                     } else if (order.paymentStatus === 'Pending') {
                         buttonsHtml = `<button data-order-id="${order._id}" class="btn-pay-now px-4 py-2 bg-indigo-600 text-white rounded text-sm">Pay Now</button>
                                      <button data-order-id="${order._id}" class="btn-cancel px-4 py-2 border rounded text-sm">Cancel Order</button>`;
+                    } else if (order.status === 'Shipped') {
+                        buttonsHtml = `<button data-order-id="${order._id}" class="btn-mark-received px-4 py-2 bg-green-600 text-white rounded text-sm">Mark Received</button>
+                                       <a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>`;
+                    } else if (order.status === 'Delivered' || order.status === 'Completed') {
+                        const productIds = order.orderItems.map(it => it.product).filter(Boolean);
+                        buttonsHtml = `<a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>
+                                       <button data-order-id="${order._id}" class="btn-request-refund px-4 py-2 border rounded text-sm">Request Refund</button>
+                                       <button data-products="${productIds.join(',')}" class="btn-leave-feedback px-4 py-2 bg-indigo-600 text-white rounded text-sm">Write Review</button>`;
                     } else {
                         buttonsHtml = `<a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>`;
                     }
@@ -789,6 +832,8 @@
                 const payNowBtn = e.target.closest('.btn-pay-now');
                 const cancelBtn = e.target.closest('.btn-cancel');
                 const detailsBtn = e.target.closest('.btn-details');
+                            const markReceivedBtn = e.target.closest('.btn-mark-received');
+                            const leaveFeedbackBtn = e.target.closest('.btn-leave-feedback');
                                 if (payNowBtn) {
                                         const orderId = payNowBtn.getAttribute('data-order-id');
                                         const order = purchasesCache.find(o => o._id === orderId);
@@ -821,6 +866,33 @@
                     detailsReason.textContent = reason;
                     detailsModal.classList.remove('hidden'); detailsModal.classList.add('flex');
                 }
+                if (markReceivedBtn) {
+                    const orderId = markReceivedBtn.dataset.orderId;
+                    markReceivedBtn.disabled = true; markReceivedBtn.textContent = 'Updating...';
+                    try {
+                        const json = await apiRequest(`/api/orders/${orderId}/complete`, { method: 'PUT' });
+                        if (!json.success) throw new Error(json.msg || 'Failed to complete order');
+                        // Refresh list
+                        const activeTab = purchasesTabs.querySelector('.tab-active').dataset.tabFilter;
+                        await fetchPurchases(activeTab);
+                        const allProducts = json.data.orderItems.map(it => it.product).filter(Boolean);
+                        if (allProducts.length) openFeedbackModal(allProducts);
+                    } catch (err) {
+                        alert(err.message);
+                    } finally {
+                        markReceivedBtn.disabled = false; markReceivedBtn.textContent = 'Mark Received';
+                    }
+                }
+                if (leaveFeedbackBtn) {
+                    const productIdsStr = leaveFeedbackBtn.dataset.products || '';
+                    const list = productIdsStr.split(',').filter(Boolean);
+                    if (list.length > 0) openFeedbackModal(list);
+                }
+                const requestRefundBtn = e.target.closest('.btn-request-refund');
+                if (requestRefundBtn) {
+                    const orderId = requestRefundBtn.dataset.orderId;
+                    openReturnModal(orderId);
+                }
             });
             cancelReasonSelect.addEventListener('change', () => {
                 cancelReasonOther.classList.toggle('hidden', cancelReasonSelect.value !== 'Other');
@@ -848,6 +920,163 @@
             detailsModalClose.addEventListener('click', () => detailsModal.classList.add('hidden'));
             detailsModalOk.addEventListener('click', () => detailsModal.classList.add('hidden'));
 
+            // --- Feedback Modal Logic ---
+            const feedbackModal = document.getElementById('feedback-modal');
+            const feedbackModalClose = document.getElementById('feedback-modal-close');
+            const feedbackRating = document.getElementById('feedback-rating');
+            const feedbackComment = document.getElementById('feedback-comment');
+            const feedbackSubmit = document.getElementById('feedback-submit');
+            const feedbackError = document.getElementById('feedback-error');
+            let currentFeedbackProductId = null;
+            let currentFeedbackProducts = [];
+            const feedbackProductSelectWrapper = document.getElementById('feedback-product-select-wrapper');
+            const feedbackProductSelect = document.getElementById('feedback-product-select');
+
+            function openFeedbackModal(productIdOrList) {
+                if (Array.isArray(productIdOrList)) {
+                    currentFeedbackProducts = productIdOrList.filter(Boolean);
+                    if (currentFeedbackProducts.length > 1) {
+                        feedbackProductSelectWrapper.classList.remove('hidden');
+                        feedbackProductSelect.innerHTML = currentFeedbackProducts.map(pid => `<option value="${pid}">${pid.slice(0,6)}...</option>`).join('');
+                        currentFeedbackProductId = currentFeedbackProducts[0];
+                    } else {
+                        feedbackProductSelectWrapper.classList.add('hidden');
+                        currentFeedbackProductId = currentFeedbackProducts[0] || null;
+                    }
+                } else {
+                    feedbackProductSelectWrapper.classList.add('hidden');
+                    currentFeedbackProducts = [productIdOrList];
+                    currentFeedbackProductId = productIdOrList;
+                }
+                feedbackRating.value = '5';
+                feedbackComment.value = '';
+                feedbackError.classList.add('hidden');
+                feedbackModal.classList.remove('hidden');
+                feedbackModal.classList.add('flex');
+            }
+            feedbackProductSelect?.addEventListener('change', () => {
+                currentFeedbackProductId = feedbackProductSelect.value;
+            });
+            feedbackModalClose.addEventListener('click', () => {
+                feedbackModal.classList.add('hidden');
+            });
+            feedbackSubmit.addEventListener('click', async () => {
+                if (!currentFeedbackProductId) return;
+                feedbackSubmit.disabled = true; feedbackSubmit.textContent = 'Submitting...';
+                try {
+                    const body = JSON.stringify({ rating: Number(feedbackRating.value), comment: feedbackComment.value.trim() });
+                    const json = await apiRequest(`/api/products/${currentFeedbackProductId}/reviews`, { method: 'POST', body });
+                    if (!json.success) throw new Error(json.msg || 'Failed to submit review');
+                    feedbackModal.classList.add('hidden');
+                    alert('Thank you! Your review was submitted.');
+                } catch (err) {
+                    feedbackError.textContent = err.message;
+                    feedbackError.classList.remove('hidden');
+                } finally {
+                    feedbackSubmit.disabled = false; feedbackSubmit.textContent = 'Submit Review';
+                }
+            });
+
+                        /* Return Request Modal (in-page) */
+                        (function createReturnModal() {
+                                const html = `
+                                <div id="return-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+                                    <div class="bg-white rounded-lg shadow max-w-2xl w-full overflow-hidden">
+                                        <div class="flex items-center justify-between px-5 py-3 border-b">
+                                            <h3 class="font-semibold text-gray-800">Request Return / Refund</h3>
+                                            <button id="return-modal-close" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+                                        </div>
+                                        <div class="p-5 space-y-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Reason</label>
+                                                <input id="return-reason" type="text" class="mt-1 block w-full border rounded px-3 py-2" placeholder="e.g. Wrong size received" />
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Details (optional)</label>
+                                                <textarea id="return-details" class="mt-1 block w-full border rounded px-3 py-2" rows="3"></textarea>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Upload video (optional, mp4/mov/webm)</label>
+                                                <input id="return-videos" type="file" accept="video/*" multiple class="mt-1" />
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700">Upload images (optional)</label>
+                                                <input id="return-images" type="file" accept="image/*" multiple class="mt-1" />
+                                            </div>
+                                            <div id="return-error" class="text-sm text-red-600 hidden"></div>
+                                        </div>
+                                        <div class="px-5 py-3 border-t flex items-center justify-end gap-3">
+                                            <button id="return-submit" class="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded">Submit Request</button>
+                                        </div>
+                                    </div>
+                                </div>`;
+                                document.body.insertAdjacentHTML('beforeend', html);
+                                document.getElementById('return-modal-close').addEventListener('click', closeReturnModal);
+                                document.getElementById('return-submit').addEventListener('click', submitReturnRequest);
+                        })();
+
+                        function openReturnModal(eOrId) {
+                                const modal = document.getElementById('return-modal');
+                                let orderId = null;
+                                if (typeof eOrId === 'string') orderId = eOrId;
+                                else if (eOrId && eOrId.currentTarget && eOrId.currentTarget.dataset) orderId = eOrId.currentTarget.dataset.orderId;
+                                else if (eOrId && eOrId.dataset) orderId = eOrId.dataset.orderId;
+                                if (!orderId) {
+                                        const errEl = document.getElementById('return-error');
+                                        errEl.textContent = 'Order ID missing. Cannot request return.'; errEl.classList.remove('hidden');
+                                        return;
+                                }
+                                modal.dataset.orderId = orderId;
+                                modal.classList.remove('hidden');
+                                document.getElementById('return-error').classList.add('hidden');
+                        }
+
+                        function closeReturnModal() {
+                                const modal = document.getElementById('return-modal');
+                                if (modal) modal.classList.add('hidden');
+                        }
+
+                        async function submitReturnRequest() {
+                                const modal = document.getElementById('return-modal');
+                                const orderId = modal.dataset.orderId;
+                                const reason = document.getElementById('return-reason').value.trim();
+                                const details = document.getElementById('return-details').value.trim();
+                                const videos = document.getElementById('return-videos').files;
+                                const images = document.getElementById('return-images').files;
+                                const errEl = document.getElementById('return-error');
+                                errEl.classList.add('hidden'); errEl.textContent = '';
+
+                                if (!reason) { errEl.textContent = 'Please provide a reason.'; errEl.classList.remove('hidden'); return; }
+                                const token = localStorage.getItem('token');
+                                if (!token) { errEl.textContent = 'Please log in to submit a return.'; errEl.classList.remove('hidden'); return; }
+
+                                const fd = new FormData();
+                                fd.append('reason', reason);
+                                fd.append('details', details);
+                                for (let i=0;i<videos.length;i++) fd.append('videos', videos[i]);
+                                for (let i=0;i<images.length;i++) fd.append('images', images[i]);
+
+                                try {
+                                        const res = await fetch(`${API}/api/orders/${orderId}/returns`, {
+                                                method: 'POST',
+                                                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                                                body: fd
+                                        });
+                                        const data = await res.json();
+                                        if (!res.ok) {
+                                                errEl.textContent = data.msg || JSON.stringify(data);
+                                                errEl.classList.remove('hidden');
+                                                return;
+                                        }
+                                        closeReturnModal();
+                                        alert('Return request submitted. Admin will review it shortly.');
+                                } catch (e) {
+                                        errEl.textContent = 'Failed to submit request. Try again later.';
+                                        errEl.classList.remove('hidden');
+                                        console.error('Submit return error', e);
+                                }
+                        }
+
             // --- Vouchers Logic ---
             async function fetchVouchers() {
                 try {
@@ -859,10 +1088,13 @@
             function renderVouchers(vouchers) {
                 if (!vouchers || vouchers.length === 0) { vouchersList.innerHTML = '<p class="text-gray-500">You have no vouchers.</p>'; return; }
                 vouchersList.innerHTML = vouchers.map(v => `
-                <div class="border rounded p-4 bg-gray-50">
+                <div class="border rounded p-4 ${v.used ? 'bg-gray-100' : 'bg-gray-50'}">
                     <div class="flex justify-between items-center">
-                        <span class="text-lg font-mono font-bold text-indigo-700">${v.code}</span>
-                        <span class="text-sm font-semibold">${v.type === 'percentage' ? `${v.value}% OFF` : (v.type === 'fixed' ? `₱${v.value} OFF` : 'Free Shipping')}</span>
+                        <span class="text-lg font-mono font-bold ${v.used ? 'text-gray-500' : 'text-indigo-700'}">${v.code}</span>
+                        <div class="flex items-center gap-3">
+                          <span class="text-sm font-semibold">${v.type === 'percentage' ? `${v.value}% OFF` : (v.type === 'fixed' ? `₱${v.value} OFF` : 'Free Shipping')}</span>
+                          ${v.used ? `<span class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">Used</span>` : ''}
+                        </div>
                     </div>
                     <p class="text-sm text-gray-700 mt-2">${v.description}</p>
                 </div>`).join('');
@@ -900,7 +1132,8 @@
                     // Fetch data on-demand
                     if (tab === 'purchases' && purchasesList.innerHTML.trim() === "") fetchPurchases('All');
                     if (tab === 'addresses' && addressesList.innerHTML.trim() === "") fetchAddresses();
-                    if (tab === 'vouchers' && vouchersList.innerHTML.trim() === "") fetchVouchers();
+                    // Always refresh vouchers when user opens the Vouchers tab so used/removed vouchers reflect server state
+                    if (tab === 'vouchers') fetchVouchers();
 
                 } else if (parentTab) {
                     btn.classList.add('sidebar-active');

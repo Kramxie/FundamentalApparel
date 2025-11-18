@@ -10,7 +10,8 @@ const {
     getProducts, 
     getProductById,
     updateProduct,
-    deleteProduct  
+    deleteProduct,
+    addReview 
 } = require('../controllers/productController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -55,6 +56,9 @@ router.route('/:id')
         { name: 'galleryImages', maxCount: 8 }
     ]), updateProduct)
     .delete(protect, authorize('admin','employee'), deleteProduct);
+
+// Reviews
+router.post('/:id/reviews', protect, addReview);
 
 module.exports = router;
 

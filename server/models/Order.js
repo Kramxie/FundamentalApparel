@@ -60,10 +60,11 @@ const orderSchema = new mongoose.Schema({
     // Order lifecycle status managed by admin
     status: {
         type: String,
-        enum: ['Processing', 'Accepted', 'Shipped', 'Delivered', 'Cancelled'],
+        enum: ['Processing', 'Accepted', 'Shipped', 'Delivered', 'Completed', 'Cancelled'],
         default: 'Processing',
         required: true
     },
+    deliveredAt: { type: Date },
     
     // --- NEW CANCELLATION FIELDS ---
     cancellationReason: {

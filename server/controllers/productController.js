@@ -1,7 +1,9 @@
 const Product = require("../models/Product");
+const Inventory = require("../models/Inventory");
 const Category = require("../models/Category");
 const mongoose = require('mongoose');
 const path = require("path");
+const Order = require('../models/Order');
 // @desc    Add a new product
 // @route   POST /api/products/add
 // @access  Private/Admin
@@ -71,6 +73,35 @@ exports.addProduct = async (req, res, next) => {
       payload.imageUrl = req.body.imageUrl;
     }
     const product = await Product.create(payload);
+    
+    // Auto-sync to Inventory: create inventory entry for this product
+    try {
+      const inventoryData = {
+        name: product.name,
+        type: 'product',
+        quantity: product.countInStock,
+        unit: 'pieces',
+        price: product.price,
+        lowStockThreshold: 10,
+        supplier: '',
+        description: product.description || '',
+        isProduct: true,
+        productId: product._id,
+        category: product.category || '',
+        imageUrl: product.imageUrl || '',
+        gallery: product.gallery || [],
+        sizes: product.sizes || [],
+        colors: product.colors || [],
+        material: product.material || '',
+        productDetails: product.productDetails || '',
+        faqs: product.faqs || ''
+      };
+      await Inventory.create(inventoryData);
+    } catch (invError) {
+      console.error('Failed to create inventory entry:', invError);
+      // Don't fail the product creation, just log the error
+    }
+    
     res.status(201).json({ success: true, data: product });
   } catch (error) {
     console.error('Add product error:', error);
@@ -200,6 +231,28 @@ exports.updateProduct = async (req, res, next) => {
       runValidators: true,
     });
 
+    // Sync to Inventory if linked
+    try {
+      const inventoryItem = await Inventory.findOne({ productId: product._id });
+      if (inventoryItem) {
+        inventoryItem.name = product.name;
+        inventoryItem.quantity = product.countInStock;
+        inventoryItem.price = product.price;
+        inventoryItem.description = product.description || '';
+        inventoryItem.category = product.category || '';
+        inventoryItem.imageUrl = product.imageUrl || '';
+        inventoryItem.gallery = product.gallery || [];
+        inventoryItem.sizes = product.sizes || [];
+        inventoryItem.colors = product.colors || [];
+        inventoryItem.material = product.material || '';
+        inventoryItem.productDetails = product.productDetails || '';
+        inventoryItem.faqs = product.faqs || '';
+        await inventoryItem.save();
+      }
+    } catch (invError) {
+      console.error('Failed to sync inventory:', invError);
+    }
+
     res.status(200).json({ success: true, data: product });
   } catch (error) {
     console.error("[Update Product Controller] Error:", error);
@@ -217,12 +270,63 @@ exports.deleteProduct = async (req, res, next) => {
       return res.status(404).json({ success: false, msg: "Product not found" });
     }
 
+    // Delete linked inventory entry
+    try {
+      await Inventory.findOneAndDelete({ productId: product._id });
+    } catch (invError) {
+      console.error('Failed to delete inventory entry:', invError);
+    }
+
     await product.deleteOne(); // Use deleteOne method on the document
 
     res.status(200).json({ success: true, data: {} });
   } catch (error) {
     console.error("[Delete Product Controller] Error:", error);
     res.status(500).json({ success: false, msg: "Server Error" });
+  }
+};
+
+// --- NEW: Add / Update Product Review ---
+// @desc    Add or update a product review by a user who completed (Delivered) an order containing the product
+// @route   POST /api/products/:id/reviews
+// @access  Private (any user who purchased & received the product)
+exports.addReview = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const { rating, comment } = req.body;
+    if (!rating) {
+      return res.status(400).json({ success: false, msg: 'Rating is required.' });
+    }
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, msg: 'Product not found' });
+    }
+    // Ensure user purchased & order delivered
+    const hasPurchased = await Order.findOne({ user: req.user._id, status: { $in: ['Delivered','Completed'] }, 'orderItems.product': productId });
+    if (!hasPurchased) {
+      return res.status(403).json({ success: false, msg: 'You can only review products you have received.' });
+    }
+    // Check existing review by same user
+    const existing = product.reviews.find(r => r.user.toString() === req.user._id.toString());
+    if (existing) {
+      existing.rating = Number(rating);
+      existing.comment = comment || existing.comment;
+      existing.createdAt = new Date();
+    } else {
+      product.reviews.push({
+        user: req.user._id,
+        userName: req.user.name || req.user.username || 'User',
+        rating: Number(rating),
+        comment: comment || ''
+      });
+    }
+    product.numReviews = product.reviews.length;
+    product.averageRating = product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.numReviews;
+    await product.save();
+    res.status(200).json({ success: true, data: { reviews: product.reviews, averageRating: product.averageRating, numReviews: product.numReviews } });
+  } catch (error) {
+    console.error('[Add Review] Error:', error);
+    res.status(500).json({ success: false, msg: 'Server Error' });
   }
 };
 

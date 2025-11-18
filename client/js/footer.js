@@ -56,7 +56,7 @@
               <i class="fas fa-wallet"></i> GCash
             </span>
             <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-50 text-gray-700 border border-gray-200 text-xs font-semibold">
-              <i class="fas fa-landmark"></i> Bank Transfer
+              <i class="fas fa-landmark"></i> Credit Cards
             </span>
           </div>
         </div>

@@ -106,12 +106,12 @@
             <div class="p-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
               <div class="flex gap-3 items-center">
                 <select id="filter-status" class="border rounded-md px-3 py-2 text-sm">
-                  <option value="">Status</option>
-                  <option>Processing</option>
-                  <option>Accepted</option>
-                  <option>Shipped</option>
-                  <option>Delivered</option>
-                  <option>Cancelled</option>
+                  <option value="">Order Status</option>
+                  <option value="to-pay">To Pay</option>
+                  <option value="to-ship">To Ship</option>
+                  <option value="to-receive">To Receive</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
                 </select>
                 <select id="filter-payment" class="border rounded-md px-3 py-2 text-sm">
                   <option value="">Payment</option>
@@ -130,6 +130,7 @@
                     <th class="text-left px-4 py-3">Order ID</th>
                     <th class="text-left px-4 py-3">Created</th>
                     <th class="text-left px-4 py-3">Payment Status</th>
+                    <th class="text-left px-4 py-3">Order Status</th>
                     <th class="text-left px-4 py-3">Items</th>
                     <th class="text-left px-4 py-3">Customer</th>
                     <th class="text-left px-4 py-3">Shipping</th>
@@ -145,7 +146,62 @@
 
         <div id="tab-content-custom" class="hidden">
           <div class="bg-white rounded-lg shadow">
-            <div class="p-4 flex justify-end">
+            <div class="p-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+              <div class="flex flex-wrap gap-2 items-center">
+                <input id="custom-search" type="text" placeholder="Search name, ref, courier..." class="border rounded-md px-3 py-2 text-sm w-56">
+                <select id="custom-filter-status" class="border rounded-md px-3 py-2 text-sm">
+                  <option value="">Status</option>
+                  <option>Pending Quote</option>
+                  <option>Quote Sent</option>
+                  <option>Pending Downpayment</option>
+                  <option>In Production</option>
+                  <option>Pending Balance</option>
+                  <option>Pending Final Verification</option>
+                  <option>Ready for Pickup/Delivery</option>
+                  <option>Out for Delivery</option>
+                  <option>Completed</option>
+                  <option>Cancelled</option>
+                </select>
+                <select id="custom-filter-type" class="border rounded-md px-3 py-2 text-sm">
+                  <option value="">Type</option>
+                  <option>Customize Product</option>
+                  <option>Upload File</option>
+                </select>
+                <select id="custom-filter-shipmethod" class="border rounded-md px-3 py-2 text-sm">
+                  <option value="">Shipping Method</option>
+                  <option>Standard</option>
+                  <option>Pick-Up</option>
+                </select>
+                <select id="custom-filter-fulfillment" class="border rounded-md px-3 py-2 text-sm">
+                  <option value="">Fulfillment</option>
+                  <option>pending</option>
+                  <option>pickup</option>
+                  <option>delivery</option>
+                </select>
+                <select id="custom-filter-payment" class="border rounded-md px-3 py-2 text-sm">
+                  <option value="">Payment Stage</option>
+                  <option value="dp-paid">Downpayment Paid</option>
+                  <option value="dp-unpaid">Downpayment Pending</option>
+                  <option value="bal-paid">Balance Paid</option>
+                  <option value="bal-unpaid">Balance Pending</option>
+                </select>
+                <select id="custom-filter-courier" class="border rounded-md px-3 py-2 text-sm">
+                  <option value="">Courier</option>
+                  <option value="has">Has Courier</option>
+                  <option value="none">No Courier</option>
+                </select>
+                <select id="custom-filter-tracking" class="border rounded-md px-3 py-2 text-sm">
+                  <option value="">Tracking</option>
+                  <option value="has">Has Tracking</option>
+                  <option value="none">No Tracking</option>
+                </select>
+                <div class="flex items-center gap-2">
+                  <input id="custom-date-from" type="date" class="border rounded-md px-2 py-1.5 text-sm" />
+                  <span class="text-gray-400 text-xs">to</span>
+                  <input id="custom-date-to" type="date" class="border rounded-md px-2 py-1.5 text-sm" />
+                </div>
+                <button id="custom-filter-reset" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Reset</button>
+              </div>
               <div class="text-sm text-gray-500"><span id="custom-count">0</span> custom requests</div>
             </div>
             <div class="overflow-x-auto">
@@ -316,6 +372,7 @@
         <p id="modal-error" class="text-sm text-red-600 mr-auto"></p>
         <button id="modal-save"
           class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded">Save</button>
+        <button id="modal-remove" class="hidden bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded">Remove</button>
       </div>
     </div>
   </div>
@@ -496,10 +553,30 @@
             <h4 class="font-semibold text-gray-800 mb-2">🖨️ Printing Only</h4>
             <div class="space-y-2 text-sm">
               <p><strong>Printing Method:</strong> <span id="custom-modal-printing-method"></span></p>
-              <p><strong>Garment Size:</strong> <span id="custom-modal-garment-size"></span></p>
+              <p><strong>Fabric Type:</strong> <span id="custom-modal-fabric-type">N/A</span></p>
+              <p><strong>Garment Type:</strong> <span id="custom-modal-garment-type">N/A</span></p>
+              <p id="custom-modal-garment-size-row"><strong>Garment Size:</strong> <span id="custom-modal-garment-size"></span></p>
               <div id="custom-modal-printing-file-section" class="hidden">
                 <strong>Design File:</strong>
                 <div id="custom-modal-printing-file" class="mt-1"></div>
+              </div>
+              <div id="custom-modal-po-team-section" class="hidden bg-blue-50 p-3 rounded border border-blue-200 space-y-2">
+                <div class="flex items-center justify-between">
+                  <h5 class="font-semibold text-blue-900">👥 Team List</h5>
+                  <a id="custom-modal-po-team-file-link" href="#" target="_blank" class="hidden text-blue-700 text-xs hover:underline">Download original file</a>
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full text-xs border">
+                    <thead class="bg-blue-100">
+                      <tr>
+                        <th class="border px-2 py-1 text-left">Surname / Name</th>
+                        <th class="border px-2 py-1 text-left">Number</th>
+                        <th class="border px-2 py-1 text-left">Size</th>
+                      </tr>
+                    </thead>
+                    <tbody id="custom-modal-po-team-tbody" class="bg-white"></tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -731,6 +808,17 @@
         // Custom Order Selectors
         customOrdersBody: document.getElementById('custom-orders-body'),
         customCount: document.getElementById('custom-count'),
+        customSearch: document.getElementById('custom-search'),
+        customFilterStatus: document.getElementById('custom-filter-status'),
+        customFilterType: document.getElementById('custom-filter-type'),
+        customFilterShipMethod: document.getElementById('custom-filter-shipmethod'),
+        customFilterFulfillment: document.getElementById('custom-filter-fulfillment'),
+        customFilterPayment: document.getElementById('custom-filter-payment'),
+        customFilterCourier: document.getElementById('custom-filter-courier'),
+        customFilterTracking: document.getElementById('custom-filter-tracking'),
+        customDateFrom: document.getElementById('custom-date-from'),
+        customDateTo: document.getElementById('custom-date-to'),
+        customFilterReset: document.getElementById('custom-filter-reset'),
         customModal: document.getElementById('custom-order-modal'),
         customModalClose: document.getElementById('custom-modal-close'),
         customModalError: document.getElementById('custom-modal-error'),
@@ -780,22 +868,55 @@
       }
 
       function renderRegularOrders() {
-        // ... (ang function na ito ay pareho pa rin, walang bago)
         const q = els.search.value.trim().toLowerCase();
         const s = els.filterStatus.value;
         const p = els.filterPayment.value;
+        // Map filter value to backend status (note: 'To Pay' is derived from paymentStatus + Processing)
+        const statusFilterMap = {
+          'to-ship': ['Accepted'],
+          'to-receive': ['Shipped'],
+          'completed': ['Delivered'],
+          'cancelled': ['Cancelled']
+        };
+
         const filteredOrders = allOrders.filter(o => {
           const hay = [o._id, o.user?.name, o.trackingCode, o.shippingService].join(' ').toLowerCase();
           if (q && !hay.includes(q)) return false;
-          if (s && o.status !== s) return false;
+          if (s) {
+            if (s === 'to-pay') {
+              // "To Pay" means order is in Processing and payment is still Pending
+              if (!(o.status === 'Processing' && (!o.paymentStatus || o.paymentStatus === 'Pending'))) return false;
+            } else if (statusFilterMap[s] && !statusFilterMap[s].includes(o.status)) {
+              return false;
+            }
+          }
           if (p && o.paymentStatus !== p) return false;
           return true;
         });
+
+        // Map backend status to user-friendly label, taking paymentStatus into account
+        const statusBadge = (order) => {
+          const status = order.status;
+          if (status === 'Processing') {
+            // If payment pending -> To Pay; if already received -> Processing (paid)
+            if (!order.paymentStatus || order.paymentStatus === 'Pending') return `<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">To Pay</span>`;
+            return `<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Processing</span>`;
+          }
+          const map = {
+            'Accepted': ['To Ship', 'bg-blue-100 text-blue-800'],
+            'Shipped': ['To Receive', 'bg-indigo-100 text-indigo-800'],
+            'Delivered': ['Completed', 'bg-green-100 text-green-800'],
+            'Cancelled': ['Cancelled', 'bg-red-100 text-red-800']
+          };
+          const [label, cls] = map[status] || [status, 'bg-gray-100 text-gray-800'];
+          return `<span class="px-2 py-1 text-xs rounded-full ${cls}">${label}</span>`;
+        };
         const rows = filteredOrders.map(o => `
           <tr>
             <td class="px-4 py-3">${shortId(o._id)}</td>
             <td class="px-4 py-3">${new Date(o.createdAt).toLocaleDateString()}</td>
             <td class="px-4 py-3">${paymentBadge(o.paymentStatus)}</td>
+            <td class="px-4 py-3">${statusBadge(o)}</td>
             <td class="px-4 py-3">${(o.orderItems || []).reduce((n, i) => n + (i.quantity || 0), 0)}</td>
             <td class="px-4 py-3">${o.user?.name || '-'}</td>
             <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
@@ -807,16 +928,90 @@
             </td>
           </tr>
         `).join('');
-        els.tbody.innerHTML = rows || '<tr><td colspan="8" class="px-4 py-6 text-center text-gray-500">No orders found.</td></tr>';
+        els.tbody.innerHTML = rows || '<tr><td colspan="9" class="px-4 py-6 text-center text-gray-500">No orders found.</td></tr>';
         els.count.textContent = filteredOrders.length;
       }
 
       // --- MODIFIED: renderCustomOrders ---
       function renderCustomOrders() {
-        const rows = allCustomOrders.map(o => {
+        const typeLabel = (t) => {
+          // Prefer service-based mapping for clarity
+          return function(mapObj){
+            if (mapObj.serviceType === 'printing-only') return 'Upload File';
+            if (t === 'Template' || t === 'LayoutCreation') return 'Customize Product';
+            if (t === 'PrintingOnly' || t === 'FileUpload') return 'Upload File';
+            return t || '-';
+          };
+        };
+        // Apply client-side filters
+        const q = (els.customSearch?.value || '').trim().toLowerCase();
+        const fStatus = els.customFilterStatus?.value || '';
+        const fType = els.customFilterType?.value || '';
+        const fShip = els.customFilterShipMethod?.value || '';
+        const fFull = els.customFilterFulfillment?.value || '';
+        const fPay = els.customFilterPayment?.value || '';
+        const fCourier = els.customFilterCourier?.value || '';
+        const fTrack = els.customFilterTracking?.value || '';
+        const dFrom = els.customDateFrom?.value ? new Date(els.customDateFrom.value) : null;
+        const dTo = els.customDateTo?.value ? new Date(els.customDateTo.value) : null;
+
+        const filtered = allCustomOrders.filter(o => {
+          // text search across common fields
+          const hay = [
+            o._id,
+            o.user?.name,
+            o.productName,
+            typeLabel(o.customType)(o),
+            o.status,
+            o.courier,
+            o.trackingNumber,
+            o.shippingMethod,
+            o.fulfillmentMethod
+          ].filter(Boolean).join(' ').toLowerCase();
+          if (q && !hay.includes(q)) return false;
+          if (fStatus && o.status !== fStatus) return false;
+          if (fType && typeLabel(o.customType)(o) !== fType) return false;
+          if (fShip && (o.shippingMethod || '') !== fShip) return false;
+          if (fFull && (o.fulfillmentMethod || '') !== fFull) return false;
+          if (fPay) {
+            const dpPaid = !!o.downPaymentPaid;
+            const balPaid = !!o.balancePaid;
+            if (fPay === 'dp-paid' && !dpPaid) return false;
+            if (fPay === 'dp-unpaid' && dpPaid) return false;
+            if (fPay === 'bal-paid' && !balPaid) return false;
+            if (fPay === 'bal-unpaid' && balPaid) return false;
+          }
+          if (fCourier) {
+            const has = !!(o.courier && o.courier.trim());
+            if (fCourier === 'has' && !has) return false;
+            if (fCourier === 'none' && has) return false;
+          }
+          if (fTrack) {
+            const has = !!(o.trackingNumber && o.trackingNumber.trim());
+            if (fTrack === 'has' && !has) return false;
+            if (fTrack === 'none' && has) return false;
+          }
+          if (dFrom || dTo) {
+            const created = new Date(o.createdAt);
+            if (dFrom && created < dFrom) return false;
+            if (dTo) {
+              // include whole day for 'to'
+              const toEnd = new Date(dTo); toEnd.setHours(23,59,59,999);
+              if (created > toEnd) return false;
+            }
+          }
+          return true;
+        });
+
+        const rows = filtered.map(o => {
           let details = '';
           if (o.customType === 'FileUpload') {
             details = `<a href="${o.designFileUrl}" target="_blank" class="text-indigo-600 hover:underline">View Design File</a>`;
+          } else if (o.serviceType === 'printing-only') {
+            const parts = [];
+            if (o.designFileUrl) parts.push(`<a href="${o.designFileUrl}" target="_blank" class="text-indigo-600 hover:underline">Download Design</a>`);
+            if (o.teamNamesFileUrl) parts.push(`<a href="${o.teamNamesFileUrl}" target="_blank" class="text-indigo-600 hover:underline">Team List</a>`);
+            details = parts.join(' • ') || (o.designDetails || 'N/A');
           } else {
             details = o.designDetails || 'N/A';
           }
@@ -841,7 +1036,7 @@
                   <tr>
                       <td class="px-4 py-3">${new Date(o.createdAt).toLocaleDateString()}</td>
                       <td class="px-4 py-3">${o.user?.name || 'N/A'}</td>
-                      <td class="px-4 py-3">${o.customType}</td>
+                      <td class="px-4 py-3">${typeLabel(o.customType)(o)}</td>
                       <td class="px-4 py-3">${o.quantity}</td>
                       <td class="px-4 py-3">${statusBadge}</td>
                       <td class="px-4 py-3 text-xs max-w-xs truncate">${details}</td>
@@ -854,7 +1049,7 @@
               `;
         }).join('');
         els.customOrdersBody.innerHTML = rows || '<tr><td colspan="7" class="px-4 py-6 text-center text-gray-500">No custom orders found.</td></tr>';
-        els.customCount.textContent = allCustomOrders.length;
+        els.customCount.textContent = filtered.length;
       }
 
       // Removed: Payment Info button in table; details shown directly in modal
@@ -893,6 +1088,31 @@
           if (!data.success) throw new Error(data.msg || 'Failed to load custom orders');
           allCustomOrders = data.data;
           renderCustomOrders();
+          // Bind filter events once after initial load
+          const reb = renderCustomOrders;
+          els.customSearch?.addEventListener('input', reb);
+          els.customFilterStatus?.addEventListener('change', reb);
+          els.customFilterType?.addEventListener('change', reb);
+          els.customFilterShipMethod?.addEventListener('change', reb);
+          els.customFilterFulfillment?.addEventListener('change', reb);
+          els.customFilterPayment?.addEventListener('change', reb);
+          els.customFilterCourier?.addEventListener('change', reb);
+          els.customFilterTracking?.addEventListener('change', reb);
+          els.customDateFrom?.addEventListener('change', reb);
+          els.customDateTo?.addEventListener('change', reb);
+          els.customFilterReset?.addEventListener('click', () => {
+            els.customSearch.value = '';
+            els.customFilterStatus.value = '';
+            els.customFilterType.value = '';
+            els.customFilterShipMethod.value = '';
+            els.customFilterFulfillment.value = '';
+            els.customFilterPayment.value = '';
+            els.customFilterCourier.value = '';
+            els.customFilterTracking.value = '';
+            els.customDateFrom.value = '';
+            els.customDateTo.value = '';
+            renderCustomOrders();
+          });
         } catch (err) {
           alert(err.message);
         }
@@ -946,12 +1166,19 @@
         els.modalAddress.innerHTML = `<div>${[a.block, a.lot].filter(Boolean).join(' ')} ${a.street || ''}</div><div>${a.building || ''}</div><div>${a.city || ''}, ${a.province || ''} ${a.zip || ''}</div><div>${a.phone || ''}</div>`;
         els.formPaymentStatus.value = order.paymentStatus || 'Pending';
         els.formStatus.value = order.status || 'Processing';
-        // If PayMongo session exists, lock payment status (webhook/sync controls it)
-        els.formPaymentStatus.disabled = !!order.paymentIntentId;
-        els.formPaymentStatus.title = order.paymentIntentId ? 'Payment status is managed by PayMongo' : '';
         els.formShippingService.value = order.shippingService || '';
         els.formTrackingCode.value = order.trackingCode || '';
         els.modalError.textContent = '';
+        // Disable editing if Completed (Delivered)
+        const isCompleted = order.status === 'Delivered' || order.status === 'Completed';
+        els.formPaymentStatus.disabled = !!order.paymentIntentId || isCompleted;
+        els.formStatus.disabled = isCompleted;
+        els.formShippingService.disabled = isCompleted;
+        els.formTrackingCode.disabled = isCompleted;
+        els.modalSave.style.display = isCompleted ? 'none' : '';
+        const removeBtn = document.getElementById('modal-remove');
+        if (removeBtn) removeBtn.style.display = isCompleted ? '' : 'none';
+        els.formPaymentStatus.title = order.paymentIntentId ? 'Payment status is managed by PayMongo' : '';
         if (order.status === 'Cancelled' && order.cancellationReason) {
           els.modalCancelledBy.textContent = order.cancelledBy || 'N/A';
           els.modalCancellationReason.textContent = order.cancellationReason;
@@ -961,6 +1188,25 @@
         }
         els.modalAdminCancelReasonBox.classList.toggle('hidden', order.status !== 'Cancelled');
         els.formCancellationReason.value = order.cancellationReason || '';
+      }
+
+      // Remove order (Completed only)
+      document.getElementById('modal-remove').onclick = async function() {
+        if (!selectedOrder) return;
+        if (!confirm('Are you sure you want to remove this completed order?')) return;
+        try {
+          const res = await fetch(`${API}/api/orders/${selectedOrder._id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to remove order');
+          allOrders = allOrders.filter(o => o._id !== selectedOrder._id);
+          renderRegularOrders();
+          els.modal.classList.add('hidden');
+        } catch (err) {
+          els.modalError.textContent = err.message;
+        }
       }
 
       async function saveModal() {
@@ -994,7 +1240,7 @@
       }
 
       // --- NEW: Functions for Custom Order Modal ---
-      function openCustomModal(order) {
+      async function openCustomModal(order) {
         selectedCustomOrder = order;
         els.customModalError.textContent = '';
         els.customModalError.classList.add('hidden');
@@ -1368,20 +1614,83 @@
         else if (serviceType === 'printing-only') {
           const section = document.getElementById('custom-modal-printing-section');
           section.classList.remove('hidden');
-
           const methodMap = {
-            'sublimation': 'Sublimation Sample',
-            'upload-design': 'Upload Your Design',
-            'direct-to-garment': 'Direct to Garment (DTG)'
+            'dye-sublimation': 'Dye-Sublimation',
+            'heat-transfer': 'Heat Transfer',
+            'vinyl-print': 'Vinyl Print',
           };
           document.getElementById('custom-modal-printing-method').textContent = methodMap[order.printingMethod] || order.printingMethod || 'N/A';
-          document.getElementById('custom-modal-garment-size').textContent = order.garmentSize || 'N/A';
+          document.getElementById('custom-modal-fabric-type').textContent = order.fabricType || 'N/A';
+          document.getElementById('custom-modal-garment-type').textContent = order.garmentType || 'N/A';
 
-          if (order.printingMethod === 'upload-design' && order.designFileUrl) {
+          const sizeRow = document.getElementById('custom-modal-garment-size-row');
+          if (order.includeTeamMembers && Array.isArray(order.teamMembers) && order.teamMembers.length) {
+            sizeRow.classList.add('hidden');
+          } else {
+            sizeRow.classList.remove('hidden');
+            document.getElementById('custom-modal-garment-size').textContent = order.garmentSize || 'N/A';
+          }
+
+          if (order.designFileUrl) {
             const fileSection = document.getElementById('custom-modal-printing-file-section');
             fileSection.classList.remove('hidden');
             document.getElementById('custom-modal-printing-file').innerHTML = 
-              `<a href="${order.designFileUrl}" target="_blank" class="text-indigo-600 font-medium hover:underline">View Design File</a>`;
+              `<a href="${order.designFileUrl}" target="_blank" class="text-indigo-600 font-medium hover:underline">View/Download Design File</a>`;
+          }
+
+          // Team List (from saved members or uploaded txt/csv)
+          const teamWrap = document.getElementById('custom-modal-po-team-section');
+          const teamBody = document.getElementById('custom-modal-po-team-tbody');
+          const teamFileLink = document.getElementById('custom-modal-po-team-file-link');
+          teamBody.innerHTML = '';
+          teamWrap.classList.add('hidden');
+          teamFileLink.classList.add('hidden');
+
+          function renderTeamRows(list){
+            if (!list || !list.length) return;
+            const rowsHtml = list.map(m => `<tr><td class="border px-2 py-1">${(m.name||'').toString()}</td><td class="border px-2 py-1">${(m.jerseyNumber||m.number||'').toString()}</td><td class="border px-2 py-1">${(m.size||'').toString()}</td></tr>`).join('');
+            const maxVisible = 12;
+            if (list.length > maxVisible) {
+              teamBody.innerHTML = rowsHtml.split('</tr>').slice(0, maxVisible).join('</tr>');
+              let toggleBtn = teamWrap.querySelector('[data-po-team-toggle]');
+              if (!toggleBtn) {
+                toggleBtn = document.createElement('button');
+                toggleBtn.setAttribute('data-po-team-toggle','');
+                toggleBtn.className = 'mt-2 px-3 py-1 text-xs border rounded hover:bg-gray-50';
+                teamWrap.appendChild(toggleBtn);
+              }
+              toggleBtn.textContent = `Show all (${list.length})`;
+              let expanded = false;
+              toggleBtn.onclick = () => {
+                expanded = !expanded;
+                teamBody.innerHTML = expanded ? rowsHtml : rowsHtml.split('</tr>').slice(0, maxVisible).join('</tr>');
+                toggleBtn.textContent = expanded ? 'Show less' : `Show all (${list.length})`;
+              };
+            } else {
+              teamBody.innerHTML = rowsHtml;
+              const toggleBtn = teamWrap.querySelector('[data-po-team-toggle]');
+              if (toggleBtn) toggleBtn.remove();
+            }
+            teamWrap.classList.remove('hidden');
+          }
+
+          if (order.includeTeamMembers && Array.isArray(order.teamMembers) && order.teamMembers.length) {
+            renderTeamRows(order.teamMembers);
+          } else if (order.teamNamesFileUrl) {
+            try {
+              teamFileLink.href = order.teamNamesFileUrl;
+              teamFileLink.classList.remove('hidden');
+              const res = await fetch(order.teamNamesFileUrl, { headers: { 'ngrok-skip-browser-warning': 'true' }});
+              const text = await res.text();
+              const lines = text.split(/\r?\n/).filter(Boolean);
+              const parsed = lines.map(ln => {
+                const parts = ln.split(/[,|\t]/);
+                return { name: (parts[0]||'').trim(), jerseyNumber: (parts[1]||'').trim(), size: (parts[2]||'').trim() };
+              });
+              renderTeamRows(parsed);
+            } catch (e) {
+              console.warn('Failed to load team list file:', e);
+            }
           }
         }
 
@@ -1554,9 +1863,21 @@
                   <p class="mt-1 text-sm text-gray-600">Delivery Fee: FREE</p>
                 `;
               } else {
-                const fullAddress = addr 
-                  ? `${addr.street || ''}${addr.building ? ', ' + addr.building : ''}, ${addr.city || ''}, ${addr.province || ''} ${addr.zip || ''}`
-                  : order.deliveryAddress || 'N/A';
+                // Format full address from shippingAddress object with ALL fields
+                let fullAddress = 'N/A';
+                if (addr) {
+                  const parts = [];
+                  if (addr.block) parts.push(`Block ${addr.block}`);
+                  if (addr.lot) parts.push(`Lot ${addr.lot}`);
+                  if (addr.street) parts.push(addr.street);
+                  if (addr.building) parts.push(addr.building);
+                  if (addr.city) parts.push(addr.city);
+                  if (addr.province) parts.push(addr.province);
+                  if (addr.zip) parts.push(addr.zip);
+                  fullAddress = parts.length > 0 ? parts.join(', ') : 'N/A';
+                } else if (order.deliveryAddress) {
+                  fullAddress = order.deliveryAddress;
+                }
                 
                 fulfillmentInfo.innerHTML = `
                   <p class="font-semibold text-blue-900">🚚 Standard Delivery Selected</p>
@@ -1583,8 +1904,22 @@
               deliveryFields.classList.remove('hidden');
               pickupFields.classList.add('hidden');
               
-              // Populate delivery address
-              document.getElementById('delivery-address-text').textContent = order.deliveryAddress || 'N/A';
+              // Populate delivery address - use deliveryAddress if available, otherwise format from shippingAddress
+              let displayAddress = order.deliveryAddress || 'N/A';
+              if ((!order.deliveryAddress || order.deliveryAddress === 'N/A') && order.shippingAddress) {
+                const addr = order.shippingAddress;
+                const parts = [];
+                if (addr.block) parts.push(`Block ${addr.block}`);
+                if (addr.lot) parts.push(`Lot ${addr.lot}`);
+                if (addr.street) parts.push(addr.street);
+                if (addr.building) parts.push(addr.building);
+                if (addr.city) parts.push(addr.city);
+                if (addr.province) parts.push(addr.province);
+                if (addr.zip) parts.push(addr.zip);
+                if (addr.phone) parts.push(`Tel: ${addr.phone}`);
+                displayAddress = parts.length > 0 ? parts.join(', ') : 'N/A';
+              }
+              document.getElementById('delivery-address-text').textContent = displayAddress;
               
               document.getElementById('fulfillment-courier').value = order.courier || '';
               document.getElementById('fulfillment-tracking').value = order.trackingNumber || '';
@@ -1926,7 +2261,7 @@
         const totalAmount = Number(order.price || 0);
         const deliveryFee = Number(order.deliveryFee || 0);
         const grandTotal = totalAmount + deliveryFee;
-        let paymentType = order.paymentType || order.paymentOption || 'downpayment'; // 'downpayment' or 'full'
+        let paymentType = order.paymentType || order.paymentOption || 'downpayment'; // 'downpayment' | 'full' | 'remaining'
         // Use actual PayMongo payment amount when available; fallback to PayMongo details if DB missing
         let amountPaid = Number(order.paymentAmount || 0);
         if ((!amountPaid || amountPaid <= 0) && order.paymentIntentId) {
@@ -1945,7 +2280,11 @@
             console.warn('Payment details fallback failed:', e);
           }
         }
-        const remainingBalance = Math.max(0, grandTotal - amountPaid);
+        const isFinalPayment = (paymentType === 'remaining' || paymentType === 'balance');
+        // For final payment, remaining balance after this transaction is zero
+        const remainingBalance = (paymentType === 'full' || isFinalPayment) 
+          ? 0 
+          : Math.max(0, grandTotal - amountPaid);
         
         let receiptHtml = `
           <div class="space-y-4">
@@ -1959,7 +2298,11 @@
             
             <div>
               <div class="text-xs text-gray-500 mb-1">Payment Type</div>
-              <div class="text-lg font-semibold text-indigo-600 mb-3">${paymentType === 'full' ? '100% Full Payment' : '50% Downpayment'}</div>
+              <div class="text-lg font-semibold text-indigo-600 mb-3">${
+                paymentType === 'full' 
+                  ? '100% Full Payment' 
+                  : (isFinalPayment ? '50% Final Payment' : '50% Downpayment')
+              }</div>
               
               <div class="text-xs text-gray-500 mb-1">Amount Paid</div>
               <div class="text-3xl font-bold text-green-600">₱${amountPaid.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
@@ -2014,15 +2357,18 @@
                 <span>₱${grandTotal.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
               <div class="flex justify-between text-green-600 font-semibold">
-                <span>Amount Paid (${paymentType === 'full' ? '100%' : '50%'})</span>
+                <span>Amount Paid (${paymentType === 'full' ? '100%' : (isFinalPayment ? 'Final 50%' : '50%')})</span>
                 <span>₱${amountPaid.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
-              ${remainingBalance > 0 ? `
-              <div class="flex justify-between text-orange-600 font-semibold">
+              ${
+                remainingBalance > 0 || isFinalPayment || paymentType === 'full' 
+                  ? `
+              <div class="flex justify-between ${remainingBalance > 0 ? 'text-orange-600' : 'text-green-700'} font-semibold">
                 <span>Remaining Balance</span>
-                <span>₱${remainingBalance.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-              </div>
-              ` : ''}
+                <span>₱${(remainingBalance || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              </div>`
+                  : ''
+              }
             </div>
             
             ${order.paymentIntentId ? `

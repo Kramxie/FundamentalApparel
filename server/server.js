@@ -10,81 +10,85 @@ const jwt = require('jsonwebtoken');
 
 dotenv.config();
 
+// Passport
 require('./config/passport')(passport);
-// Route files
-const authRoutes = require('./routes/authRoutes');
-const productRoutes = require('./routes/productRoutes');
-const cartRoutes = require('./routes/cartRoutes'); 
-const orderRoutes = require('./routes/orderRoutes');
-const voucherRoutes = require('./routes/voucherRoutes');
-const dashboardRoutes = require('./routes/dashboardRoutes');
-const categoryRoutes = require('./routes/categoryRoutes');
-const customOrderRoutes = require('./routes/customOrderRoutes');
-const messageRoutes = require('./routes/messageRoutes');
-const inventoryRoutes = require('./routes/inventoryRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
-const adminRoutes = require('./routes/adminRoutes');
 
+// Connect DB
 connectDB();
 
 const app = express();
 const server = http.createServer(app);
+
+// Socket.io with dynamic CORS (Render + localhost)
 const io = socketIo(server, {
     cors: {
         origin: [
             "http://127.0.0.1:5500",
-            "https://unmumbled-balloonlike-gayle.ngrok-free.dev"
+            "http://localhost:5500",
+            process.env.FRONTEND_URL,
+            process.env.NGROK_DOMAIN
         ],
         credentials: true,
         methods: ["GET", "POST"]
     }
 });
 
-// Body parser
-app.use(express.json());
+// ====================== STATIC ASSETS =============================
+app.use(express.static(path.join(__dirname, "client")));
 
-// Enable CORS 
+// Serve uploads (uploads folder in Render is TEMPORARY)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve images folder
+app.use('/images', express.static(path.join(__dirname, '..', 'images')));
+
+// ====================== PAYMONGO WEBHOOK RAW BODY ==================
+app.use(express.json({
+    verify: (req, res, buf) => {
+        if (req.originalUrl.includes('/api/payments/webhook')) {
+            req.rawBody = buf;
+        }
+    }
+}));
+
+// ====================== CORS SETTINGS ==============================
 app.use(cors({
     origin: [
         "http://127.0.0.1:5500",
         "http://localhost:5500",
-        "https://unmumbled-balloonlike-gayle.ngrok-free.dev"
+        process.env.FRONTEND_URL,
+        process.env.NGROK_DOMAIN
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
 }));
 
+// Passport
 app.use(passport.initialize());
 
-// Serve uploaded files statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-app.use('/client', express.static(path.join(__dirname, '..', 'client')));
-// Serve images folder (outside client) for product/customizer assets
-app.use('/images', express.static(path.join(__dirname, '..', 'images')));
-
+// ====================== ROUTES ====================================
 app.get('/', (req, res) => {
-  res.send('API is running...');
+    res.send('API is running...');
 });
 
-// Mount routers
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/cart', cartRoutes); 
-app.use('/api/orders', orderRoutes);
-app.use('/api/vouchers', voucherRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/custom-orders', customOrderRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/admin/inventory', inventoryRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/payments', paymentRoutes);
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/cart', require('./routes/cartRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/vouchers', require('./routes/voucherRoutes'));
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/custom-orders', require('./routes/customOrderRoutes'));
+app.use('/api/messages', require('./routes/messageRoutes'));
+app.use('/api/admin/inventory', require('./routes/inventoryRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/payments', require('./routes/paymentRoutes'));
+app.use('/api/returns', require('./routes/returnRoutes'));
 
-// Socket.io authentication middleware
+// ====================== SOCKET.IO AUTH =============================
 io.use((socket, next) => {
     const token = socket.handshake.auth.token;
-    
+
     if (!token) {
         return next(new Error('Authentication error: No token provided'));
     }
@@ -98,19 +102,16 @@ io.use((socket, next) => {
     }
 });
 
-// Socket.io connection handling
+// ====================== SOCKET.IO EVENTS ===========================
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.userId}`);
 
-    // Join user to their personal room
     socket.join(socket.userId);
 
-    // Handle sending messages
     socket.on('sendMessage', async (data) => {
         try {
             const { recipientId, message } = data;
-            
-            // Broadcast to recipient
+
             io.to(recipientId).emit('receiveMessage', {
                 senderId: socket.userId,
                 recipientId,
@@ -118,31 +119,27 @@ io.on('connection', (socket) => {
                 timestamp: new Date()
             });
 
-            // Also send back to sender for confirmation
             socket.emit('messageSent', {
                 senderId: socket.userId,
                 recipientId,
                 message,
                 timestamp: new Date()
             });
+
         } catch (error) {
-            console.error('Socket sendMessage error:', error);
             socket.emit('messageError', { error: 'Failed to send message' });
         }
     });
 
-    // Handle typing indicator
     socket.on('typing', (data) => {
-        const { recipientId } = data;
-        io.to(recipientId).emit('userTyping', {
+        io.to(data.recipientId).emit('userTyping', {
             userId: socket.userId,
             isTyping: true
         });
     });
 
     socket.on('stopTyping', (data) => {
-        const { recipientId } = data;
-        io.to(recipientId).emit('userTyping', {
+        io.to(data.recipientId).emit('userTyping', {
             userId: socket.userId,
             isTyping: false
         });
@@ -153,7 +150,9 @@ io.on('connection', (socket) => {
     });
 });
 
+// ====================== START SERVER ===============================
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
+server.listen(PORT, () =>
+    console.log(`Server running on port ${PORT}`)
+);

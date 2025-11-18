@@ -41,16 +41,16 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    // Pwede kang magdagdag ng .ai, .psd, .pdf kung kailangan
-    const allowedMime = /jpeg|jpg|png|webp|zip|vnd.adobe.photoshop|postscript|pdf/;
-    const allowedExt = /jpeg|jpg|png|webp|zip|rar|psd|ai|pdf/; 
+    // Allow common images, vector/print files, archives and simple text lists
+    const allowedMime = /jpeg|jpg|png|webp|zip|vnd.adobe.photoshop|postscript|pdf|plain|csv/;
+    const allowedExt = /jpeg|jpg|png|webp|zip|rar|psd|ai|pdf|txt|csv/; 
     
     const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
 
     if (allowedMime.test(file.mimetype) || allowedExt.test(ext)){
         cb(null, true);
     } else {
-        cb(new Error('File type not allowed (Allowed: jpg, png, zip, psd, ai, pdf)'), false);
+        cb(new Error('File type not allowed (Allowed: jpg, png, zip, psd, ai, pdf, txt, csv)'), false);
     }
 };
 
@@ -75,7 +75,8 @@ router.route('/')
     .post(protect, upload.fields([
         { name: 'designFile', maxCount: 1 },
         { name: 'logoFile', maxCount: 1 },
-        { name: 'shortsDesignFile', maxCount: 1 }
+        { name: 'shortsDesignFile', maxCount: 1 },
+        { name: 'teamNamesFile', maxCount: 1 }
     ]), submitCustomOrder);
 
 router.route('/:id/downpayment')

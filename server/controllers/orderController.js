@@ -1,5 +1,7 @@
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
+const Product = require('../models/Product');
+const Inventory = require('../models/Inventory');
 const mongoose = require('mongoose');
 
 // --- MODIFIED FUNCTION ---
@@ -22,7 +24,7 @@ exports.getMyOrders = async (req, res) => {
             query.paymentStatus = 'Received';
             query.status = 'Shipped';
         } else if (tab === 'Completed') {
-            query.status = 'Delivered';
+            query.status = { $in: ['Delivered', 'Completed'] };
         } else if (tab === 'Cancelled') {
             query.status = 'Cancelled';
         }
@@ -159,6 +161,13 @@ exports.getAllOrders = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
     try {
         const { id } = req.params;
+        
+        // Load the order first
+        const order = await Order.findById(id);
+        if (!order) {
+            return res.status(404).json({ success: false, msg: 'Order not found' });
+        }
+        
         const updates = {};
 
         if (typeof req.body.paymentStatus === 'string') {
@@ -166,10 +175,41 @@ exports.updateOrderStatus = async (req, res) => {
             if (!allowedPS.includes(req.body.paymentStatus)) {
                 return res.status(400).json({ success: false, msg: 'Invalid paymentStatus' });
             }
+            
+            const previousPaymentStatus = order.paymentStatus;
             updates.paymentStatus = req.body.paymentStatus;
+            
             if (req.body.paymentStatus === 'Received') {
                 updates.isPaid = true;
                 updates.paidAt = new Date();
+                
+                // Deduct stock if payment just received (not already received)
+                if (previousPaymentStatus !== 'Received' && order.orderItems && order.orderItems.length > 0) {
+                    try {
+                        for (const item of order.orderItems) {
+                            if (!item.product) continue;
+                            
+                            // Deduct from Product collection
+                            const product = await Product.findById(item.product);
+                            if (product) {
+                                const newStock = Math.max(0, product.countInStock - item.quantity);
+                                product.countInStock = newStock;
+                                await product.save();
+                                console.log(`[Stock] Admin approved - Deducted ${item.quantity} from Product ${product.name}. New stock: ${newStock}`);
+                                
+                                // Deduct from Inventory collection (if linked)
+                                const inventoryItem = await Inventory.findOne({ productId: product._id });
+                                if (inventoryItem) {
+                                    inventoryItem.quantity = newStock;
+                                    await inventoryItem.save();
+                                    console.log(`[Stock] Synced Inventory for ${product.name}. New quantity: ${newStock}`);
+                                }
+                            }
+                        }
+                    } catch (stockError) {
+                        console.error('[Stock] Failed to deduct stock on payment approval:', stockError);
+                    }
+                }
             } else {
                 updates.isPaid = false;
                 updates.paidAt = undefined;
@@ -177,7 +217,7 @@ exports.updateOrderStatus = async (req, res) => {
         }
 
         if (typeof req.body.status === 'string') {
-            const allowedS = ['Processing', 'Accepted', 'Shipped', 'Delivered', 'Cancelled'];
+            const allowedS = ['Processing', 'Accepted', 'Shipped', 'Delivered', 'Completed', 'Cancelled'];
             if (!allowedS.includes(req.body.status)) {
                 return res.status(400).json({ success: false, msg: 'Invalid order status' });
             }
@@ -199,11 +239,11 @@ exports.updateOrderStatus = async (req, res) => {
             updates.trackingCode = req.body.trackingCode;
         }
 
-        const order = await Order.findByIdAndUpdate(id, updates, { new: true });
-        if (!order) {
+        const updatedOrder = await Order.findByIdAndUpdate(id, updates, { new: true });
+        if (!updatedOrder) {
             return res.status(404).json({ success: false, msg: 'Order not found' });
         }
-        res.status(200).json({ success: true, data: order });
+        res.status(200).json({ success: true, data: updatedOrder });
     } catch (error) {
         console.error('[Admin Update Order Status] Error:', error);
         res.status(500).json({ success: false, msg: 'Server Error' });
@@ -362,5 +402,38 @@ exports.cancelOrder = async (req, res) => {
     } catch (error) {
         console.error('[Cancel Order] Error:', error);
         res.status(500).json({ success: false, msg: 'Server Error' });
+    }
+};
+
+// --- NEW FUNCTION ---
+// @desc    User marks order as received/completed
+// @route   PUT /api/orders/:id/complete
+// @access  Private
+exports.completeOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const order = await Order.findById(id);
+        if (!order) {
+            return res.status(404).json({ success: false, msg: 'Order not found.' });
+        }
+        // ownership check (unless admin triggers later extension)
+        if (req.user.role !== 'admin' && order.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, msg: 'Not authorized to complete this order.' });
+        }
+        // Only allow completion if shipped and payment received (delivered transition)
+        if (order.status !== 'Shipped') {
+            return res.status(400).json({ success: false, msg: 'Order cannot be marked as received yet.' });
+        }
+        if (order.paymentStatus !== 'Received') {
+            return res.status(400).json({ success: false, msg: 'Payment must be confirmed before completing order.' });
+        }
+        // Mark as Completed to distinguish final customer-confirmed completion
+        order.status = 'Completed';
+        order.deliveredAt = new Date();
+        await order.save();
+        return res.status(200).json({ success: true, data: order });
+    } catch (error) {
+        console.error('[Complete Order] Error:', error);
+        return res.status(500).json({ success: false, msg: 'Server Error' });
     }
 };

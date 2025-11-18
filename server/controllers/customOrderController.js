@@ -51,6 +51,25 @@ exports.submitCustomOrder = async (req, res) => {
     
     const userId = req.user._id;
 
+    // Guard: Maximum 3 active quotes per account (active = not Completed/Cancelled)
+    try {
+      const ACTIVE_LIMIT = 3;
+      const activeCount = await CustomOrder.countDocuments({
+        user: userId,
+        status: { $nin: ['Completed', 'Cancelled'] }
+      });
+      if (activeCount >= ACTIVE_LIMIT) {
+        return res.status(403).json({
+          success: false,
+          msg: 'You have reached the maximum of 3 active quotes. Please complete at least one existing order (status: Completed) or cancel a pending quote before submitting a new one.',
+          activeCount,
+          limit: ACTIVE_LIMIT
+        });
+      }
+    } catch (e) {
+      console.warn('[submitCustomOrder] Active-quote limit check failed:', e.message);
+    }
+
     // Basic validation
     if (!quantity) {
       return res.status(400).json({
@@ -84,6 +103,9 @@ exports.submitCustomOrder = async (req, res) => {
       }
       if (req.files.shortsDesignFile && req.files.shortsDesignFile[0]) {
         orderData.shortsDesignFileUrl = `${BASE_URL}/uploads/custom-designs/${req.files.shortsDesignFile[0].filename}`;
+      }
+      if (req.files.teamNamesFile && req.files.teamNamesFile[0]) {
+        orderData.teamNamesFileUrl = `${BASE_URL}/uploads/custom-designs/${req.files.teamNamesFile[0].filename}`;
       }
     } else if (req.file) {
       // Backward compatibility for single file upload
@@ -176,6 +198,22 @@ exports.submitCustomOrder = async (req, res) => {
         // Add printing method and garment size
         if (printingMethod) orderData.printingMethod = printingMethod;
         if (garmentSize) orderData.garmentSize = garmentSize;
+        // Optional shared fields
+        if (req.body.fabricType) orderData.fabricType = req.body.fabricType;
+        if (req.body.garmentType) orderData.garmentType = req.body.garmentType;
+        // Accept team members info for jersey printing
+        if (req.body.includeTeamMembers === 'true' || req.body.includeTeamMembers === true) {
+          orderData.includeTeamMembers = true;
+          if (req.body.teamMembers) {
+            try {
+              orderData.teamMembers = typeof req.body.teamMembers === 'string' 
+                ? JSON.parse(req.body.teamMembers) 
+                : req.body.teamMembers;
+            } catch (e) {
+              console.error('Printing-only team members parse error:', e);
+            }
+          }
+        }
         orderData.designDetails = `Printing Only - ${printingMethod || 'Method not specified'}`;
         
         // Validate file if upload-design method
@@ -1025,7 +1063,7 @@ exports.updateFulfillmentDetails = async (req, res) => {
     });
   } catch (err) {
     console.error("updateFulfillmentDetails error:", err);
-    res.status(500).json({ success: false, msg: "Server error" });
+    const customOrder = await CustomOrder.create(orderData);
   }
 };
 
@@ -1103,6 +1141,25 @@ exports.submitQuote = async (req, res) => {
     ];
     if (!allowedGarments.includes(normalizedGarmentType)) {
       return res.status(400).json({ success: false, msg: `Invalid garmentType '${normalizedGarmentType}'. Allowed: ${allowedGarments.join(', ')}` });
+    }
+    
+    // Guard: Maximum 3 active quotes per account (active = not Completed/Cancelled)
+    try {
+      const ACTIVE_LIMIT = 3;
+      const activeCount = await CustomOrder.countDocuments({
+        user: userId,
+        status: { $nin: ['Completed', 'Cancelled'] }
+      });
+      if (activeCount >= ACTIVE_LIMIT) {
+        return res.status(403).json({
+          success: false,
+          msg: 'You have reached the maximum of 3 active quotes. Please complete at least one existing order (status: Completed) or cancel a pending quote before submitting a new one.',
+          activeCount,
+          limit: ACTIVE_LIMIT
+        });
+      }
+    } catch (e) {
+      console.warn('[submitQuote] Active-quote limit check failed:', e.message);
     }
     
     // Validation

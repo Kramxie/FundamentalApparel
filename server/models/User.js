@@ -18,6 +18,9 @@ const voucherSchema = new mongoose.Schema({
         required: true
     },
     value: { type: Number, default: 0 },
+    used: { type: Boolean, default: false },
+    usedAt: { type: Date },
+    usedByOrder: { type: String },
     createdAt: { type: Date, default: Date.now }
 });
 
