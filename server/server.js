@@ -206,3 +206,17 @@ const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
+
+// Global error handler - return JSON so frontends don't try to parse HTML error pages
+app.use((err, req, res, next) => {
+    try {
+        console.error('[ERROR]', err && err.stack ? err.stack : err);
+    } catch (e) { /* ignore logging failures */ }
+
+    const status = err && err.statusCode ? err.statusCode : 500;
+    const message = err && err.message ? err.message : 'Internal Server Error';
+
+    // Multer may throw its own error types; handle generically by returning JSON
+    res.status(status).json({ success: false, msg: message });
+});
+
