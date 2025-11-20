@@ -11,8 +11,41 @@
 </head>
 <body class="bg-gray-100">
     <div class="flex min-h-screen bg-gray-100">
-        <!-- Sidebar -->
+        <!-- Sidebar (desktop) -->
         <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+            <div class="flex items-center justify-center h-16 bg-white shadow-md"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
+            <div class="flex flex-col flex-grow p-4">
+                <nav class="flex-grow space-y-2">
+                    <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+                    </a>
+                    <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
+                    </a>
+                     <a href="manage-products.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
+                        <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+                    </a>
+                    <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
+                    </a>
+                    <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
+                    </a>
+                    <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
+                    </a>
+                    <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
+                    </a>
+                    <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+        <!-- Mobile sidebar overlay & drawer -->
+        <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/40 z-40 md:hidden"></div>
+        <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform -translate-x-full transition-transform z-50 md:hidden">
             <div class="flex items-center justify-center h-16 bg-white shadow-md"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
             <div class="flex flex-col flex-grow p-4">
                 <nav class="flex-grow space-y-2">
@@ -46,7 +79,12 @@
         <!-- Main content (table remains the same) -->
         <div class="flex flex-col flex-1 overflow-auto">
             <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6 sticky top-0 z-20">
-                <h1 class="text-xl font-semibold text-gray-800">Manage Products</h1>
+                <div class="flex items-center">
+                    <button id="mobile-menu-btn" class="md:hidden mr-3 p-2 rounded-md hover:bg-gray-100" aria-label="Open menu">
+                        <i class="fas fa-bars text-gray-700"></i>
+                    </button>
+                    <h1 class="text-xl font-semibold text-gray-800">Manage Products</h1>
+                </div>
                 <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
                     <i class="fas fa-sign-out-alt mr-2"></i>Logout
                 </button>
@@ -159,6 +197,31 @@
             });
 
             fetchProducts();
+
+            // Mobile sidebar toggle (hamburger)
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileSidebar = document.getElementById('mobile-sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            function openSidebar() {
+                if (!mobileSidebar) return;
+                mobileSidebar.classList.remove('-translate-x-full');
+                mobileSidebar.classList.add('translate-x-0');
+                if (sidebarOverlay) sidebarOverlay.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            }
+            function closeSidebar() {
+                if (!mobileSidebar) return;
+                mobileSidebar.classList.remove('translate-x-0');
+                mobileSidebar.classList.add('-translate-x-full');
+                if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+            mobileMenuBtn?.addEventListener('click', openSidebar);
+            sidebarOverlay?.addEventListener('click', closeSidebar);
+            if (mobileSidebar) {
+                Array.from(mobileSidebar.querySelectorAll('a')).forEach(a => a.addEventListener('click', closeSidebar));
+            }
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
         });
     </script>
 </body>
