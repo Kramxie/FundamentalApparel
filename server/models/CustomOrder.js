@@ -284,6 +284,17 @@ const CustomOrderSchema = new mongoose.Schema({
         enum: ['card', 'gcash', 'grab_pay', 'paymaya', 'online_banking', 'manual'],
         default: null
     }
+    ,
+    // Inventory allocation tracking (for printing-only orders)
+    inventoryAllocated: {
+        type: Boolean,
+        default: false
+    },
+    allocatedItems: [{
+        inventoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Inventory' },
+        name: String,
+        qty: Number
+    }]
 }, {
     timestamps: true
 });

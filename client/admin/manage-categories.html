@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Manage Categories</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-gray-100">
+  <div class="min-h-screen flex bg-gray-100">
+    <aside class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+      <div class="flex items-center justify-center h-16 bg-white shadow-md">
+        <span class="text-2xl font-bold text-indigo-600">Admin Panel</span>
+      </div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+          </a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
+          </a>
+          <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+          </a>
+          <a href="manage-categories.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
+            <i class="fas fa-list w-6"></i><span class="ml-3">Manage Categories</span>
+          </a>
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
+          </a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <header class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
+        <div class="flex items-center gap-3">
+          <h1 class="text-lg font-semibold">Manage Categories</h1>
+        </div>
+      </header>
+
+      <main class="p-6">
+        <div id="msg" class="hidden mb-4 p-3 rounded-md"></div>
+        <div class="bg-white p-6 rounded shadow">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">Categories</h2>
+            <div class="flex items-center gap-2">
+              <input id="new-category" placeholder="Add new category" class="border-gray-300 rounded-md p-2">
+              <button id="add-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Add</button>
+            </div>
+          </div>
+
+          <table class="w-full table-auto">
+            <thead>
+              <tr class="text-left text-sm text-gray-600">
+                <th class="p-2">Name</th>
+                <th class="p-2">Slug</th>
+                <th class="p-2 w-40">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="categories-table">
+              <!-- rows inserted here -->
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center">
+    <div class="bg-white p-6 rounded shadow w-96">
+      <h3 class="text-lg font-semibold mb-3">Edit Category</h3>
+      <input id="edit-name" class="w-full border-gray-300 rounded p-2 mb-3">
+      <div class="flex justify-end gap-2">
+        <button id="cancel-edit" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+        <button id="save-edit" class="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
+      </div>
+      <p id="edit-info" class="text-sm text-gray-500 mt-3"></p>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
+    const token = localStorage.getItem('adminToken');
+
+    const msgEl = document.getElementById('msg');
+    const table = document.getElementById('categories-table');
+    const addBtn = document.getElementById('add-btn');
+    const newInput = document.getElementById('new-category');
+
+    let categories = [];
+    let editing = null;
+
+    function showMsg(text, type = 'success') {
+      msgEl.textContent = text;
+      msgEl.className = `mb-4 p-3 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+      msgEl.classList.remove('hidden');
+      setTimeout(() => msgEl.classList.add('hidden'), 4000);
+    }
+
+    async function fetchCategories() {
+      try {
+        const res = await fetch(`${API}/api/categories`);
+        const json = await res.json();
+        if (json.success) {
+          categories = json.data;
+          renderTable();
+        }
+      } catch (e) {
+        showMsg('Could not load categories', 'error');
+      }
+    }
+
+    function renderTable() {
+      table.innerHTML = categories.map(c => `
+        <tr class="border-t">
+          <td class="p-2">${c.name}</td>
+          <td class="p-2">${c.slug}</td>
+          <td class="p-2">
+            <button class="edit-btn px-3 py-1 bg-yellow-400 text-white rounded" data-id="${c._id}" data-name="${c.name}">Edit</button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = btn.dataset.id;
+          const name = btn.dataset.name;
+          openEdit(id, name);
+        });
+      });
+    }
+
+    addBtn.addEventListener('click', async () => {
+      const name = newInput.value;
+      if (!name || !name.trim()) return;
+      try {
+        const res = await fetch(`${API}/api/categories`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name.trim() })
+        });
+        const json = await res.json();
+        if (json.success) {
+          newInput.value = '';
+          fetchCategories();
+          showMsg('Category added', 'success');
+        } else {
+          showMsg(json.msg || 'Failed to add', 'error');
+        }
+      } catch (err) {
+        showMsg('Network error', 'error');
+      }
+    });
+
+    function openEdit(id, name) {
+      editing = id;
+      document.getElementById('edit-name').value = name;
+      document.getElementById('edit-info').textContent = '';
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    document.getElementById('cancel-edit').addEventListener('click', () => {
+      editing = null;
+      document.getElementById('edit-modal').classList.add('hidden');
+    });
+
+    document.getElementById('save-edit').addEventListener('click', async () => {
+      const newName = document.getElementById('edit-name').value;
+      if (!editing || !newName || !newName.trim()) return;
+      try {
+        const res = await fetch(`${API}/api/categories/${editing}`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName.trim() })
+        });
+        const json = await res.json();
+        if (json.success) {
+          const updatedCount = json.data.updatedProducts || 0;
+          showMsg(`Category updated. Products reassigned: ${updatedCount}`, 'success');
+          document.getElementById('edit-modal').classList.add('hidden');
+          fetchCategories();
+        } else {
+          showMsg(json.msg || 'Failed to update', 'error');
+          document.getElementById('edit-info').textContent = json.msg || '';
+        }
+      } catch (err) {
+        showMsg('Network error', 'error');
+      }
+    });
+
+    (async () => {
+      await fetchCategories();
+    })();
+  </script>
+</body>
+</html>

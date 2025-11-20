@@ -2,7 +2,13 @@ const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const Inventory = require('../models/Inventory');
+const User = require('../models/User');
 const mongoose = require('mongoose');
+const notify = require('../utils/notify');
+
+function escapeRegex(text) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // --- MODIFIED FUNCTION ---
 // @desc    Get logged in user orders
@@ -31,7 +37,49 @@ exports.getMyOrders = async (req, res) => {
         // 'All' tab ay walang extra filter
 
         const orders = await Order.find(query).sort({ createdAt: -1 });
-        res.status(200).json({ success: true, count: orders.length, data: orders });
+        // Work with plain JS objects so we can freely attach annotation fields
+        const plainOrders = orders.map(o => (typeof o.toObject === 'function' ? o.toObject() : o));
+
+        // Annotate orders with whether the current user has left a review
+        try {
+            // Collect unique product ids from the orders
+            const productIds = new Set();
+            orders.forEach(o => (o.orderItems || []).forEach(it => { if (it.product) productIds.add(it.product.toString()); }));
+            const pidArray = Array.from(productIds);
+            if (pidArray.length > 0) {
+                // Find products among these that contain a review by this user
+                const productsWithMyReview = await Product.find({ _id: { $in: pidArray }, 'reviews.user': req.user._id }, { 'reviews.$': 1 }).lean();
+                // Build map productId -> review
+                const reviewMap = {};
+                for (const p of productsWithMyReview) {
+                    if (p.reviews && p.reviews.length > 0) {
+                        const r = p.reviews[0];
+                        reviewMap[p._id.toString()] = { rating: r.rating, comment: r.comment || '', userName: r.userName || '', reviewedAt: r.createdAt || null };
+                    }
+                }
+                // Attach flags to orders
+                plainOrders.forEach(o => {
+                    o.userHasReview = false;
+                    o.userReview = null;
+                    for (const it of (o.orderItems || [])) {
+                        const pid = it.product ? it.product.toString() : null;
+                        if (pid && reviewMap[pid]) {
+                            o.userHasReview = true;
+                            o.userReview = Object.assign({ productId: pid }, reviewMap[pid]);
+                            break;
+                        }
+                    }
+                });
+            } else {
+                // No products -> ensure fields present
+                plainOrders.forEach(o => { o.userHasReview = false; o.userReview = null; });
+            }
+        } catch (annotErr) {
+            console.warn('[getMyOrders] Failed to annotate reviews:', annotErr.message || annotErr);
+            plainOrders.forEach(o => { o.userHasReview = false; o.userReview = null; });
+        }
+
+        res.status(200).json({ success: true, count: plainOrders.length, data: plainOrders });
     } catch (error) {
         console.error('[Get My Orders Controller] Error:', error);
         res.status(500).json({ success: false, msg: 'Server Error' });
@@ -146,7 +194,79 @@ exports.createOrderWithReceipt = async (req, res) => {
 // @access  Private/Admin
 exports.getAllOrders = async (req, res) => {
     try {
-        const orders = await Order.find().populate('user', 'name email').sort({ createdAt: -1 });
+        const { status, paymentStatus, search, dateFrom, dateTo, shippingMethod } = req.query;
+        const query = {};
+
+        // map friendly status filters from admin UI
+        if (status) {
+            if (status === 'to-pay') {
+                query.status = 'Processing';
+                query.paymentStatus = { $in: [null, 'Pending'] };
+            } else if (status === 'to-ship') {
+                query.status = 'Accepted';
+            } else if (status === 'to-receive') {
+                query.status = 'Shipped';
+            } else if (status === 'completed') {
+                query.status = { $in: ['Delivered', 'Completed'] };
+            } else if (status === 'cancelled') {
+                query.status = 'Cancelled';
+            } else {
+                // allow direct DB status names
+                query.status = status;
+            }
+        }
+
+        if (paymentStatus) {
+            query.paymentStatus = paymentStatus;
+        }
+
+        if (shippingMethod) {
+            // Normalize common values
+            const sm = String(shippingMethod).toLowerCase();
+            if (sm === 'pick-up' || sm === 'pickup' || sm === 'pick_up') query.shippingMethod = 'Pick-Up';
+            else if (sm === 'standard' || sm === 'delivery' || sm === 'standard/delivery') query.shippingMethod = 'Standard';
+            else query.shippingMethod = shippingMethod;
+        }
+
+        if (dateFrom || dateTo) {
+            query.createdAt = {};
+            if (dateFrom) {
+                const d = new Date(dateFrom);
+                if (!isNaN(d)) query.createdAt.$gte = d;
+            }
+            if (dateTo) {
+                const d = new Date(dateTo);
+                if (!isNaN(d)) {
+                    d.setHours(23,59,59,999);
+                    query.createdAt.$lte = d;
+                }
+            }
+            if (Object.keys(query.createdAt).length === 0) delete query.createdAt;
+        }
+
+        // handle search: try to match user by name/email, or tracking code, or exact order id
+        if (search && String(search).trim()) {
+            const s = String(search).trim();
+            const regex = new RegExp(escapeRegex(s), 'i');
+            const or = [];
+            // match tracking code
+            or.push({ trackingCode: regex });
+            // match user name or email
+            try {
+                const users = await User.find({ $or: [{ name: regex }, { email: regex }] }, '_id');
+                const uids = users.map(u => u._id);
+                if (uids.length) or.push({ user: { $in: uids } });
+            } catch (e) {
+                console.warn('User search failed', e.message || e);
+            }
+            // exact id match
+            if (mongoose.Types.ObjectId.isValid(s)) {
+                try { or.push({ _id: mongoose.Types.ObjectId(s) }); } catch (e) {}
+            }
+            if (or.length) query.$or = or;
+        }
+
+        const orders = await Order.find(query).populate('user', 'name email').sort({ createdAt: -1 });
         res.status(200).json({ success: true, count: orders.length, data: orders });
     } catch (error) {
         console.error('[Admin Get All Orders] Error:', error);
@@ -192,7 +312,8 @@ exports.updateOrderStatus = async (req, res) => {
                             // Deduct from Product collection
                             const product = await Product.findById(item.product);
                             if (product) {
-                                const newStock = Math.max(0, product.countInStock - item.quantity);
+                                const previousStock = product.countInStock || 0;
+                                const newStock = Math.max(0, previousStock - item.quantity);
                                 product.countInStock = newStock;
                                 await product.save();
                                 console.log(`[Stock] Admin approved - Deducted ${item.quantity} from Product ${product.name}. New stock: ${newStock}`);
@@ -204,6 +325,21 @@ exports.updateOrderStatus = async (req, res) => {
                                     await inventoryItem.save();
                                     console.log(`[Stock] Synced Inventory for ${product.name}. New quantity: ${newStock}`);
                                 }
+                                                                // Emit low-stock notification when crossing threshold (e.g., <=5)
+                                                                try {
+                                                                    const THRESH = 5;
+                                                                    if (previousStock > THRESH && newStock <= THRESH) {
+                                                                        await notify.createNotification({
+                                                                            type: 'low_stock',
+                                                                            title: `Low stock: ${product.name}`,
+                                                                            body: `Product ${product.name} is low in stock (${newStock} left).`,
+                                                                            targetRole: 'admin',
+                                                                            meta: { productId: product._id, currentStock: newStock }
+                                                                        });
+                                                                    }
+                                                                } catch (e) {
+                                                                    console.warn('[Stock] Failed to create low-stock notification', e && e.message);
+                                                                }
                             }
                         }
                     } catch (stockError) {

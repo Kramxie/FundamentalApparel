@@ -47,6 +47,7 @@
 </head>
 
 <body class="bg-gray-100">
+  <div id="dev-error-banner" class="hidden fixed top-16 left-1/2 transform -translate-x-1/2 z-50 bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded-md text-sm"></div>
   <div class="flex h-screen bg-gray-100">
     <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
       <div class="flex items-center justify-center h-16 bg-white shadow-md">
@@ -86,9 +87,21 @@
       <!-- Header with proper spacing -->
       <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
         <h1 class="text-xl font-semibold text-gray-800">Orders</h1>
-        <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
-          <i class="fas fa-sign-out-alt mr-2"></i>Logout
-        </button>
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <button id="notif-btn" class="px-3 py-2 bg-white border rounded-md hover:bg-gray-50" title="Notifications">
+              <i class="fas fa-bell text-gray-700"></i>
+              <span id="notif-count" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-xs px-1 rounded-full">0</span>
+            </button>
+            <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white border rounded shadow-lg z-50 overflow-auto max-h-80">
+              <div id="notif-list" class="p-2"></div>
+              <div class="p-2 text-center border-t"><button id="notif-markall" class="text-sm text-indigo-600">Mark all read</button></div>
+            </div>
+          </div>
+          <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+          </button>
+        </div>
       </div>
 
       <!-- Main content with overflow scroll -->
@@ -119,7 +132,15 @@
                   <option>Received</option>
                   <option>Rejected</option>
                 </select>
-                <input id="search" type="text" placeholder="Search..." class="border rounded-md px-3 py-2 text-sm w-56">
+                <select id="filter-shipping" class="border rounded-md px-3 py-2 text-sm">
+                  <option value="">Shipping</option>
+                  <option value="Standard">Standard</option>
+                  <option value="Pick-Up">Pick-Up</option>
+                </select>
+                <input id="search" type="text" placeholder="Search (order id, customer, tracking)..." class="border rounded-md px-3 py-2 text-sm w-56">
+                <input id="date-from" type="date" class="border rounded-md px-3 py-2 text-sm">
+                <input id="date-to" type="date" class="border rounded-md px-3 py-2 text-sm">
+                <button id="filter-reset" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Reset</button>
               </div>
               <div class="text-sm text-gray-500"><span id="count">0</span> orders</div>
             </div>
@@ -213,6 +234,7 @@
                     <th class="text-left px-4 py-3">Type</th>
                     <th class="text-left px-4 py-3">Qty</th>
                     <th class="text-left px-4 py-3">Status</th>
+                    <th class="text-left px-4 py-3">Shipping</th>
                     <th class="text-left px-4 py-3">Details</th>
                     <th class="text-right px-4 py-3">Action</th>
                   </tr>
@@ -365,6 +387,22 @@
             <label class="block text-gray-700 mb-1">Reason for Cancellation (Admin)</label>
             <input id="form-cancellationReason" type="text" class="w-full border rounded px-3 py-2"
               placeholder="e.g., Out of stock">
+          </div>
+        </div>
+        <div id="modal-refund-section" class="hidden mt-4 text-sm space-y-2 border-t pt-3">
+          <h5 class="font-medium mb-1">Return / Refund Request</h5>
+          <div class="bg-yellow-50 p-3 rounded-md">
+            <p><strong>Status:</strong> <span id="modal-refund-status">-</span></p>
+            <p><strong>Reason:</strong> <span id="modal-refund-reason">-</span></p>
+            <p><strong>Amount:</strong> <span id="modal-refund-amount">-</span></p>
+            <div id="modal-refund-media" class="mt-2 flex gap-2 flex-wrap"></div>
+            <div class="mt-2"><label class="block text-sm">Admin Notes</label><textarea id="modal-refund-adminnotes" class="w-full border rounded px-2 py-1 text-sm" rows="2"></textarea></div>
+            <div class="mt-3 flex gap-2">
+              <button id="btn-approve-refund" class="px-3 py-1 text-sm bg-green-600 text-white rounded">Approve</button>
+              <button id="btn-reject-refund" class="px-3 py-1 text-sm bg-red-600 text-white rounded">Reject</button>
+              <button id="btn-process-refund" class="px-3 py-1 text-sm bg-indigo-600 text-white rounded">Process Refund</button>
+            </div>
+            <p id="modal-refund-msg" class="text-sm text-red-600 mt-2"></p>
           </div>
         </div>
       </div>
@@ -554,6 +592,7 @@
             <div class="space-y-2 text-sm">
               <p><strong>Printing Method:</strong> <span id="custom-modal-printing-method"></span></p>
               <p><strong>Fabric Type:</strong> <span id="custom-modal-fabric-type">N/A</span></p>
+              <p><strong>Inventory:</strong> <span id="custom-modal-fabric-available">-</span> available · <span id="custom-modal-fabric-reserved">-</span> reserved</p>
               <p><strong>Garment Type:</strong> <span id="custom-modal-garment-type">N/A</span></p>
               <p id="custom-modal-garment-size-row"><strong>Garment Size:</strong> <span id="custom-modal-garment-size"></span></p>
               <div id="custom-modal-printing-file-section" class="hidden">
@@ -739,6 +778,7 @@
   </div>
 
   <!-- Payment Details Modal removed: payment info now shown directly in Order Details modal -->
+  <script src="/socket.io/socket.io.js"></script>
   <script>
     const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev'; // O ang ngrok URL mo
 
@@ -748,6 +788,124 @@
     document.addEventListener('DOMContentLoaded', () => {
       const token = localStorage.getItem('adminToken');
       if (!token) { window.location.href = 'login.html'; return; }
+
+      // Notifications setup
+      const notifBtn = document.getElementById('notif-btn');
+      const notifCountEl = document.getElementById('notif-count');
+      const notifDropdown = document.getElementById('notif-dropdown');
+      const notifList = document.getElementById('notif-list');
+      const notifMarkAll = document.getElementById('notif-markall');
+
+      // Connect socket.io with auth token
+      let socket = null;
+      try {
+        socket = io(API, { auth: { token } });
+        socket.on('connect', () => console.log('Socket connected'));
+        socket.on('notification', (n) => {
+          // Prepend notification
+          prependNotif(n);
+        });
+      } catch (e) { console.warn('Socket init failed', e.message); }
+
+      async function loadNotifications() {
+        try {
+          const res = await fetch(`${API}/api/admin/notifications`, { headers: { 'Authorization': `Bearer ${token}` } });
+          const j = await res.json();
+          if (!res.ok || !j.success) throw new Error(j.msg || 'Failed to load');
+          await renderNotifs(j.data || []);
+        } catch (e) { console.warn('Failed to load notifications', e.message); }
+      }
+
+      async function renderNotifs(arr) {
+        notifList.innerHTML = '';
+        let unread = 0;
+        (arr || []).forEach(n => {
+          const el = document.createElement('div');
+          el.className = 'p-2 border-b text-sm';
+          if (!n.read) { el.className += ' bg-gray-50'; unread++; }
+          const orderId = n.meta && n.meta.orderId ? n.meta.orderId : '';
+          el.setAttribute('data-orderid', orderId);
+          el.innerHTML = `<div class="font-medium">${n.title}</div><div class="text-xs text-gray-600">${n.body || ''}</div><div class="text-xs text-gray-400 mt-1">${new Date(n.createdAt).toLocaleString()}</div><div class="mt-2 text-right"><button data-id="${n._id}" class="mark-read text-xs text-indigo-600">Mark read</button></div>`;
+          // clicking the notification opens the order modal if orderId present
+          if (orderId) {
+            el.style.cursor = 'pointer';
+            el.addEventListener('click', (ev) => {
+              // avoid click when pressing Mark read button
+              if (ev.target && ev.target.classList && ev.target.classList.contains('mark-read')) return;
+              const ord = allOrders.find(o => o._id === orderId);
+              if (ord) {
+                openModal(ord);
+                notifDropdown.classList.add('hidden');
+              } else {
+                // try to lazy-load order details and open
+                fetch(`${API}/api/orders/${orderId}`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).then(j => {
+                  if (j && j.success) openModal(j.data);
+                }).catch(() => {});
+              }
+            });
+          }
+          notifList.appendChild(el);
+        });
+        if (unread > 0) { notifCountEl.textContent = unread; notifCountEl.classList.remove('hidden'); } else { notifCountEl.classList.add('hidden'); }
+        // Bind mark-read buttons
+        Array.from(document.getElementsByClassName('mark-read')).forEach(b => b.addEventListener('click', async (ev) => {
+          const id = ev.target.dataset.id;
+          try {
+            const r = await fetch(`${API}/api/admin/notifications/${id}/read`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+            const j = await r.json();
+            if (!r.ok || !j.success) throw new Error(j.msg || 'Failed');
+            await loadNotifications();
+          } catch (e) { console.warn(e.message); }
+        }));
+      }
+
+      function prependNotif(n) {
+        // simple prepend and update count
+        const el = document.createElement('div');
+        el.className = 'p-2 border-b bg-gray-50 text-sm';
+        const orderId = n.meta && n.meta.orderId ? n.meta.orderId : '';
+        el.setAttribute('data-orderid', orderId);
+        el.innerHTML = `<div class="font-medium">${n.title}</div><div class="text-xs text-gray-600">${n.body || ''}</div><div class="text-xs text-gray-400 mt-1">${new Date(n.createdAt).toLocaleString()}</div><div class="mt-2 text-right"><button data-id="${n._id}" class="mark-read text-xs text-indigo-600">Mark read</button></div>`;
+        if (orderId) {
+          el.style.cursor = 'pointer';
+          el.addEventListener('click', (ev) => {
+            if (ev.target && ev.target.classList && ev.target.classList.contains('mark-read')) return;
+            const ord = allOrders.find(o => o._id === orderId);
+            if (ord) openModal(ord);
+            else fetch(`${API}/api/orders/${orderId}`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).then(j => { if (j && j.success) openModal(j.data); }).catch(() => {});
+          });
+        }
+        notifList.insertBefore(el, notifList.firstChild);
+        const current = parseInt(notifCountEl.textContent || '0', 10) || 0;
+        notifCountEl.textContent = current + 1; notifCountEl.classList.remove('hidden');
+      }
+
+      notifBtn.addEventListener('click', async () => {
+        notifDropdown.classList.toggle('hidden');
+        if (!notifDropdown.classList.contains('hidden')) {
+          await loadNotifications();
+        }
+      });
+
+      notifMarkAll.addEventListener('click', async () => {
+        try {
+          const r = await fetch(`${API}/api/admin/notifications/mark-all-read`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+          const j = await r.json();
+          if (!r.ok || !j.success) throw new Error(j.msg || 'Failed');
+          await loadNotifications();
+        } catch (e) { console.warn(e.message); }
+      });
+
+      // Global error handler to surface JS errors on page for debugging
+      window.addEventListener('error', function (evt) {
+        try {
+          const banner = document.getElementById('dev-error-banner');
+          if (banner) {
+            banner.textContent = `JS Error: ${evt.message} at ${evt.filename}:${evt.lineno}`;
+            banner.classList.remove('hidden');
+          }
+        } catch (e) { /* ignore */ }
+      });
 
       document.getElementById('logout-btn').addEventListener('click', () => {
         localStorage.removeItem('adminToken');
@@ -761,6 +919,10 @@
         search: document.getElementById('search'),
         filterStatus: document.getElementById('filter-status'),
         filterPayment: document.getElementById('filter-payment'),
+        filterShipping: document.getElementById('filter-shipping'),
+        dateFrom: document.getElementById('date-from'),
+        dateTo: document.getElementById('date-to'),
+        filterReset: document.getElementById('filter-reset'),
         modal: document.getElementById('modal'),
         modalClose: document.getElementById('modal-close'),
         modalItems: document.getElementById('modal-items'),
@@ -913,7 +1075,7 @@
         };
         const rows = filteredOrders.map(o => `
           <tr>
-            <td class="px-4 py-3">${shortId(o._id)}</td>
+            <td class="px-4 py-3">${shortId(o._id)} ${o.hasRefundRequest ? `<span data-refund-id="${o.latestRefundId || ''}" class="inline-block ml-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 refund-badge">Refund: ${o.latestRefundStatus || 'Pending'}</span>` : ''}</td>
             <td class="px-4 py-3">${new Date(o.createdAt).toLocaleDateString()}</td>
             <td class="px-4 py-3">${paymentBadge(o.paymentStatus)}</td>
             <td class="px-4 py-3">${statusBadge(o)}</td>
@@ -1039,6 +1201,7 @@
                       <td class="px-4 py-3">${typeLabel(o.customType)(o)}</td>
                       <td class="px-4 py-3">${o.quantity}</td>
                       <td class="px-4 py-3">${statusBadge}</td>
+                      <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
                       <td class="px-4 py-3 text-xs max-w-xs truncate">${details}</td>
                         <td class="px-4 py-3 text-right">
                           <div class="inline-flex gap-3 items-center justify-end">
@@ -1048,7 +1211,7 @@
                   </tr>
               `;
         }).join('');
-        els.customOrdersBody.innerHTML = rows || '<tr><td colspan="7" class="px-4 py-6 text-center text-gray-500">No custom orders found.</td></tr>';
+        els.customOrdersBody.innerHTML = rows || '<tr><td colspan="8" class="px-4 py-6 text-center text-gray-500">No custom orders found.</td></tr>';
         els.customCount.textContent = filtered.length;
       }
 
@@ -1061,20 +1224,66 @@
 
       async function loadRegularOrders() {
         try {
-          const res = await fetch(`${API}/api/orders/admin`, { headers: { 'Authorization': `Bearer ${token}` } });
+          // Build query from filter controls
+          const params = new URLSearchParams();
+          const s = els.filterStatus.value;
+          const p = els.filterPayment.value;
+          const sm = els.filterShipping.value;
+          const q = (els.search.value || '').trim();
+          const df = els.dateFrom?.value;
+          const dt = els.dateTo?.value;
+          if (s) params.set('status', s);
+          if (p) params.set('paymentStatus', p);
+          if (sm) params.set('shippingMethod', sm);
+          if (q) params.set('search', q);
+          if (df) params.set('dateFrom', df);
+          if (dt) params.set('dateTo', dt);
+
+          const url = `${API}/api/orders/admin${params.toString() ? ('?' + params.toString()) : ''}`;
+          const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
           if (res.status === 401) {
             localStorage.removeItem('adminToken');
             window.location.href = 'login.html';
             return;
           }
           const data = await res.json();
-          if (!data.success) throw new Error(data.msg || 'Failed to load orders');
+          if (!data.success) {
+            const banner = document.getElementById('dev-error-banner');
+            banner.textContent = 'Failed to load orders: ' + (data.msg || JSON.stringify(data));
+            banner.classList.remove('hidden');
+            throw new Error(data.msg || 'Failed to load orders');
+          }
           allOrders = data.data;
           renderRegularOrders();
         } catch (err) {
-          alert(err.message);
+          console.error('loadRegularOrders error', err);
+          const banner = document.getElementById('dev-error-banner');
+          if (banner) { banner.textContent = 'Error loading orders: ' + (err.message || err); banner.classList.remove('hidden'); }
         }
       }
+
+      // Wire filter change handlers
+      function debounce(fn, wait = 300) {
+        let t = null;
+        return function (...args) {
+          clearTimeout(t);
+          t = setTimeout(() => fn.apply(this, args), wait);
+        };
+      }
+      els.filterStatus.addEventListener('change', () => loadRegularOrders());
+      els.filterPayment.addEventListener('change', () => loadRegularOrders());
+      els.filterShipping.addEventListener('change', () => loadRegularOrders());
+      els.dateFrom.addEventListener('change', () => loadRegularOrders());
+      els.dateTo.addEventListener('change', () => loadRegularOrders());
+      els.search.addEventListener('input', debounce(() => loadRegularOrders(), 350));
+      els.filterReset.addEventListener('click', () => {
+        els.filterStatus.value = '';
+        els.filterPayment.value = '';
+        els.search.value = '';
+        els.dateFrom.value = '';
+        els.dateTo.value = '';
+        loadRegularOrders();
+      });
 
       async function loadCustomOrders() {
         try {
@@ -1118,7 +1327,7 @@
         }
       }
 
-      function openModal(order) {
+      async function openModal(order) {
         // ... (ang function na ito ay pareho pa rin) ...
         selectedOrder = order;
         // expose globally for fallback inline delegation
@@ -1188,6 +1397,72 @@
         }
         els.modalAdminCancelReasonBox.classList.toggle('hidden', order.status !== 'Cancelled');
         els.formCancellationReason.value = order.cancellationReason || '';
+        // Load refund/return details if available
+        const refundSection = document.getElementById('modal-refund-section');
+        const refundStatusEl = document.getElementById('modal-refund-status');
+        const refundReasonEl = document.getElementById('modal-refund-reason');
+        const refundAmountEl = document.getElementById('modal-refund-amount');
+        const refundMediaEl = document.getElementById('modal-refund-media');
+        const refundAdminNotes = document.getElementById('modal-refund-adminnotes');
+        const refundMsg = document.getElementById('modal-refund-msg');
+        refundMsg.textContent = '';
+        refundAdminNotes.value = '';
+        if (order.latestRefundId) {
+          // fetch return details
+          try {
+            const rres = await fetch(`${API}/api/returns/${order.latestRefundId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const rdata = await rres.json();
+            if (rres.ok && rdata.success) {
+              const rr = rdata.data;
+              refundSection.classList.remove('hidden');
+              refundStatusEl.textContent = rr.status || 'Pending';
+              refundReasonEl.textContent = rr.reason || '-';
+              refundAmountEl.textContent = rr.amount ? peso(rr.amount) : (order.totalPrice ? peso(order.totalPrice) : '-');
+              refundAdminNotes.value = rr.adminNotes || '';
+              refundMediaEl.innerHTML = '';
+              if (Array.isArray(rr.images)) rr.images.forEach(u => refundMediaEl.innerHTML += `<a href="${u}" target="_blank" class="text-indigo-600 text-xs mr-2">Image</a>`);
+              if (Array.isArray(rr.videos)) rr.videos.forEach(u => refundMediaEl.innerHTML += `<a href="${u}" target="_blank" class="text-indigo-600 text-xs mr-2">Video</a>`);
+              // bind buttons
+              document.getElementById('btn-approve-refund').onclick = async function() {
+                refundMsg.textContent = '';
+                try {
+                  const resp = await fetch(`${API}/api/returns/${rr._id}/approve`, { method: 'PUT', headers: { 'Content-Type':'application/json','Authorization': `Bearer ${token}` }, body: JSON.stringify({ adminNotes: refundAdminNotes.value }) });
+                  const j = await resp.json();
+                  if (!resp.ok || !j.success) throw new Error(j.msg || 'Failed');
+                  refundStatusEl.textContent = 'Approved';
+                  await loadRegularOrders();
+                } catch (e) { refundMsg.textContent = e.message; }
+              };
+              document.getElementById('btn-reject-refund').onclick = async function() {
+                refundMsg.textContent = '';
+                try {
+                  const resp = await fetch(`${API}/api/returns/${rr._id}/reject`, { method: 'PUT', headers: { 'Content-Type':'application/json','Authorization': `Bearer ${token}` }, body: JSON.stringify({ adminNotes: refundAdminNotes.value }) });
+                  const j = await resp.json();
+                  if (!resp.ok || !j.success) throw new Error(j.msg || 'Failed');
+                  refundStatusEl.textContent = 'Rejected';
+                  await loadRegularOrders();
+                } catch (e) { refundMsg.textContent = e.message; }
+              };
+              document.getElementById('btn-process-refund').onclick = async function() {
+                refundMsg.textContent = '';
+                try {
+                  const resp = await fetch(`${API}/api/returns/${rr._id}/refund`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+                  const j = await resp.json();
+                  if (!resp.ok || !j.success) throw new Error(j.msg || 'Failed to process refund');
+                  refundStatusEl.textContent = 'Refunded';
+                  await loadRegularOrders();
+                } catch (e) { refundMsg.textContent = e.message; }
+              };
+            } else {
+              refundSection.classList.add('hidden');
+            }
+          } catch (e) {
+            refundSection.classList.add('hidden');
+            console.warn('Failed to fetch refund details', e.message);
+          }
+        } else {
+          refundSection.classList.add('hidden');
+        }
       }
 
       // Remove order (Completed only)
@@ -1621,6 +1896,33 @@
           };
           document.getElementById('custom-modal-printing-method').textContent = methodMap[order.printingMethod] || order.printingMethod || 'N/A';
           document.getElementById('custom-modal-fabric-type').textContent = order.fabricType || 'N/A';
+          // Fetch inventory info for this fabric (admin endpoint)
+          (async () => {
+            try {
+              const name = order.fabricType;
+              if (!name) {
+                document.getElementById('custom-modal-fabric-available').textContent = '-';
+                document.getElementById('custom-modal-fabric-reserved').textContent = '-';
+                return;
+              }
+              const q = new URLSearchParams({ search: name, limit: 1 });
+              const r = await fetch(`${API}/api/admin/inventory?` + q.toString(), { headers: { 'Authorization': `Bearer ${token}` } });
+              if (!r.ok) throw new Error('Failed to fetch inventory');
+              const j = await r.json();
+              if (!j.success || !j.data || j.data.length === 0) {
+                document.getElementById('custom-modal-fabric-available').textContent = '0';
+                document.getElementById('custom-modal-fabric-reserved').textContent = '0';
+              } else {
+                const item = j.data[0];
+                document.getElementById('custom-modal-fabric-available').textContent = (item.quantity != null) ? item.quantity : '-';
+                document.getElementById('custom-modal-fabric-reserved').textContent = (item.reserved != null) ? item.reserved : '0';
+              }
+            } catch (e) {
+              console.warn('Inventory fetch failed', e.message);
+              document.getElementById('custom-modal-fabric-available').textContent = '?';
+              document.getElementById('custom-modal-fabric-reserved').textContent = '?';
+            }
+          })();
           document.getElementById('custom-modal-garment-type').textContent = order.garmentType || 'N/A';
 
           const sizeRow = document.getElementById('custom-modal-garment-size-row');

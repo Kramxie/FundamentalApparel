@@ -3,6 +3,7 @@ const fs = require('fs');
 const RefundRequest = require('../models/RefundRequest');
 const Order = require('../models/Order');
 const User = require('../models/User');
+const notify = require('../utils/notify');
 
 const PAYMONGO_SECRET_KEY = process.env.PAYMONGO_SECRET_KEY;
 const PAYMONGO_API_URL = 'https://api.paymongo.com/v1';
@@ -39,6 +40,31 @@ exports.createReturnRequest = async (req, res) => {
     });
 
     await refund.save();
+
+    // Create an admin notification so admins see the new refund request
+    try {
+      await notify.createNotification({
+        type: 'refund_request',
+        title: `Refund requested for Order ${order._id}`,
+        body: `${req.user.name || req.user.email || 'A user'} requested a refund for order ${order._id}`,
+        targetRole: 'admin',
+        meta: { orderId: order._id, refundId: refund._id }
+      });
+    } catch (e) {
+      console.warn('[Returns] Failed to create notification for refund', e && e.message);
+    }
+
+    // Annotate order with lightweight refund pointers for admin UI
+    try {
+      if (order) {
+        order.hasRefundRequest = true;
+        order.latestRefundId = refund._id;
+        order.latestRefundStatus = refund.status || 'Pending';
+        await order.save();
+      }
+    } catch (e) {
+      console.warn('[Returns] Failed to annotate order with refund pointers:', e.message);
+    }
 
     return res.status(201).json({ success: true, data: refund });
   } catch (error) {
@@ -85,9 +111,18 @@ exports.approveReturn = async (req, res) => {
     await item.save();
 
     // Optionally update order status
+
     if (item.order) {
       item.order.status = 'Cancelled';
-      await item.order.save();
+      // Update order-level refund summary
+      try {
+        item.order.hasRefundRequest = true;
+        item.order.latestRefundId = item._id;
+        item.order.latestRefundStatus = 'Approved';
+        await item.order.save();
+      } catch (e) {
+        console.warn('[Returns] Failed to update order on approve:', e.message);
+      }
     }
 
     return res.json({ success: true, data: item });
@@ -108,6 +143,19 @@ exports.rejectReturn = async (req, res) => {
     item.status = 'Rejected';
     item.adminNotes = adminNotes || '';
     await item.save();
+
+    // Update order-level refund summary if linked
+    try {
+      const ord = await Order.findById(item.order);
+      if (ord) {
+        ord.hasRefundRequest = true;
+        ord.latestRefundId = item._id;
+        ord.latestRefundStatus = 'Rejected';
+        await ord.save();
+      }
+    } catch (e) {
+      console.warn('[Returns] Failed to update order on reject:', e.message);
+    }
 
     return res.json({ success: true, data: item });
   } catch (error) {
@@ -187,9 +235,16 @@ exports.refundReturn = async (req, res) => {
 
       // Update order and inventory (restock) as needed
       if (item.order) {
-        item.order.status = 'Cancelled';
-        item.order.isPaid = false;
-        await item.order.save();
+        try {
+          item.order.status = 'Cancelled';
+          item.order.isPaid = false;
+          item.order.hasRefundRequest = true;
+          item.order.latestRefundId = item._id;
+          item.order.latestRefundStatus = 'Refunded';
+          await item.order.save();
+        } catch (e) {
+          console.warn('[Returns] Failed to update order on refund (paymongo):', e.message);
+        }
       }
 
       return res.json({ success: true, data: { refund: refundData, request: item } });
@@ -202,9 +257,16 @@ exports.refundReturn = async (req, res) => {
     await item.save();
 
     if (item.order) {
-      item.order.status = 'Cancelled';
-      item.order.isPaid = false;
-      await item.order.save();
+      try {
+        item.order.status = 'Cancelled';
+        item.order.isPaid = false;
+        item.order.hasRefundRequest = true;
+        item.order.latestRefundId = item._id;
+        item.order.latestRefundStatus = 'Refunded';
+        await item.order.save();
+      } catch (e) {
+        console.warn('[Returns] Failed to update order on refund (manual):', e.message);
+      }
     }
 
     return res.json({ success: true, data: item });

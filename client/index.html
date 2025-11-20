@@ -28,7 +28,7 @@
                 <a href="#" class="text-gray-600 hover:text-indigo-600">About</a>
                 <a href="#" class="text-gray-600 hover:text-indigo-600">Contact</a>
             </div>
-            <div class="flex items-center space-x-5">
+            <div class="hidden md:flex items-center space-x-5">
                 <button class="text-gray-600 hover:text-indigo-600"><i class="fas fa-search"></i></button>
                 <a href="cart.html" class="text-gray-600 hover:text-indigo-600 relative">
                     <i class="fas fa-shopping-cart"></i>
@@ -48,85 +48,139 @@
                     </a>
                 </div>
             </div>
+            <!-- Hamburger Button -->
+            <div class="md:hidden">
+                <button id="menu-btn" class="text-gray-800 focus:outline-none">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
         </nav>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white shadow-md">
+            <a href="index.html" class="block py-2 px-4 text-gray-800 font-semibold">Home</a>
+            <a href="products.html" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">Products</a>
+            <a href="services.html" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">Services</a>
+            <a href="#" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">About</a>
+            <a href="#" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">Contact</a>
+            
+            <!-- Mobile Menu Actions -->
+            <div class="border-t border-gray-200 mt-2 pt-2">
+                <a href="cart.html" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">
+                    <i class="fas fa-shopping-cart mr-2"></i>Cart <span id="cart-count-mobile" class="ml-1 bg-indigo-600 text-white text-xs rounded-full px-2 py-0.5">0</span>
+                </a>
+                
+                <div id="mobile-auth-logged-out">
+                    <a href="login.html" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Log In
+                    </a>
+                    <a href="register.html" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">
+                        <i class="fas fa-user-plus mr-2"></i>Register
+                    </a>
+                </div>
+                
+                <div id="mobile-auth-logged-in" class="hidden">
+                    <a href="profile.html" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">
+                        <i class="fas fa-user-circle mr-2"></i>Profile
+                    </a>
+                </div>
+            </div>
+        </div>
     </header>
 
     <!-- Hero Section -->
     <section class="bg-indigo-100">
-        <div class="container mx-auto px-6 py-20 text-center">
-            <h1 class="text-5xl font-extrabold text-gray-800">Welcome to Fundamental</h1>
-            <p class="mt-4 text-lg text-gray-600">Discover the best deals and exclusive offers.</p>
+        <div class="container mx-auto px-4 py-12 md:py-20 text-center">
+            <h1 class="text-3xl md:text-5xl font-extrabold text-gray-800">Welcome to Fundamental</h1>
+            <p class="mt-3 md:mt-4 text-base md:text-lg text-gray-600">Discover the best deals and exclusive offers.</p>
             <a href="products.html"
-                class="mt-8 inline-block bg-indigo-600 text-white font-bold py-3 px-8 rounded-md hover:bg-indigo-700 transition">Shop
+                class="mt-6 md:mt-8 inline-block bg-indigo-600 text-white font-bold py-2.5 px-6 md:py-3 md:px-8 rounded-md hover:bg-indigo-700 transition text-sm md:text-base">Shop
                 Now</a>
         </div>
     </section>
 
     <!-- Categories Section -->
-    <section class="py-16">
-        <div class="container mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center text-gray-800 mb-10">Categories</h2>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                <div class="bg-white p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
-                    <i class="fas fa-tshirt text-4xl text-indigo-500"></i>
-                    <h3 class="mt-4 font-semibold">Jersey</h3>
+    <section class="py-8 md:py-16">
+        <div class="container mx-auto px-4 md:px-6">
+            <h2 class="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-6 md:mb-10">Categories</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-6">
+                <div class="bg-white p-4 md:p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
+                    <i class="fas fa-tshirt text-3xl md:text-4xl text-indigo-500"></i>
+                    <h3 class="mt-2 md:mt-4 font-semibold text-sm md:text-base">Jersey</h3>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
-                    <i class="fas fa-running text-4xl text-indigo-500"></i>
-                    <h3 class="mt-4 font-semibold">Shorts</h3>
+                <div class="bg-white p-4 md:p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
+                    <i class="fas fa-running text-3xl md:text-4xl text-indigo-500"></i>
+                    <h3 class="mt-2 md:mt-4 font-semibold text-sm md:text-base">Shorts</h3>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
-                    <i class="fas fa-user-secret text-4xl text-indigo-500"></i>
-                    <h3 class="mt-4 font-semibold">Outwears</h3>
+                <div class="bg-white p-4 md:p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
+                    <i class="fas fa-user-secret text-3xl md:text-4xl text-indigo-500"></i>
+                    <h3 class="mt-2 md:mt-4 font-semibold text-sm md:text-base">Outwears</h3>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
-                    <i class="fas fa-flask text-4xl text-indigo-500"></i>
-                    <h3 class="mt-4 font-semibold">Lab Coats</h3>
+                <div class="bg-white p-4 md:p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
+                    <i class="fas fa-flask text-3xl md:text-4xl text-indigo-500"></i>
+                    <h3 class="mt-2 md:mt-4 font-semibold text-sm md:text-base">Lab Coats</h3>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
-                    <i class="fas fa-print text-4xl text-indigo-500"></i>
-                    <h3 class="mt-4 font-semibold">Printing Machine</h3>
+                <div class="bg-white p-4 md:p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
+                    <i class="fas fa-print text-3xl md:text-4xl text-indigo-500"></i>
+                    <h3 class="mt-2 md:mt-4 font-semibold text-sm md:text-base">Printing Machine</h3>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
-                    <i class="fas fa-flag text-4xl text-indigo-500"></i>
-                    <h3 class="mt-4 font-semibold">Banner</h3>
+                <div class="bg-white p-4 md:p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
+                    <i class="fas fa-flag text-3xl md:text-4xl text-indigo-500"></i>
+                    <h3 class="mt-2 md:mt-4 font-semibold text-sm md:text-base">Banner</h3>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- New Arrivals Section -->
-    <section class="py-16 bg-white">
-        <div class="container mx-auto px-6">
-            <h2 class="text-3xl font-bold text-center text-gray-800 mb-10">New Arrivals</h2>
-            <div id="products-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+    <section class="py-8 md:py-16 bg-white">
+        <div class="container mx-auto px-4 md:px-6">
+            <h2 class="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-6 md:mb-10">New Arrivals</h2>
+            <div id="products-container" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-8">
                 <!-- Products will be dynamically inserted here -->
-                <p id="loading-message" class="col-span-full text-center text-gray-500">Loading products...</p>
+                <p id="loading-message" class="col-span-full text-center text-gray-500 text-sm md:text-base">Loading products...</p>
             </div>
         </div>
     </section>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Hamburger Menu Toggle
+            const menuBtn = document.getElementById('menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            if (menuBtn && mobileMenu) {
+                menuBtn.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+            
             const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
 
             // NEW: Selectors for auth links
             const authLoggedOut = document.getElementById('auth-links-logged-out');
             const authLoggedIn = document.getElementById('auth-links-logged-in');
+            const mobileAuthLoggedOut = document.getElementById('mobile-auth-logged-out');
+            const mobileAuthLoggedIn = document.getElementById('mobile-auth-logged-in');
 
             const productsContainer = document.getElementById('products-container');
             const loadingMessage = document.getElementById('loading-message');
             const cartCountSpan = document.getElementById('cart-count');
+            const cartCountMobile = document.getElementById('cart-count-mobile');
 
             function setLoggedOutUI() {
                 if (authLoggedOut) authLoggedOut.classList.remove('hidden');
                 if (authLoggedIn) authLoggedIn.classList.add('hidden');
+                if (mobileAuthLoggedOut) mobileAuthLoggedOut.classList.remove('hidden');
+                if (mobileAuthLoggedIn) mobileAuthLoggedIn.classList.add('hidden');
                 if (cartCountSpan) cartCountSpan.textContent = '0';
+                if (cartCountMobile) cartCountMobile.textContent = '0';
             }
 
             function setLoggedInUI() {
                 if (authLoggedOut) authLoggedOut.classList.add('hidden');
                 if (authLoggedIn) authLoggedIn.classList.remove('hidden');
+                if (mobileAuthLoggedOut) mobileAuthLoggedOut.classList.add('hidden');
+                if (mobileAuthLoggedIn) mobileAuthLoggedIn.classList.remove('hidden');
             }
 
             async function validateToken(token) {
@@ -145,19 +199,31 @@
             }
 
             async function fetchCartCount(token) {
-                if (!token) { if (cartCountSpan) cartCountSpan.textContent = '0'; return; }
+                if (!token) { 
+                    if (cartCountSpan) cartCountSpan.textContent = '0';
+                    if (cartCountMobile) cartCountMobile.textContent = '0';
+                    return; 
+                }
                 try {
                     const res = await fetch(`${API}/api/cart`, { headers: { 'Authorization': `Bearer ${token}` } });
-                    if (!res.ok) { cartCountSpan.textContent = '0'; return; }
+                    if (!res.ok) { 
+                        cartCountSpan.textContent = '0';
+                        if (cartCountMobile) cartCountMobile.textContent = '0';
+                        return; 
+                    }
                     const json = await res.json();
                     if (json.success && json.data && Array.isArray(json.data.items)) {
-                        cartCountSpan.textContent = String(json.data.items.length);
+                        const count = String(json.data.items.length);
+                        cartCountSpan.textContent = count;
+                        if (cartCountMobile) cartCountMobile.textContent = count;
                     } else {
                         cartCountSpan.textContent = '0';
+                        if (cartCountMobile) cartCountMobile.textContent = '0';
                     }
                 } catch (err) {
                     console.error('fetchCartCount error', err);
                     if (cartCountSpan) cartCountSpan.textContent = '0';
+                    if (cartCountMobile) cartCountMobile.textContent = '0';
                 }
             }
 
@@ -181,7 +247,6 @@
                 }
             })();
 
-            // ... (ang natitirang code mo para sa fetchProducts, renderProducts, at addToCart ay pareho pa rin) ...
             async function addToCart(productId, btnEl) {
                 const token = localStorage.getItem('token');
                 if (!token) {
@@ -216,7 +281,9 @@
                     if (!res.ok || !json.success) throw new Error(json.msg || 'Could not add to cart');
 
                     if (json.data && Array.isArray(json.data.items)) {
-                        cartCountSpan.textContent = String(json.data.items.length);
+                        const count = String(json.data.items.length);
+                        cartCountSpan.textContent = count;
+                        if (cartCountMobile) cartCountMobile.textContent = count;
                     }
                     alert('Product added to cart!');
                 } catch (error) {
@@ -257,20 +324,20 @@
                     productCard.innerHTML = `
                 <a href="product-detail.html?id=${product._id}" class="block">
                   <div class="relative">
-                      <img src="${imageUrl}" alt="${product.name}" class="w-full h-64 object-cover">
+                      <img src="${imageUrl}" alt="${product.name}" class="w-full h-40 md:h-64 object-cover">
                   </div>
                 </a>
-                <div class="p-4">
-                    <h3 class="text-lg font-semibold text-gray-800 truncate">${product.name}</h3>
-                    <p class="text-sm text-gray-500 mt-1">${product.category}</p>
-                    <p class="text-sm text-gray-600 mt-2 h-10 overflow-hidden">${product.description || 'No description available.'}</p>
-                    <div class="flex justify-between items-center mt-4">
-                        <p class="text-xl font-bold text-indigo-600">₱${Number(product.price || 0).toLocaleString()}</p>
-                        <span class="text-sm text-gray-500">Stock: ${product.countInStock}</span>
+                <div class="p-2 md:p-4">
+                    <h3 class="text-sm md:text-lg font-semibold text-gray-800 truncate">${product.name}</h3>
+                    <p class="text-xs md:text-sm text-gray-500 mt-1">${product.category}</p>
+                    <p class="text-xs md:text-sm text-gray-600 mt-1 md:mt-2 h-8 md:h-10 overflow-hidden line-clamp-2">${product.description || 'No description available.'}</p>
+                    <div class="flex justify-between items-center mt-2 md:mt-4">
+                        <p class="text-base md:text-xl font-bold text-indigo-600">₱${Number(product.price || 0).toLocaleString()}</p>
+                        <span class="text-xs md:text-sm text-gray-500">Stock: ${product.countInStock}</span>
                     </div>
-                    <div class="mt-4 flex gap-2">
-                        <button class="add-to-cart-btn bg-indigo-600 text-white px-3 py-2 rounded hover:bg-indigo-700" data-id="${product._id}">Add to Cart</button>
-                        <a href="product-detail.html?id=${product._id}" class="px-3 py-2 border rounded text-sm text-gray-700">View</a>
+                    <div class="mt-2 md:mt-4 flex gap-1 md:gap-2">
+                        <button class="add-to-cart-btn bg-indigo-600 text-white px-2 md:px-3 py-1.5 md:py-2 rounded hover:bg-indigo-700 text-xs md:text-sm flex-1" data-id="${product._id}">Add to Cart</button>
+                        <a href="product-detail.html?id=${product._id}" class="px-2 md:px-3 py-1.5 md:py-2 border rounded text-xs md:text-sm text-gray-700 text-center">View</a>
                     </div>
                 </div>
             `;

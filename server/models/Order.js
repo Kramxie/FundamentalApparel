@@ -80,6 +80,11 @@ const orderSchema = new mongoose.Schema({
     isPaid: { type: Boolean, required: true, default: false },
     paidAt: { type: Date },
 
+    // Refund / Return summary flags (lightweight order-level pointers for admin UI)
+    hasRefundRequest: { type: Boolean, default: false },
+    latestRefundId: { type: mongoose.Schema.ObjectId, ref: 'RefundRequest' },
+    latestRefundStatus: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Refunded'], default: undefined },
+
     // Optional logistics info
     shippingService: { type: String },
     trackingCode: { type: String },

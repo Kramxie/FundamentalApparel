@@ -3,6 +3,7 @@ const User = require("../models/User");
 const sendEmail = require("../utils/sendEmail");
 const path = require("path");
 const mongoose = require("mongoose"); // <-- Siguraduhin na na-import ito
+const { allocateInventory, releaseInventory, findInventoryByName } = require('../utils/inventory');
 
 // Siguraduhin na ang SERVER_URL mo sa .env ay ang public URL mo (e.g., ngrok)
 const BASE_URL =
@@ -523,16 +524,26 @@ exports.verifyDownPayment = async (req, res) => {
           success: false,
           msg: "This order is not awaiting down payment verification.",
         });
-    } 
+    }
     
     // Check if this was a 100% full payment (both downpayment and balance paid)
     const isFullPayment = order.balancePaid === true || order.paymentType === 'full';
     
     if (isFullPayment) {
       // 100% payment - go directly to Ready for Pickup/Delivery
-      order.status = "Ready for Pickup/Delivery";
-      order.downPaymentPaid = true;
-      order.balancePaid = true;
+      // allocate inventory for printing-only orders
+      const session = await mongoose.startSession();
+      session.startTransaction();
+      try {
+        if (order.serviceType === 'printing-only' && order.fabricType && !order.inventoryAllocated) {
+          const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+          order.inventoryAllocated = true;
+          order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
+        }
+
+        order.status = "Ready for Pickup/Delivery";
+        order.downPaymentPaid = true;
+        order.balancePaid = true;
       
       // Auto-set fulfillment method based on checkout selection
       if (order.shippingMethod === 'Pick-Up') {
@@ -549,7 +560,9 @@ exports.verifyDownPayment = async (req, res) => {
         order.fulfillmentMethod = 'delivery';
       }
       
-      const updatedOrder = await order.save();
+        const updatedOrder = await order.save({ session });
+        await session.commitTransaction();
+        session.endSession();
       
       // Notify customer: Full payment verified, ready for fulfillment
       try {
@@ -580,15 +593,33 @@ exports.verifyDownPayment = async (req, res) => {
         console.error('Email (Full Payment Verified) failed:', e.message);
       }
       return res.status(200).json({ success: true, data: updatedOrder, msg: 'Full payment verified. Order ready for fulfillment!' });
+      } catch (allocErr) {
+        await session.abortTransaction();
+        session.endSession();
+        console.error('Inventory allocation failed during full payment verify:', allocErr.message);
+        return res.status(400).json({ success: false, msg: 'Inventory allocation failed: ' + allocErr.message });
+      }
     }
     
     // Regular 50% downpayment flow
-    // Update the order
-    order.status = "In Production";
-    order.downPaymentPaid = true;
-    const updatedOrder = await order.save();
+    // allocate inventory for printing-only orders on downpayment verification
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      if (order.serviceType === 'printing-only' && order.fabricType && !order.inventoryAllocated) {
+        const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+        order.inventoryAllocated = true;
+        order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
+      }
 
-    // Notify customer: Downpayment verified, now In Production
+      // Update the order
+      order.status = "In Production";
+      order.downPaymentPaid = true;
+      const updatedOrder = await order.save({ session });
+      await session.commitTransaction();
+      session.endSession();
+
+      // Notify customer: Downpayment verified, now In Production
     try {
       const populated = await updatedOrder.populate('user', 'name email');
       const code = populated._id.toString().slice(-8).toUpperCase();
@@ -604,11 +635,21 @@ exports.verifyDownPayment = async (req, res) => {
         `
       });
     } catch (e) {
-      console.error('Email (Downpayment Verified) failed:', e.message);
+        console.error('Email (Downpayment Verified) failed:', e.message);
+      }
+
+      return res.status(200).json({ success: true, data: updatedOrder });
+
+    } catch (transactionError) {
+      
+      await session.abortTransaction();
+      session.endSession();
+      console.error("Verify Downpayment Transaction Error:", transactionError);
+      return res.status(400).json({ success: false, msg: "Failed to verify downpayment: " + transactionError.message });
     }
-    res.status(200).json({ success: true, data: updatedOrder });
+  
+    
   } catch (error) {
-    // <-- Inayos ang nawawalang '{'
     console.error("Verify Down Payment Error:", error);
     res.status(500).json({ success: false, msg: "Server Error" });
   }
@@ -617,7 +658,7 @@ exports.verifyDownPayment = async (req, res) => {
 // @desc    Admin marks order as finished, requests final balance
 // @route   PUT /api/custom-orders/:id/request-final-payment
 // @access  Private/Admin
-// --- Inalis ang duplicate na comments ---
+
 exports.requestFinalPayment = async (req, res) => {
   try {
     const order = await CustomOrder.findById(req.params.id);
@@ -754,15 +795,25 @@ exports.verifyFinalPayment = async (req, res) => {
             return res.status(400).json({ success: false, msg: 'This order is not awaiting final payment verification.' });
         }
         
-        // Update the order - go directly to Ready for Pickup/Delivery
-        order.status = 'Ready for Pickup/Delivery';
-        order.balancePaid = true;
-        
-        // Auto-set fulfillment method based on checkout selection
-        if (order.shippingMethod === 'Pick-Up') {
-          order.fulfillmentMethod = 'pickup';
-        } else if (order.shippingAddress || order.deliveryAddress) {
-          order.fulfillmentMethod = 'delivery';
+        // allocate inventory for printing-only orders if not already allocated
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+          if (order.serviceType === 'printing-only' && order.fabricType && !order.inventoryAllocated) {
+            const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+            order.inventoryAllocated = true;
+            order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
+          }
+
+          // Update the order - go directly to Ready for Pickup/Delivery
+          order.status = 'Ready for Pickup/Delivery';
+          order.balancePaid = true;
+          
+          // Auto-set fulfillment method based on checkout selection
+          if (order.shippingMethod === 'Pick-Up') {
+            order.fulfillmentMethod = 'pickup';
+          } else if (order.shippingAddress || order.deliveryAddress) {
+            order.fulfillmentMethod = 'delivery';
           // Use shippingAddress from checkout if available, otherwise use deliveryAddress
           if (order.shippingAddress && !order.deliveryAddress) {
             const addr = order.shippingAddress;
@@ -783,7 +834,9 @@ exports.verifyFinalPayment = async (req, res) => {
           order.fulfillmentMethod = 'delivery';
         }
         
-        const updatedOrder = await order.save();
+          const updatedOrder = await order.save({ session });
+          await session.commitTransaction();
+          session.endSession();
 
         // Notify customer: Final payment verified and ready for fulfillment
         try {
@@ -815,6 +868,13 @@ exports.verifyFinalPayment = async (req, res) => {
         }
 
         res.status(200).json({ success: true, data: updatedOrder });
+
+        } catch (allocErr) {
+          await session.abortTransaction();
+          session.endSession();
+          console.error('Inventory allocation failed during final payment verify:', allocErr.message);
+          return res.status(400).json({ success: false, msg: 'Inventory allocation failed: ' + allocErr.message });
+        }
 
     } catch (error) {
         console.error('Verify Final Payment Error:', error);
@@ -1346,12 +1406,36 @@ exports.rejectCustomOrderQuote = async (req, res) => {
     if (!order) {
       return res.status(404).json({ success: false, msg: 'Custom order not found.' });
     }
-    order.status = 'Cancelled';
-    if (typeof notes === 'string') {
-      order.adminNotes = notes;
+    // If inventory was allocated for this order, release it
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      if (order.inventoryAllocated && Array.isArray(order.allocatedItems) && order.allocatedItems.length) {
+        for (const it of order.allocatedItems) {
+          try {
+            await releaseInventory({ name: it.name, qty: it.qty, orderId: order._id, adminId: req.user?._id, session });
+          } catch (e) {
+            console.error('Failed to release inventory for reject:', e.message);
+          }
+        }
+        order.inventoryAllocated = false;
+        order.allocatedItems = [];
+      }
+
+      order.status = 'Cancelled';
+      if (typeof notes === 'string') {
+        order.adminNotes = notes;
+      }
+      const updated = await order.save({ session });
+      await session.commitTransaction();
+      session.endSession();
+      res.status(200).json({ success: true, data: updated });
+    } catch (txErr) {
+      await session.abortTransaction();
+      session.endSession();
+      console.error('rejectCustomOrderQuote transaction error:', txErr.message);
+      return res.status(500).json({ success: false, msg: 'Failed to cancel order and restore inventory' });
     }
-    const updated = await order.save();
-    res.status(200).json({ success: true, data: updated });
   } catch (error) {
     console.error('Reject Quote Error:', error);
     res.status(500).json({ success: false, msg: 'Server Error' });

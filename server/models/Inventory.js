@@ -59,6 +59,12 @@ const inventorySchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    // Quantity that has been reserved/allocated for orders but not yet consumed
+    reserved: {
+        type: Number,
+        default: 0,
+        min: [0, 'Reserved cannot be negative']
+    },
     
     // Product-specific fields (only used when type='product')
     isProduct: {
