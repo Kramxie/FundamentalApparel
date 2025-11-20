@@ -752,12 +752,15 @@
       const fd = new FormData();
       const formElements = productForm.elements;
       
-      // Append all form fields to FormData
-      for (const element of formElements) {
-          if (element.name) {
-              fd.append(element.name, element.value);
-          }
-      }
+        // Append all form fields to FormData
+        for (const element of formElements) {
+          if (!element.name) continue;
+          // skip file inputs here (we add files explicitly)
+          if (element.type === 'file') continue;
+          // only include checked checkboxes/radios
+          if ((element.type === 'checkbox' || element.type === 'radio') && !element.checked) continue;
+          fd.append(element.name, element.value);
+        }
 
       if (mainFile) {
         fd.set('image', mainFile); // Use set to ensure only one main image
@@ -781,8 +784,18 @@
           headers: { 'Authorization': `Bearer ${token}` },
           body: fd
         });
-        const json = await res.json();
-        
+        let json = null;
+        try {
+          json = await res.json();
+        } catch (parseErr) {
+          const text = await res.text();
+          throw new Error(`Server responded ${res.status}: ${text ? text.replace(/\s+/g, ' ').slice(0,200) : 'no body'}`);
+        }
+
+        if (!res.ok) {
+          throw new Error(json?.msg || `Server error ${res.status}`);
+        }
+
         if (json.success) {
           showMessage('Product created successfully!', 'success');
           productForm.reset();
