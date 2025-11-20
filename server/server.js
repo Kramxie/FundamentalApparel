@@ -30,14 +30,25 @@ const notifyUtil = require('./utils/notify');
 
 connectDB();
 
+// Build allowed origins list from environment or fall back to defaults.
+// Set ALLOWED_ORIGINS as a comma-separated env var in Render (e.g.
+// "https://fundamental-apparel-backend.onrender.com,https://fundamental-apparel-frontend.onrender.com").
+const DEFAULT_ORIGINS = [
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "https://unmumbled-balloonlike-gayle.ngrok-free.dev"
+];
+const envOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)
+    : [];
+const allowedOrigins = Array.from(new Set([...envOrigins, ...DEFAULT_ORIGINS]));
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: [
-            "http://127.0.0.1:5500",
-            "https://unmumbled-balloonlike-gayle.ngrok-free.dev"
-        ],
+        // allowed origins come from ALLOWED_ORIGINS env var + defaults
+        origin: allowedOrigins,
         credentials: true,
         methods: ["GET", "POST"]
     }
@@ -67,11 +78,8 @@ app.use(express.json({
 
 // Enable CORS 
 app.use(cors({
-    origin: [
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-        "https://unmumbled-balloonlike-gayle.ngrok-free.dev"
-    ],
+    // origin list will be set from ALLOWED_ORIGINS (env)
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
 }));
