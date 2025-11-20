@@ -24,8 +24,8 @@ FACEBOOK_APP_ID=801233042753173
 FACEBOOK_APP_SECRET=94e148070bb6ae585f9df2f114eb86fb
 
 # Server & Client URLs
-SERVER_URL=https://unmumbled-balloonlike-gayle.ngrok-free.dev
-CLIENT_URL=https://unmumbled-balloonlike-gayle.ngrok-free.dev/client
+SERVER_URL=https://fundamental-apparel-backend.onrender.com
+CLIENT_URL=https://fundamental-apparel-backend.onrender.com/client
 ```
 
 ### 2. **Update Client-Side API Base URL**

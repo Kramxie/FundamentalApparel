@@ -200,7 +200,7 @@ Successfully redesigned the Services Page with advanced features including live 
 - **Features**: Shapes, text, images, gradients
 
 ### **API Integration**
-- **Base URL**: `https://unmumbled-balloonlike-gayle.ngrok-free.dev`
+- **Base URL**: `https://fundamental-apparel-backend.onrender.com`
 - **Endpoint**: `POST /api/custom-orders`
 - **Authentication**: JWT Bearer token
 - **Content-Type**: `multipart/form-data` (for file uploads)

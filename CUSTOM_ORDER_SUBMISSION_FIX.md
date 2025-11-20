@@ -175,7 +175,7 @@ Open DevTools (F12) → Console tab
 
 Look for:
 ```javascript
-Submitting order to: https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/custom-orders
+Submitting order to: https://fundamental-apparel-backend.onrender.com/api/custom-orders
 Response status: 500 (or 400, 401, etc.)
 Response data: { success: false, msg: "...", error: "..." }
 ```
@@ -346,7 +346,7 @@ Invoke-WebRequest -Uri "http://localhost:4040/api/tunnels" | ConvertFrom-Json
 
 # Test endpoint directly
 $token = "your-token-here"
-Invoke-WebRequest -Uri "https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/custom-orders" `
+Invoke-WebRequest -Uri "https://fundamental-apparel-backend.onrender.com/api/custom-orders" `
   -Method POST `
   -Headers @{Authorization="Bearer $token"} `
   -Body @{serviceType='customize-jersey';quantity=1} `

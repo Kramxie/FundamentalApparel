@@ -780,7 +780,7 @@
   <!-- Payment Details Modal removed: payment info now shown directly in Order Details modal -->
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const API = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev'; // O ang ngrok URL mo
+    const API = 'https://fundamental-apparel-backend.onrender.com'; // O ang ngrok URL mo
 
     function peso(n) { return '₱' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function shortId(id) { return id ? id.slice(0, 8) : '-'; }
@@ -1782,7 +1782,7 @@
                 // Ensure URL is absolute
                 let finalUrl = url;
                 if (url && !url.startsWith('http') && !url.startsWith('data:')) {
-                  const API_BASE = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
+                  const API_BASE = 'https://fundamental-apparel-backend.onrender.com';
                   finalUrl = url.startsWith('/') ? `${API_BASE}${url}` : `${API_BASE}/${url}`;
                 }
                 

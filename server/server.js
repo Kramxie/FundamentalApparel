@@ -36,7 +36,7 @@ connectDB();
 const DEFAULT_ORIGINS = [
     "http://127.0.0.1:5500",
     "http://localhost:5500",
-    "https://unmumbled-balloonlike-gayle.ngrok-free.dev"
+    "https://fundamental-apparel-backend.onrender.com"
 ];
 const envOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)

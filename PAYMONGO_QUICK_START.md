@@ -17,7 +17,7 @@ PAYMONGO_SECRET_KEY=sk_test_your_actual_secret_key_here
 PAYMONGO_PUBLIC_KEY=pk_test_your_actual_public_key_here
 
 # Your Ngrok URL
-SERVER_URL=https://unmumbled-balloonlike-gayle.ngrok-free.dev
+SERVER_URL=https://fundamental-apparel-backend.onrender.com
 PORT=5000
 ```
 

@@ -87,7 +87,7 @@
             async function apiRequest(path, options = {}) {
                 // ... (ang apiRequest function mo ay pareho pa rin) ...
                 options.headers = { ...options.headers, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
-                const res = await fetch(`https://unmumbled-balloonlike-gayle.ngrok-free.dev${path}`, options);
+                const res = await fetch(`https://fundamental-apparel-backend.onrender.com${path}`, options);
                 if (res.status === 401) {
                     localStorage.removeItem('token');
                     window.location.href = 'login.html';

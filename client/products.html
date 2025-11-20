@@ -165,7 +165,7 @@
             async function validateToken(token) {
                 if (!token) return false;
                 try {
-                    const res = await fetch('https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/auth/me', {
+                    const res = await fetch('https://fundamental-apparel-backend.onrender.com/api/auth/me', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (!res.ok) return false;
@@ -193,7 +193,7 @@
 
             async function fetchProducts() {
                 try {
-                    const response = await fetch('https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/products');
+                    const response = await fetch('https://fundamental-apparel-backend.onrender.com/api/products');
                     if (!response.ok) throw new Error('Network response was not ok');
                     const result = await response.json();
                     
@@ -297,7 +297,7 @@
              async function fetchCartCount() {
                 if (!token) return;
                 try {
-                    const response = await fetch('https://unmumbled-balloonlike-gayle.ngrok-free.dev/api/cart', {
+                    const response = await fetch('https://fundamental-apparel-backend.onrender.com/api/cart', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (!response.ok) return;

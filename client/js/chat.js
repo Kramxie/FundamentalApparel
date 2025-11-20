@@ -1,7 +1,7 @@
 // chat.js - Real-time messaging widget for customer-admin chat
 (function() {
-    const API_BASE = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
-    const SOCKET_URL = 'https://unmumbled-balloonlike-gayle.ngrok-free.dev';
+    const API_BASE = 'https://fundamental-apparel-backend.onrender.com';
+    const SOCKET_URL = 'https://fundamental-apparel-backend.onrender.com';
     
     let socket = null;
     let currentUser = null;
