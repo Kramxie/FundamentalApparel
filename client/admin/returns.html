@@ -30,6 +30,7 @@
         <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"><i class="fas fa-sign-out-alt mr-2"></i>Logout</button>
       </div>
       <div class="flex-1 overflow-y-auto p-6">
+        <div id="message-container" class="hidden mb-4 p-3 rounded-md bg-green-100 text-green-800"></div>
         <div class="bg-white rounded-lg shadow p-4 mb-6">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -87,6 +88,17 @@
   <script>
     const API = 'https://fundamental-apparel-backend.onrender.com';
 
+    // message helper (replaces alert())
+    const messageEl = document.getElementById('message-container');
+    function showMessage(text, type = 'success') {
+      if (!messageEl) return;
+      messageEl.textContent = text;
+      messageEl.className = `mb-4 p-3 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+      messageEl.classList.remove('hidden');
+      window.scrollTo(0, 0);
+      setTimeout(() => messageEl.classList.add('hidden'), 4000);
+    }
+
     function shortId(id){ return id ? id.slice(0,8) : '-'; }
     function peso(n){ return '₱' + Number(n||0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
@@ -123,8 +135,8 @@
         try {
           const res = await fetch(`${API}/api/returns/${selected._id}/approve`, { method: 'PUT', headers: { 'Content-Type':'application/json','Authorization':`Bearer ${token}` }, body: JSON.stringify({ adminNotes: note, refundMethod: 'manual' }) });
           const data = await res.json(); if (!res.ok) throw new Error(data.msg || 'Failed');
-          alert('Approved'); await load();
-        } catch (e) { alert('Approve failed: ' + e.message); }
+          showMessage('Approved', 'success'); await load();
+        } catch (e) { showMessage('Approve failed: ' + e.message, 'error'); }
       });
 
       els.btnReject.addEventListener('click', async () => {
@@ -133,8 +145,8 @@
         try {
           const res = await fetch(`${API}/api/returns/${selected._id}/reject`, { method: 'PUT', headers: { 'Content-Type':'application/json','Authorization':`Bearer ${token}` }, body: JSON.stringify({ adminNotes: note }) });
           const data = await res.json(); if (!res.ok) throw new Error(data.msg || 'Failed');
-          alert('Rejected'); await load();
-        } catch (e) { alert('Reject failed: ' + e.message); }
+          showMessage('Rejected', 'success'); await load();
+        } catch (e) { showMessage('Reject failed: ' + e.message, 'error'); }
       });
 
       els.btnRefund.addEventListener('click', async () => {
@@ -143,8 +155,8 @@
         try {
           const res = await fetch(`${API}/api/returns/${selected._id}/refund`, { method: 'POST', headers: { 'Authorization':`Bearer ${token}` } });
           const data = await res.json(); if (!res.ok) throw new Error(data.msg || JSON.stringify(data));
-          alert('Refund processed'); await load();
-        } catch (e) { alert('Refund failed: ' + e.message); }
+          showMessage('Refund processed', 'success'); await load();
+        } catch (e) { showMessage('Refund failed: ' + e.message, 'error'); }
       });
 
       async function load(){
@@ -154,7 +166,7 @@
           const data = await res.json(); if (!data.success) throw new Error(data.msg || 'Failed');
           items = data.data || [];
           render();
-        } catch (e) { alert('Load failed: ' + e.message); }
+        } catch (e) { showMessage('Load failed: ' + e.message, 'error'); }
       }
 
       function render(){

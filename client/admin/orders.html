@@ -106,6 +106,8 @@
 
       <!-- Main content with overflow scroll -->
       <div class="flex-1 overflow-y-auto">
+      <!-- Page-level message container (replaces alert()) -->
+      <div id="message-container" class="hidden mb-4 p-3 rounded-md bg-green-100 text-green-800"></div>
       <div class="p-6 space-y-6">
         <div class="bg-white p-4 rounded-lg shadow">
           <div id="tabs-container" class="flex gap-8">
@@ -786,6 +788,17 @@
     function peso(n) { return '₱' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function shortId(id) { return id ? id.slice(0, 8) : '-'; }
 
+    // message helper (replaces alert())
+    const messageEl = document.getElementById('message-container');
+    function showMessage(text, type = 'success') {
+      if (!messageEl) return;
+      messageEl.textContent = text;
+      messageEl.className = `mb-4 p-3 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+      messageEl.classList.remove('hidden');
+      window.scrollTo(0, 0);
+      setTimeout(() => messageEl.classList.add('hidden'), 4000);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const token = localStorage.getItem('adminToken');
       if (!token) { window.location.href = 'login.html'; return; }
@@ -1357,7 +1370,7 @@
             renderCustomOrders();
           });
         } catch (err) {
-          alert(err.message);
+          showMessage(err.message, 'error');
         }
       }
 
@@ -2525,11 +2538,11 @@
           const deliveryDate = document.getElementById('fulfillment-delivery-date').value;
 
           if (!courier) {
-            alert('Please select a courier service.');
+            showMessage('Please select a courier service.', 'error');
             return;
           }
           if (!trackingNumber) {
-            alert('Please enter a tracking number.');
+            showMessage('Please enter a tracking number.', 'error');
             return;
           }
 
@@ -2545,7 +2558,7 @@
         }
 
         if (Object.keys(data).length === 0) {
-          alert('Please enter at least one fulfillment detail.');
+          showMessage('Please enter at least one fulfillment detail.', 'error');
           return;
         }
 
@@ -2562,7 +2575,7 @@
           const result = await res.json();
           if (!res.ok || !result.success) throw new Error(result.msg || 'Failed to save fulfillment details');
 
-          alert(result.msg || 'Fulfillment details saved! Status updated to "Out for Delivery".');
+          showMessage(result.msg || 'Fulfillment details saved! Status updated to "Out for Delivery".', 'success');
           
           // Update local list
           const idx = allCustomOrders.findIndex(o => o._id === selectedCustomOrder._id);
@@ -2572,7 +2585,7 @@
           els.customModal.classList.add('hidden'); // Close modal
 
         } catch (err) {
-          alert('Error: ' + err.message);
+          showMessage('Error: ' + err.message, 'error');
         } finally {
           saveBtn.disabled = false;
           saveBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Submit Tracking Details';
@@ -2598,7 +2611,7 @@
         const json = await res.json();
         
         if (!json.success || !json.data) {
-          alert('Failed to load payment details');
+          showMessage('Failed to load payment details', 'error');
           return;
         }
         
@@ -2733,7 +2746,7 @@
         
       } catch (error) {
         console.error('Error loading payment receipt:', error);
-        alert('Failed to load payment details');
+        showMessage('Failed to load payment details', 'error');
       }
     }
     
@@ -2743,7 +2756,7 @@
     
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text).then(() => {
-        alert('Reference number copied!');
+        showMessage('Reference number copied!', 'success');
       });
     }
   </script>

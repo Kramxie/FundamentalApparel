@@ -133,6 +133,8 @@
                     </div>
                 </div>
 
+                <div id="message-container" class="hidden mb-4 p-4 rounded-md"></div>
+
                 <!-- Inventory Table Container -->
                 <div id="inventory-container" class="bg-white rounded-lg shadow overflow-hidden">
                     <div class="overflow-x-auto">
@@ -638,6 +640,26 @@
             // Image preview listeners
             document.getElementById('product-image').addEventListener('change', handleMainImagePreview);
             document.getElementById('product-gallery').addEventListener('change', handleGalleryPreview);
+
+            // Inventory table: toggle full per-size list
+            const inventoryTbody = document.getElementById('inventory-tbody');
+            inventoryTbody?.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.classList && target.classList.contains('show-sizes-btn')) {
+                    const btn = target;
+                    const container = btn.closest('div');
+                    if (!container) return;
+                    const full = container.querySelector('.sizes-full');
+                    if (!full) return;
+                    if (full.classList.contains('hidden')) {
+                        full.classList.remove('hidden');
+                        btn.textContent = 'Hide';
+                    } else {
+                        full.classList.add('hidden');
+                        btn.textContent = 'Show';
+                    }
+                }
+            });
         }
 
         // Handle main image preview
@@ -817,6 +839,13 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900">${item.quantity.toLocaleString()}</div>
+                            ${item.sizesInventory && Object.keys(item.sizesInventory || {}).length > 0 ? `
+                                <div class="text-xs text-gray-500 mt-1">
+                                    <span class="sizes-short block max-w-[220px] truncate">${Object.keys(item.sizesInventory).map(s => `${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}`).join(' · ')}</span>
+                                    <button type="button" class="show-sizes-btn text-indigo-600 text-xs ml-2">Show</button>
+                                    <div class="sizes-full hidden text-xs text-gray-700 mt-1">${Object.keys(item.sizesInventory).map(s => `${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}`).join('<br>')}</div>
+                                </div>
+                            ` : ''}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             ${escapeHtml(item.unit)}
@@ -1248,11 +1277,21 @@
         }
 
         function showSuccess(message) {
-            alert(message); // Replace with better notification system if needed
+            const mc = document.getElementById('message-container');
+            if (!mc) { console.warn(message); return; }
+            mc.textContent = message;
+            mc.className = `p-4 rounded-md mb-4 bg-green-100 text-green-800`;
+            mc.classList.remove('hidden');
+            setTimeout(() => { mc.classList.add('hidden'); }, 3000);
         }
 
         function showError(message) {
-            alert(`Error: ${message}`);
+            const mc = document.getElementById('message-container');
+            if (!mc) { console.error(`Error: ${message}`); return; }
+            mc.textContent = message;
+            mc.className = `p-4 rounded-md mb-4 bg-red-100 text-red-800`;
+            mc.classList.remove('hidden');
+            setTimeout(() => { mc.classList.add('hidden'); }, 5000);
         }
 
         // Make functions globally available

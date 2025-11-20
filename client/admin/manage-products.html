@@ -166,7 +166,13 @@
                             <td class="px-4 py-2">₱${(Number(product.price)||0).toLocaleString()}</td>
                             <td class="px-4 py-2">
                                 <div class="font-medium">${Number(product.countInStock)||0}</div>
-                                ${sizesHtml ? `<div class="text-xs text-gray-500 mt-1"><span class="block max-w-[220px] truncate">${sizesHtml}</span></div>` : ''}
+                                ${sizesHtml ? `
+                                <div class="text-xs text-gray-500 mt-1">
+                                    <span class="sizes-short block max-w-[220px] truncate">${sizesHtml}</span>
+                                    <button type="button" class="show-sizes-btn text-indigo-600 text-xs ml-2">Show</button>
+                                    <div class="sizes-full hidden text-xs text-gray-700 mt-1">${sizesHtml.split(' · ').join('<br>')}</div>
+                                </div>
+                                ` : ''}
                             </td>
                             <td class="px-4 py-2 flex space-x-2">
                                 <a href="edit-product.html?id=${product._id}" class="font-medium text-blue-600 hover:underline">Edit</a>
@@ -195,6 +201,24 @@
                         } catch (error) {
                             showMessage(error.message, 'error');
                         }
+                    }
+                }
+                }
+
+                // Toggle show/hide sizes full list
+                if (e.target.classList.contains('show-sizes-btn')) {
+                    const btn = e.target;
+                    const container = btn.closest('div');
+                    if (!container) return;
+                    const full = container.querySelector('.sizes-full');
+                    const short = container.querySelector('.sizes-short');
+                    if (!full) return;
+                    if (full.classList.contains('hidden')) {
+                        full.classList.remove('hidden');
+                        btn.textContent = 'Hide';
+                    } else {
+                        full.classList.add('hidden');
+                        btn.textContent = 'Show';
                     }
                 }
             });

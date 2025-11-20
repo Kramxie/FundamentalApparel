@@ -13,52 +13,6 @@
       width: 72px;
       height: 72px;
       object-fit: cover;
-      border-radius: 6px;
-      border: 2px solid transparent;
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
-    }
-    .thumb:hover {
-      opacity: 0.8;
-    }
-    .thumb.active {
-      border-color: #4f46e5;
-      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5);
-    }
-    #main-preview {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
-  </style>
-</head>
-<body class="bg-gray-100">
-  <div class="min-h-screen flex bg-gray-100">
-    <!-- Sidebar -->
-    <aside id="admin-sidebar" class="hidden md:flex flex-col w-64 bg-white shadow-lg">
-      <div class="flex items-center justify-center h-16 bg-white shadow-md">
-        <span class="text-2xl font-bold text-indigo-600">Admin Panel</span>
-      </div>
-      <div class="flex flex-col flex-grow p-4">
-        <nav class="flex-grow space-y-2">
-          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
-          </a>
-          <a href="add-product.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
-            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
-          </a>
-          <a href="manage-categories.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-list w-6"></i><span class="ml-3">Manage Categories</span>
-          </a>
-          <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
-          </a>
-          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
-          </a>
-          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
-          </a>
           <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
             <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
           </a>
@@ -114,12 +68,15 @@
                   </div>
                   <div>
                     <label for="price" class="block text-sm font-medium text-gray-700">Price (₱)</label>
-                    <input type="number" id="price" name="price" step="0.01" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                    <div class="flex items-center gap-2 mt-1">
+                      <input type="number" id="price" name="price" step="0.01" required class="w-full sm:w-48 md:w-44 lg:w-56 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                      <button id="assign-price-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md">Assign</button>
+                    </div>
                   </div>
                   <div>
                     <label for="stock" class="block text-sm font-medium text-gray-700">Stock Quantity</label>
                     <div class="flex items-center gap-2 mt-1">
-                      <input type="number" id="stock" name="countInStock" required class="flex-1 block border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                      <input type="number" id="stock" name="countInStock" required class="w-full sm:w-48 md:w-44 lg:w-56 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
                       <button id="assign-stock-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md" title="Assign stock to sizes">Assign</button>
                     </div>
                   </div>
@@ -157,7 +114,7 @@
                     <label class="block text-sm font-medium text-gray-700">Per-size inventory (optional)</label>
                     <div class="mt-1 space-y-2">
                                       <div class="flex gap-2">
-                                        <input id="sizes" name="sizes" placeholder="e.g., S, M, L, XL" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2">
+                                        <input id="sizes-generate" name="sizesGenerate" placeholder="e.g., S, M, L, XL" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2">
                                         <button id="generate-sizes-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md">Generate</button>
                                       </div>
                                       <div class="flex items-center gap-2 mt-2">
@@ -288,6 +245,54 @@
       </main>
     </div>
   </div>
+  
+  <!-- Stock assign modal -->
+  <div id="stock-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/50" aria-hidden="true"></div>
+    <div class="relative bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-semibold">Assign Stock to Size</h3>
+        <button id="stock-modal-close" class="text-gray-600">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-sm">Size name</label>
+          <input id="stock-modal-size" type="text" list="sizes-datalist" class="mt-1 block w-full border rounded p-2" placeholder="e.g., S, M, L">
+          <datalist id="sizes-datalist"></datalist>
+        </div>
+        <div>
+          <label class="block text-sm">Quantity</label>
+          <input id="stock-modal-qty" type="number" class="mt-1 block w-full border rounded p-2" min="0">
+        </div>
+        <div class="flex justify-end gap-2">
+          <button id="stock-modal-add" class="px-4 py-2 bg-indigo-600 text-white rounded">Add</button>
+          <button id="stock-modal-cancel" type="button" class="px-4 py-2 bg-gray-200 rounded" onclick="document.getElementById('stock-modal').classList.add('hidden');document.body.classList.remove('overflow-hidden');">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Price assign modal -->
+  <div id="price-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/50" aria-hidden="true"></div>
+    <div class="relative bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-semibold">Assign Price to Sizes</h3>
+        <button id="price-modal-close" class="text-gray-600">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div id="price-modal-sizes" class="flex flex-wrap"></div>
+        <div>
+          <label class="block text-sm">Price (₱)</label>
+          <input id="price-modal-price" type="number" step="0.01" min="0" class="mt-1 block w-full border rounded p-2">
+        </div>
+        <div class="flex justify-end gap-2">
+          <button id="price-modal-add" class="px-4 py-2 bg-indigo-600 text-white rounded">Add</button>
+          <button id="price-modal-cancel" type="button" class="px-4 py-2 bg-gray-200 rounded" onclick="document.getElementById('price-modal').classList.add('hidden');document.body.classList.remove('overflow-hidden');">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     const API = 'https://fundamental-apparel-backend.onrender.com';
@@ -322,6 +327,8 @@
     const newCategoryInput = document.getElementById('new-category');
     const messageEl = document.getElementById('message');
     const submitBtn = document.getElementById('submit-btn');
+    const stockInput = document.getElementById('stock');
+    const priceInput = document.getElementById('price');
 
     let galleryFiles = [];
     let mainFile = null;
@@ -379,7 +386,7 @@
     }
 
     generateSizesBtn?.addEventListener('click', () => {
-      const sizesText = document.getElementById('sizes').value || '';
+      const sizesText = document.getElementById('sizes-generate')?.value || '';
       const sizes = sizesText.split(',').map(s => s.trim()).filter(Boolean);
       const obj = {};
       sizes.forEach(s => { obj[s] = obj[s] || 0; });
@@ -757,9 +764,28 @@
     function openModal(modal) { modal?.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
     function closeModal(modal) { modal?.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
 
+    // populate datalist for sizes used by stock modal
+    function populateSizesDatalist() {
+      const dl = document.getElementById('sizes-datalist');
+      if (!dl) return;
+      dl.innerHTML = '';
+      const sizesText = (document.getElementById('sizes-generate')?.value || '');
+      const fromInput = sizesText.split(',').map(s=>s.trim()).filter(Boolean);
+      const inv = getSizesInventoryObject();
+      const invSizes = Object.keys(inv || {});
+      const all = Array.from(new Set([...fromInput, ...invSizes]));
+      all.forEach(s => {
+        const opt = document.createElement('option'); opt.value = s; dl.appendChild(opt);
+      });
+    }
+
+    document.getElementById('sizes-generate')?.addEventListener('input', populateSizesDatalist);
+
     assignStockBtn?.addEventListener('click', () => {
+      // refresh datalist options then open modal
+      populateSizesDatalist();
       // Prefill qty from main stock input
-      stockModalQty.value = Number(stock.value || 0);
+      stockModalQty.value = Number(stockInput?.value || 0);
       stockModalSize.value = '';
       openModal(stockModal);
     });
@@ -795,21 +821,16 @@
       closeModal(stockModal);
     });
 
-    // Price assign
-    // add a button next to price in the DOM
-    const priceWrapper = document.getElementById('price')?.parentElement;
-    if (priceWrapper && !document.getElementById('assign-price-btn')) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.id = 'assign-price-btn';
-      btn.className = 'px-3 py-2 bg-indigo-600 text-white rounded-md';
-      btn.textContent = 'Assign';
-      priceWrapper.appendChild(btn);
-    }
+    // Price assign (button exists in DOM)
     assignPriceBtn?.addEventListener('click', () => {
+      // Only allow price assign when there is per-size stock
+      const inv = getSizesInventoryObject();
+      if (!inv || Object.keys(inv).length === 0) {
+        showMessage('Please assign quantity stock per size before assigning per-size prices.', 'error');
+        return;
+      }
       // populate sizes list from current inventory
       priceModalSizesContainer.innerHTML = '';
-      const inv = getSizesInventoryObject();
       Object.keys(inv).forEach(s => {
         const row = document.createElement('label');
         row.className = 'inline-flex items-center gap-2 mr-2';

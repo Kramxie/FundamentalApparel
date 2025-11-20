@@ -21,6 +21,7 @@
   </header>
 
   <main class="max-w-6xl mx-auto px-6 py-6">
+    <div id="message-container" class="hidden mb-4 p-3 rounded-md bg-green-100 text-green-800"></div>
     <div class="flex items-end justify-between mb-4">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Fulfillment</h1>
@@ -68,15 +69,26 @@
     </tr>
   </template>
 
-  <script>
+    <script>
     const token = localStorage.getItem('token');
+
+    // message helper (replaces alert())
+    const messageEl = document.getElementById('message-container');
+    function showMessage(text, type = 'success') {
+      if (!messageEl) return;
+      messageEl.textContent = text;
+      messageEl.className = `mb-4 p-3 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+      messageEl.classList.remove('hidden');
+      window.scrollTo(0, 0);
+      setTimeout(() => messageEl.classList.add('hidden'), 4000);
+    }
 
     async function fetchOrders(){
       const status = document.getElementById('statusFilter').value;
       const url = `/api/custom-orders/admin?status=${encodeURIComponent(status)}`;
       const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }});
       const json = await res.json();
-      if (!json.success){ alert(json.msg || 'Failed to load'); return; }
+      if (!json.success){ showMessage(json.msg || 'Failed to load', 'error'); return; }
       renderRows(json.data || []);
     }
 
@@ -153,8 +165,8 @@
         body: JSON.stringify(payload)
       });
       const json = await res.json();
-      if (!json.success){ alert(json.msg || 'Failed to save'); return; }
-      alert('Fulfillment details saved.');
+      if (!json.success){ showMessage(json.msg || 'Failed to save', 'error'); return; }
+      showMessage('Fulfillment details saved.', 'success');
       fetchOrders();
     }
 

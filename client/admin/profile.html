@@ -72,6 +72,7 @@
 
       <!-- Content Area -->
       <div id="admin-profile-container" class="flex-1 overflow-y-auto p-6">
+        <div id="message-container" class="hidden mb-4 p-3 rounded-md bg-green-100 text-green-800"></div>
         <div class="max-w-4xl mx-auto space-y-6">
           
           <!-- Profile Information Card -->
@@ -478,6 +479,16 @@
   <script>
     const API = 'https://fundamental-apparel-backend.onrender.com';
     let currentUser = null;
+    // message helper (replaces alert())
+    const messageEl = document.getElementById('message-container');
+    function showMessage(text, type = 'success') {
+      if (!messageEl) return;
+      messageEl.textContent = text;
+      messageEl.className = `mb-4 p-3 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+      messageEl.classList.remove('hidden');
+      window.scrollTo(0, 0);
+      setTimeout(() => messageEl.classList.add('hidden'), 4000);
+    }
     let verificationToken = null;
     let forgotEmail = null;
     // cooldown timers
@@ -541,8 +552,8 @@
           
           // Check if user is admin or employee
           if (currentUser.role !== 'admin' && currentUser.role !== 'employee') {
-            alert('Access denied. Admin or employee privileges required.');
-            window.location.href = 'login.html';
+            showMessage('Access denied. Admin or employee privileges required.', 'error');
+            setTimeout(() => { window.location.href = 'login.html'; }, 1200);
             return;
           }
 
@@ -569,8 +580,8 @@
           document.getElementById('employee-section').classList.remove('hidden');
           console.warn('[Profile] Showing fallback UI due to profile load failure');
         }
-        alert(`Failed to load profile: ${error.message}\n\nPlease check:\n1. Your internet connection\n2. That you are logged in\n3. The server is running`);
-        window.location.href = 'login.html';
+        showMessage(`Failed to load profile: ${error.message}`, 'error');
+        setTimeout(() => { window.location.href = 'login.html'; }, 1200);
       }
     }
 

@@ -59,6 +59,7 @@
             </div>
 
             <!-- Messages Layout -->
+            <div id="message-container" class="hidden mb-4 p-3 rounded-md bg-green-100 text-green-800"></div>
             <div class="flex flex-1 overflow-hidden">
                 <!-- Conversations List -->
                 <div class="w-80 bg-white border-r border-gray-200 overflow-y-auto">
@@ -181,6 +182,17 @@
     <script>
         const API_BASE = 'https://fundamental-apparel-backend.onrender.com';
         const SOCKET_URL = 'https://fundamental-apparel-backend.onrender.com';
+
+        // message helper (replaces alert())
+        const messageEl = document.getElementById('message-container');
+        function showMessage(text, type = 'success') {
+            if (!messageEl) return;
+            messageEl.textContent = text;
+            messageEl.className = `mb-4 p-3 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            messageEl.classList.remove('hidden');
+            window.scrollTo(0, 0);
+            setTimeout(() => messageEl.classList.add('hidden'), 4000);
+        }
         
         let socket = null;
         let currentUser = null;
@@ -224,7 +236,7 @@
                 currentUser = data.data;
 
                 if (currentUser.role !== 'admin' && currentUser.role !== 'employee') {
-                    alert('Access denied. Admin or employee privileges required.');
+                        showMessage('Access denied. Admin or employee privileges required.', 'error');
                     window.location.href = '../index.html';
                 }
             } catch (error) {
@@ -553,7 +565,7 @@
             }
 
             if (!selectedCustomer) {
-                alert('Please select a customer first');
+                showMessage('Please select a customer first', 'error');
                 return;
             }
 
@@ -631,7 +643,7 @@
                 console.error('Error sending message:', error);
                 currentMessages = currentMessages.filter(m => m._id !== tempMessage._id);
                 renderMessages();
-                alert('Failed to send message');
+                showMessage('Failed to send message', 'error');
             }
         }
 
@@ -680,7 +692,7 @@
             // Validate file type
             const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
             if (!validTypes.includes(file.type)) {
-                alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+                showMessage('Please select a valid image file (JPEG, PNG, GIF, or WebP)', 'error');
                 e.target.value = '';
                 return;
             }
@@ -688,7 +700,7 @@
             // Validate file size (5MB max)
             const maxSize = 5 * 1024 * 1024; // 5MB
             if (file.size > maxSize) {
-                alert('Image size must be less than 5MB');
+                showMessage('Image size must be less than 5MB', 'error');
                 e.target.value = '';
                 return;
             }
@@ -747,7 +759,7 @@
 
             } catch (error) {
                 console.error('Error uploading image:', error);
-                alert('Failed to upload image. Please try again.');
+                showMessage('Failed to upload image. Please try again.', 'error');
                 return null;
             } finally {
                 // Hide progress
