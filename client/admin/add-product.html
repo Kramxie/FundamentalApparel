@@ -754,14 +754,17 @@
       const formElements = productForm.elements;
       
         // Append all form fields to FormData
-        for (const element of formElements) {
-          if (!element.name) continue;
-          // skip file inputs here (we add files explicitly)
-          if (element.type === 'file') continue;
-          // only include checked checkboxes/radios
-          if ((element.type === 'checkbox' || element.type === 'radio') && !element.checked) continue;
-          fd.append(element.name, element.value);
-        }
+          for (const element of formElements) {
+            if (!element.name) continue;
+            // skip file inputs here (we add files explicitly)
+            if (element.type === 'file') continue;
+            // skip inputs that use bracketed names (e.g. placements[featured])
+            // we serialize complex objects into hidden JSON inputs (e.g. placementsHidden)
+            if (element.name && element.name.includes('[')) continue;
+            // only include checked checkboxes/radios
+            if ((element.type === 'checkbox' || element.type === 'radio') && !element.checked) continue;
+            fd.append(element.name, element.value);
+          }
 
       if (mainFile) {
         fd.set('image', mainFile); // Use set to ensure only one main image
