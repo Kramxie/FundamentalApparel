@@ -358,6 +358,7 @@
   <script>
     const API = 'https://fundamental-apparel-backend.onrender.com';
     const token = localStorage.getItem('adminToken');
+    const DEBUG = true; // set to false to disable verbose client-side submit logs
 
     // Auth check
     if (!token) {
@@ -779,6 +780,24 @@
       });
 
       try {
+        if (DEBUG) {
+          try {
+            console.groupCollapsed('Debug: Product FormData');
+            for (const entry of fd.entries()) {
+              const [k, v] = entry;
+              if (v instanceof File) {
+                console.log(k, `File: ${v.name}`, `${v.size} bytes`, v.type);
+              } else {
+                console.log(k, v);
+              }
+            }
+            console.log('Gallery files count:', galleryFiles.length);
+            console.log('Has mainFile:', !!mainFile);
+            console.log('Authorization token present:', !!token);
+            console.groupEnd();
+          } catch (logErr) { console.warn('FormData debug error', logErr); }
+        }
+        
         const res = await fetch(`${API}/api/products`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
