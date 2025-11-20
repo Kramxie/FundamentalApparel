@@ -10,7 +10,7 @@
     <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
 <body class="bg-gray-100">
-    <div class="flex h-screen bg-gray-100">
+    <div class="flex min-h-screen bg-gray-100">
         <!-- Sidebar -->
         <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
             <div class="flex items-center justify-center h-16 bg-white shadow-md"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
@@ -44,25 +44,25 @@
             </div>
         </div>
         <!-- Main content (table remains the same) -->
-        <div class="flex flex-col flex-1 overflow-hidden">
-            <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
+        <div class="flex flex-col flex-1 overflow-auto">
+            <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6 sticky top-0 z-20">
                 <h1 class="text-xl font-semibold text-gray-800">Manage Products</h1>
                 <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
                     <i class="fas fa-sign-out-alt mr-2"></i>Logout
                 </button>
             </div>
             <div class="p-6">
-                <div class="max-w-7xl mx-auto bg-white p-8 rounded-lg shadow-md">
+                <div class="max-w-7xl mx-auto bg-white p-4 rounded-lg shadow-md">
                     <div id="message-container" class="hidden mb-4 p-4 rounded-md"></div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left text-gray-500">
                             <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3">Product Name</th>
-                                    <th scope="col" class="px-6 py-3">Category</th>
-                                    <th scope="col" class="px-6 py-3">Price</th>
-                                    <th scope="col" class="px-6 py-3">Stock</th>
-                                    <th scope="col" class="px-6 py-3">Actions</th>
+                                            <th scope="col" class="px-4 py-2">Product Name</th>
+                                            <th scope="col" class="px-4 py-2">Category</th>
+                                            <th scope="col" class="px-4 py-2">Price</th>
+                                            <th scope="col" class="px-4 py-2">Stock</th>
+                                            <th scope="col" class="px-4 py-2">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="products-table-body"></tbody>
@@ -120,14 +120,14 @@
 
                     const row = `
                         <tr class="bg-white border-b hover:bg-gray-50">
-                            <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${product.name}</td>
-                            <td class="px-6 py-4">${product.category}</td>
-                            <td class="px-6 py-4">₱${(Number(product.price)||0).toLocaleString()}</td>
-                            <td class="px-6 py-4">
+                            <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${product.name}</td>
+                            <td class="px-4 py-2">${product.category}</td>
+                            <td class="px-4 py-2">₱${(Number(product.price)||0).toLocaleString()}</td>
+                            <td class="px-4 py-2">
                                 <div class="font-medium">${Number(product.countInStock)||0}</div>
-                                ${sizesHtml ? `<div class="text-xs text-gray-500 mt-1">${sizesHtml}</div>` : ''}
+                                ${sizesHtml ? `<div class="text-xs text-gray-500 mt-1"><span class="block max-w-[220px] truncate">${sizesHtml}</span></div>` : ''}
                             </td>
-                            <td class="px-6 py-4 flex space-x-2">
+                            <td class="px-4 py-2 flex space-x-2">
                                 <a href="edit-product.html?id=${product._id}" class="font-medium text-blue-600 hover:underline">Edit</a>
                                 <button data-id="${product._id}" class="delete-btn font-medium text-red-600 hover:underline">Delete</button>
                             </td>
