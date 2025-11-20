@@ -21,7 +21,7 @@ exports.getCart = async (req, res) => {
 // @route   POST /api/cart
 // @access  Private
 exports.addToCart = async (req, res) => {
-    const { productId, quantity } = req.body;
+    const { productId, quantity, size } = req.body;
     const userId = req.user._id;
     try {
         let cart = await Cart.findOne({ user: userId });
@@ -29,12 +29,26 @@ exports.addToCart = async (req, res) => {
         if (!product) {
             return res.status(404).json({ success: false, msg: 'Product not found' });
         }
+        // If product is backed by Inventory with sizesInventory, validate requested size availability
+        try {
+            const inventoryItem = await require('../models/Inventory').findOne({ productId: productId });
+            if (inventoryItem && inventoryItem.sizesInventory && size) {
+                const available = Number(inventoryItem.sizesInventory.get ? inventoryItem.sizesInventory.get(size) : (inventoryItem.sizesInventory[size] || 0));
+                if (available < Number(quantity)) {
+                    return res.status(400).json({ success: false, msg: `Requested quantity (${quantity}) for size '${size}' exceeds available stock (${available}).` });
+                }
+            }
+        } catch (err) {
+            // ignore inventory lookup errors (don't block cart add)
+            console.warn('[Cart] Inventory lookup failed', err && err.message);
+        }
         if (cart) {
-            const itemIndex = cart.items.findIndex(p => p.product.toString() === productId);
+            // Try to find an existing cart item with same product and same size (both null/undefined sizes match)
+            const itemIndex = cart.items.findIndex(p => p.product.toString() === productId && ((p.size || '') === (size || '')));
             if (itemIndex > -1) {
-                cart.items[itemIndex].quantity += quantity;
+                cart.items[itemIndex].quantity += Number(quantity);
             } else {
-                cart.items.push({ product: productId, quantity: quantity, price: product.price });
+                cart.items.push({ product: productId, quantity: Number(quantity), price: product.price, size: size || null });
             }
             await cart.save();
             const updatedCart = await Cart.findById(cart._id).populate('items.product');
@@ -42,7 +56,7 @@ exports.addToCart = async (req, res) => {
         } else {
             const newCart = await Cart.create({
                 user: userId,
-                items: [{ product: productId, quantity: quantity, price: product.price }]
+                items: [{ product: productId, quantity: Number(quantity), price: product.price, size: size || null }]
             });
             const populatedCart = await Cart.findById(newCart._id).populate('items.product');
             return res.status(201).json({ success: true, data: populatedCart });

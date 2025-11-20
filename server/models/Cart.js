@@ -20,6 +20,12 @@ const cartSchema = new mongoose.Schema({
                 min: 1,
                 default: 1
             },
+            // Optional selected size for items with per-size inventory
+            size: {
+                type: String,
+                default: null,
+                trim: true
+            },
             // You can add price here as well to store the price at the time of adding to cart
             // price: { type: Number, required: true }
         }

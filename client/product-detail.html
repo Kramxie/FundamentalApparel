@@ -139,11 +139,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const thumbnailsHtml = galleryImages.map((imgUrl, i) => `
       <img src="${imgUrl}" alt="Thumbnail ${i+1}" class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 ${i===0 ? 'thumbnail-active' : 'border-transparent'}" data-full-image="${imgUrl}">
     `).join('');
-    const sizesHtml = (product.sizes || []).map(size => `<button class="px-4 py-2 border rounded-md text-sm font-medium hover:bg-gray-200" data-size="${size}">${size}</button>`).join('');
+    // Use sizesInventory if available (object mapping size->quantity), otherwise fall back to product.sizes
+    let sizesHtml = '';
+    if (product.sizesInventory && Object.keys(product.sizesInventory || {}).length > 0) {
+      sizesHtml = Object.keys(product.sizesInventory).map(size => {
+        const available = Number(product.sizesInventory[size] || 0);
+        return `<button class="px-4 py-2 border rounded-md text-sm font-medium hover:bg-gray-200 ${available===0? 'opacity-50 cursor-not-allowed' : ''}" data-size="${size}" data-available="${available}" ${available===0? 'disabled' : ''}>${size}${available>0? ` (${available})` : ' (Out)'}</button>`;
+      }).join('');
+    } else {
+      sizesHtml = (product.sizes || []).map(size => `<button class="px-4 py-2 border rounded-md text-sm font-medium hover:bg-gray-200" data-size="${size}">${size}</button>`).join('');
+    }
     const colorsHtml = (product.colors || []).map(color => `<button class="w-8 h-8 rounded-full border-2 border-transparent" style="background-color: ${color.toLowerCase()};" title="${color}" data-color="${color}"></button>`).join('');
 
     const detailsHtml = product.productDetails ? `<p class="text-gray-700 leading-relaxed">${product.productDetails}</p>` : `<p class="text-gray-500">No details provided.</p>`;
-    const faqsHtml = product.faqs ? `<p class="text-gray-700 leading-relaxed">${product.faqs}</p>` : `<p class="text-gray-500">No FAQs yet.</p>`;
+    // FAQs removed from UI per product UX change
+    const faqsHtml = '';
 
     const avgRatingDisplay = product.numReviews > 0 ? `<div class="flex items-center gap-2 mb-4">
         <span class="text-yellow-500">${'★'.repeat(Math.round(product.averageRating))}${'☆'.repeat(5-Math.round(product.averageRating))}</span>
@@ -208,14 +218,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="flex justify-center gap-10">
           <button data-tab="details" class="tab-btn tab-btn-active">Product Details</button>
           <button data-tab="reviews" class="tab-btn">Rating & Reviews</button>
-          <button data-tab="faqs" class="tab-btn">FAQs</button>
         </div>
       </div>
 
       <div class="mt-8">
         <section id="tab-details">${detailsHtml}</section>
         <section id="tab-reviews" class="hidden">${reviewsHtml}</section>
-        <section id="tab-faqs" class="hidden">${faqsHtml}</section>
       </div>
     `;
 
@@ -310,7 +318,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ productId: product._id, quantity: 1 })
+          body: JSON.stringify({ productId: product._id, quantity, size: selectedSize || null, color: selectedColor || null })
         });
 
         if (res.status === 401) {

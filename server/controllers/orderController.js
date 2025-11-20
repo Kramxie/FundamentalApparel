@@ -149,6 +149,8 @@ exports.createOrderWithReceipt = async (req, res) => {
             imageUrl: (it.product && it.product.imageUrl) ? it.product.imageUrl : '',
             price: (it.product && typeof it.product.price === 'number') ? it.product.price : 0,
             product: it.product ? it.product._id : null,
+            size: it.size || null,
+            color: it.color || null
         })).filter(i => i.product);
 
         if (orderItems.length === 0) {
@@ -303,19 +305,60 @@ exports.updateOrderStatus = async (req, res) => {
                 updates.isPaid = true;
                 updates.paidAt = new Date();
                 
-                // Deduct stock if payment just received (not already received)
-                if (previousPaymentStatus !== 'Received' && order.orderItems && order.orderItems.length > 0) {
-                    try {
-                        for (const item of order.orderItems) {
-                            if (!item.product) continue;
-                            
-                            // Deduct from Product collection
-                            const product = await Product.findById(item.product);
-                            if (product) {
                                 const previousStock = product.countInStock || 0;
                                 const newStock = Math.max(0, previousStock - item.quantity);
                                 product.countInStock = newStock;
                                 await product.save();
+                                console.log(`[Stock] Admin approved - Deducted ${item.quantity} from Product ${product.name}. New stock: ${newStock}`);
+
+                                // Deduct from Inventory collection (if linked)
+                                const inventoryItem = await Inventory.findOne({ productId: product._id });
+                                if (inventoryItem) {
+                                    // If sizesInventory exists and item.size provided, deduct per-size
+                                    try {
+                                        if (inventoryItem.sizesInventory && item.size) {
+                                            // sizesInventory may be a Map or plain object
+                                            const getQty = (key) => (inventoryItem.sizesInventory.get ? Number(inventoryItem.sizesInventory.get(key) || 0) : Number(inventoryItem.sizesInventory[key] || 0));
+                                            const setQty = (key, val) => {
+                                                if (inventoryItem.sizesInventory.set) inventoryItem.sizesInventory.set(key, val);
+                                                else inventoryItem.sizesInventory[key] = val;
+                                            };
+
+                                            const prevSizeQty = getQty(item.size);
+                                            const newSizeQty = Math.max(0, prevSizeQty - item.quantity);
+                                            setQty(item.size, newSizeQty);
+                                            // Recalculate total quantity from sizesInventory
+                                            let totalFromSizes = 0;
+                                            if (inventoryItem.sizesInventory.forEach) {
+                                                inventoryItem.sizesInventory.forEach(v => { totalFromSizes += Number(v || 0); });
+                                            } else {
+                                                for (const k of Object.keys(inventoryItem.sizesInventory || {})) {
+                                                    totalFromSizes += Number(inventoryItem.sizesInventory[k] || 0);
+                                                }
+                                            }
+                                            inventoryItem.quantity = totalFromSizes;
+                                            await inventoryItem.save();
+                                            console.log(`[Stock] Deducted ${item.quantity} of size ${item.size} from Inventory ${inventoryItem.name}. New size qty: ${newSizeQty}. Total qty: ${totalFromSizes}`);
+                                                // Keep Product.countInStock in sync with inventory total when applicable
+                                                try {
+                                                    product.countInStock = totalFromSizes;
+                                                    await product.save();
+                                                } catch (syncErr) {
+                                                    console.warn('[Stock] Failed to sync product countInStock with inventory total', syncErr && syncErr.message);
+                                                }
+                                        } else {
+                                            // Fallback: set inventory quantity to newStock
+                                            inventoryItem.quantity = newStock;
+                                            await inventoryItem.save();
+                                            console.log(`[Stock] Synced Inventory for ${product.name}. New quantity: ${newStock}`);
+                                        }
+                                    } catch (invErr) {
+                                        console.warn('[Stock] Failed to adjust per-size inventory:', invErr && invErr.message);
+                                        // fallback: set inventory quantity to newStock
+                                        inventoryItem.quantity = newStock;
+                                        await inventoryItem.save();
+                                    }
+                                }
                                 console.log(`[Stock] Admin approved - Deducted ${item.quantity} from Product ${product.name}. New stock: ${newStock}`);
                                 
                                 // Deduct from Inventory collection (if linked)

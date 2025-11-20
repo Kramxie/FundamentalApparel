@@ -351,6 +351,8 @@
                       <div class="flex-1">
                         <div class="font-medium">${p.name || 'Item'}</div>
                         <div class="text-sm text-gray-500">Qty: ${qty} · ${peso(price)}</div>
+                        ${it.size ? `<div class="text-sm text-gray-500">Size: ${it.size}</div>` : ''}
+                        ${it.color ? `<div class="text-sm text-gray-500">Color: ${it.color}</div>` : ''}
                       </div>
                       <div class="font-semibold">${peso(price * qty)}</div>
                     </div>`;

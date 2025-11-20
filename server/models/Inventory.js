@@ -97,6 +97,12 @@ const inventorySchema = new mongoose.Schema({
         type: [String],
         default: []
     },
+    // Map of size -> quantity for per-size inventory (e.g. { "S": 10, "M": 5 })
+    sizesInventory: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
     material: {
         type: String,
         default: ''

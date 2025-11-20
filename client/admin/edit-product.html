@@ -123,11 +123,22 @@
                                         <textarea id="productDetails" name="productDetails" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 border" placeholder="Title::Content||Title2::Content2"></textarea>
                                         <p class="text-xs text-gray-500 mt-1">Use '::' to separate title and content, and '||' to separate entries.</p>
                                     </div>
-                                    <div>
-                                        <label for="faqs" class="block text-sm font-medium text-gray-700">FAQs</label>
-                                        <textarea id="faqs" name="faqs" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 border" placeholder="Question::Answer||Question2::Answer2"></textarea>
-                                        <p class="text-xs text-gray-500 mt-1">Use '::' to separate question and answer, and '||' to separate entries.</p>
-                                    </div>
+                                                                        <div>
+                                                                                <label class="block text-sm font-medium text-gray-700">Per-size inventory (optional)</label>
+                                                                                <div class="mt-1 space-y-2">
+                                                                                    <div class="flex gap-2">
+                                                                                        <input id="sizes" name="sizes" placeholder="e.g., S, M, L, XL" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2 border">
+                                                                                        <button id="generate-sizes-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md">Generate</button>
+                                                                                    </div>
+                                                                                    <div id="sizes-rows" class="space-y-2"></div>
+                                                                                    <div class="flex gap-2">
+                                                                                        <button id="add-size-row" type="button" class="px-3 py-2 bg-green-600 text-white rounded-md">Add Size</button>
+                                                                                        <button id="clear-sizes" type="button" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md">Clear</button>
+                                                                                    </div>
+                                                                                    <input type="hidden" id="sizesInventoryHidden" name="sizesInventory">
+                                                                                    <p class="text-xs text-gray-500 mt-1">Use the controls to set per-size quantities. The values will be submitted as a JSON object.</p>
+                                                                                </div>
+                                                                        </div>
                                 </div>
                             </div>
                         </div>
@@ -243,6 +254,64 @@
         let existingGallery = []; // Existing gallery URLs
         let newGalleryFiles = []; // New uploaded files
         let deletedGalleryImages = []; // URLs to delete
+
+        // SizesInventory helpers
+        const sizesRowsContainer = document.getElementById('sizes-rows');
+        const sizesHidden = document.getElementById('sizesInventoryHidden');
+        const generateSizesBtn = document.getElementById('generate-sizes-btn');
+        const addSizeRowBtn = document.getElementById('add-size-row');
+        const clearSizesBtn = document.getElementById('clear-sizes');
+
+        function renderSizeRows(obj) {
+            if (!sizesRowsContainer) return;
+            sizesRowsContainer.innerHTML = '';
+            const data = obj || {};
+            Object.keys(data).forEach(size => {
+                const qty = data[size];
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2';
+                row.innerHTML = `
+                  <input class="flex-1 border rounded p-2" data-size-input type="text" value="${size}" />
+                  <input class="w-24 border rounded p-2" data-qty-input type="number" min="0" value="${Number(qty)||0}" />
+                  <button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>
+                `;
+                row.querySelector('[data-remove]').addEventListener('click', () => { row.remove(); });
+                sizesRowsContainer.appendChild(row);
+            });
+        }
+
+        function getSizesInventoryObject() {
+            const obj = {};
+            if (!sizesRowsContainer) return obj;
+            const rows = sizesRowsContainer.querySelectorAll('div');
+            rows.forEach(row => {
+                const sizeInput = row.querySelector('[data-size-input]');
+                const qtyInput = row.querySelector('[data-qty-input]');
+                if (!sizeInput || !qtyInput) return;
+                const size = String(sizeInput.value||'').trim();
+                const qty = Number(qtyInput.value||0);
+                if (size) obj[size] = Math.max(0, Math.floor(qty));
+            });
+            return obj;
+        }
+
+        generateSizesBtn?.addEventListener('click', () => {
+            const sizesText = document.getElementById('sizes').value || '';
+            const sizes = sizesText.split(',').map(s => s.trim()).filter(Boolean);
+            const obj = {};
+            sizes.forEach(s => { obj[s] = obj[s] || 0; });
+            renderSizeRows(obj);
+        });
+
+        addSizeRowBtn?.addEventListener('click', () => {
+            renderSizeRows(Object.assign(getSizesInventoryObject(), { '': 0 }));
+            const last = sizesRowsContainer.querySelector('div:last-child [data-size-input]');
+            if (last) last.focus();
+        });
+
+        clearSizesBtn?.addEventListener('click', () => {
+            if (sizesRowsContainer) sizesRowsContainer.innerHTML = '';
+        });
 
         // Get product ID from URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -381,7 +450,18 @@
                     document.getElementById('colors').value = Array.isArray(product.colors) ? product.colors.join(', ') : '';
                     document.getElementById('material').value = product.material || '';
                     document.getElementById('productDetails').value = product.productDetails || '';
-                    document.getElementById('faqs').value = product.faqs || '';
+                                        // Populate per-size rows if available
+                                        try {
+                                            if (product.sizesInventory && Object.keys(product.sizesInventory || {}).length > 0) {
+                                                renderSizeRows(product.sizesInventory);
+                                            } else if (Array.isArray(product.sizes) && product.sizes.length > 0) {
+                                                const obj = {};
+                                                product.sizes.forEach(s => obj[s] = obj[s] || 0);
+                                                renderSizeRows(obj);
+                                            }
+                                        } catch (e) {
+                                            console.warn('Could not render sizesInventory', e);
+                                        }
                     
                     // Set main image
                     if (product.imageUrl) {
@@ -431,6 +511,13 @@
                 
                 formData.append('sizes', sizes ? sizes.split(',').map(s => s.trim()).join(',') : '');
                 formData.append('colors', colors ? colors.split(',').map(c => c.trim()).join(',') : '');
+
+                // Append sizesInventory JSON
+                try {
+                    formData.append('sizesInventory', JSON.stringify(getSizesInventoryObject()));
+                } catch (e) {
+                    formData.append('sizesInventory', '');
+                }
                 
                 // Handle main image
                 if (newMainImageFile) {

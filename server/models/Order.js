@@ -29,6 +29,10 @@ const orderSchema = new mongoose.Schema({
                 ref: 'Product',
                 required: true
             }
+            ,
+            // Optional size and color selected by the buyer
+            size: { type: String },
+            color: { type: String }
         }
     ],
     // Checkout-specific fields

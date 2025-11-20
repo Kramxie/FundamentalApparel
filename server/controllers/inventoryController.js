@@ -160,7 +160,7 @@ exports.createInventoryItem = async (req, res) => {
         const { 
             name, type, quantity, unit, price, lowStockThreshold, supplier, description, sku,
             // Product fields
-            isProduct, category, sizes, colors, material, productDetails, faqs
+            isProduct, category, sizes, colors, material, productDetails, faqs, sizesInventory
         } = req.body;
 
         // Validation
@@ -171,9 +171,12 @@ exports.createInventoryItem = async (req, res) => {
             });
         }
 
-        // Check if SKU already exists (if provided)
-        if (sku) {
-            const existingSKU = await Inventory.findOne({ sku });
+        // Normalize SKU: treat empty string as not-provided (sparse unique index must not store empty strings)
+        const cleanedSku = (typeof sku === 'string') ? (sku.trim() === '' ? undefined : sku.trim()) : sku;
+
+        // Check if SKU already exists (if provided and non-empty)
+        if (cleanedSku) {
+            const existingSKU = await Inventory.findOne({ sku: cleanedSku });
             if (existingSKU) {
                 return res.status(400).json({
                     success: false,
@@ -201,9 +204,17 @@ exports.createInventoryItem = async (req, res) => {
             }
         }
 
-        // Parse arrays from form data
+        // Parse arrays / maps from form data
         const parsedSizes = sizes ? (Array.isArray(sizes) ? sizes : JSON.parse(sizes)) : [];
         const parsedColors = colors ? (Array.isArray(colors) ? colors : JSON.parse(colors)) : [];
+        let parsedSizesInventory = {};
+        if (sizesInventory) {
+            try {
+                parsedSizesInventory = (typeof sizesInventory === 'string') ? JSON.parse(sizesInventory) : sizesInventory;
+            } catch (e) {
+                parsedSizesInventory = {};
+            }
+        }
 
         const itemData = {
             name,
@@ -214,13 +225,14 @@ exports.createInventoryItem = async (req, res) => {
             lowStockThreshold: lowStockThreshold || 10,
             supplier: supplier || '',
             description: description || '',
-            sku: sku || undefined,
+            sku: cleanedSku || undefined,
             // Product fields
             isProduct: isProduct === 'true' || isProduct === true,
             category: category || '',
             imageUrl,
             gallery,
             sizes: parsedSizes,
+            sizesInventory: parsedSizesInventory,
             colors: parsedColors,
             material: material || '',
             productDetails: productDetails || '',
@@ -258,7 +270,7 @@ exports.updateInventoryItem = async (req, res) => {
         const { 
             name, type, quantity, unit, price, lowStockThreshold, supplier, description, sku,
             // Product fields
-            isProduct, category, sizes, colors, material, productDetails, faqs
+            isProduct, category, sizes, colors, material, productDetails, faqs, sizesInventory
         } = req.body;
 
         let item = await Inventory.findById(req.params.id);
@@ -270,9 +282,12 @@ exports.updateInventoryItem = async (req, res) => {
             });
         }
 
-        // Check if SKU is being changed and if it already exists
-        if (sku && sku !== item.sku) {
-            const existingSKU = await Inventory.findOne({ sku, _id: { $ne: req.params.id } });
+        // Normalize SKU from request: treat empty string as clearing the SKU
+        const cleanedUpdateSku = (typeof sku === 'string') ? (sku.trim() === '' ? null : sku.trim()) : sku;
+
+        // Check if SKU is being changed to a non-empty value and if it already exists
+        if (cleanedUpdateSku && cleanedUpdateSku !== item.sku) {
+            const existingSKU = await Inventory.findOne({ sku: cleanedUpdateSku, _id: { $ne: req.params.id } });
             if (existingSKU) {
                 return res.status(400).json({
                     success: false,
@@ -299,9 +314,17 @@ exports.updateInventoryItem = async (req, res) => {
             }
         }
 
-        // Parse arrays from form data if they exist
+        // Parse arrays / maps from form data if they exist
         const parsedSizes = sizes ? (Array.isArray(sizes) ? sizes : JSON.parse(sizes)) : undefined;
         const parsedColors = colors ? (Array.isArray(colors) ? colors : JSON.parse(colors)) : undefined;
+        let parsedSizesInventory = undefined;
+        if (sizesInventory !== undefined) {
+            try {
+                parsedSizesInventory = (typeof sizesInventory === 'string') ? JSON.parse(sizesInventory) : sizesInventory;
+            } catch (e) {
+                parsedSizesInventory = undefined;
+            }
+        }
 
         // Update basic fields
         if (name !== undefined) item.name = name;
@@ -312,13 +335,21 @@ exports.updateInventoryItem = async (req, res) => {
         if (lowStockThreshold !== undefined) item.lowStockThreshold = lowStockThreshold;
         if (supplier !== undefined) item.supplier = supplier;
         if (description !== undefined) item.description = description;
-        if (sku !== undefined) item.sku = sku;
+        if (sku !== undefined) {
+            // If client sent an empty string, clear the SKU (set to undefined so sparse index ignores it)
+            if (cleanedUpdateSku === null) {
+                item.sku = undefined;
+            } else {
+                item.sku = cleanedUpdateSku;
+            }
+        }
 
         // Update product fields
         if (isProduct !== undefined) item.isProduct = isProduct === 'true' || isProduct === true;
         if (category !== undefined) item.category = category;
         if (parsedSizes !== undefined) item.sizes = parsedSizes;
         if (parsedColors !== undefined) item.colors = parsedColors;
+        if (parsedSizesInventory !== undefined) item.sizesInventory = parsedSizesInventory;
         if (material !== undefined) item.material = material;
         if (productDetails !== undefined) item.productDetails = productDetails;
         if (faqs !== undefined) item.faqs = faqs;

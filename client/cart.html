@@ -134,11 +134,16 @@
                     const quantity = item.quantity ?? 0;
                     return `
                         <div class="flex items-center justify-between p-4 border-b">
-                            <div class="flex items-center space-x-4">
-                                <input type="checkbox" class="cart-item-checkbox h-5 w-5 rounded" data-item-id="${item._id}" checked>
-                                <img src="${product.imageUrl}" alt="${product.name}" class="w-16 h-16 rounded-md">
-                                <div><p class="font-semibold">${product.name}</p><p class="text-sm text-gray-500">₱${price.toLocaleString()}</p></div>
-                            </div>
+                                        <div class="flex items-center space-x-4">
+                                                                <input type="checkbox" class="cart-item-checkbox h-5 w-5 rounded" data-item-id="${item._id}" checked>
+                                                                <img src="${product.imageUrl}" alt="${product.name}" class="w-16 h-16 rounded-md">
+                                                                <div>
+                                                                    <p class="font-semibold">${product.name}</p>
+                                                                    <p class="text-sm text-gray-500">₱${price.toLocaleString()}</p>
+                                                                    ${item.size ? `<p class="text-sm text-gray-500">Size: ${item.size}</p>` : ''}
+                                                                    ${item.color ? `<p class="text-sm text-gray-500">Color: ${item.color}</p>` : ''}
+                                                                </div>
+                                                        </div>
                             <div class="flex items-center space-x-4 sm:space-x-6">
                                 <div class="flex items-center space-x-2">
                                     <button class="qty-btn qty-decrease" data-item-id="${item._id}" ${quantity <= 1 ? 'disabled' : ''}>-</button>
