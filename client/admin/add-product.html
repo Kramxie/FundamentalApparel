@@ -13,6 +13,31 @@
       width: 72px;
       height: 72px;
       object-fit: cover;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="flex min-h-screen bg-gray-100">
+    <!-- Sidebar (desktop) -->
+    <div id="admin-sidebar" class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+      <div class="flex items-center justify-center h-16 bg-white shadow-md"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+          </a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
+          </a>
+          <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+          </a>
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
+          </a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
+          </a>
           <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
             <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
           </a>
@@ -24,7 +49,43 @@
           </a>
         </nav>
       </div>
-    </aside>
+    </div>
+    <!-- Mobile sidebar overlay & drawer -->
+    <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/40 z-40 md:hidden"></div>
+    <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform -translate-x-full transition-transform z-50 md:hidden">
+      <div class="flex items-center justify-between h-16 bg-white shadow-md px-3">
+        <div class="flex items-center"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
+        <button id="mobile-sidebar-close" class="p-2 rounded-md hover:bg-gray-100 text-gray-700"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+          </a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
+          </a>
+          <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+          </a>
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
+          </a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
+          </a>
+          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
+          </a>
+          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
+          </a>
+          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
+          </a>
+        </nav>
+      </div>
+    </div>
 
     <!-- Main -->
     <div class="flex-1 flex flex-col overflow-hidden">
@@ -860,51 +921,6 @@
       await fetchCategories();
     })();
   </script>
-  <!-- Stock assign modal -->
-  <div id="stock-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-    <div class="absolute inset-0 bg-black/50" aria-hidden="true"></div>
-    <div class="relative bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="font-semibold">Assign Stock to Size</h3>
-        <button id="stock-modal-close" class="text-gray-600">✕</button>
-      </div>
-      <div class="space-y-3">
-        <div>
-          <label class="block text-sm">Size name</label>
-          <input id="stock-modal-size" type="text" class="mt-1 block w-full border rounded p-2" placeholder="e.g., S, M, L">
-        </div>
-        <div>
-          <label class="block text-sm">Quantity</label>
-          <input id="stock-modal-qty" type="number" class="mt-1 block w-full border rounded p-2" min="0">
-        </div>
-        <div class="flex justify-end gap-2">
-          <button id="stock-modal-add" class="px-4 py-2 bg-indigo-600 text-white rounded">Add</button>
-          <button id="stock-modal-cancel" type="button" class="px-4 py-2 bg-gray-200 rounded" onclick="document.getElementById('stock-modal').classList.add('hidden');document.body.classList.remove('overflow-hidden');">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Price assign modal -->
-  <div id="price-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-    <div class="absolute inset-0 bg-black/50" aria-hidden="true"></div>
-    <div class="relative bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="font-semibold">Assign Price to Sizes</h3>
-        <button id="price-modal-close" class="text-gray-600">✕</button>
-      </div>
-      <div class="space-y-3">
-        <div id="price-modal-sizes" class="flex flex-wrap"></div>
-        <div>
-          <label class="block text-sm">Price (₱)</label>
-          <input id="price-modal-price" type="number" step="0.01" min="0" class="mt-1 block w-full border rounded p-2">
-        </div>
-        <div class="flex justify-end gap-2">
-          <button id="price-modal-add" class="px-4 py-2 bg-indigo-600 text-white rounded">Add</button>
-          <button id="price-modal-cancel" type="button" class="px-4 py-2 bg-gray-200 rounded" onclick="document.getElementById('price-modal').classList.add('hidden');document.body.classList.remove('overflow-hidden');">Cancel</button>
-        </div>
-      </div>
-    </div>
   </div>
 </body>
 </html>
