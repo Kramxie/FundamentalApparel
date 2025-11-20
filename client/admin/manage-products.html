@@ -107,12 +107,26 @@
                     return;
                 }
                 products.forEach(product => {
+                    // Build per-size display if available
+                    let sizesHtml = '';
+                    try {
+                        if (product.sizesInventory && Object.keys(product.sizesInventory || {}).length > 0) {
+                            sizesHtml = Object.keys(product.sizesInventory).map(s => `${s}: ${Number(product.sizesInventory[s] || 0)}`).join(' · ');
+                        } else if (Array.isArray(product.sizes) && product.sizes.length > 0) {
+                            // No per-size counts available, show sizes list
+                            sizesHtml = product.sizes.map(s => `${s}: -`).join(' · ');
+                        }
+                    } catch (e) { sizesHtml = ''; }
+
                     const row = `
                         <tr class="bg-white border-b hover:bg-gray-50">
                             <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${product.name}</td>
                             <td class="px-6 py-4">${product.category}</td>
-                            <td class="px-6 py-4">₱${product.price.toLocaleString()}</td>
-                            <td class="px-6 py-4">${product.countInStock}</td>
+                            <td class="px-6 py-4">₱${(Number(product.price)||0).toLocaleString()}</td>
+                            <td class="px-6 py-4">
+                                <div class="font-medium">${Number(product.countInStock)||0}</div>
+                                ${sizesHtml ? `<div class="text-xs text-gray-500 mt-1">${sizesHtml}</div>` : ''}
+                            </td>
                             <td class="px-6 py-4 flex space-x-2">
                                 <a href="edit-product.html?id=${product._id}" class="font-medium text-blue-600 hover:underline">Edit</a>
                                 <button data-id="${product._id}" class="delete-btn font-medium text-red-600 hover:underline">Delete</button>

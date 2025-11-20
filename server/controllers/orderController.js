@@ -304,89 +304,90 @@ exports.updateOrderStatus = async (req, res) => {
             if (req.body.paymentStatus === 'Received') {
                 updates.isPaid = true;
                 updates.paidAt = new Date();
-                
-                                const previousStock = product.countInStock || 0;
-                                const newStock = Math.max(0, previousStock - item.quantity);
-                                product.countInStock = newStock;
-                                await product.save();
-                                console.log(`[Stock] Admin approved - Deducted ${item.quantity} from Product ${product.name}. New stock: ${newStock}`);
 
-                                // Deduct from Inventory collection (if linked)
-                                const inventoryItem = await Inventory.findOne({ productId: product._id });
-                                if (inventoryItem) {
-                                    // If sizesInventory exists and item.size provided, deduct per-size
-                                    try {
-                                        if (inventoryItem.sizesInventory && item.size) {
-                                            // sizesInventory may be a Map or plain object
-                                            const getQty = (key) => (inventoryItem.sizesInventory.get ? Number(inventoryItem.sizesInventory.get(key) || 0) : Number(inventoryItem.sizesInventory[key] || 0));
-                                            const setQty = (key, val) => {
-                                                if (inventoryItem.sizesInventory.set) inventoryItem.sizesInventory.set(key, val);
-                                                else inventoryItem.sizesInventory[key] = val;
-                                            };
+                // Deduct stock for each order item and update Inventory if present
+                const items = order.orderItems || [];
+                for (const it of items) {
+                    try {
+                        const itemQty = Number(it.quantity || 0);
+                        const itemSize = it.size || null;
+                        const productId = it.product;
+                        if (!productId) continue;
 
-                                            const prevSizeQty = getQty(item.size);
-                                            const newSizeQty = Math.max(0, prevSizeQty - item.quantity);
-                                            setQty(item.size, newSizeQty);
-                                            // Recalculate total quantity from sizesInventory
-                                            let totalFromSizes = 0;
-                                            if (inventoryItem.sizesInventory.forEach) {
-                                                inventoryItem.sizesInventory.forEach(v => { totalFromSizes += Number(v || 0); });
-                                            } else {
-                                                for (const k of Object.keys(inventoryItem.sizesInventory || {})) {
-                                                    totalFromSizes += Number(inventoryItem.sizesInventory[k] || 0);
-                                                }
-                                            }
-                                            inventoryItem.quantity = totalFromSizes;
-                                            await inventoryItem.save();
-                                            console.log(`[Stock] Deducted ${item.quantity} of size ${item.size} from Inventory ${inventoryItem.name}. New size qty: ${newSizeQty}. Total qty: ${totalFromSizes}`);
-                                                // Keep Product.countInStock in sync with inventory total when applicable
-                                                try {
-                                                    product.countInStock = totalFromSizes;
-                                                    await product.save();
-                                                } catch (syncErr) {
-                                                    console.warn('[Stock] Failed to sync product countInStock with inventory total', syncErr && syncErr.message);
-                                                }
-                                        } else {
-                                            // Fallback: set inventory quantity to newStock
-                                            inventoryItem.quantity = newStock;
-                                            await inventoryItem.save();
-                                            console.log(`[Stock] Synced Inventory for ${product.name}. New quantity: ${newStock}`);
+                        const product = await Product.findById(productId);
+                        if (!product) continue;
+
+                        const previousStock = Number(product.countInStock || 0);
+                        const newStock = Math.max(0, previousStock - itemQty);
+                        product.countInStock = newStock;
+                        await product.save();
+                        console.log(`[Stock] Admin approved - Deducted ${itemQty} from Product ${product.name}. New stock: ${newStock}`);
+
+                        // Adjust Inventory document if linked
+                        const inventoryItem = await Inventory.findOne({ productId: product._id });
+                        if (inventoryItem) {
+                            try {
+                                if (inventoryItem.sizesInventory && itemSize) {
+                                    const getQty = (key) => (inventoryItem.sizesInventory.get ? Number(inventoryItem.sizesInventory.get(key) || 0) : Number(inventoryItem.sizesInventory[key] || 0));
+                                    const setQty = (key, val) => {
+                                        if (inventoryItem.sizesInventory.set) inventoryItem.sizesInventory.set(key, val);
+                                        else inventoryItem.sizesInventory[key] = val;
+                                    };
+
+                                    const prevSizeQty = getQty(itemSize);
+                                    const newSizeQty = Math.max(0, prevSizeQty - itemQty);
+                                    setQty(itemSize, newSizeQty);
+
+                                    // Recalculate total quantity from sizesInventory
+                                    let totalFromSizes = 0;
+                                    if (inventoryItem.sizesInventory.forEach) {
+                                        inventoryItem.sizesInventory.forEach(v => { totalFromSizes += Number(v || 0); });
+                                    } else {
+                                        for (const k of Object.keys(inventoryItem.sizesInventory || {})) {
+                                            totalFromSizes += Number(inventoryItem.sizesInventory[k] || 0);
                                         }
-                                    } catch (invErr) {
-                                        console.warn('[Stock] Failed to adjust per-size inventory:', invErr && invErr.message);
-                                        // fallback: set inventory quantity to newStock
-                                        inventoryItem.quantity = newStock;
-                                        await inventoryItem.save();
                                     }
-                                }
-                                console.log(`[Stock] Admin approved - Deducted ${item.quantity} from Product ${product.name}. New stock: ${newStock}`);
-                                
-                                // Deduct from Inventory collection (if linked)
-                                const inventoryItem = await Inventory.findOne({ productId: product._id });
-                                if (inventoryItem) {
+                                    inventoryItem.quantity = totalFromSizes;
+                                    await inventoryItem.save();
+                                    console.log(`[Stock] Deducted ${itemQty} of size ${itemSize} from Inventory ${inventoryItem.name}. New size qty: ${newSizeQty}. Total qty: ${totalFromSizes}`);
+
+                                    // Keep Product.countInStock in sync with inventory total when applicable
+                                    try {
+                                        product.countInStock = totalFromSizes;
+                                        await product.save();
+                                    } catch (syncErr) {
+                                        console.warn('[Stock] Failed to sync product countInStock with inventory total', syncErr && syncErr.message);
+                                    }
+                                } else {
+                                    // Fallback: set inventory quantity to newStock
                                     inventoryItem.quantity = newStock;
                                     await inventoryItem.save();
                                     console.log(`[Stock] Synced Inventory for ${product.name}. New quantity: ${newStock}`);
                                 }
-                                                                // Emit low-stock notification when crossing threshold (e.g., <=5)
-                                                                try {
-                                                                    const THRESH = 5;
-                                                                    if (previousStock > THRESH && newStock <= THRESH) {
-                                                                        await notify.createNotification({
-                                                                            type: 'low_stock',
-                                                                            title: `Low stock: ${product.name}`,
-                                                                            body: `Product ${product.name} is low in stock (${newStock} left).`,
-                                                                            targetRole: 'admin',
-                                                                            meta: { productId: product._id, currentStock: newStock }
-                                                                        });
-                                                                    }
-                                                                } catch (e) {
-                                                                    console.warn('[Stock] Failed to create low-stock notification', e && e.message);
-                                                                }
+                            } catch (invErr) {
+                                console.warn('[Stock] Failed to adjust per-size inventory:', invErr && invErr.message);
+                                inventoryItem.quantity = newStock;
+                                await inventoryItem.save();
                             }
                         }
+
+                        // Emit low-stock notification when crossing threshold (e.g., <=5)
+                        try {
+                            const THRESH = 5;
+                            if (previousStock > THRESH && newStock <= THRESH) {
+                                await notify.createNotification({
+                                    type: 'low_stock',
+                                    title: `Low stock: ${product.name}`,
+                                    body: `Product ${product.name} is low in stock (${newStock} left).`,
+                                    targetRole: 'admin',
+                                    meta: { productId: product._id, currentStock: newStock }
+                                });
+                            }
+                        } catch (e) {
+                            console.warn('[Stock] Failed to create low-stock notification', e && e.message);
+                        }
                     } catch (stockError) {
-                        console.error('[Stock] Failed to deduct stock on payment approval:', stockError);
+                        console.error('[Stock] Failed to deduct stock on payment approval for an item:', stockError && stockError.message ? stockError.message : stockError);
                     }
                 }
             } else {
