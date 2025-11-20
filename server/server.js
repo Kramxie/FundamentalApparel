@@ -89,6 +89,17 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
+// Health check endpoints used by Render and monitoring systems
+app.get('/healthz', (req, res) => {
+    return res.status(200).json({ status: 'ok' });
+});
+
+// Some Render setups used a misspelled path '/healtz' in health check configuration;
+// include it to avoid failures if that path is still configured.
+app.get('/healtz', (req, res) => {
+    return res.status(200).json({ status: 'ok' });
+});
+
 // Mount routers
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
