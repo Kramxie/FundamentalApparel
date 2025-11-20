@@ -118,7 +118,10 @@
                   </div>
                   <div>
                     <label for="stock" class="block text-sm font-medium text-gray-700">Stock Quantity</label>
-                    <input type="number" id="stock" name="countInStock" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                    <div class="flex items-center gap-2 mt-1">
+                      <input type="number" id="stock" name="countInStock" required class="flex-1 block border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                      <button id="assign-stock-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md" title="Assign stock to sizes">Assign</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -735,10 +738,152 @@
     imageInput.addEventListener('change', handleMainImageChange);
     galleryInput.addEventListener('change', handleGalleryChange);
 
+    // --- Stock/Price assign modal handling ---
+    // Modal markup will be inserted in DOM via HTML (below). Hook handlers here.
+    const assignStockBtn = document.getElementById('assign-stock-btn');
+    const stockModal = document.getElementById('stock-modal');
+    const stockModalClose = document.getElementById('stock-modal-close');
+    const stockModalAdd = document.getElementById('stock-modal-add');
+    const stockModalSize = document.getElementById('stock-modal-size');
+    const stockModalQty = document.getElementById('stock-modal-qty');
+
+    const assignPriceBtn = document.getElementById('assign-price-btn');
+    const priceModal = document.getElementById('price-modal');
+    const priceModalClose = document.getElementById('price-modal-close');
+    const priceModalAdd = document.getElementById('price-modal-add');
+    const priceModalPrice = document.getElementById('price-modal-price');
+    const priceModalSizesContainer = document.getElementById('price-modal-sizes');
+
+    function openModal(modal) { modal?.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
+    function closeModal(modal) { modal?.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
+
+    assignStockBtn?.addEventListener('click', () => {
+      // Prefill qty from main stock input
+      stockModalQty.value = Number(stock.value || 0);
+      stockModalSize.value = '';
+      openModal(stockModal);
+    });
+    stockModalClose?.addEventListener('click', () => closeModal(stockModal));
+
+    stockModalAdd?.addEventListener('click', () => {
+      const size = String(stockModalSize.value||'').trim();
+      const qty = Math.max(0, Math.floor(Number(stockModalQty.value||0)));
+      if (!size) { showMessage('Please enter a size name', 'error'); return; }
+      // If size exists in rows, add qty, otherwise create
+      const rows = sizesRowsContainer.querySelectorAll('div');
+      let found = false;
+      rows.forEach(r => {
+        const sizeInput = r.querySelector('[data-size-input]');
+        const qtyInput = r.querySelector('[data-qty-input]');
+        if (sizeInput && String(sizeInput.value||'').trim().toLowerCase() === size.toLowerCase()) {
+          qtyInput.value = Math.max(0, Math.floor(Number(qtyInput.value||0)) + qty);
+          found = true;
+        }
+      });
+      if (!found) {
+        const obj = getSizesInventoryObject();
+        obj[size] = (obj[size] || 0) + qty;
+        renderSizeRows(obj);
+      }
+      // Hide original sizes input in Product Details and show per-size area
+      const sizesField = document.querySelector('label[for="sizes"]')?.closest('div');
+      if (sizesField) sizesField.style.display = 'none';
+      // Enable price input if at least one size has qty > 0
+      const inv = getSizesInventoryObject();
+      const hasStock = Object.values(inv).some(v => Number(v) > 0);
+      if (hasStock) document.getElementById('price')?.removeAttribute('disabled');
+      closeModal(stockModal);
+    });
+
+    // Price assign
+    // add a button next to price in the DOM
+    const priceWrapper = document.getElementById('price')?.parentElement;
+    if (priceWrapper && !document.getElementById('assign-price-btn')) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = 'assign-price-btn';
+      btn.className = 'px-3 py-2 bg-indigo-600 text-white rounded-md';
+      btn.textContent = 'Assign';
+      priceWrapper.appendChild(btn);
+    }
+    assignPriceBtn?.addEventListener('click', () => {
+      // populate sizes list from current inventory
+      priceModalSizesContainer.innerHTML = '';
+      const inv = getSizesInventoryObject();
+      Object.keys(inv).forEach(s => {
+        const row = document.createElement('label');
+        row.className = 'inline-flex items-center gap-2 mr-2';
+        row.innerHTML = `<input type="checkbox" value="${s}" /> <span>${s} (${inv[s]})</span>`;
+        priceModalSizesContainer.appendChild(row);
+      });
+      priceModalPrice.value = document.getElementById('price')?.value || '';
+      openModal(priceModal);
+    });
+    priceModalClose?.addEventListener('click', () => closeModal(priceModal));
+    priceModalAdd?.addEventListener('click', () => {
+      const p = Number(priceModalPrice.value||0);
+      if (!p) { showMessage('Enter a valid price', 'error'); return; }
+      const checks = Array.from(priceModalSizesContainer.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value);
+      if (checks.length === 0) { showMessage('Select at least one size', 'error'); return; }
+      const obj = getSizesPriceObject();
+      checks.forEach(s => { obj[s] = p; });
+      renderPriceRows(obj);
+      // enable main price (already enabled if sizes exist)
+      document.getElementById('price')?.removeAttribute('disabled');
+      closeModal(priceModal);
+    });
+
+
     // Initial Load
     (async () => {
       await fetchCategories();
     })();
   </script>
+  <!-- Stock assign modal -->
+  <div id="stock-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/50" aria-hidden="true"></div>
+    <div class="relative bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-semibold">Assign Stock to Size</h3>
+        <button id="stock-modal-close" class="text-gray-600">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-sm">Size name</label>
+          <input id="stock-modal-size" type="text" class="mt-1 block w-full border rounded p-2" placeholder="e.g., S, M, L">
+        </div>
+        <div>
+          <label class="block text-sm">Quantity</label>
+          <input id="stock-modal-qty" type="number" class="mt-1 block w-full border rounded p-2" min="0">
+        </div>
+        <div class="flex justify-end gap-2">
+          <button id="stock-modal-add" class="px-4 py-2 bg-indigo-600 text-white rounded">Add</button>
+          <button id="stock-modal-cancel" type="button" class="px-4 py-2 bg-gray-200 rounded" onclick="document.getElementById('stock-modal').classList.add('hidden');document.body.classList.remove('overflow-hidden');">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Price assign modal -->
+  <div id="price-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/50" aria-hidden="true"></div>
+    <div class="relative bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-semibold">Assign Price to Sizes</h3>
+        <button id="price-modal-close" class="text-gray-600">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div id="price-modal-sizes" class="flex flex-wrap"></div>
+        <div>
+          <label class="block text-sm">Price (₱)</label>
+          <input id="price-modal-price" type="number" step="0.01" min="0" class="mt-1 block w-full border rounded p-2">
+        </div>
+        <div class="flex justify-end gap-2">
+          <button id="price-modal-add" class="px-4 py-2 bg-indigo-600 text-white rounded">Add</button>
+          <button id="price-modal-cancel" type="button" class="px-4 py-2 bg-gray-200 rounded" onclick="document.getElementById('price-modal').classList.add('hidden');document.body.classList.remove('overflow-hidden');">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
