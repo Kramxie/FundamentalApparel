@@ -16,6 +16,10 @@ exports.getCategories = async (req, res) => {
 exports.addCategory = async (req, res) => {
   try {
     const { name } = req.body;
+    // optional flags
+    const requiresSizes = req.body.requiresSizes === 'true' || req.body.requiresSizes === true;
+    const requiresColors = req.body.requiresColors === 'true' || req.body.requiresColors === true;
+    const requiresMaterials = req.body.requiresMaterials === 'true' || req.body.requiresMaterials === true;
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, msg: 'Category name is required' });
     }
@@ -26,7 +30,7 @@ exports.addCategory = async (req, res) => {
       return res.status(400).json({ success: false, msg: 'Category already exists' });
     }
 
-    const category = await Category.create({ name: name.trim(), slug });
+    const category = await Category.create({ name: name.trim(), slug, requiresSizes, requiresColors, requiresMaterials });
     res.status(201).json({ success: true, data: category });
   } catch (error) {
     res.status(500).json({ success: false, msg: 'Server Error' });

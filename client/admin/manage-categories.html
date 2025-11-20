@@ -52,7 +52,22 @@
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold">Categories</h2>
             <div class="flex items-center gap-2">
-              <input id="new-category" placeholder="Add new category" class="border-gray-300 rounded-md p-2">
+              <input id="new-category" placeholder="Add new category" class="border-gray-300 rounded-md p-2" aria-label="New category name">
+              <fieldset class="ml-3 flex items-center gap-3" aria-label="Category flags">
+                <legend class="sr-only">Category flags</legend>
+                <div class="flex items-center gap-1">
+                  <input type="checkbox" id="requires-sizes" class="h-4 w-4" aria-labelledby="requires-sizes-label">
+                  <label id="requires-sizes-label" for="requires-sizes" class="text-xs text-gray-700 ml-1">Requires Sizes</label>
+                </div>
+                <div class="flex items-center gap-1">
+                  <input type="checkbox" id="requires-colors" class="h-4 w-4" aria-labelledby="requires-colors-label">
+                  <label id="requires-colors-label" for="requires-colors" class="text-xs text-gray-700 ml-1">Requires Colors</label>
+                </div>
+                <div class="flex items-center gap-1">
+                  <input type="checkbox" id="requires-materials" class="h-4 w-4" aria-labelledby="requires-materials-label">
+                  <label id="requires-materials-label" for="requires-materials" class="text-xs text-gray-700 ml-1">Requires Materials</label>
+                </div>
+              </fieldset>
               <button id="add-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Add</button>
             </div>
           </div>
@@ -79,6 +94,11 @@
     <div class="bg-white p-6 rounded shadow w-96">
       <h3 class="text-lg font-semibold mb-3">Edit Category</h3>
       <input id="edit-name" class="w-full border-gray-300 rounded p-2 mb-3">
+      <div class="flex gap-2 mb-3">
+        <label class="inline-flex items-center"><input type="checkbox" id="edit-requires-sizes" class="mr-2">Requires Sizes</label>
+        <label class="inline-flex items-center"><input type="checkbox" id="edit-requires-colors" class="mr-2">Requires Colors</label>
+        <label class="inline-flex items-center"><input type="checkbox" id="edit-requires-materials" class="mr-2">Requires Materials</label>
+      </div>
       <div class="flex justify-end gap-2">
         <button id="cancel-edit" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
         <button id="save-edit" class="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
@@ -142,15 +162,21 @@
     addBtn.addEventListener('click', async () => {
       const name = newInput.value;
       if (!name || !name.trim()) return;
+      const requiresSizes = document.getElementById('requires-sizes').checked;
+      const requiresColors = document.getElementById('requires-colors').checked;
+      const requiresMaterials = document.getElementById('requires-materials').checked;
       try {
         const res = await fetch(`${API}/api/categories`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name.trim() })
+          body: JSON.stringify({ name: name.trim(), requiresSizes, requiresColors, requiresMaterials })
         });
         const json = await res.json();
         if (json.success) {
           newInput.value = '';
+          document.getElementById('requires-sizes').checked = false;
+          document.getElementById('requires-colors').checked = false;
+          document.getElementById('requires-materials').checked = false;
           fetchCategories();
           showMsg('Category added', 'success');
         } else {
@@ -163,7 +189,11 @@
 
     function openEdit(id, name) {
       editing = id;
+      const cat = categories.find(c => c._id === id) || {};
       document.getElementById('edit-name').value = name;
+      document.getElementById('edit-requires-sizes').checked = !!cat.requiresSizes;
+      document.getElementById('edit-requires-colors').checked = !!cat.requiresColors;
+      document.getElementById('edit-requires-materials').checked = !!cat.requiresMaterials;
       document.getElementById('edit-info').textContent = '';
       document.getElementById('edit-modal').classList.remove('hidden');
     }
@@ -175,12 +205,15 @@
 
     document.getElementById('save-edit').addEventListener('click', async () => {
       const newName = document.getElementById('edit-name').value;
+      const editRequiresSizes = document.getElementById('edit-requires-sizes').checked;
+      const editRequiresColors = document.getElementById('edit-requires-colors').checked;
+      const editRequiresMaterials = document.getElementById('edit-requires-materials').checked;
       if (!editing || !newName || !newName.trim()) return;
       try {
         const res = await fetch(`${API}/api/categories/${editing}`, {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newName.trim() })
+          body: JSON.stringify({ name: newName.trim(), requiresSizes: editRequiresSizes, requiresColors: editRequiresColors, requiresMaterials: editRequiresMaterials })
         });
         const json = await res.json();
         if (json.success) {

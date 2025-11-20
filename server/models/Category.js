@@ -9,6 +9,10 @@ const CategorySchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
   },
+  // flags indicating admin expectations for products in this category
+  requiresSizes: { type: Boolean, default: false },
+  requiresColors: { type: Boolean, default: false },
+  requiresMaterials: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 

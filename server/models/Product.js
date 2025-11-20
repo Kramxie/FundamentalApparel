@@ -32,6 +32,16 @@ const ProductSchema = new mongoose.Schema({
         required: [true, 'Please add stock quantity'],
         default: 0
     },
+    // per-size inventory map: { "S": 10, "M": 5 }
+    sizesInventory: {
+        type: Object,
+        default: {}
+    },
+    // per-size prices: { "S": 399.00, "M": 429.00 }
+    sizesPrice: {
+        type: Object,
+        default: {}
+    },
     sizes: {
         type: [String],
         default: []
@@ -67,6 +77,16 @@ const ProductSchema = new mongoose.Schema({
     ],
     averageRating: { type: Number, default: 0 },
     numReviews: { type: Number, default: 0 }
+
+    ,
+    // placements: control marketing placements like featured, new arrivals with expiry, and services
+    placements: {
+        featured: { type: Boolean, default: false },
+        // expiry datetime for 'new arrivals' placement (nullable)
+        newArrivalExpiresAt: { type: Date, default: null },
+        // services keys the product belongs to, e.g. ['customizeApparel','printing']
+        services: { type: [String], default: [] }
+    }
 
 });
 

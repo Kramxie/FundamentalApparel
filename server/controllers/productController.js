@@ -24,6 +24,10 @@ exports.addProduct = async (req, res, next) => {
       productDetails,
       faqs,power
     } = req.body;
+    // Optional new fields: sizesInventory (JSON/object), sizesPrice (JSON/object), placements
+    let sizesInventory = req.body.sizesInventory;
+    let sizesPrice = req.body.sizesPrice;
+    let placements = req.body.placements;
 
     let resolvedCategory = category;
     if (category && mongoose.isValidObjectId(category)) {
@@ -55,6 +59,32 @@ exports.addProduct = async (req, res, next) => {
       productDetails: productDetails || "",
       faqs: faqs || "",
     };
+
+    // Parse optional per-size structures (accept JSON strings or objects)
+    try {
+      if (sizesInventory) {
+        if (typeof sizesInventory === 'string') sizesInventory = JSON.parse(sizesInventory);
+        payload.sizesInventory = sizesInventory || {};
+      }
+    } catch (e) {
+      payload.sizesInventory = {};
+    }
+    try {
+      if (sizesPrice) {
+        if (typeof sizesPrice === 'string') sizesPrice = JSON.parse(sizesPrice);
+        payload.sizesPrice = sizesPrice || {};
+      }
+    } catch (e) {
+      payload.sizesPrice = {};
+    }
+    try {
+      if (placements) {
+        if (typeof placements === 'string') placements = JSON.parse(placements);
+        payload.placements = placements || {};
+      }
+    } catch (e) {
+      payload.placements = {};
+    }
 
 
     if (req.files) {
@@ -91,6 +121,7 @@ exports.addProduct = async (req, res, next) => {
         imageUrl: product.imageUrl || '',
         gallery: product.gallery || [],
         sizes: product.sizes || [],
+        sizesInventory: product.sizesInventory || {},
         colors: product.colors || [],
         material: product.material || '',
         productDetails: product.productDetails || '',
@@ -117,6 +148,18 @@ exports.addProduct = async (req, res, next) => {
 exports.getProducts = async (req, res, next) => {
   try {
     let query = {};
+    // Support placement filters
+    if (req.query.placement) {
+      const placement = req.query.placement;
+      if (placement === 'newArrivals') {
+        // only show products with a future newArrivalExpiresAt
+        query['placements.newArrivalExpiresAt'] = { $gt: new Date() };
+      } else if (placement === 'featured') {
+        query['placements.featured'] = true;
+      } else if (placement === 'service' && req.query.serviceKey) {
+        query['placements.services'] = req.query.serviceKey;
+      }
+    }
     if (req.query.category) {
       if (req.query.exclude) {
         query._id = { $ne: req.query.exclude };
@@ -221,6 +264,17 @@ exports.updateProduct = async (req, res, next) => {
       updatedData.colors = updatedData.colors.split(",").map((c) => c.trim()).filter(c => c);
     }
 
+    // Parse optional JSON fields for per-size data and placements
+    if (updatedData.sizesInventory && typeof updatedData.sizesInventory === 'string') {
+      try { updatedData.sizesInventory = JSON.parse(updatedData.sizesInventory); } catch (e) { updatedData.sizesInventory = {}; }
+    }
+    if (updatedData.sizesPrice && typeof updatedData.sizesPrice === 'string') {
+      try { updatedData.sizesPrice = JSON.parse(updatedData.sizesPrice); } catch (e) { updatedData.sizesPrice = {}; }
+    }
+    if (updatedData.placements && typeof updatedData.placements === 'string') {
+      try { updatedData.placements = JSON.parse(updatedData.placements); } catch (e) { updatedData.placements = {}; }
+    }
+
     // Remove upload metadata fields
     delete updatedData.existingMainImage;
     delete updatedData.existingGallery;
@@ -243,6 +297,7 @@ exports.updateProduct = async (req, res, next) => {
         inventoryItem.imageUrl = product.imageUrl || '';
         inventoryItem.gallery = product.gallery || [];
         inventoryItem.sizes = product.sizes || [];
+        inventoryItem.sizesInventory = product.sizesInventory || {};
         inventoryItem.colors = product.colors || [];
         inventoryItem.material = product.material || '';
         inventoryItem.productDetails = product.productDetails || '';

@@ -131,16 +131,16 @@
                     <label for="description" class="block text-sm font-medium text-gray-700">Short Description</label>
                     <textarea id="description" name="description" rows="4" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"></textarea>
                   </div>
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                       <label for="sizes" class="block text-sm font-medium text-gray-700">Sizes</label>
                       <input type="text" id="sizes" name="sizes" placeholder="e.g., S, M, L, XL" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
                     </div>
-                    <div>
+                    <div id="colors-section">
                       <label for="colors" class="block text-sm font-medium text-gray-700">Colors</label>
                       <input type="text" id="colors" name="colors" placeholder="e.g., Red, Blue, Green" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
                     </div>
-                    <div>
+                    <div id="materials-section">
                       <label for="material" class="block text-sm font-medium text-gray-700">Material</label>
                       <input type="text" id="material" name="material" placeholder="e.g., Cotton, Polyester" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
                     </div>
@@ -150,20 +150,46 @@
                     <textarea id="productDetails" name="productDetails" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2" placeholder="Title::Content||Title2::Content2"></textarea>
                      <p class="text-xs text-gray-500 mt-1">Use '::' to separate title and content, and '||' to separate entries.</p>
                   </div>
-                  <div>
+                  <div id="per-size-section">
                     <label class="block text-sm font-medium text-gray-700">Per-size inventory (optional)</label>
                     <div class="mt-1 space-y-2">
-                      <div class="flex gap-2">
-                        <input id="sizes" name="sizes" placeholder="e.g., S, M, L, XL" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2">
-                        <button id="generate-sizes-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md">Generate</button>
-                      </div>
-                      <div id="sizes-rows" class="space-y-2"></div>
-                      <div class="flex gap-2">
-                        <button id="add-size-row" type="button" class="px-3 py-2 bg-green-600 text-white rounded-md">Add Size</button>
-                        <button id="clear-sizes" type="button" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md">Clear</button>
-                      </div>
+                                      <div class="flex gap-2">
+                                        <input id="sizes" name="sizes" placeholder="e.g., S, M, L, XL" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2">
+                                        <button id="generate-sizes-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md">Generate</button>
+                                      </div>
+                                      <div class="flex items-center gap-2 mt-2">
+                                        <input id="apply-qty-input" type="number" min="0" placeholder="Qty to apply" class="w-36 border rounded p-2" />
+                                        <button id="apply-qty-btn" type="button" class="px-3 py-2 bg-blue-600 text-white rounded-md">Apply to selected sizes</button>
+                                        <span class="text-xs text-gray-500">Select sizes and apply one quantity to all selected.</span>
+                                      </div>
+                                      <div id="sizes-rows" class="space-y-2 mt-2"></div>
+                                      <div class="flex gap-2">
+                                        <button id="add-size-row" type="button" class="px-3 py-2 bg-green-600 text-white rounded-md">Add Size</button>
+                                        <button id="clear-sizes" type="button" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md">Clear</button>
+                                      </div>
                       <input type="hidden" id="sizesInventoryHidden" name="sizesInventory">
                       <p class="text-xs text-gray-500 mt-1">Use the controls to set per-size quantities. The values will be submitted as a JSON object.</p>
+                    </div>
+                  </div>
+                  <div id="per-price-section" class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700">Per-size price (optional)</label>
+                    <div class="mt-1 space-y-2">
+                      <div class="flex gap-2">
+                        <input id="sizes-for-price" placeholder="e.g., S, M, L" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2">
+                        <button id="generate-price-sizes-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md">Generate</button>
+                      </div>
+                      <div class="flex items-center gap-2 mt-2">
+                        <input id="apply-price-input" type="number" step="0.01" min="0" placeholder="Price to apply" class="w-40 border rounded p-2" />
+                        <button id="apply-price-btn" type="button" class="px-3 py-2 bg-blue-600 text-white rounded-md">Apply to selected sizes</button>
+                        <span class="text-xs text-gray-500">Select sizes and apply one price to all selected.</span>
+                      </div>
+                      <div id="prices-rows" class="space-y-2 mt-2"></div>
+                      <div class="flex gap-2">
+                        <button id="add-price-row" type="button" class="px-3 py-2 bg-green-600 text-white rounded-md">Add Price Row</button>
+                        <button id="clear-prices" type="button" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md">Clear</button>
+                      </div>
+                      <input type="hidden" id="sizesPriceHidden" name="sizesPrice">
+                      <p class="text-xs text-gray-500 mt-1">Set per-size prices. Values will be submitted as a JSON object.</p>
                     </div>
                   </div>
                 </div>
@@ -172,6 +198,41 @@
 
             <!-- Right Column: Images -->
             <div class="lg:col-span-1 space-y-6">
+                <!-- Placements -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                  <h2 class="text-lg font-semibold text-gray-800 mb-4">Placements</h2>
+                  <div class="space-y-3">
+                    <div>
+                      <label class="inline-flex items-center gap-2">
+                        <input type="checkbox" id="featured-checkbox" name="placements[featured]" />
+                        <span class="text-sm text-gray-700">Featured</span>
+                      </label>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700">New Arrivals expiry</label>
+                      <div class="flex items-center gap-2 mt-2">
+                        <select id="new-arrival-presets" class="border rounded p-2">
+                          <option value="">None</option>
+                          <option value="1">1 day</option>
+                          <option value="2" selected>2 days (default)</option>
+                          <option value="7">7 days</option>
+                          <option value="custom">Custom date</option>
+                        </select>
+                        <input id="new-arrival-custom" type="date" class="border rounded p-2 hidden" />
+                      </div>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700">Services</label>
+                      <p class="text-xs text-gray-500">Assign to service placements (predefined)</p>
+                      <div class="mt-2 flex flex-col gap-2">
+                        <label class="inline-flex items-center"><input type="checkbox" name="serviceKey" value="customizeApparel" /> <span class="ml-2">Customize Apparel</span></label>
+                        <label class="inline-flex items-center"><input type="checkbox" name="serviceKey" value="printing" /> <span class="ml-2">Printing</span></label>
+                        <label class="inline-flex items-center"><input type="checkbox" name="serviceKey" value="embroidery" /> <span class="ml-2">Embroidery</span></label>
+                      </div>
+                    </div>
+                    <input type="hidden" id="placementsHidden" name="placements">
+                  </div>
+                </div>
               <div class="bg-white p-6 rounded-lg shadow-md">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4">Product Images</h2>
                 
@@ -269,6 +330,19 @@
     const addSizeRowBtn = document.getElementById('add-size-row');
     const clearSizesBtn = document.getElementById('clear-sizes');
 
+    // Per-size prices helpers
+    const pricesRowsContainer = document.getElementById('prices-rows');
+    const sizesPriceHidden = document.getElementById('sizesPriceHidden');
+    const generatePriceSizesBtn = document.getElementById('generate-price-sizes-btn');
+    const addPriceRowBtn = document.getElementById('add-price-row');
+    const clearPricesBtn = document.getElementById('clear-prices');
+
+    // Placements helpers
+    const featuredCheckbox = document.getElementById('featured-checkbox');
+    const newArrivalPresets = document.getElementById('new-arrival-presets');
+    const newArrivalCustom = document.getElementById('new-arrival-custom');
+    const placementsHidden = document.getElementById('placementsHidden');
+
     function renderSizeRows(obj) {
       sizesRowsContainer.innerHTML = '';
       const data = obj || {};
@@ -277,6 +351,7 @@
         const row = document.createElement('div');
         row.className = 'flex items-center gap-2';
         row.innerHTML = `
+          <input data-select type="checkbox" class="h-4 w-4" />
           <input class="flex-1 border rounded p-2" data-size-input type="text" value="${size}" />
           <input class="w-24 border rounded p-2" data-qty-input type="number" min="0" value="${Number(qty)||0}" />
           <button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>
@@ -308,6 +383,81 @@
       renderSizeRows(obj);
     });
 
+    // Price rows rendering
+    function renderPriceRows(obj) {
+      pricesRowsContainer.innerHTML = '';
+      const data = obj || {};
+      Object.keys(data).forEach(size => {
+        const price = data[size];
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        row.innerHTML = `
+          <input data-select type="checkbox" class="h-4 w-4" />
+          <input class="flex-1 border rounded p-2" data-price-size-input type="text" value="${size}" />
+          <input class="w-32 border rounded p-2" data-price-input type="number" step="0.01" min="0" value="${Number(price)||0}" />
+          <button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>
+        `;
+        row.querySelector('[data-remove]').addEventListener('click', () => { row.remove(); });
+        pricesRowsContainer.appendChild(row);
+      });
+    }
+
+    function getSizesPriceObject() {
+      const obj = {};
+      const rows = pricesRowsContainer.querySelectorAll('div');
+      rows.forEach(row => {
+        const sizeInput = row.querySelector('[data-price-size-input]');
+        const priceInput = row.querySelector('[data-price-input]');
+        if (!sizeInput || !priceInput) return;
+        const size = String(sizeInput.value||'').trim();
+        const price = Number(priceInput.value||0);
+        if (size) obj[size] = Math.max(0, Number(price.toFixed(2)));
+      });
+      return obj;
+    }
+
+    generatePriceSizesBtn?.addEventListener('click', () => {
+      const sizesText = document.getElementById('sizes-for-price').value || '';
+      const sizes = sizesText.split(',').map(s => s.trim()).filter(Boolean);
+      const obj = {};
+      sizes.forEach(s => { obj[s] = obj[s] || 0; });
+      renderPriceRows(obj);
+    });
+
+    addPriceRowBtn?.addEventListener('click', () => {
+      renderPriceRows(Object.assign(getSizesPriceObject(), { '': 0 }));
+      const last = pricesRowsContainer.querySelector('div:last-child [data-price-size-input]');
+      if (last) last.focus();
+    });
+
+    clearPricesBtn?.addEventListener('click', () => {
+      pricesRowsContainer.innerHTML = '';
+    });
+
+    // Batch apply price to selected sizes
+    const applyPriceInput = document.getElementById('apply-price-input');
+    const applyPriceBtn = document.getElementById('apply-price-btn');
+    applyPriceBtn?.addEventListener('click', () => {
+      const v = Number(applyPriceInput.value||0);
+      const rows = pricesRowsContainer.querySelectorAll('div');
+      rows.forEach(r => {
+        const chk = r.querySelector('[data-select]');
+        const priceInput = r.querySelector('[data-price-input]');
+        if (chk && chk.checked && priceInput) {
+          priceInput.value = Number(v.toFixed(2));
+        }
+      });
+    });
+
+    // New arrival presets handling
+    newArrivalPresets?.addEventListener('change', (e) => {
+      if (e.target.value === 'custom') {
+        newArrivalCustom.classList.remove('hidden');
+      } else {
+        newArrivalCustom.classList.add('hidden');
+      }
+    });
+
     addSizeRowBtn?.addEventListener('click', () => {
       renderSizeRows(Object.assign(getSizesInventoryObject(), { '': 0 }));
       // focus on the last empty size input
@@ -317,6 +467,21 @@
 
     clearSizesBtn?.addEventListener('click', () => {
       sizesRowsContainer.innerHTML = '';
+    });
+
+    // Batch apply quantity to selected sizes
+    const applyQtyInput = document.getElementById('apply-qty-input');
+    const applyQtyBtn = document.getElementById('apply-qty-btn');
+    applyQtyBtn?.addEventListener('click', () => {
+      const v = Number(applyQtyInput.value||0);
+      const rows = sizesRowsContainer.querySelectorAll('div');
+      rows.forEach(r => {
+        const chk = r.querySelector('[data-select]');
+        const qtyInput = r.querySelector('[data-qty-input]');
+        if (chk && chk.checked && qtyInput) {
+          qtyInput.value = Math.max(0, Math.floor(v));
+        }
+      });
     });
     function showMessage(text, type = 'success') {
       messageEl.textContent = text;
@@ -331,14 +496,77 @@
         const res = await fetch(`${API}/api/categories`);
         const json = await res.json();
         if (json.success) {
+          // store categories for client-side flag checks
+          window.__categories = json.data || [];
           const currentCategory = categorySelect.value;
-          categorySelect.innerHTML = json.data.map(c => `<option value="${c.name}" ${c.name === currentCategory ? 'selected' : ''}>${c.name}</option>`).join('');
+          categorySelect.innerHTML = window.__categories.map(c => `<option value="${c.name}" ${c.name === currentCategory ? 'selected' : ''}>${c.name}</option>`).join('');
+          // apply flags for initially selected category
+          applyCategoryFlagsByName(categorySelect.value);
         }
       } catch (err) {
         console.error('Could not fetch categories', err);
         showMessage('Could not load categories.', 'error');
       }
     }
+
+    function applyCategoryFlagsByName(name) {
+      try {
+        const cat = (window.__categories || []).find(c => c.name === name);
+        applyCategoryFlags(cat);
+      } catch (e) { applyCategoryFlags(null); }
+    }
+
+    function applyCategoryFlags(cat) {
+      // show/hide per-size sections based on requiresSizes flag
+      const perSizeSection = document.getElementById('per-size-section');
+      const perPriceSection = document.getElementById('per-price-section');
+      const sizesInput = document.getElementById('sizes');
+      const colorsSection = document.getElementById('colors-section');
+      const materialsSection = document.getElementById('materials-section');
+      const colorsInput = document.getElementById('colors');
+      const materialInput = document.getElementById('material');
+      if (cat && cat.requiresSizes) {
+        perSizeSection?.classList.remove('hidden');
+        perSizeSection?.removeAttribute('aria-hidden');
+        perPriceSection?.classList.remove('hidden');
+        perPriceSection?.removeAttribute('aria-hidden');
+        if (sizesInput) sizesInput.removeAttribute('disabled');
+        // colors and materials visibility when sizes are required is not implied; keep separate below
+      } else {
+        perSizeSection?.classList.add('hidden');
+        perSizeSection?.setAttribute('aria-hidden', 'true');
+        perPriceSection?.classList.add('hidden');
+        perPriceSection?.setAttribute('aria-hidden', 'true');
+        if (sizesInput) sizesInput.setAttribute('disabled', 'true');
+      }
+
+      // show/hide colors based on requiresColors
+      if (cat && cat.requiresColors) {
+        colorsSection?.classList.remove('hidden');
+        colorsSection?.removeAttribute('aria-hidden');
+        if (colorsInput) colorsInput.removeAttribute('disabled');
+      } else {
+        colorsSection?.classList.add('hidden');
+        colorsSection?.setAttribute('aria-hidden', 'true');
+        if (colorsInput) colorsInput.setAttribute('disabled', 'true');
+      }
+
+      // show/hide materials based on requiresMaterials
+      if (cat && cat.requiresMaterials) {
+        materialsSection?.classList.remove('hidden');
+        materialsSection?.removeAttribute('aria-hidden');
+        if (materialInput) materialInput.removeAttribute('disabled');
+      } else {
+        materialsSection?.classList.add('hidden');
+        materialsSection?.setAttribute('aria-hidden', 'true');
+        if (materialInput) materialInput.setAttribute('disabled', 'true');
+      }
+    }
+
+    // apply flags when category selection changes
+    categorySelect?.addEventListener('change', (e) => {
+      applyCategoryFlagsByName(e.target.value);
+    });
 
     async function addCategory(name) {
       if (!name || !name.trim()) return null;
@@ -424,6 +652,30 @@
         sizesHidden.value = JSON.stringify(getSizesInventoryObject());
       } catch (err) {
         sizesHidden.value = '';
+      }
+      // serialize sizesPrice
+      try {
+        sizesPriceHidden.value = JSON.stringify(getSizesPriceObject());
+      } catch (err) {
+        sizesPriceHidden.value = '';
+      }
+      // serialize placements
+      try {
+        const services = Array.from(document.querySelectorAll('input[name="serviceKey"]:checked')).map(i => i.value);
+        let newArrivalExpiresAt = null;
+        const preset = newArrivalPresets.value;
+        if (preset === 'custom' && newArrivalCustom.value) {
+          newArrivalExpiresAt = new Date(newArrivalCustom.value).toISOString();
+        } else if (preset && preset !== '') {
+          const days = Number(preset) || 0;
+          if (days > 0) {
+            newArrivalExpiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+          }
+        }
+        const placementsObj = { featured: !!featuredCheckbox.checked, newArrivalExpiresAt: newArrivalExpiresAt, services };
+        placementsHidden.value = JSON.stringify(placementsObj);
+      } catch (err) {
+        placementsHidden.value = '';
       }
 
       const fd = new FormData();
