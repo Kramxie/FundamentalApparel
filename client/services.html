@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,44 +8,51 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <!-- Three.js for 3D Jersey Preview -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
+
         .service-tab {
             transition: all 0.3s ease;
         }
+
         .service-tab.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             transform: scale(1.05);
         }
+
         #jersey-preview {
             background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
             border: 3px solid #60a5fa;
             position: relative;
             cursor: grab;
         }
+
         #jersey-preview:active {
             cursor: grabbing;
         }
+
         .rotation-controls {
             position: absolute;
             bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             padding: 8px 16px;
             border-radius: 25px;
             display: flex;
             gap: 8px;
         }
+
         .rotation-btn {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             color: white;
             padding: 6px 12px;
             border-radius: 6px;
@@ -52,53 +60,115 @@
             transition: all 0.2s;
             font-size: 12px;
         }
+
         .rotation-btn:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
         }
+
         .design-option {
             cursor: pointer;
             transition: all 0.3s ease;
         }
+
         .design-option:hover {
             transform: scale(1.05);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
+
         .design-option.selected {
             border: 3px solid #667eea;
             box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
         }
+
         .position-control {
             cursor: pointer;
             transition: all 0.2s ease;
         }
+
         .position-control:hover {
             background-color: #667eea;
             color: white;
         }
+
         .modal-backdrop {
             backdrop-filter: blur(5px);
         }
     </style>
 </head>
+
 <body class="bg-gray-50">
 
-    <header class="bg-white shadow-md sticky top-0 z-50">
+    <header class="bg-white border-b border-gray-100 sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="index.html" class="text-2xl font-bold text-indigo-600">Fundamental</a>
-            <div class="hidden md:flex gap-6 items-center">
-                <a href="index.html" class="text-gray-700 hover:text-indigo-600 transition">Home</a>
-                <a href="products.html" class="text-gray-700 hover:text-indigo-600 transition">Products</a>
+            
+            <a href="index.html" class="flex items-center gap-3 group">
+                <img src="images/logo.png" alt="Fundamental Logo" class="w-10 h-10 object-contain group-hover:opacity-80 transition">
+                <span class="text-xl font-extrabold text-gray-900 tracking-tight group-hover:text-indigo-600 transition">Fundamental</span>
+            </a>
+
+            <div class="hidden md:flex space-x-8 items-center font-medium text-sm">
+                <a href="index.html" class="text-gray-500 hover:text-indigo-600 transition">Home</a>
+                <a href="products.html" class="text-gray-500 hover:text-indigo-600 transition">Products</a>
                 <a href="services.html" class="text-indigo-600 font-semibold">Services</a>
-                <a href="cart.html" class="text-gray-700 hover:text-indigo-600 transition relative">
-                    <i class="fas fa-shopping-cart text-xl"></i>
-                    <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                <a href="#" class="text-gray-500 hover:text-indigo-600 transition">About</a>
+                <a href="#" class="text-gray-500 hover:text-indigo-600 transition">FAQs</a>
+            </div>
+
+            <div class="hidden md:flex items-center space-x-6">
+                <button class="text-gray-400 hover:text-indigo-600 transition"><i class="fas fa-search text-lg"></i></button>
+                
+                <a href="cart.html" class="text-gray-400 hover:text-indigo-600 relative transition">
+                    <i class="fas fa-shopping-bag text-lg"></i>
+                    <span id="cart-count" class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
                 </a>
-                <a href="profile.html" class="text-gray-700 hover:text-indigo-600 transition">
-                    <i class="fas fa-user text-xl"></i>
-                </a>
+
+                <div id="auth-links-logged-out" class="flex items-center space-x-3 pl-4 border-l border-gray-200">
+                    <a href="login.html" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">Log In</a>
+                    <a href="register.html" class="text-sm font-bold bg-gray-900 text-white px-5 py-2.5 rounded-lg hover:bg-black transition shadow-sm transform hover:scale-105 duration-200">Sign Up</a>
+                </div>
+
+                <div id="auth-links-logged-in" class="hidden pl-4 border-l border-gray-200">
+                    <a href="profile.html" id="user-link" class="text-gray-500 hover:text-indigo-600 transition flex items-center gap-2">
+                        <i id="user-icon" class="fas fa-user-circle text-2xl"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="md:hidden">
+                <button id="menu-btn" class="text-gray-800 focus:outline-none p-2">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
             </div>
         </nav>
+
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 absolute w-full left-0 top-full shadow-lg z-40">
+            <div class="flex flex-col p-4 space-y-3">
+                <a href="index.html" class="text-indigo-600 font-semibold block py-2">Home</a>
+                <a href="products.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">Products</a>
+                <a href="services.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">Services</a>
+                
+                <a href="#" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">About Us</a>
+                <a href="#" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">FAQs</a>
+                
+                <hr class="border-gray-100">
+                
+                <a href="cart.html" class="flex items-center text-gray-600 py-2 hover:text-indigo-600 transition">
+                    <i class="fas fa-shopping-bag mr-3"></i> Cart (<span id="cart-count-mobile">0</span>)
+                </a>
+                
+                <div id="mobile-auth-logged-out" class="flex flex-col gap-3 mt-2 pt-2 border-t border-gray-100">
+                    <a href="login.html" class="text-center w-full border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition">Log In</a>
+                    <a href="register.html" class="text-center w-full bg-gray-900 text-white py-2.5 rounded-lg font-bold hover:bg-black transition">Sign Up</a>
+                </div>
+                
+                <div id="mobile-auth-logged-in" class="hidden mt-2 pt-2 border-t border-gray-100">
+                    <a href="profile.html" class="flex items-center text-gray-600 font-medium py-2 hover:text-indigo-600 transition">
+                        <i class="fas fa-user-circle mr-3 text-xl"></i> My Profile
+                    </a>
+                </div>
+            </div>
+        </div>
     </header>
 
     <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -112,48 +182,56 @@
 
         <!-- Services Container -->
         <div id="services-container">
+
             <!-- SERVICE CATEGORY SELECTION SCREEN -->
             <div id="category-selection-screen" class="mb-12">
                 <div class="text-center mb-12">
                     <h2 class="text-3xl font-bold text-gray-900 mb-4">Choose Your Service</h2>
                     <p class="text-lg text-gray-600">Select the service that best fits your needs</p>
                 </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
                     <!-- Customize Jersey Card -->
                     <div onclick="selectServiceCategory('customize-jersey')" class="group cursor-pointer">
-                        <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 h-full transform hover:scale-105">
+                        <div
+                            class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 h-full transform hover:scale-105">
                             <div class="text-center">
-                                <i class="fas fa-tshirt text-6xl text-indigo-600 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
+                                <i
+                                    class="fas fa-tshirt text-6xl text-indigo-600 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
                                 <h3 class="text-2xl font-bold text-gray-900 mb-3">Customize Apparel</h3>
-                                <p class="text-gray-600 mb-6">Design your own Apparel with our live preview tool. Choose colors, add text, upload logos, and see your design in real-time.</p>
+                                <p class="text-gray-600 mb-6">Design your own Apparel with our live preview tool. Choose
+                                    colors, add text, upload logos, and see your design in real-time.</p>
                                 <div class="space-y-2 text-sm text-gray-500 mb-6">
                                     <p><i class="fas fa-check text-green-500 mr-2"></i>2D Live Preview</p>
                                     <p><i class="fas fa-check text-green-500 mr-2"></i>Custom Colors</p>
                                     <p><i class="fas fa-check text-green-500 mr-2"></i>Add Text & Logos</p>
                                 </div>
-                                <button class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
+                                <button
+                                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
                                     Get Started
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    
-
                     <!-- Printing Only Card -->
                     <a href="printing-only.html" class="group cursor-pointer block">
-                        <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 h-full transform hover:scale-105">
+                        <div
+                            class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 h-full transform hover:scale-105">
                             <div class="text-center">
-                                <i class="fas fa-print text-6xl text-pink-600 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
+                                <i
+                                    class="fas fa-print text-6xl text-pink-600 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
                                 <h3 class="text-2xl font-bold text-gray-900 mb-3">Printing Only</h3>
-                                <p class="text-gray-600 mb-6">Already have your jersey or apparel design? Upload your layout and provide the order details—quantity, fabric, and garment style. We’ll take care of professional printing with fast and reliable turnaround</p>
+                                <p class="text-gray-600 mb-6">Already have your jersey or apparel design? Upload your
+                                    layout and provide the order details—quantity, fabric, and garment style. We’ll take
+                                    care of professional printing with fast and reliable turnaround</p>
                                 <div class="space-y-2 text-sm text-gray-500 mb-6">
                                     <p><i class="fas fa-check text-green-500 mr-2"></i>Upload Design</p>
-                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Select Fabric and Garment Type</p>
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Select Fabric and Garment Type
+                                    </p>
                                     <p><i class="fas fa-check text-green-500 mr-2"></i>Fast & Reliable Printing</p>
                                 </div>
-                                <button class="px-6 py-2 bg-pink-600 text-white rounded-lg font-semibold hover:bg-pink-700 transition">
+                                <button
+                                    class="px-6 py-2 bg-pink-600 text-white rounded-lg font-semibold hover:bg-pink-700 transition">
                                     Get Started
                                 </button>
                             </div>
@@ -164,26 +242,31 @@
 
             <!-- Service Tabs (Hidden Initially) -->
             <div id="service-tabs-section" class="hidden mb-8">
-                <button onclick="goBackToCategories()" class="mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2">
+                <button onclick="goBackToCategories()"
+                    class="mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2">
                     <i class="fas fa-arrow-left"></i>Back to Categories
                 </button>
             </div>
 
             <!-- CUSTOMIZE JERSEY SECTION -->
             <div id="customize-jersey-section" class="service-section hidden">
-                <button onclick="goBackToCategories()" class="mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2">
+                <button onclick="goBackToCategories()"
+                    class="mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2">
                     <i class="fas fa-arrow-left"></i>Back to Categories
                 </button>
                 <div class="bg-white rounded-2xl shadow-2xl p-8">
+
                     <!-- Learn More Button at Top -->
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-3xl font-bold text-gray-900">Customize Your Jersey</h2>
-                        <button onclick="openServiceLearnMore('customize')" class="px-6 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200 transition">
+                        <button onclick="openServiceLearnMore('customize')"
+                            class="px-6 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200 transition">
                             <i class="fas fa-info-circle mr-2"></i>Learn More
                         </button>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
                         <!-- LEFT: Live Preview -->
                         <div class="order-2 lg:order-1">
                             <div class="lg:sticky lg:top-24 h-fit">
@@ -192,21 +275,25 @@
                                         <i class="fas fa-cube mr-2 text-blue-500"></i>3D Live Preview
                                     </h3>
                                     <div class="relative">
-                                        <canvas id="jersey-preview" width="400" height="500" 
+                                        <canvas id="jersey-preview" width="400" height="500"
                                             class="w-full rounded-xl shadow-xl"></canvas>
-                                        
+
                                         <!-- Rotation Controls -->
                                         <div class="rotation-controls">
-                                            <button type="button" onclick="rotate3DJersey('left')" class="rotation-btn" title="Rotate Left">
+                                            <button type="button" onclick="rotate3DJersey('left')" class="rotation-btn"
+                                                title="Rotate Left">
                                                 <i class="fas fa-undo"></i>
                                             </button>
-                                            <button type="button" onclick="rotate3DJersey('front')" class="rotation-btn" title="Front View">
+                                            <button type="button" onclick="rotate3DJersey('front')" class="rotation-btn"
+                                                title="Front View">
                                                 Front
                                             </button>
-                                            <button type="button" onclick="rotate3DJersey('back')" class="rotation-btn" title="Back View">
+                                            <button type="button" onclick="rotate3DJersey('back')" class="rotation-btn"
+                                                title="Back View">
                                                 Back
                                             </button>
-                                            <button type="button" onclick="rotate3DJersey('right')" class="rotation-btn" title="Rotate Right">
+                                            <button type="button" onclick="rotate3DJersey('right')" class="rotation-btn"
+                                                title="Rotate Right">
                                                 <i class="fas fa-redo"></i>
                                             </button>
                                         </div>
@@ -222,13 +309,16 @@
                         <!-- RIGHT: Form Controls -->
                         <div class="order-1 lg:order-2 space-y-6">
                             <form id="jersey-form">
+
                                 <!-- Design Method -->
                                 <div class="mb-6">
                                     <label class="block text-sm font-bold text-gray-700 mb-3">Design Method</label>
                                     <div class="grid grid-cols-2 gap-4">
                                         <label class="cursor-pointer">
-                                            <input type="radio" name="design-method" value="customize" checked class="peer hidden">
-                                            <div class="border-3 border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 rounded-xl p-4 text-center transition-all">
+                                            <input type="radio" name="design-method" value="customize" checked
+                                                class="peer hidden">
+                                            <div
+                                                class="border-3 border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 rounded-xl p-4 text-center transition-all">
                                                 <i class="fas fa-palette text-3xl text-blue-500 mb-2"></i>
                                                 <p class="font-bold">Customize Jersey</p>
                                                 <p class="text-xs text-gray-600">Pick design & colors</p>
@@ -236,7 +326,8 @@
                                         </label>
                                         <label class="cursor-pointer">
                                             <input type="radio" name="design-method" value="upload" class="peer hidden">
-                                            <div class="border-3 border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 rounded-xl p-4 text-center transition-all">
+                                            <div
+                                                class="border-3 border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 rounded-xl p-4 text-center transition-all">
                                                 <i class="fas fa-upload text-3xl text-blue-500 mb-2"></i>
                                                 <p class="font-bold">Upload Design</p>
                                                 <p class="text-xs text-gray-600">Bring your own</p>
@@ -247,10 +338,14 @@
 
                                 <!-- Customize Method Fields -->
                                 <div id="customize-fields" class="space-y-6">
+
                                     <!-- Design Style Selection -->
                                     <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-3">Select Design Style</label>
+                                        <label class="block text-sm font-bold text-gray-700 mb-3">Select Design
+                                            Style</label>
+
                                         <div class="grid grid-cols-3 gap-3" id="design-styles">
+
                                             <!-- Will be populated by JavaScript -->
                                         </div>
                                     </div>
@@ -259,24 +354,27 @@
                                     <div>
                                         <label class="block text-sm font-bold text-gray-700 mb-3">
                                             Jersey Colors
-                                            <button type="button" onclick="openLearnMoreModal('colors')" class="ml-2 text-blue-500 text-xs">
+                                            <button type="button" onclick="openLearnMoreModal('colors')"
+                                                class="ml-2 text-blue-500 text-xs">
                                                 <i class="fas fa-question-circle"></i>
                                             </button>
                                         </label>
                                         <div class="grid grid-cols-3 gap-4">
                                             <div>
                                                 <label class="block text-xs text-gray-600 mb-1">Primary</label>
-                                                <input type="color" id="primary-color" name="primaryColor" value="#3B82F6" 
+                                                <input type="color" id="primary-color" name="primaryColor"
+                                                    value="#3B82F6"
                                                     class="w-full h-12 rounded-lg cursor-pointer border-2 border-gray-300">
                                             </div>
                                             <div>
                                                 <label class="block text-xs text-gray-600 mb-1">Secondary</label>
-                                                <input type="color" id="secondary-color" name="secondaryColor" value="#FFFFFF" 
+                                                <input type="color" id="secondary-color" name="secondaryColor"
+                                                    value="#FFFFFF"
                                                     class="w-full h-12 rounded-lg cursor-pointer border-2 border-gray-300">
                                             </div>
                                             <div>
                                                 <label class="block text-xs text-gray-600 mb-1">Accent</label>
-                                                <input type="color" id="accent-color" name="accentColor" value="#F59E0B" 
+                                                <input type="color" id="accent-color" name="accentColor" value="#F59E0B"
                                                     class="w-full h-12 rounded-lg cursor-pointer border-2 border-gray-300">
                                             </div>
                                         </div>
@@ -284,474 +382,926 @@
 
                                     <!-- Text Customization -->
                                     <div class="border-t pt-6">
-                                        <label class="block text-sm font-bold text-gray-700 mb-3">Text Customization</label>
+                                        <label class="block text-sm font-bold text-gray-700 mb-3">Text
+                                            Customization</label>
                                         <div class="space-y-3">
-                                            <input type="text" id="custom-text" name="customText" placeholder="Enter custom text (e.g., WARRIORS)" 
+                                            <input type="text" id="custom-text" name="customText"
+                                                placeholder="Enter custom text (e.g., WARRIORS)"
                                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                                            
+
                                             <div class="grid grid-cols-2 gap-3">
-                                                <select id="text-font" name="textFont" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                                <select id="text-font" name="textFont"
+                                                    class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                                                     <option value="Arial">Arial</option>
                                                     <option value="Impact">Impact</option>
                                                     <option value="'Bebas Neue'">Bebas Neue</option>
                                                     <option value="'Roboto Condensed'">Roboto Condensed</option>
                                                 </select>
-                                                <select id="text-size" name="textSize" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+
+                                                <select id="text-size" name="textSize"
+                                                    class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                                                     <option value="24">Small (24px)</option>
+
                                                     <option value="36" selected>Medium (36px)</option>
+
                                                     <option value="48">Large (48px)</option>
+
                                                     <option value="60">X-Large (60px)</option>
+
                                                 </select>
+
                                             </div>
+
+
 
                                             <!-- Position Controllers -->
+
                                             <div class="bg-gray-50 p-4 rounded-lg">
+
                                                 <p class="text-xs text-gray-600 mb-2 font-semibold">Text Position</p>
+
                                                 <div class="grid grid-cols-3 gap-2">
-                                                    <button type="button" onclick="moveText('up')" 
+
+                                                    <button type="button" onclick="moveText('up')"
                                                         class="position-control px-3 py-2 bg-white border-2 border-gray-300 rounded-lg">
+
                                                         <i class="fas fa-arrow-up"></i>
+
                                                     </button>
+
                                                     <div></div>
+
                                                     <div></div>
-                                                    <button type="button" onclick="moveText('left')" 
+
+                                                    <button type="button" onclick="moveText('left')"
                                                         class="position-control px-3 py-2 bg-white border-2 border-gray-300 rounded-lg">
+
                                                         <i class="fas fa-arrow-left"></i>
+
                                                     </button>
-                                                    <button type="button" onclick="resetTextPosition()" 
+
+                                                    <button type="button" onclick="resetTextPosition()"
                                                         class="px-3 py-2 bg-gray-200 rounded-lg text-xs">
+
                                                         Reset
+
                                                     </button>
-                                                    <button type="button" onclick="moveText('right')" 
+
+                                                    <button type="button" onclick="moveText('right')"
                                                         class="position-control px-3 py-2 bg-white border-2 border-gray-300 rounded-lg">
+
                                                         <i class="fas fa-arrow-right"></i>
+
                                                     </button>
+
                                                     <div></div>
-                                                    <button type="button" onclick="moveText('down')" 
+
+                                                    <button type="button" onclick="moveText('down')"
                                                         class="position-control px-3 py-2 bg-white border-2 border-gray-300 rounded-lg">
+
                                                         <i class="fas fa-arrow-down"></i>
+
                                                     </button>
+
                                                     <div></div>
+
                                                 </div>
+
                                             </div>
+
                                         </div>
+
                                     </div>
+
+
 
                                     <!-- Logo Upload -->
+
                                     <div class="border-t pt-6">
+
                                         <label class="block text-sm font-bold text-gray-700 mb-3">
+
                                             Logo Upload (Optional)
+
                                         </label>
-                                        <input type="file" id="logo-upload" name="logoFile" accept="image/*" 
+
+                                        <input type="file" id="logo-upload" name="logoFile" accept="image/*"
                                             class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-                                        
+
+
+
                                         <!-- Logo Position Controllers -->
+
                                         <div id="logo-controls" class="hidden bg-gray-50 p-4 rounded-lg mt-3">
+
                                             <p class="text-xs text-gray-600 mb-2 font-semibold">Logo Position</p>
+
                                             <div class="grid grid-cols-3 gap-2">
-                                                <button type="button" onclick="moveLogo('up')" 
+
+                                                <button type="button" onclick="moveLogo('up')"
                                                     class="position-control px-3 py-2 bg-white border-2 border-gray-300 rounded-lg">
+
                                                     <i class="fas fa-arrow-up"></i>
+
                                                 </button>
+
                                                 <div></div>
+
                                                 <div></div>
-                                                <button type="button" onclick="moveLogo('left')" 
+
+                                                <button type="button" onclick="moveLogo('left')"
                                                     class="position-control px-3 py-2 bg-white border-2 border-gray-300 rounded-lg">
+
                                                     <i class="fas fa-arrow-left"></i>
+
                                                 </button>
-                                                <button type="button" onclick="resetLogoPosition()" 
+
+                                                <button type="button" onclick="resetLogoPosition()"
                                                     class="px-3 py-2 bg-gray-200 rounded-lg text-xs">
+
                                                     Reset
+
                                                 </button>
-                                                <button type="button" onclick="moveLogo('right')" 
+
+                                                <button type="button" onclick="moveLogo('right')"
                                                     class="position-control px-3 py-2 bg-white border-2 border-gray-300 rounded-lg">
+
                                                     <i class="fas fa-arrow-right"></i>
+
                                                 </button>
+
                                                 <div></div>
-                                                <button type="button" onclick="moveLogo('down')" 
+
+                                                <button type="button" onclick="moveLogo('down')"
                                                     class="position-control px-3 py-2 bg-white border-2 border-gray-300 rounded-lg">
+
                                                     <i class="fas fa-arrow-down"></i>
+
                                                 </button>
+
                                                 <div></div>
+
                                             </div>
+
                                         </div>
+
                                     </div>
+
                                 </div>
+
+
 
                                 <!-- Upload Method Fields -->
+
                                 <div id="upload-fields" class="hidden space-y-4">
+
                                     <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-3">Upload Your Design</label>
-                                        <input type="file" id="design-upload" name="designFile" accept="image/*" 
+
+                                        <label class="block text-sm font-bold text-gray-700 mb-3">Upload Your
+                                            Design</label>
+
+                                        <input type="file" id="design-upload" name="designFile" accept="image/*"
                                             class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+
                                         <p class="text-xs text-gray-600 mt-2">
+
                                             <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+
                                             Supported: PNG, JPG (Max 10MB, 300DPI recommended)
+
                                         </p>
+
                                     </div>
+
                                 </div>
+
+
 
                                 <!-- TEAM MEMBERS SECTION -->
+
                                 <div class="border-t pt-6">
+
                                     <div class="flex justify-between items-center mb-3">
+
                                         <label class="block text-sm font-bold text-gray-700">
+
                                             <i class="fas fa-users text-blue-500 mr-2"></i>Team Members Information
+
                                         </label>
+
                                         <span class="text-sm text-gray-600">
+
                                             Based on quantity: <strong id="team-member-count">1</strong> member(s)
+
                                         </span>
+
                                     </div>
+
                                     <p class="text-xs text-gray-600 mb-4">
+
                                         <i class="fas fa-info-circle text-blue-500 mr-1"></i>
-                                        Team member forms will automatically generate based on your quantity. Fill in each member's details.
+
+                                        Team member forms will automatically generate based on your quantity. Fill in
+                                        each member's details.
+
                                     </p>
-                                    
+
+
+
                                     <div id="team-members-container" class="space-y-3">
+
                                         <!-- Team member cards will be auto-generated based on quantity -->
+
                                     </div>
+
                                 </div>
+
+
 
                                 <!-- SHORTS OPTIONS SECTION -->
+
                                 <div class="border-t pt-6">
+
                                     <div class="flex items-center mb-4">
+
                                         <input type="checkbox" id="include-shorts" name="includeShorts"
                                             class="w-5 h-5 text-blue-500 border-gray-300 rounded focus:ring-blue-500 mr-3">
-                                        <label for="include-shorts" class="text-sm font-bold text-gray-700 cursor-pointer">
+
+                                        <label for="include-shorts"
+                                            class="text-sm font-bold text-gray-700 cursor-pointer">
+
                                             <i class="fas fa-tshirt text-blue-500 mr-2"></i>Include Matching Shorts
+
                                         </label>
+
                                     </div>
-                                    
-                                    <div id="shorts-options" class="hidden space-y-4 bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+
+
+
+                                    <div id="shorts-options"
+                                        class="hidden space-y-4 bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+
                                         <p class="text-sm text-gray-700 mb-3">
+
                                             <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+
                                             Choose if shorts should match jersey design or have different customization
+
                                         </p>
-                                        
+
+
+
                                         <div class="space-y-3">
+
                                             <label class="flex items-start cursor-pointer">
-                                                <input type="radio" name="shorts-design" value="same" checked 
+
+                                                <input type="radio" name="shorts-design" value="same" checked
                                                     class="mt-1 w-4 h-4 text-blue-500 border-gray-300 focus:ring-blue-500">
+
                                                 <div class="ml-3">
-                                                    <p class="font-semibold text-sm text-gray-900">Same as Jersey Design</p>
-                                                    <p class="text-xs text-gray-600">Shorts will match the jersey colors and style</p>
+
+                                                    <p class="font-semibold text-sm text-gray-900">Same as Jersey Design
+                                                    </p>
+
+                                                    <p class="text-xs text-gray-600">Shorts will match the jersey colors
+                                                        and style</p>
+
                                                 </div>
+
                                             </label>
-                                            
+
+
+
                                             <label class="flex items-start cursor-pointer">
-                                                <input type="radio" name="shorts-design" value="different" 
+
+                                                <input type="radio" name="shorts-design" value="different"
                                                     class="mt-1 w-4 h-4 text-blue-500 border-gray-300 focus:ring-blue-500">
+
                                                 <div class="ml-3">
+
                                                     <p class="font-semibold text-sm text-gray-900">Different Design</p>
+
                                                     <p class="text-xs text-gray-600">Customize shorts separately</p>
+
                                                 </div>
+
                                             </label>
+
                                         </div>
 
-                                        <div id="shorts-different-options" class="hidden mt-4 pt-4 border-t border-blue-300 space-y-3">
+
+
+                                        <div id="shorts-different-options"
+                                            class="hidden mt-4 pt-4 border-t border-blue-300 space-y-3">
+
                                             <div>
-                                                <label class="block text-xs font-semibold text-gray-700 mb-2">Shorts Primary Color</label>
-                                                <input type="color" id="shorts-primary-color" name="shortsPrimaryColor" value="#000000" 
+
+                                                <label class="block text-xs font-semibold text-gray-700 mb-2">Shorts
+                                                    Primary Color</label>
+
+                                                <input type="color" id="shorts-primary-color" name="shortsPrimaryColor"
+                                                    value="#000000"
                                                     class="w-full h-12 rounded-lg cursor-pointer border-2 border-gray-300">
+
                                             </div>
+
                                             <div>
-                                                <label class="block text-xs font-semibold text-gray-700 mb-2">Shorts Secondary Color</label>
-                                                <input type="color" id="shorts-secondary-color" name="shortsSecondaryColor" value="#FFFFFF" 
+
+                                                <label class="block text-xs font-semibold text-gray-700 mb-2">Shorts
+                                                    Secondary Color</label>
+
+                                                <input type="color" id="shorts-secondary-color"
+                                                    name="shortsSecondaryColor" value="#FFFFFF"
                                                     class="w-full h-12 rounded-lg cursor-pointer border-2 border-gray-300">
+
                                             </div>
+
                                             <div>
-                                                <label class="block text-xs font-semibold text-gray-700 mb-2">Shorts Design Notes</label>
-                                                <textarea id="shorts-notes" name="shortsNotes" rows="2" 
+
+                                                <label class="block text-xs font-semibold text-gray-700 mb-2">Shorts
+                                                    Design Notes</label>
+
+                                                <textarea id="shorts-notes" name="shortsNotes" rows="2"
                                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                                     placeholder="Describe how you want the shorts designed..."></textarea>
+
                                             </div>
+
                                         </div>
+
                                     </div>
+
                                 </div>
 
+
+
                                 <!-- Common Fields -->
+
                                 <div class="border-t pt-6 space-y-4">
                                     <div>
                                         <label class="block text-sm font-bold text-gray-700 mb-3">
                                             Printing Type
-                                            <button type="button" onclick="openLearnMoreModal('printing')" 
+                                            <button type="button" onclick="openLearnMoreModal('printing')"
                                                 class="ml-2 text-blue-500 text-xs">
                                                 <i class="fas fa-question-circle"></i> Learn More
                                             </button>
                                         </label>
                                         <div class="grid grid-cols-3 gap-3">
                                             <label class="cursor-pointer">
-                                                <input type="radio" name="printing-type" value="dye-sublimation" checked class="peer hidden">
-                                                <div class="border-2 border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 rounded-lg p-3 text-center">
+                                                <input type="radio" name="printing-type" value="dye-sublimation" checked
+                                                    class="peer hidden">
+                                                <div
+                                                    class="border-2 border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 rounded-lg p-3 text-center">
                                                     <p class="font-semibold text-sm">Dye-Sublimation</p>
                                                 </div>
                                             </label>
                                             <label class="cursor-pointer">
-                                                <input type="radio" name="printing-type" value="heat-transfer" class="peer hidden">
-                                                <div class="border-2 border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 rounded-lg p-3 text-center">
+                                                <input type="radio" name="printing-type" value="heat-transfer"
+                                                    class="peer hidden">
+                                                <div
+                                                    class="border-2 border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 rounded-lg p-3 text-center">
                                                     <p class="font-semibold text-sm">Heat Transfer</p>
                                                 </div>
                                             </label>
                                             <label class="cursor-pointer">
-                                                <input type="radio" name="printing-type" value="vinyl-print" class="peer hidden">
-                                                <div class="border-2 border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 rounded-lg p-3 text-center">
+                                                <input type="radio" name="printing-type" value="vinyl-print"
+                                                    class="peer hidden">
+                                                <div
+                                                    class="border-2 border-gray-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 rounded-lg p-3 text-center">
                                                     <p class="font-semibold text-sm">Vinyl Print</p>
                                                 </div>
                                             </label>
                                         </div>
                                     </div>
-
                                     <div>
+
                                         <label class="block text-sm font-bold text-gray-700 mb-2">Quantity</label>
-                                        <input type="number" id="quantity" name="quantity" min="1" value="1" 
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+
+                                        <input type="number" id="quantity" name="quantity" min="1" value="1"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            required>
+
                                     </div>
 
+
+
                                     <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-2">Additional Notes</label>
-                                        <textarea id="notes" name="notes" rows="3" 
+
+                                        <label class="block text-sm font-bold text-gray-700 mb-2">Additional
+                                            Notes</label>
+
+                                        <textarea id="notes" name="notes" rows="3"
                                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                             placeholder="Any special requirements or instructions..."></textarea>
+
                                     </div>
+
                                 </div>
 
-                                <button type="submit" 
+
+
+                                <button type="submit"
                                     class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg">
+
                                     <i class="fas fa-paper-plane mr-2"></i>
+
                                     Submit Custom Order
+
                                 </button>
+
                             </form>
+
                         </div>
+
                     </div>
+
                 </div>
+
             </div>
 
-            
+
+
+
+
+
 
             <!-- PRINTING ONLY SECTION -->
+
             <div id="printing-only-section" class="service-section hidden">
-                <button onclick="goBackToCategories()" class="mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2">
+
+                <button onclick="goBackToCategories()"
+                    class="mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2">
+
                     <i class="fas fa-arrow-left"></i>Back to Categories
+
                 </button>
+
                 <div class="bg-white rounded-2xl shadow-2xl p-8">
+
                     <div class="flex justify-between items-center mb-6">
+
                         <h2 class="text-3xl font-bold text-gray-900">Printing Only Service</h2>
-                        <button onclick="openServiceLearnMore('printing')" class="px-6 py-2 bg-green-100 text-green-700 rounded-lg font-semibold hover:bg-green-200 transition">
+
+                        <button onclick="openServiceLearnMore('printing')"
+                            class="px-6 py-2 bg-green-100 text-green-700 rounded-lg font-semibold hover:bg-green-200 transition">
+
                             <i class="fas fa-info-circle mr-2"></i>Learn More
+
                         </button>
+
                     </div>
+
+
 
                     <form id="printing-form" class="max-w-2xl mx-auto space-y-6">
+
                         <div class="bg-gradient-to-br from-green-50 to-teal-50 p-6 rounded-xl">
+
                             <i class="fas fa-print text-4xl text-green-500 mb-3"></i>
+
                             <p class="text-gray-700">
-                                Already have your jersey or apparel design? Upload your layout and provide the order details—quantity, fabric, and garment style. We’ll take care of professional printing with fast and reliable turnaround.
+
+                                Already have your jersey or apparel design? Upload your layout and provide the order
+                                details—quantity, fabric, and garment style. We’ll take care of professional printing
+                                with fast and reliable turnaround.
+
                             </p>
+
                         </div>
 
+
+
                         <div>
+
                             <label class="block text-sm font-bold text-gray-700 mb-3">
+
                                 Printing Method
-                                <button type="button" onclick="openLearnMoreModal('printing-methods')" 
+
+                                <button type="button" onclick="openLearnMoreModal('printing-methods')"
                                     class="ml-2 text-green-500 text-xs">
+
                                     <i class="fas fa-question-circle"></i> See Examples
+
                                 </button>
+
                             </label>
+
                             <div class="grid grid-cols-3 gap-3">
+
                                 <label class="cursor-pointer">
-                                    <input type="radio" name="print-method" value="dye-sublimation" checked class="peer hidden">
-                                    <div class="border-2 border-gray-300 peer-checked:border-green-500 peer-checked:bg-green-50 rounded-lg p-4 text-center">
+
+                                    <input type="radio" name="print-method" value="dye-sublimation" checked
+                                        class="peer hidden">
+
+                                    <div
+                                        class="border-2 border-gray-300 peer-checked:border-green-500 peer-checked:bg-green-50 rounded-lg p-4 text-center">
+
                                         <i class="fas fa-fire text-2xl text-green-500 mb-2"></i>
+
                                         <p class="font-semibold text-sm">Dye-Sublimation</p>
+
                                     </div>
+
                                 </label>
+
                                 <label class="cursor-pointer">
+
                                     <input type="radio" name="print-method" value="heat-transfer" class="peer hidden">
-                                    <div class="border-2 border-gray-300 peer-checked:border-green-500 peer-checked:bg-green-50 rounded-lg p-4 text-center">
+
+                                    <div
+                                        class="border-2 border-gray-300 peer-checked:border-green-500 peer-checked:bg-green-50 rounded-lg p-4 text-center">
+
                                         <i class="fas fa-temperature-high text-2xl text-green-500 mb-2"></i>
+
                                         <p class="font-semibold text-sm">Heat Transfer</p>
+
                                     </div>
+
                                 </label>
+
                                 <label class="cursor-pointer">
+
                                     <input type="radio" name="print-method" value="vinyl-print" class="peer hidden">
-                                    <div class="border-2 border-gray-300 peer-checked:border-green-500 peer-checked:bg-green-50 rounded-lg p-4 text-center">
+
+                                    <div
+                                        class="border-2 border-gray-300 peer-checked:border-green-500 peer-checked:bg-green-50 rounded-lg p-4 text-center">
+
                                         <i class="fas fa-layer-group text-2xl text-green-500 mb-2"></i>
+
                                         <p class="font-semibold text-sm">Vinyl Print</p>
+
                                     </div>
+
                                 </label>
+
                             </div>
+
                         </div>
 
+
+
                         <div>
+
                             <label class="block text-sm font-bold text-gray-700 mb-3">Upload Design File</label>
+
                             <input type="file" accept="image/*,.pdf" required
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+
                             <p class="text-xs text-gray-600 mt-2">
+
                                 <i class="fas fa-info-circle text-green-500 mr-1"></i>
+
                                 High-resolution files (300DPI+) recommended for best results
+
                             </p>
+
                         </div>
+
+
 
                         <div class="grid grid-cols-2 gap-4">
+
                             <div>
+
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Quantity</label>
+
                                 <input type="number" min="1" value="1" required
                                     class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+
                             </div>
+
                             <div>
+
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Garment Size</label>
+
                                 <select required class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+
                                     <option>Select size</option>
+
                                     <option>XS</option>
+
                                     <option>S</option>
+
                                     <option>M</option>
+
                                     <option>L</option>
+
                                     <option>XL</option>
+
                                     <option>XXL</option>
+
                                     <option>3XL</option>
+
                                     <option>Various Sizes</option>
+
                                 </select>
+
                             </div>
+
                         </div>
 
-                        <button type="submit" 
+
+
+                        <button type="submit"
                             class="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-4 rounded-xl font-bold text-lg hover:from-green-600 hover:to-teal-700 transition-all shadow-lg">
+
                             <i class="fas fa-paper-plane mr-2"></i>
+
                             Submit Printing Order
+
                         </button>
+
                     </form>
+
                 </div>
+
             </div>
+
         </div>
 
+
+
         <!-- Learn More Modals -->
-        <div id="modal-backdrop" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="if(event.target === this) closeServiceLearnMore()">
+
+        <div id="modal-backdrop"
+            class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4"
+            onclick="if(event.target === this) closeServiceLearnMore()">
+
             <!-- Customize Jersey Modal -->
-            <div id="modal-customize" class="modal-content hidden bg-white rounded-2xl max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
-                <div class="sticky top-0 bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white flex justify-between items-center z-10">
+
+            <div id="modal-customize"
+                class="modal-content hidden bg-white rounded-2xl max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+
+                <div
+                    class="sticky top-0 bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white flex justify-between items-center z-10">
+
                     <h3 class="text-2xl font-bold">
+
                         <i class="fas fa-tshirt mr-2"></i>Customize Jersey Service
+
                     </h3>
+
                     <button onclick="closeServiceLearnMore()" class="text-white hover:text-gray-200 text-2xl">
+
                         <i class="fas fa-times"></i>
+
                     </button>
+
                 </div>
+
                 <div class="p-8">
+
                     <div class="mb-6">
-                        <img src="https://via.placeholder.com/800x400?text=Jersey+Examples" alt="Jersey Examples" 
+
+                        <img src="https://via.placeholder.com/800x400?text=Jersey+Examples" alt="Jersey Examples"
                             class="w-full rounded-xl shadow-lg mb-4">
+
                         <p class="text-gray-700 text-lg leading-relaxed">
-                            Create fully customized jerseys for your team with our intuitive design tool. Choose from pre-made templates or upload your own design, customize colors, add text, logos, and manage individual team member details.
+
+                            Create fully customized jerseys for your team with our intuitive design tool. Choose from
+                            pre-made templates or upload your own design, customize colors, add text, logos, and manage
+                            individual team member details.
+
                         </p>
+
                     </div>
+
+
 
                     <div class="bg-blue-50 p-6 rounded-xl mb-6">
+
                         <h4 class="font-bold text-lg mb-4 text-blue-900">
+
                             <i class="fas fa-list-ol mr-2"></i>Step-by-Step Process
+
                         </h4>
+
                         <ol class="space-y-3 text-gray-700">
+
                             <li class="flex items-start">
-                                <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">1</span>
-                                <span><strong>Choose Design Method:</strong> Select from our template library or upload your own design file</span>
+
+                                <span
+                                    class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">1</span>
+
+                                <span><strong>Choose Design Method:</strong> Select from our template library or upload
+                                    your own design file</span>
+
                             </li>
+
                             <li class="flex items-start">
-                                <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">2</span>
-                                <span><strong>Customize Colors:</strong> Pick primary, secondary, and accent colors with live preview</span>
+
+                                <span
+                                    class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">2</span>
+
+                                <span><strong>Customize Colors:</strong> Pick primary, secondary, and accent colors with
+                                    live preview</span>
+
                             </li>
+
                             <li class="flex items-start">
-                                <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">3</span>
-                                <span><strong>Add Text & Logo:</strong> Enter team name, upload logo, and position elements precisely</span>
+
+                                <span
+                                    class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">3</span>
+
+                                <span><strong>Add Text & Logo:</strong> Enter team name, upload logo, and position
+                                    elements precisely</span>
+
                             </li>
+
                             <li class="flex items-start">
-                                <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">4</span>
-                                <span><strong>Select Printing:</strong> Choose between dye-sublimation or direct-to-garment printing</span>
+
+                                <span
+                                    class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">4</span>
+
+                                <span><strong>Select Printing:</strong> Choose between dye-sublimation or
+                                    direct-to-garment printing</span>
+
                             </li>
+
                             <li class="flex items-start">
-                                <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">5</span>
-                                <span><strong>Submit Order:</strong> Review live preview and submit your custom order</span>
+
+                                <span
+                                    class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">5</span>
+
+                                <span><strong>Submit Order:</strong> Review live preview and submit your custom
+                                    order</span>
+
                             </li>
+
                         </ol>
+
                     </div>
+
+
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
                         <div class="bg-gray-50 p-5 rounded-xl">
+
                             <h5 class="font-bold text-lg mb-3 text-gray-900">
+
                                 <i class="fas fa-clock text-blue-500 mr-2"></i>Turnaround Time
+
                             </h5>
-                            <p class="text-gray-700">Standard: 7-10 business days<br>Rush orders available upon request</p>
+
+                            <p class="text-gray-700">Standard: 7-10 business days<br>Rush orders available upon request
+                            </p>
+
                         </div>
+
                         <div class="bg-gray-50 p-5 rounded-xl">
+
                             <h5 class="font-bold text-lg mb-3 text-gray-900">
+
                                 <i class="fas fa-tag text-blue-500 mr-2"></i>Pricing
+
                             </h5>
+
                             <p class="text-gray-700">Starts at ₱350 per jersey<br>Volume discounts available</p>
+
                         </div>
+
                     </div>
+
+
 
                     <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-xl">
+
                         <h5 class="font-bold text-lg mb-2">What's Included:</h5>
+
                         <ul class="grid grid-cols-2 gap-2 text-sm">
+
                             <li><i class="fas fa-check mr-2"></i>Premium fabric</li>
+
                             <li><i class="fas fa-check mr-2"></i>Professional printing</li>
+
                             <li><i class="fas fa-check mr-2"></i>Custom colors</li>
+
                             <li><i class="fas fa-check mr-2"></i>Logo placement</li>
+
                             <li><i class="fas fa-check mr-2"></i>Names & numbers</li>
+
                             <li><i class="fas fa-check mr-2"></i>Design consultation</li>
+
                         </ul>
+
                     </div>
+
                 </div>
+
             </div>
 
-            
+
+
+
+
+
 
             <!-- Printing Only Modal -->
-            <div id="modal-printing" class="modal-content hidden bg-white rounded-2xl max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
-                <div class="sticky top-0 bg-gradient-to-r from-green-500 to-teal-600 p-6 text-white flex justify-between items-center z-10">
+
+            <div id="modal-printing"
+                class="modal-content hidden bg-white rounded-2xl max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+
+                <div
+                    class="sticky top-0 bg-gradient-to-r from-green-500 to-teal-600 p-6 text-white flex justify-between items-center z-10">
+
                     <h3 class="text-2xl font-bold">
+
                         <i class="fas fa-print mr-2"></i>Printing Only Service
+
                     </h3>
+
                     <button onclick="closeServiceLearnMore()" class="text-white hover:text-gray-200 text-2xl">
+
                         <i class="fas fa-times"></i>
+
                     </button>
+
                 </div>
+
                 <div class="p-8">
+
                     <div class="mb-6">
-                        <img src="https://via.placeholder.com/800x400?text=Printing+Methods+Examples" alt="Printing Examples" 
-                            class="w-full rounded-xl shadow-lg mb-4">
+
+                        <img src="https://via.placeholder.com/800x400?text=Printing+Methods+Examples"
+                            alt="Printing Examples" class="w-full rounded-xl shadow-lg mb-4">
+
                         <p class="text-gray-700 text-lg leading-relaxed">
-                            Already have your design? We'll bring it to life with professional-grade printing on premium garments. Choose from multiple printing methods for the perfect finish.
+
+                            Already have your design? We'll bring it to life with professional-grade printing on premium
+                            garments. Choose from multiple printing methods for the perfect finish.
+
                         </p>
+
                     </div>
 
+
+
                     <div class="bg-green-50 p-6 rounded-xl mb-6">
+
                         <h4 class="font-bold text-lg mb-4 text-green-900">
+
                             <i class="fas fa-print mr-2"></i>Printing Methods Explained
+
                         </h4>
+
                         <div class="space-y-4">
+
                             <div class="bg-white p-4 rounded-lg shadow-sm">
+
                                 <h5 class="font-bold text-green-700 mb-2">
+
                                     <i class="fas fa-fire mr-2"></i>Dye-Sublimation
+
                                 </h5>
+
                                 <p class="text-gray-700 text-sm mb-2">
-                                    Heat-activated dye permanently bonds with polyester fabric, creating vibrant, long-lasting prints that won't crack, peel, or fade. The ink becomes part of the fabric itself.
+
+                                    Heat-activated dye permanently bonds with polyester fabric, creating vibrant,
+                                    long-lasting prints that won't crack, peel, or fade. The ink becomes part of the
+                                    fabric itself.
+
                                 </p>
+
                                 <p class="text-xs text-gray-600 mb-2">
-                                    <strong>Best for:</strong> Full-color designs, sports jerseys, activewear, all-over prints
+
+                                    <strong>Best for:</strong> Full-color designs, sports jerseys, activewear, all-over
+                                    prints
+
                                 </p>
+
                                 <p class="text-xs text-gray-600">
+
                                     <strong>Fabric:</strong> Polyester only (100% polyester or poly-blend minimum 65%)
+
                                 </p>
+
                             </div>
+
                             <div class="bg-white p-4 rounded-lg shadow-sm">
+
                                 <h5 class="font-bold text-green-700 mb-2">
+
                                     <i class="fas fa-temperature-high mr-2"></i>Heat Transfer
+
                                 </h5>
+
                                 <p class="text-gray-700 text-sm mb-2">
-                                    Printed design is transferred onto fabric using heat and pressure. Offers excellent color vibrancy and works on various fabric types with a slightly raised texture.
+
+                                    Printed design is transferred onto fabric using heat and pressure. Offers excellent
+                                    color vibrancy and works on various fabric types with a slightly raised texture.
+
                                 </p>
+
                                 <p class="text-xs text-gray-600 mb-2">
-                                    <strong>Best for:</strong> Full-color graphics, photographs, complex designs, small quantities
+
+                                    <strong>Best for:</strong> Full-color graphics, photographs, complex designs, small
+                                    quantities
+
                                 </p>
+
                                 <p class="text-xs text-gray-600">
+
                                     <strong>Fabric:</strong> Cotton, polyester, cotton-poly blends
                                 </p>
                             </div>
@@ -760,7 +1310,9 @@
                                     <i class="fas fa-layer-group mr-2"></i>Vinyl Print
                                 </h5>
                                 <p class="text-gray-700 text-sm mb-2">
-                                    Cut vinyl material heat-pressed onto fabric. Creates durable, bold designs with solid colors and a glossy or matte finish. Perfect for text, numbers, and simple graphics.
+                                    Cut vinyl material heat-pressed onto fabric. Creates durable, bold designs with
+                                    solid colors and a glossy or matte finish. Perfect for text, numbers, and simple
+                                    graphics.
                                 </p>
                                 <p class="text-xs text-gray-600 mb-2">
                                     <strong>Best for:</strong> Names/numbers, team logos, simple text, single/few colors
@@ -778,23 +1330,31 @@
                         </h4>
                         <ol class="space-y-3 text-gray-700">
                             <li class="flex items-start">
-                                <span class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">1</span>
-                                <span><strong>Choose Method:</strong> Select the printing technique that best suits your design</span>
+                                <span
+                                    class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">1</span>
+                                <span><strong>Choose Method:</strong> Select the printing technique that best suits your
+                                    design</span>
                             </li>
                             <li class="flex items-start">
-                                <span class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">2</span>
-                                <span><strong>Upload Design:</strong> Provide your high-resolution design file (300DPI+ recommended)</span>
+                                <span
+                                    class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">2</span>
+                                <span><strong>Upload Design:</strong> Provide your high-resolution design file (300DPI+
+                                    recommended)</span>
                             </li>
                             <li class="flex items-start">
-                                <span class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">3</span>
+                                <span
+                                    class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">3</span>
                                 <span><strong>Select Specs:</strong> Choose garment size and quantity</span>
                             </li>
                             <li class="flex items-start">
-                                <span class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">4</span>
-                                <span><strong>Quality Check:</strong> We verify your file and confirm specs (1 business day)</span>
+                                <span
+                                    class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">4</span>
+                                <span><strong>Quality Check:</strong> We verify your file and confirm specs (1 business
+                                    day)</span>
                             </li>
                             <li class="flex items-start">
-                                <span class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">5</span>
+                                <span
+                                    class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3 flex-shrink-0">5</span>
                                 <span><strong>Production:</strong> Professional printing on premium garments</span>
                             </li>
                         </ol>
@@ -833,7 +1393,7 @@
 
     <div id="site-footer"></div>
     <script src="js/footer.js"></script>
-    
+
     <script>
         // === GLOBALS ===
         const API = 'https://fundamental-apparel-backend.onrender.com';  // Ngrok tunnel URL
@@ -842,7 +1402,7 @@
         let logoPosition = { x: 200, y: 350 };
         let logoImage = null;
         let teamMembers = [];
-        
+
         // Three.js 3D Variables
         let scene, camera, renderer, jerseyMesh;
         let isDragging = false;
@@ -855,29 +1415,30 @@
             { id: 'modern', name: 'Modern', image: 'placeholder-modern.jpg' },
             { id: 'classic', name: 'Classic', image: 'placeholder-classic.jpg' },
             { id: 'minimal', name: 'Minimal', image: 'placeholder-minimal.jpg' }
+
         ];
 
         // === TEAM MEMBERS MANAGEMENT ===
         function generateTeamMembers(quantity) {
             const container = document.getElementById('team-members-container');
+
             const countDisplay = document.getElementById('team-member-count');
-            
+
             if (!container || !countDisplay) return;
-            
+
             // Update count display
             countDisplay.textContent = quantity;
-            
+
             // Clear existing members
             container.innerHTML = '';
             teamMembers = [];
-            
+
             // Generate cards for each quantity
             for (let i = 0; i < quantity; i++) {
                 const memberId = Date.now() + i;
                 const memberCard = document.createElement('div');
                 memberCard.className = 'bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200';
                 memberCard.id = `member-${memberId}`;
-                
                 memberCard.innerHTML = `
                     <div class="flex justify-between items-center mb-3">
                         <h4 class="font-semibold text-sm text-gray-900">
@@ -911,16 +1472,19 @@
                         </div>
                     </div>
                 `;
-                
+
                 container.appendChild(memberCard);
                 teamMembers.push({ id: memberId });
+
             }
+
         }
 
         // Legacy functions kept for compatibility
         function addTeamMember() {
             // Deprecated - now auto-generated by quantity
             console.log('Team members are now auto-generated based on quantity');
+
         }
 
         function removeTeamMember(memberId) {
@@ -931,15 +1495,17 @@
         function getTeamMembersData() {
             const members = [];
             const cards = document.querySelectorAll('#team-members-container > div');
-            
+
             cards.forEach(card => {
                 members.push({
                     name: card.querySelector('.member-name').value,
                     number: card.querySelector('.member-number').value,
                     size: card.querySelector('.member-size').value
+
                 });
+
             });
-            
+
             return members;
         }
 
@@ -947,7 +1513,7 @@
         function toggleShortsOptions() {
             const includeShorts = document.getElementById('include-shorts').checked;
             const shortsOptions = document.getElementById('shorts-options');
-            
+
             if (includeShorts) {
                 shortsOptions.classList.remove('hidden');
             } else {
@@ -958,12 +1524,14 @@
         function toggleShortsDifferentOptions() {
             const isDifferent = document.querySelector('input[name="shorts-design"]:checked').value === 'different';
             const differentOptions = document.getElementById('shorts-different-options');
-            
+
             if (isDifferent) {
                 differentOptions.classList.remove('hidden');
             } else {
                 differentOptions.classList.add('hidden');
+
             }
+
         }
 
         // === TAB SWITCHING ===
@@ -971,57 +1539,70 @@
         function selectServiceCategory(category) {
             // If user selects Customize Jersey, redirect to the new professional customizer
             if (category === 'customize-jersey') {
+
                 window.location.href = 'customize-jersey-new.html';
+
                 return;
+
             }
+
             // Hide category selection screen
             document.getElementById('category-selection-screen').classList.add('hidden');
-            
+
             // HIDE tabs section entirely (don't show tabs)
             document.getElementById('service-tabs-section').classList.add('hidden');
-            
+
             // Show only the selected service section
             document.querySelectorAll('.service-section').forEach(section => {
+
                 section.classList.add('hidden');
+
             });
+
             document.getElementById(category + '-section').classList.remove('hidden');
-            
+
             // Scroll to top
             window.scrollTo(0, 0);
+
         }
 
         // Go back to category selection
         function goBackToCategories() {
+
             // Show category selection screen
             document.getElementById('category-selection-screen').classList.remove('hidden');
-            
+
             // Hide tabs section
             document.getElementById('service-tabs-section').classList.add('hidden');
-            
+
             // Hide all service sections
             document.querySelectorAll('.service-section').forEach(section => {
                 section.classList.add('hidden');
             });
-            
+
             // Scroll to top
             window.scrollTo(0, 0);
+
         }
 
         function switchServiceTab(tab) {
+
             // Hide all sections
             document.querySelectorAll('.service-section').forEach(section => {
                 section.classList.add('hidden');
+
             });
-            
+
             // Remove active state from all tabs
             document.querySelectorAll('.service-tab').forEach(btn => {
                 btn.classList.remove('active');
                 btn.classList.add('bg-white', 'text-gray-700');
+
             });
-            
+
             // Show selected section
             document.getElementById(tab + '-section').classList.remove('hidden');
-            
+
             // Activate clicked tab
             event.target.closest('.service-tab').classList.add('active');
             event.target.closest('.service-tab').classList.remove('bg-white', 'text-gray-700');
@@ -1031,20 +1612,24 @@
         function openServiceLearnMore(service) {
             const backdrop = document.getElementById('modal-backdrop');
             const modal = document.getElementById('modal-' + service);
-            
+
             backdrop.classList.remove('hidden');
             modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
+
         }
 
         function closeServiceLearnMore() {
+
             const backdrop = document.getElementById('modal-backdrop');
+
             backdrop.classList.add('hidden');
-            
+
             document.querySelectorAll('.modal-content').forEach(modal => {
                 modal.classList.add('hidden');
+
             });
-            
+
             document.body.style.overflow = '';
         }
 
@@ -1057,48 +1642,46 @@
         function initializeCanvas() {
             canvas = document.getElementById('jersey-preview');
             if (!canvas) return;
-            
+
             // Initialize Three.js Scene
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x1e3a8a);
-            
+
             // Camera setup
             camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000);
             camera.position.z = 5;
             camera.position.y = 0.5;
-            
+
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
             renderer.setSize(canvas.width, canvas.height);
             renderer.shadowMap.enabled = true;
-            
+
             // Lighting
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambientLight);
-            
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
             directionalLight.position.set(5, 10, 7.5);
             directionalLight.castShadow = true;
             scene.add(directionalLight);
-            
             const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
             fillLight.position.set(-5, 0, -5);
             scene.add(fillLight);
-            
+
             // Create 3D Jersey Model
             create3DJersey();
-            
+
             // Mouse controls for rotation
             canvas.addEventListener('mousedown', onMouseDown);
             canvas.addEventListener('mousemove', onMouseMove);
             canvas.addEventListener('mouseup', onMouseUp);
             canvas.addEventListener('mouseleave', onMouseUp);
-            
+
             // Touch controls for mobile
             canvas.addEventListener('touchstart', onTouchStart);
             canvas.addEventListener('touchmove', onTouchMove);
             canvas.addEventListener('touchend', onMouseUp);
-            
+
             // Setup event listeners for color changes
             document.getElementById('primary-color')?.addEventListener('input', update3DJerseyColors);
             document.getElementById('secondary-color')?.addEventListener('input', update3DJerseyColors);
@@ -1107,7 +1690,6 @@
             document.getElementById('text-font')?.addEventListener('change', update3DJerseyText);
             document.getElementById('text-size')?.addEventListener('change', update3DJerseyText);
             document.getElementById('logo-upload')?.addEventListener('change', handleLogoUpload);
-            
             // Toggle between customize and upload methods
             document.querySelectorAll('input[name="design-method"]').forEach(radio => {
                 radio.addEventListener('change', (e) => {
@@ -1120,46 +1702,43 @@
                     }
                 });
             });
-            
             // Start animation loop
             animate3D();
         }
-
         function create3DJersey() {
             // Create jersey geometry (simplified T-shirt shape)
             const jerseyGroup = new THREE.Group();
-            
+
             // Main body
             const bodyGeometry = new THREE.BoxGeometry(2, 2.5, 0.3);
-            const bodyMaterial = new THREE.MeshStandardMaterial({ 
+            const bodyMaterial = new THREE.MeshStandardMaterial({
                 color: 0x3B82F6,
                 roughness: 0.7,
                 metalness: 0.1
             });
+
             const bodyMesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
             jerseyGroup.add(bodyMesh);
-            
             // Sleeves (left and right)
             const sleeveGeometry = new THREE.BoxGeometry(1.2, 0.8, 0.25);
-            const sleeveMaterial = new THREE.MeshStandardMaterial({ 
+            const sleeveMaterial = new THREE.MeshStandardMaterial({
                 color: 0x3B82F6,
                 roughness: 0.7,
                 metalness: 0.1
             });
-            
+
             const leftSleeve = new THREE.Mesh(sleeveGeometry, sleeveMaterial);
             leftSleeve.position.set(-1.5, 0.7, 0);
             leftSleeve.rotation.z = Math.PI / 6;
             jerseyGroup.add(leftSleeve);
-            
             const rightSleeve = new THREE.Mesh(sleeveGeometry, sleeveMaterial);
             rightSleeve.position.set(1.5, 0.7, 0);
             rightSleeve.rotation.z = -Math.PI / 6;
             jerseyGroup.add(rightSleeve);
-            
+
             // Collar
             const collarGeometry = new THREE.CylinderGeometry(0.4, 0.5, 0.3, 32);
-            const collarMaterial = new THREE.MeshStandardMaterial({ 
+            const collarMaterial = new THREE.MeshStandardMaterial({
                 color: 0xFFFFFF,
                 roughness: 0.6,
                 metalness: 0.1
@@ -1167,10 +1746,10 @@
             const collar = new THREE.Mesh(collarGeometry, collarMaterial);
             collar.position.set(0, 1.3, 0);
             jerseyGroup.add(collar);
-            
+
             // Secondary stripe (center panel)
             const stripeGeometry = new THREE.BoxGeometry(0.8, 2.5, 0.31);
-            const stripeMaterial = new THREE.MeshStandardMaterial({ 
+            const stripeMaterial = new THREE.MeshStandardMaterial({
                 color: 0xFFFFFF,
                 roughness: 0.7,
                 metalness: 0.1
@@ -1178,23 +1757,22 @@
             const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
             stripe.position.set(0, 0, 0.001);
             jerseyGroup.add(stripe);
-            
+
             // Accent stripes (left and right)
             const accentGeometry = new THREE.BoxGeometry(0.1, 2.5, 0.32);
-            const accentMaterial = new THREE.MeshStandardMaterial({ 
+            const accentMaterial = new THREE.MeshStandardMaterial({
                 color: 0xF59E0B,
                 roughness: 0.6,
                 metalness: 0.2
             });
-            
+
             const leftAccent = new THREE.Mesh(accentGeometry, accentMaterial);
             leftAccent.position.set(-0.45, 0, 0.002);
             jerseyGroup.add(leftAccent);
-            
             const rightAccent = new THREE.Mesh(accentGeometry, accentMaterial);
             rightAccent.position.set(0.45, 0, 0.002);
             jerseyGroup.add(rightAccent);
-            
+
             // Store references for later updates
             jerseyGroup.userData = {
                 body: bodyMesh,
@@ -1205,18 +1783,17 @@
                 leftAccent: leftAccent,
                 rightAccent: rightAccent
             };
-            
+
             jerseyMesh = jerseyGroup;
             scene.add(jerseyMesh);
         }
 
         function update3DJerseyColors() {
             if (!jerseyMesh) return;
-            
             const primaryColor = document.getElementById('primary-color')?.value || '#3B82F6';
             const secondaryColor = document.getElementById('secondary-color')?.value || '#FFFFFF';
             const accentColor = document.getElementById('accent-color')?.value || '#F59E0B';
-            
+
             // Update colors
             jerseyMesh.userData.body.material.color.setStyle(primaryColor);
             jerseyMesh.userData.leftSleeve.material.color.setStyle(primaryColor);
@@ -1230,21 +1807,21 @@
         function update3DJerseyText() {
             // Create text sprite overlay (simplified - in production would use TextGeometry or canvas texture)
             const customText = document.getElementById('custom-text')?.value || '';
-            
+
             if (customText && jerseyMesh) {
                 // Remove old text if exists
                 const oldText = jerseyMesh.getObjectByName('textSprite');
                 if (oldText) jerseyMesh.remove(oldText);
-                
+
                 // Create canvas for text texture
                 const textCanvas = document.createElement('canvas');
                 const textCtx = textCanvas.getContext('2d');
                 textCanvas.width = 512;
                 textCanvas.height = 256;
-                
+
                 const textFont = document.getElementById('text-font')?.value || 'Arial';
                 const textSize = parseInt(document.getElementById('text-size')?.value || '36');
-                
+
                 // Draw text
                 textCtx.font = `bold ${textSize * 3}px ${textFont}`;
                 textCtx.fillStyle = '#FFFFFF';
@@ -1254,7 +1831,7 @@
                 textCtx.textBaseline = 'middle';
                 textCtx.strokeText(customText, 256, 128);
                 textCtx.fillText(customText, 256, 128);
-                
+
                 // Create sprite
                 const textTexture = new THREE.CanvasTexture(textCanvas);
                 const spriteMaterial = new THREE.SpriteMaterial({ map: textTexture });
@@ -1262,20 +1839,18 @@
                 textSprite.position.set(0, 0.3, 0.2);
                 textSprite.scale.set(1.5, 0.75, 1);
                 textSprite.name = 'textSprite';
-                
                 jerseyMesh.add(textSprite);
             }
         }
 
         function animate3D() {
             requestAnimationFrame(animate3D);
-            
+
             // Smooth rotation interpolation
             currentRotation.y += (targetRotation.y - currentRotation.y) * 0.1;
             if (jerseyMesh) {
                 jerseyMesh.rotation.y = currentRotation.y;
             }
-            
             renderer.render(scene, camera);
         }
 
@@ -1290,10 +1865,8 @@
 
         function onMouseMove(e) {
             if (!isDragging) return;
-            
             const deltaX = e.clientX - previousMousePosition.x;
             targetRotation.y += deltaX * 0.01;
-            
             previousMousePosition = {
                 x: e.clientX,
                 y: e.clientY
@@ -1314,23 +1887,19 @@
                 };
             }
         }
-
         function onTouchMove(e) {
             if (!isDragging || e.touches.length !== 1) return;
             e.preventDefault();
-            
             const deltaX = e.touches[0].clientX - previousMousePosition.x;
             targetRotation.y += deltaX * 0.01;
-            
             previousMousePosition = {
                 x: e.touches[0].clientX,
                 y: e.touches[0].clientY
             };
         }
-
         // Preset rotation buttons
         function rotate3DJersey(direction) {
-            switch(direction) {
+            switch (direction) {
                 case 'front':
                     targetRotation.y = 0;
                     break;
@@ -1345,35 +1914,32 @@
                     break;
             }
         }
-
         // Logo upload handler (updated for 3D)
         function handleLogoUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-            
             const reader = new FileReader();
             reader.onload = (event) => {
                 const img = new Image();
                 img.onload = () => {
                     logoImage = img;
                     document.getElementById('logo-controls')?.classList.remove('hidden');
-                    
+
                     // Add logo sprite to 3D jersey
                     if (jerseyMesh) {
+
                         // Remove old logo if exists
                         const oldLogo = jerseyMesh.getObjectByName('logoSprite');
                         if (oldLogo) jerseyMesh.remove(oldLogo);
-                        
+
                         // Create logo texture
                         const logoTexture = new THREE.Texture(img);
-                        logoTexture.needsUpdate = true;
-                        
+                        logoTexture.needsUpdate = true
                         const logoMaterial = new THREE.SpriteMaterial({ map: logoTexture });
                         const logoSprite = new THREE.Sprite(logoMaterial);
                         logoSprite.position.set(0, -0.4, 0.2);
                         logoSprite.scale.set(0.6, 0.6, 1);
                         logoSprite.name = 'logoSprite';
-                        
                         jerseyMesh.add(logoSprite);
                     }
                 };
@@ -1381,36 +1947,31 @@
             };
             reader.readAsDataURL(file);
         }
-
         // === POSITION CONTROL FUNCTIONS (Simplified for 3D) ===
         function moveText(direction) {
             if (!jerseyMesh) return;
             const textSprite = jerseyMesh.getObjectByName('textSprite');
             if (!textSprite) return;
-            
             const step = 0.05;
-            switch(direction) {
+            switch (direction) {
                 case 'up': textSprite.position.y += step; break;
                 case 'down': textSprite.position.y -= step; break;
                 case 'left': textSprite.position.x -= step; break;
                 case 'right': textSprite.position.x += step; break;
             }
         }
-
         function moveLogo(direction) {
             if (!jerseyMesh) return;
             const logoSprite = jerseyMesh.getObjectByName('logoSprite');
             if (!logoSprite) return;
-            
             const step = 0.05;
-            switch(direction) {
+            switch (direction) {
                 case 'up': logoSprite.position.y += step; break;
                 case 'down': logoSprite.position.y -= step; break;
                 case 'left': logoSprite.position.x -= step; break;
                 case 'right': logoSprite.position.x += step; break;
             }
         }
-
         function resetTextPosition() {
             if (!jerseyMesh) return;
             const textSprite = jerseyMesh.getObjectByName('textSprite');
@@ -1418,7 +1979,6 @@
                 textSprite.position.set(0, 0.3, 0.2);
             }
         }
-
         function resetLogoPosition() {
             if (!jerseyMesh) return;
             const logoSprite = jerseyMesh.getObjectByName('logoSprite');
@@ -1426,27 +1986,22 @@
                 logoSprite.position.set(0, -0.4, 0.2);
             }
         }
-
         // === FORM SUBMISSION ===
         async function handleJerseyFormSubmit(e) {
             e.preventDefault();
-            
             const token = localStorage.getItem('token');
             if (!token) {
                 alert('Please login to submit a custom order');
                 window.location.href = 'login.html';
                 return;
             }
-            
             const formData = new FormData(e.target);
             formData.append('serviceType', 'customize-jersey');
-            
             // Add team members data
             const teamMembersData = getTeamMembersData();
             if (teamMembersData.length > 0) {
                 formData.append('teamMembers', JSON.stringify(teamMembersData));
             }
-            
             // DEBUG: Log all FormData entries
             console.log('=== FORM SUBMISSION DEBUG ===');
             console.log('API URL:', `${API}/api/custom-orders`);
@@ -1456,7 +2011,6 @@
                 console.log(`  ${key}:`, value);
             }
             console.log('Team members:', teamMembersData);
-            
             try {
                 const response = await fetch(`${API}/api/custom-orders`, {
                     method: 'POST',
@@ -1465,13 +2019,10 @@
                     },
                     body: formData
                 });
-                
                 console.log('Response status:', response.status);
                 console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-                
                 const data = await response.json();
                 console.log('Response data:', data);
-                
                 if (data.success) {
                     alert('Custom order submitted successfully! We will contact you shortly.');
                     window.location.href = 'profile.html';
@@ -1485,31 +2036,27 @@
                 alert('Failed to submit order. Please try again. Error: ' + error.message);
             }
         }
-
         async function handleLayoutFormSubmit(e) {
             e.preventDefault();
-            
             const token = localStorage.getItem('token');
+
             if (!token) {
                 alert('Please login to submit a custom order');
                 window.location.href = 'login.html';
                 return;
             }
-            
             const formData = new FormData(e.target);
             formData.append('serviceType', 'layout-creation');
-            
             try {
                 const response = await fetch(`${API}/api/custom-orders`, {
                     method: 'POST',
                     headers: {
+
                         'Authorization': `Bearer ${token}`
                     },
                     body: formData
                 });
-                
                 const data = await response.json();
-                
                 if (data.success) {
                     alert('Layout creation request submitted! Our designers will contact you within 24 hours.');
                     window.location.href = 'profile.html';
@@ -1521,20 +2068,16 @@
                 alert('Failed to submit request. Please try again.');
             }
         }
-
         async function handlePrintingFormSubmit(e) {
             e.preventDefault();
-            
             const token = localStorage.getItem('token');
             if (!token) {
                 alert('Please login to submit a custom order');
                 window.location.href = 'login.html';
                 return;
             }
-            
             const formData = new FormData(e.target);
             formData.append('serviceType', 'printing-only');
-            
             try {
                 const response = await fetch(`${API}/api/custom-orders`, {
                     method: 'POST',
@@ -1543,9 +2086,7 @@
                     },
                     body: formData
                 });
-                
                 const data = await response.json();
-                
                 if (data.success) {
                     alert('Printing order submitted successfully! We will process your order shortly.');
                     window.location.href = 'profile.html';
@@ -1557,12 +2098,10 @@
                 alert('Failed to submit order. Please try again.');
             }
         }
-
         // === CART COUNT ===
         async function updateCartCount() {
             const token = localStorage.getItem('token');
             if (!token) return;
-            
             try {
                 const res = await fetch(`${API}/api/cart`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -1578,29 +2117,27 @@
                 console.error('Failed to load cart:', err);
             }
         }
-
         // === INITIALIZATION ===
         document.addEventListener('DOMContentLoaded', () => {
             // Initialize canvas
             initializeCanvas();
-            
-            // Setup form handlers
+
             document.getElementById('jersey-form')?.addEventListener('submit', handleJerseyFormSubmit);
             document.getElementById('layout-form')?.addEventListener('submit', handleLayoutFormSubmit);
             document.getElementById('printing-form')?.addEventListener('submit', handlePrintingFormSubmit);
-            
             // Quantity change listener - auto-generate team members
             const quantityInput = document.getElementById('quantity');
             if (quantityInput) {
                 // Generate initial team member(s)
                 generateTeamMembers(parseInt(quantityInput.value) || 1);
-                
                 // Listen for changes
                 quantityInput.addEventListener('change', (e) => {
+
                     const qty = parseInt(e.target.value) || 1;
+
                     generateTeamMembers(qty);
+
                 });
-                
                 quantityInput.addEventListener('input', (e) => {
                     const qty = parseInt(e.target.value) || 1;
                     if (qty > 0) {
@@ -1608,21 +2145,22 @@
                     }
                 });
             }
-            
             // Shorts checkbox
             document.getElementById('include-shorts')?.addEventListener('change', toggleShortsOptions);
-            
             // Shorts design radio buttons
             document.querySelectorAll('input[name="shorts-design"]').forEach(radio => {
+
                 radio.addEventListener('change', toggleShortsDifferentOptions);
             });
-            
             // Update cart count
+
             updateCartCount();
         });
     </script>
-
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
     <script src="js/chat.js"></script>
+
 </body>
+
 </html>

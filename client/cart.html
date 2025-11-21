@@ -3,74 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Shopping Cart</title>
+    <title>Your Cart - Fundamental Apparel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style> 
         body { font-family: 'Inter', sans-serif; } 
-        /* Style para sa quantity buttons */
+        
+        /* Custom Scrollbar */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Quantity Buttons */
         .qty-btn {
-            width: 2rem; /* w-8 */
-            height: 2rem; /* h-8 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #d1d5db; /* border-gray-300 */
-            border-radius: 0.375rem; /* rounded-md */
-            background-color: #f9fafb; /* bg-gray-50 */
-            color: #374151; /* text-gray-700 */
+            transition: all 0.2s;
         }
-        .qty-btn:hover {
-            background-color: #f3f4f6; /* hover:bg-gray-100 */
-        }
-        .qty-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .qty-btn:active {
+            transform: scale(0.95);
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-50 text-gray-900">
 
-    <header class="bg-white shadow-md sticky top-0 z-50">
+    <header class="bg-white border-b border-gray-100 sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="text-2xl font-bold text-gray-800"><a href="index.html">Fundamental</a></div>
-            <div class="flex items-center space-x-5">
-                <a href="index.html" class="text-gray-600 hover:text-indigo-600"><i class="fas fa-home"></i> <span class="hidden sm:inline">Home</span></a>
-                
-                <div id="auth-links-logged-out" class="flex items-center space-x-3">
-                    <a href="login.html" class="text-sm font-medium text-gray-700 hover:text-indigo-600">Log In</a>
-                    <a href="register.html" class="text-sm font-medium bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700">Register</a>
+            <a href="index.html" class="flex items-center gap-3 group">
+                <img src="images/logo.png" alt="Fundamental Logo" class="w-10 h-10 object-contain group-hover:opacity-80 transition">
+                <span class="text-xl font-extrabold text-gray-900 tracking-tight group-hover:text-indigo-600 transition">Fundamental</span>
+            </a>
+
+            <div class="hidden md:flex space-x-8 items-center font-medium text-sm">
+                <a href="index.html" class="text-gray-500 hover:text-indigo-600 transition">Home</a>
+                <a href="products.html" class="text-gray-500 hover:text-indigo-600 transition">Products</a>
+                <a href="services.html" class="text-gray-500 hover:text-indigo-600 transition">Services</a>
+                <a href="#" class="text-gray-500 hover:text-indigo-600 transition">About Us</a>
+                <a href="#" class="text-gray-500 hover:text-indigo-600 transition">FAQs</a>
+            </div>
+
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="cart.html" class="text-indigo-600 relative transition">
+                    <i class="fas fa-shopping-bag text-lg"></i>
+                    <span id="cart-count" class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+                </a>
+
+                <div id="auth-links-logged-out" class="flex items-center space-x-3 pl-4 border-l border-gray-200">
+                    <a href="login.html" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">Log In</a>
+                    <a href="register.html" class="text-sm font-bold bg-gray-900 text-white px-5 py-2.5 rounded-lg hover:bg-black transition shadow-sm">Sign Up</a>
                 </div>
 
-                <div id="auth-links-logged-in" class="hidden">
-                    <a href="profile.html" id="user-link" class="text-gray-600 hover:text-indigo-600">
-                        <i id="user-icon" class="fas fa-user-circle text-2xl"></i>
+                <div id="auth-links-logged-in" class="hidden pl-4 border-l border-gray-200">
+                    <a href="profile.html" id="user-link" class="text-gray-500 hover:text-indigo-600 transition flex items-center gap-2">
+                        <i class="fas fa-user-circle text-2xl"></i>
                     </a>
                 </div>
             </div>
+
+            <div class="md:hidden">
+                <button id="menu-btn" class="text-gray-800 focus:outline-none p-2"><i class="fas fa-bars text-xl"></i></button>
+            </div>
         </nav>
+
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 absolute w-full left-0 top-full shadow-lg z-40">
+            <div class="flex flex-col p-4 space-y-3">
+                <a href="index.html" class="text-gray-600 font-medium block py-2">Home</a>
+                <a href="products.html" class="text-gray-600 font-medium block py-2">Products</a>
+                <a href="services.html" class="text-gray-600 font-medium block py-2">Services</a>
+                <a href="#" class="text-gray-600 font-medium block py-2">About Us</a>
+                <a href="#" class="text-gray-600 font-medium block py-2">FAQs</a>
+                <hr class="border-gray-100">
+                <a href="cart.html" class="flex items-center text-indigo-600 font-medium py-2">
+                    <i class="fas fa-shopping-bag mr-3"></i> Cart (<span id="cart-count-mobile">0</span>)
+                </a>
+                <div id="mobile-auth-logged-out" class="flex flex-col gap-3 mt-2 pt-2 border-t border-gray-100">
+                    <a href="login.html" class="text-center w-full border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium">Log In</a>
+                    <a href="register.html" class="text-center w-full bg-gray-900 text-white py-2.5 rounded-lg font-bold">Sign Up</a>
+                </div>
+                <div id="mobile-auth-logged-in" class="hidden mt-2 pt-2 border-t border-gray-100">
+                    <a href="profile.html" class="flex items-center text-gray-600 font-medium py-2"><i class="fas fa-user-circle mr-3 text-xl"></i> My Profile</a>
+                </div>
+            </div>
+        </div>
     </header>
 
-    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="max-w-4xl mx-auto">
-            <h1 class="text-3xl font-bold text-gray-800 mb-8">Your Shopping Cart</h1>
-            <div id="cart-container" class="bg-white rounded-lg shadow-lg">
-                <p class="p-8 text-center text-gray-500">Loading your cart...</p>
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 min-h-[60vh]">
+        
+        <h1 class="text-3xl font-extrabold text-gray-900 mb-8">Shopping Cart</h1>
+
+        <div id="cart-layout" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <div class="lg:col-span-8">
+                <div id="cart-items-container" class="space-y-4">
+                    <p class="text-gray-500">Loading your cart...</p>
+                </div>
             </div>
+
+            <div class="lg:col-span-4">
+                <div id="order-summary" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:sticky lg:top-28">
+                    <h2 class="text-lg font-bold text-gray-900 mb-4">Order Summary</h2>
+                    
+                    <div class="flex justify-between items-center mb-4 text-gray-600">
+                        <span>Subtotal</span>
+                        <span id="subtotal-display" class="font-bold text-gray-900">₱0</span>
+                    </div>
+                    
+                    <div class="border-t border-gray-100 pt-4 mb-6">
+                        <div class="flex justify-between items-center">
+                            <span class="text-lg font-bold text-gray-900">Total</span>
+                            <span id="total-display" class="text-xl font-bold text-indigo-600">₱0</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1 text-right">Shipping & taxes calculated at checkout</p>
+                    </div>
+
+                    <button id="checkout-btn" class="w-full bg-gray-900 text-white font-bold py-4 rounded-xl hover:bg-black transition shadow-lg transform active:scale-[0.98] duration-200 flex justify-center items-center gap-2">
+                        Checkout <i class="fas fa-arrow-right"></i>
+                    </button>
+
+                    <div class="mt-6 text-center">
+                        <a href="products.html" class="text-sm text-gray-500 hover:text-indigo-600 font-medium transition">
+                            or Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
+            // --- Header & Auth Logic ---
+            const menuBtn = document.getElementById('menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (menuBtn) menuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+
             const token = localStorage.getItem('token');
-            const cartContainer = document.getElementById('cart-container');
-            
-            // NEW: Selectors for auth links
             const authLoggedOut = document.getElementById('auth-links-logged-out');
             const authLoggedIn = document.getElementById('auth-links-logged-in');
-
-            let currentCartData = null;
+            const mobileAuthLoggedOut = document.getElementById('mobile-auth-logged-out');
+            const mobileAuthLoggedIn = document.getElementById('mobile-auth-logged-in');
+            const cartCountSpan = document.getElementById('cart-count');
+            const cartCountMobile = document.getElementById('cart-count-mobile');
 
             if (!token) {
                 alert('Please log in to view your cart.');
@@ -78,14 +150,17 @@
                 return;
             }
 
-            // --- NEW: Update UI because user is logged in ---
+            // Update Auth UI
             if (authLoggedOut) authLoggedOut.classList.add('hidden');
+            if (mobileAuthLoggedOut) mobileAuthLoggedOut.classList.add('hidden');
             if (authLoggedIn) authLoggedIn.classList.remove('hidden');
-            // --- End NEW ---
+            if (mobileAuthLoggedIn) mobileAuthLoggedIn.classList.remove('hidden');
 
+            // --- Cart Logic ---
+            const cartItemsContainer = document.getElementById('cart-items-container');
+            let currentCartData = null;
 
             async function apiRequest(path, options = {}) {
-                // ... (ang apiRequest function mo ay pareho pa rin) ...
                 options.headers = { ...options.headers, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
                 const res = await fetch(`https://fundamental-apparel-backend.onrender.com${path}`, options);
                 if (res.status === 401) {
@@ -94,89 +169,119 @@
                     throw new Error('Unauthorized');
                 }
                 const json = await res.json();
-                if (!json.success) {
-                    throw new Error(json.msg || 'API Error');
-                }
+                if (!json.success) throw new Error(json.msg || 'API Error');
                 return json.data;
             }
 
-            // ... (ang natitirang JS mo ay pareho pa rin) ...
             function getCheckedItemIds() {
                 return new Set(
                     Array.from(document.querySelectorAll('.cart-item-checkbox:checked'))
                          .map(cb => cb.dataset.itemId)
                 );
             }
+
             function applyCheckedState(checkedItemIds) {
                 document.querySelectorAll('.cart-item-checkbox').forEach(cb => {
                     cb.checked = checkedItemIds.has(cb.dataset.itemId);
                 });
                 updateSubtotal();
             }
+
             async function fetchCart() {
                 try {
                     const cartData = await apiRequest('/api/cart');
                     currentCartData = cartData;
                     renderCart(cartData);
+                    // Update Header Count
+                    if (cartData.items) {
+                        const count = cartData.items.length;
+                        if(cartCountSpan) cartCountSpan.textContent = count;
+                        if(cartCountMobile) cartCountMobile.textContent = count;
+                    }
                 } catch (error) {
-                    cartContainer.innerHTML = `<p class="p-8 text-center text-red-500">${error.message}</p>`;
+                    cartItemsContainer.innerHTML = `<p class="p-8 text-center text-red-500">${error.message}</p>`;
                 }
             }
+
             function renderCart(cartData) {
                 if (!cartData || !cartData.items || cartData.items.length === 0) {
-                    cartContainer.innerHTML = `<div class="p-8 text-center"><h2 class="text-2xl font-semibold">Your cart is empty</h2><a href="index.html" class="mt-4 inline-block bg-indigo-600 text-white font-bold py-2 px-4 rounded-md">Start Shopping</a></div>`;
+                    // Empty State
+                    document.getElementById('cart-layout').innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-16 text-center">
+                            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                                <i class="fas fa-shopping-basket text-3xl text-gray-400"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
+                            <p class="text-gray-500 mb-8">Looks like you haven't added anything yet.</p>
+                            <a href="products.html" class="px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-lg">
+                                Start Shopping
+                            </a>
+                        </div>
+                    `;
                     return;
                 }
+
                 const itemsHtml = cartData.items.map(item => {
                     const product = item.product;
                     if (!product) return '';
                     const price = item.price ?? product.price ?? 0;
                     const quantity = item.quantity ?? 0;
+                    
                     return `
-                        <div class="flex items-center justify-between p-4 border-b">
-                                        <div class="flex items-center space-x-4">
-                                                                <input type="checkbox" class="cart-item-checkbox h-5 w-5 rounded" data-item-id="${item._id}" checked>
-                                                                <img src="${product.imageUrl}" alt="${product.name}" class="w-16 h-16 rounded-md">
-                                                                <div>
-                                                                    <p class="font-semibold">${product.name}</p>
-                                                                    <p class="text-sm text-gray-500">₱${price.toLocaleString()}</p>
-                                                                    ${item.size ? `<p class="text-sm text-gray-500">Size: ${item.size}</p>` : ''}
-                                                                    ${item.color ? `<p class="text-sm text-gray-500">Color: ${item.color}</p>` : ''}
-                                                                </div>
-                                                        </div>
-                            <div class="flex items-center space-x-4 sm:space-x-6">
-                                <div class="flex items-center space-x-2">
-                                    <button class="qty-btn qty-decrease" data-item-id="${item._id}" ${quantity <= 1 ? 'disabled' : ''}>-</button>
-                                    <span class="px-2 font-medium">${quantity}</span>
-                                    <button class="qty-btn qty-increase" data-item-id="${item._id}">+</button>
+                        <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 transition hover:shadow-md">
+                            <div class="flex items-center gap-4 w-full sm:w-auto">
+                                <input type="checkbox" class="cart-item-checkbox w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer" data-item-id="${item._id}" checked>
+                                <div class="w-20 h-20 sm:w-24 sm:h-24 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100">
+                                    <img src="${product.imageUrl}" alt="${product.name}" class="w-full h-full object-cover">
                                 </div>
-                                <p class="font-semibold hidden sm:block">₱${(price * quantity).toLocaleString()}</p>
-                                <button data-item-id="${item._id}" class="remove-item-btn text-gray-400 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+
+                            <div class="flex-1 w-full">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h3 class="font-bold text-gray-900 text-lg leading-tight">${product.name}</h3>
+                                    <button data-item-id="${item._id}" class="remove-item-btn text-gray-400 hover:text-red-500 transition p-1">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                                <p class="text-indigo-600 font-bold mb-2">₱${price.toLocaleString()}</p>
+                                
+                                <div class="flex flex-wrap gap-2 text-xs text-gray-500 mb-4">
+                                    ${item.size ? `<span class="bg-gray-100 px-2 py-1 rounded border border-gray-200">Size: ${item.size}</span>` : ''}
+                                    ${item.color ? `<span class="bg-gray-100 px-2 py-1 rounded border border-gray-200">Color: ${item.color}</span>` : ''}
+                                </div>
+
+                                <div class="flex justify-between items-center sm:justify-start sm:gap-6">
+                                    <div class="flex items-center border border-gray-300 rounded-lg">
+                                        <button class="qty-btn qty-decrease w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded-l-lg" data-item-id="${item._id}" ${quantity <= 1 ? 'disabled' : ''}>-</button>
+                                        <span class="w-10 text-center font-medium text-sm">${quantity}</span>
+                                        <button class="qty-btn qty-increase w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded-r-lg" data-item-id="${item._id}">+</button>
+                                    </div>
+                                    <div class="text-right sm:hidden">
+                                        <p class="font-bold text-gray-900">Total: ₱${(price * quantity).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="hidden sm:block text-right min-w-[100px]">
+                                <p class="text-sm text-gray-500 mb-1">Total</p>
+                                <p class="font-bold text-gray-900 text-lg">₱${(price * quantity).toLocaleString()}</p>
                             </div>
                         </div>
                     `;
                 }).join('');
-                cartContainer.innerHTML = `
-                    <div class="divide-y">${itemsHtml}</div>
-                    <div class="p-6 bg-gray-50">
-                        <div class="flex justify-end items-center">
-                            <span class="text-lg font-medium">Subtotal (Selected):</span>
-                            <span id="subtotal-display" class="text-2xl font-bold ml-4">₱0</span>
-                        </div>
-                        <div class="mt-6 flex justify-end">
-                            <button id="checkout-btn" class="bg-green-500 text-white font-bold py-3 px-8 rounded-md">
-                                Proceed to Checkout
-                            </button>
-                        </div>
-                    </div>
-                `;
+
+                cartItemsContainer.innerHTML = itemsHtml;
                 updateSubtotal();
             }
+
             function updateSubtotal() {
                 const subtotalDisplay = document.getElementById('subtotal-display');
+                const totalDisplay = document.getElementById('total-display');
                 if (!subtotalDisplay || !currentCartData) return;
+                
                 const checkboxes = document.querySelectorAll('.cart-item-checkbox:checked');
                 let subtotal = 0;
+                
                 checkboxes.forEach(checkbox => {
                     const itemId = checkbox.dataset.itemId;
                     const item = currentCartData.items.find(i => i._id === itemId);
@@ -186,44 +291,56 @@
                         subtotal += (price * quantity);
                     }
                 });
-                subtotalDisplay.textContent = `₱${subtotal.toLocaleString()}`;
+                
+                const formatted = `₱${subtotal.toLocaleString()}`;
+                subtotalDisplay.textContent = formatted;
+                if(totalDisplay) totalDisplay.textContent = formatted;
             }
-            cartContainer.addEventListener('click', async (event) => {
+
+            // Event Delegation
+            cartItemsContainer?.addEventListener('click', async (event) => {
                 const target = event.target;
+                
+                // Remove
                 const removeButton = target.closest('.remove-item-btn');
                 if (removeButton) {
                     const itemId = removeButton.dataset.itemId;
-                    if (confirm('Are you sure you want to remove this item?')) {
+                    if (confirm('Remove this item from cart?')) {
                         await handleRemoveItem(itemId);
                     }
                     return;
                 }
+
+                // Checkbox
                 if (target.classList.contains('cart-item-checkbox')) {
                     updateSubtotal();
                     return;
                 }
+
+                // Quantity
                 const qtyBtn = target.closest('.qty-btn');
                 if (qtyBtn) {
                     const itemId = qtyBtn.dataset.itemId;
                     const item = currentCartData.items.find(i => i._id === itemId);
                     if (!item) return;
+                    
                     let newQuantity = item.quantity;
                     if (qtyBtn.classList.contains('qty-decrease')) {
                         newQuantity = Math.max(1, item.quantity - 1);
                     } else if (qtyBtn.classList.contains('qty-increase')) {
                         newQuantity = item.quantity + 1;
                     }
+                    
                     if (newQuantity !== item.quantity) {
                         await handleUpdateQuantity(itemId, newQuantity);
                     }
                     return;
                 }
-                const checkoutBtn = target.closest('#checkout-btn');
-                if (checkoutBtn) {
-                    handleCheckout();
-                    return;
-                }
             });
+
+            // Checkout Listener
+            document.getElementById('checkout-btn')?.addEventListener('click', handleCheckout);
+
             async function handleRemoveItem(itemId) {
                 const checkedIds = getCheckedItemIds();
                 try {
@@ -231,10 +348,9 @@
                     currentCartData = updatedCart;
                     renderCart(updatedCart);
                     applyCheckedState(checkedIds);
-                } catch (error) {
-                    alert(error.message);
-                }
+                } catch (error) { alert(error.message); }
             }
+
             async function handleUpdateQuantity(itemId, newQuantity) {
                 const checkedIds = getCheckedItemIds();
                 try {
@@ -245,10 +361,9 @@
                     currentCartData = updatedCart;
                     renderCart(updatedCart);
                     applyCheckedState(checkedIds);
-                } catch (error) {
-                    alert(error.message);
-                }
+                } catch (error) { alert(error.message); }
             }
+
             function handleCheckout() {
                 const selectedCheckboxes = document.querySelectorAll('.cart-item-checkbox:checked');
                 if (selectedCheckboxes.length === 0) {
@@ -259,13 +374,15 @@
                 localStorage.setItem('checkoutItemIds', JSON.stringify(selectedItemIds));
                 window.location.href = 'checkout.html';
             }
+
             fetchCart();
         });
     </script>
 
-    <!-- Socket.io Client -->
+    <div id="site-footer"></div>
+    <script src="js/footer.js"></script>
+
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <!-- Chat Widget -->
     <script src="js/chat.js"></script>
 </body>
 </html>

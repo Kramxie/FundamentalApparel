@@ -461,6 +461,21 @@
                                 class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                                 placeholder="S, M, L, XL, XXL"
                             />
+                            <!-- Per-size inventory controls -->
+                            <div id="per-size-section" class="mt-3 hidden" aria-hidden="true">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <input id="sizes-generate" placeholder="S, M, L" class="flex-1 px-3 py-2 border rounded" />
+                                    <button type="button" id="generate-sizes-btn" class="px-3 py-2 bg-indigo-600 text-white rounded">Generate</button>
+                                    <button type="button" id="add-size-row" class="px-3 py-2 bg-green-600 text-white rounded">Add Row</button>
+                                    <button type="button" id="clear-sizes" class="px-3 py-2 bg-red-600 text-white rounded">Clear</button>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <input id="apply-qty-input" type="number" min="0" placeholder="Qty" class="w-24 px-3 py-2 border rounded" />
+                                    <button type="button" id="apply-qty-btn" class="px-3 py-2 bg-indigo-500 text-white rounded">Apply to selected</button>
+                                </div>
+                                <div id="sizes-rows" class="space-y-2"></div>
+                                <input type="hidden" id="sizesInventoryHidden" name="sizesInventory">
+                            </div>
                         </div>
 
                         <!-- Colors -->
@@ -629,17 +644,59 @@
             // Product fields toggle
             const isProductCheckbox = document.getElementById('is-product-checkbox');
             const productFields = document.getElementById('product-fields');
-            isProductCheckbox.addEventListener('change', () => {
-                if (isProductCheckbox.checked) {
-                    productFields.classList.remove('hidden');
-                } else {
-                    productFields.classList.add('hidden');
-                }
-            });
+                isProductCheckbox.addEventListener('change', () => {
+                    const perSizeSection = document.getElementById('per-size-section');
+                    if (isProductCheckbox.checked) {
+                        productFields.classList.remove('hidden');
+                        perSizeSection?.classList.remove('hidden');
+                    } else {
+                        productFields.classList.add('hidden');
+                        perSizeSection?.classList.add('hidden');
+                    }
+                });
 
             // Image preview listeners
             document.getElementById('product-image').addEventListener('change', handleMainImagePreview);
             document.getElementById('product-gallery').addEventListener('change', handleGalleryPreview);
+
+            // Per-size controls
+            const sizesRowsContainer = document.getElementById('sizes-rows');
+            const sizesGenerateInput = document.getElementById('sizes-generate');
+            const generateSizesBtn = document.getElementById('generate-sizes-btn');
+            const addSizeRowBtn = document.getElementById('add-size-row');
+            const clearSizesBtn = document.getElementById('clear-sizes');
+            const applyQtyInput = document.getElementById('apply-qty-input');
+            const applyQtyBtn = document.getElementById('apply-qty-btn');
+
+            generateSizesBtn?.addEventListener('click', () => {
+                const sizesText = (sizesGenerateInput?.value || '');
+                const sizes = sizesText.split(',').map(s => s.trim()).filter(Boolean);
+                const obj = {};
+                sizes.forEach(s => { obj[s] = obj[s] || 0; });
+                renderSizeRows(obj);
+            });
+
+            addSizeRowBtn?.addEventListener('click', () => {
+                renderSizeRows(Object.assign(getSizesInventoryObject(), { '': 0 }));
+                const last = sizesRowsContainer?.querySelector('div:last-child [data-size-input]');
+                if (last) last.focus();
+            });
+
+            clearSizesBtn?.addEventListener('click', () => {
+                if (sizesRowsContainer) sizesRowsContainer.innerHTML = '';
+            });
+
+            applyQtyBtn?.addEventListener('click', () => {
+                const v = Number(applyQtyInput?.value || 0);
+                const rows = sizesRowsContainer?.querySelectorAll('div') || [];
+                rows.forEach(r => {
+                    const chk = r.querySelector('[data-select]');
+                    const qtyInput = r.querySelector('[data-qty-input]');
+                    if (chk && chk.checked && qtyInput) {
+                        qtyInput.value = Math.max(0, Math.floor(v));
+                    }
+                });
+            });
 
             // Inventory table: toggle full per-size list
             const inventoryTbody = document.getElementById('inventory-tbody');
@@ -759,6 +816,43 @@
             
             // Trigger preview update
             handleGalleryPreview({ target: input });
+        }
+
+        // Per-size render helpers (copied/adapted from add-product helpers)
+        function renderSizeRows(obj) {
+            const sizesRowsContainer = document.getElementById('sizes-rows');
+            if (!sizesRowsContainer) return;
+            sizesRowsContainer.innerHTML = '';
+            const data = obj || {};
+            Object.keys(data).forEach(size => {
+                const qty = data[size];
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2';
+                row.innerHTML = `
+                    <input data-select type="checkbox" class="h-4 w-4" />
+                    <input class="flex-1 border rounded p-2" data-size-input type="text" value="${size}" />
+                    <input class="w-24 border rounded p-2" data-qty-input type="number" min="0" value="${Number(qty)||0}" />
+                    <button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>
+                `;
+                row.querySelector('[data-remove]').addEventListener('click', () => { row.remove(); });
+                sizesRowsContainer.appendChild(row);
+            });
+        }
+
+        function getSizesInventoryObject() {
+            const obj = {};
+            const sizesRowsContainer = document.getElementById('sizes-rows');
+            if (!sizesRowsContainer) return obj;
+            const rows = sizesRowsContainer.querySelectorAll('div');
+            rows.forEach(row => {
+                const sizeInput = row.querySelector('[data-size-input]');
+                const qtyInput = row.querySelector('[data-qty-input]');
+                if (!sizeInput || !qtyInput) return;
+                const size = String(sizeInput.value||'').trim();
+                const qty = Number(qtyInput.value||0);
+                if (size) obj[size] = Math.max(0, Math.floor(qty));
+            });
+            return obj;
         }
 
         // Load inventory data
@@ -1051,6 +1145,16 @@
                         galleryPreview.innerHTML = '';
                         galleryPreview.classList.add('hidden');
                     }
+                    // Populate per-size inventory if present
+                    if (data.sizesInventory && typeof renderSizeRows === 'function') {
+                        try {
+                            renderSizeRows(data.sizesInventory);
+                            document.getElementById('per-size-section')?.classList.remove('hidden');
+                        } catch (e) { /* ignore */ }
+                    } else {
+                        const sr = document.getElementById('sizes-rows');
+                        if (sr) sr.innerHTML = '';
+                    }
                 } else {
                     productFields.classList.add('hidden');
                     // Clear product fields
@@ -1104,7 +1208,19 @@
             // Append basic fields
             formData.append('name', document.getElementById('item-name').value.trim());
             formData.append('type', document.getElementById('item-type').value);
-            formData.append('quantity', parseFloat(document.getElementById('item-quantity').value));
+            // Quantity: prefer sum of per-size inventory when provided
+            let initialQuantity = parseFloat(document.getElementById('item-quantity').value) || 0;
+            let sizesInventoryObj = {};
+            if (typeof getSizesInventoryObject === 'function') {
+                try { sizesInventoryObj = getSizesInventoryObject(); } catch (e) { sizesInventoryObj = {}; }
+            }
+            if (sizesInventoryObj && Object.keys(sizesInventoryObj).length > 0) {
+                const total = Object.values(sizesInventoryObj).reduce((a, b) => a + Number(b || 0), 0);
+                formData.append('quantity', Number(total));
+                formData.append('sizesInventory', JSON.stringify(sizesInventoryObj));
+            } else {
+                formData.append('quantity', initialQuantity);
+            }
             formData.append('unit', document.getElementById('item-unit').value.trim());
             formData.append('price', parseFloat(document.getElementById('item-price').value));
             formData.append('lowStockThreshold', parseInt(document.getElementById('item-threshold').value));
