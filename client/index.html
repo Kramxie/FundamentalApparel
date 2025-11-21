@@ -1,143 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fundamental Apparel - Custom Jersey & Printing Services</title>
+    <title>Fundamental Apparel - Redefine Your Style</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Hide Scrollbar */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 
 <body class="bg-gray-50">
 
-    <!-- Header Section -->
-    <header class="bg-white shadow-md sticky top-0 z-50">
+    <header class="bg-white border-b border-gray-100 sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="text-2xl font-bold text-gray-800"><a href="index.html">Fundamental</a></div>
-            <div class="hidden md:flex space-x-8 items-center">
-                <a href="index.html" class="text-gray-800 font-semibold">Home</a>
-                <a href="products.html" class="text-gray-600 hover:text-indigo-600">Products</a>
-                <a href="services.html" class="text-gray-600 hover:text-indigo-600">Services</a>
-                <a href="#" class="text-gray-600 hover:text-indigo-600">About</a>
-                <a href="#" class="text-gray-600 hover:text-indigo-600">Contact</a>
+            
+            <a href="index.html" class="flex items-center gap-3 group">
+                <img src="images/logo.png" alt="Fundamental Logo" class="w-10 h-10 object-contain group-hover:opacity-80 transition">
+                <span class="text-xl font-extrabold text-gray-900 tracking-tight group-hover:text-indigo-600 transition">Fundamental</span>
+            </a>
+
+            <div class="hidden md:flex space-x-8 items-center font-medium text-sm">
+                <a href="index.html" class="text-indigo-600 font-semibold">Home</a>
+                <a href="products.html" class="text-gray-500 hover:text-indigo-600 transition">Products</a>
+                <a href="services.html" class="text-gray-500 hover:text-indigo-600 transition">Services</a>
+                <a href="#" class="text-gray-500 hover:text-indigo-600 transition">About</a>
+                <a href="#" class="text-gray-500 hover:text-indigo-600 transition">Contact</a>
             </div>
-            <div class="hidden md:flex items-center space-x-5">
-                <button class="text-gray-600 hover:text-indigo-600"><i class="fas fa-search"></i></button>
-                <a href="cart.html" class="text-gray-600 hover:text-indigo-600 relative">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span id="cart-count"
-                        class="absolute -top-2 -right-3 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+
+            <div class="hidden md:flex items-center space-x-6">
+                <button class="text-gray-400 hover:text-indigo-600 transition"><i class="fas fa-search text-lg"></i></button>
+                
+                <a href="cart.html" class="text-gray-400 hover:text-indigo-600 relative transition">
+                    <i class="fas fa-shopping-bag text-lg"></i>
+                    <span id="cart-count" class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
                 </a>
 
-                <div id="auth-links-logged-out" class="flex items-center space-x-3">
-                    <a href="login.html" class="text-sm font-medium text-gray-700 hover:text-indigo-600">Log In</a>
-                    <a href="register.html"
-                        class="text-sm font-medium bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700">Register</a>
+                <div id="auth-links-logged-out" class="flex items-center space-x-3 pl-4 border-l border-gray-200">
+                    <a href="login.html" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">Log In</a>
+                    <a href="register.html" class="text-sm font-bold bg-gray-900 text-white px-5 py-2.5 rounded-lg hover:bg-black transition shadow-sm transform hover:scale-105 duration-200">Sign Up</a>
                 </div>
 
-                <div id="auth-links-logged-in" class="hidden">
-                    <a href="profile.html" id="user-link" class="text-gray-600 hover:text-indigo-600">
+                <div id="auth-links-logged-in" class="hidden pl-4 border-l border-gray-200">
+                    <a href="profile.html" id="user-link" class="text-gray-500 hover:text-indigo-600 transition flex items-center gap-2">
                         <i id="user-icon" class="fas fa-user-circle text-2xl"></i>
                     </a>
                 </div>
             </div>
-            <!-- Hamburger Button -->
+
             <div class="md:hidden">
-                <button id="menu-btn" class="text-gray-800 focus:outline-none">
-                    <i class="fas fa-bars text-2xl"></i>
+                <button id="menu-btn" class="text-gray-800 focus:outline-none p-2">
+                    <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
         </nav>
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white shadow-md">
-            <a href="index.html" class="block py-2 px-4 text-gray-800 font-semibold">Home</a>
-            <a href="products.html" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">Products</a>
-            <a href="services.html" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">Services</a>
-            <a href="#" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">About</a>
-            <a href="#" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">Contact</a>
-            
-            <!-- Mobile Menu Actions -->
-            <div class="border-t border-gray-200 mt-2 pt-2">
-                <a href="cart.html" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">
-                    <i class="fas fa-shopping-cart mr-2"></i>Cart <span id="cart-count-mobile" class="ml-1 bg-indigo-600 text-white text-xs rounded-full px-2 py-0.5">0</span>
+
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 absolute w-full left-0 top-full shadow-lg z-40">
+            <div class="flex flex-col p-4 space-y-3">
+                <a href="index.html" class="text-indigo-600 font-semibold block py-2">Home</a>
+                <a href="products.html" class="text-gray-600 font-medium block py-2">Products</a>
+                <a href="services.html" class="text-gray-600 font-medium block py-2">Services</a>
+                <hr class="border-gray-100">
+                <a href="cart.html" class="flex items-center text-gray-600 py-2">
+                    <i class="fas fa-shopping-bag mr-3"></i> Cart (<span id="cart-count-mobile">0</span>)
                 </a>
                 
-                <div id="mobile-auth-logged-out">
-                    <a href="login.html" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Log In
-                    </a>
-                    <a href="register.html" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">
-                        <i class="fas fa-user-plus mr-2"></i>Register
-                    </a>
+                <div id="mobile-auth-logged-out" class="flex flex-col gap-3 mt-2 pt-2 border-t border-gray-100">
+                    <a href="login.html" class="text-center w-full border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium">Log In</a>
+                    <a href="register.html" class="text-center w-full bg-gray-900 text-white py-2.5 rounded-lg font-bold">Sign Up</a>
                 </div>
                 
-                <div id="mobile-auth-logged-in" class="hidden">
-                    <a href="profile.html" class="block py-2 px-4 text-gray-600 hover:text-indigo-600">
-                        <i class="fas fa-user-circle mr-2"></i>Profile
+                <div id="mobile-auth-logged-in" class="hidden mt-2 pt-2 border-t border-gray-100">
+                    <a href="profile.html" class="flex items-center text-gray-600 font-medium py-2">
+                        <i class="fas fa-user-circle mr-3 text-xl"></i> My Profile
                     </a>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="bg-indigo-100">
-        <div class="container mx-auto px-4 py-12 md:py-20 text-center">
-            <h1 class="text-3xl md:text-5xl font-extrabold text-gray-800">Welcome to Fundamental</h1>
-            <p class="mt-3 md:mt-4 text-base md:text-lg text-gray-600">Discover the best deals and exclusive offers.</p>
-            <a href="products.html"
-                class="mt-6 md:mt-8 inline-block bg-indigo-600 text-white font-bold py-2.5 px-6 md:py-3 md:px-8 rounded-md hover:bg-indigo-700 transition text-sm md:text-base">Shop
-                Now</a>
-        </div>
-    </section>
+    <section class="bg-white overflow-hidden">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col-reverse lg:flex-row items-center min-h-[500px] lg:min-h-[600px]">
+                
+                <div class="w-full lg:w-1/2 py-12 lg:py-0 pr-0 lg:pr-16 text-center lg:text-left">
+                    <span class="text-indigo-600 font-bold tracking-wider text-xs uppercase mb-3 block">Fundamental Apparel</span>
+                    <h1 class="text-4xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
+                        Redefine Your <br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Unique Style.</span>
+                    </h1>
+                    <p class="text-lg text-gray-600 mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
+                        Browse through our diverse range of meticulously crafted garments, designed to bring out your individuality and cater to your sense of style.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        <a href="products.html" class="px-8 py-3.5 bg-gray-900 text-white font-bold rounded-lg shadow-lg hover:bg-black hover:shadow-xl transition transform hover:-translate-y-1">
+                            Shop Collection
+                        </a>
+                        <a href="#new-arrivals" class="px-8 py-3.5 bg-white text-gray-700 border border-gray-200 font-bold rounded-lg hover:bg-gray-50 hover:border-gray-300 transition">
+                            New Arrivals
+                        </a>
+                    </div>
+                </div>
 
-    <!-- Categories Section -->
-    <section class="py-8 md:py-16">
-        <div class="container mx-auto px-4 md:px-6">
-            <h2 class="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-6 md:mb-10">Categories</h2>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-6">
-                <div class="bg-white p-4 md:p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
-                    <i class="fas fa-tshirt text-3xl md:text-4xl text-indigo-500"></i>
-                    <h3 class="mt-2 md:mt-4 font-semibold text-sm md:text-base">Jersey</h3>
-                </div>
-                <div class="bg-white p-4 md:p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
-                    <i class="fas fa-running text-3xl md:text-4xl text-indigo-500"></i>
-                    <h3 class="mt-2 md:mt-4 font-semibold text-sm md:text-base">Shorts</h3>
-                </div>
-                <div class="bg-white p-4 md:p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
-                    <i class="fas fa-user-secret text-3xl md:text-4xl text-indigo-500"></i>
-                    <h3 class="mt-2 md:mt-4 font-semibold text-sm md:text-base">Outwears</h3>
-                </div>
-                <div class="bg-white p-4 md:p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
-                    <i class="fas fa-flask text-3xl md:text-4xl text-indigo-500"></i>
-                    <h3 class="mt-2 md:mt-4 font-semibold text-sm md:text-base">Lab Coats</h3>
-                </div>
-                <div class="bg-white p-4 md:p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
-                    <i class="fas fa-print text-3xl md:text-4xl text-indigo-500"></i>
-                    <h3 class="mt-2 md:mt-4 font-semibold text-sm md:text-base">Printing Machine</h3>
-                </div>
-                <div class="bg-white p-4 md:p-6 rounded-lg shadow-md text-center hover:shadow-xl transition-shadow">
-                    <i class="fas fa-flag text-3xl md:text-4xl text-indigo-500"></i>
-                    <h3 class="mt-2 md:mt-4 font-semibold text-sm md:text-base">Banner</h3>
+                <div class="w-full lg:w-1/2 h-[300px] lg:h-[600px] relative mt-8 lg:mt-0">
+                    <div class="absolute inset-0 bg-gray-100 rounded-xl lg:rounded-none lg:rounded-bl-[100px] overflow-hidden shadow-inner">
+                        <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop" 
+                             alt="Fundamental Hero" 
+                             class="w-full h-full object-cover hover:scale-105 transition duration-700">
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- New Arrivals Section -->
-    <section class="py-8 md:py-16 bg-white">
+    <section class="py-16 bg-gray-50">
         <div class="container mx-auto px-4 md:px-6">
-            <h2 class="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-6 md:mb-10">New Arrivals</h2>
-            <div id="products-container" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-8">
-                <!-- Products will be dynamically inserted here -->
-                <p id="loading-message" class="col-span-full text-center text-gray-500 text-sm md:text-base">Loading products...</p>
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-900">Shop by Category</h2>
+                <p class="text-gray-500 mt-2">Find exactly what you're looking for</p>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md hover:border-indigo-100 transition cursor-pointer group">
+                    <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-indigo-600 group-hover:text-white transition duration-300">
+                        <i class="fas fa-tshirt text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 group-hover:text-indigo-600 transition">Jersey</h3>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md hover:border-indigo-100 transition cursor-pointer group">
+                    <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-indigo-600 group-hover:text-white transition duration-300">
+                        <i class="fas fa-running text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 group-hover:text-indigo-600 transition">Shorts</h3>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md hover:border-indigo-100 transition cursor-pointer group">
+                    <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-indigo-600 group-hover:text-white transition duration-300">
+                        <i class="fas fa-user-secret text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 group-hover:text-indigo-600 transition">Outwears</h3>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md hover:border-indigo-100 transition cursor-pointer group">
+                    <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-indigo-600 group-hover:text-white transition duration-300">
+                        <i class="fas fa-flask text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 group-hover:text-indigo-600 transition">Lab Coats</h3>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md hover:border-indigo-100 transition cursor-pointer group">
+                    <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-indigo-600 group-hover:text-white transition duration-300">
+                        <i class="fas fa-print text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 group-hover:text-indigo-600 transition">Machines</h3>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center hover:shadow-md hover:border-indigo-100 transition cursor-pointer group">
+                    <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-indigo-600 group-hover:text-white transition duration-300">
+                        <i class="fas fa-flag text-2xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-800 group-hover:text-indigo-600 transition">Banner</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="new-arrivals" class="py-16 bg-white border-t border-gray-100">
+        <div class="container mx-auto px-4 md:px-6">
+            <div class="flex justify-between items-end mb-8">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900">New Arrivals</h2>
+                    <p class="text-gray-500 mt-1">Check out the latest additions</p>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="prevBtn" class="p-2 w-10 h-10 rounded-full bg-white border border-gray-200 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center transition shadow-sm disabled:opacity-50">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button id="nextBtn" class="p-2 w-10 h-10 rounded-full bg-white border border-gray-200 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center transition shadow-sm">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="products-container" class="flex overflow-x-auto gap-5 pb-6 snap-x snap-mandatory scroll-smooth hide-scrollbar">
+                <p id="loading-message" class="w-full text-center text-gray-500 py-12">Loading products...</p>
+            </div>
+
+            <div class="mt-8 flex justify-center">
+                <a href="products.html" class="group inline-flex items-center px-8 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-full shadow-sm hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all duration-300">
+                    <span>Shop More Products</span>
+                    <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                </a>
             </div>
         </div>
     </section>
@@ -153,10 +213,10 @@
                     mobileMenu.classList.toggle('hidden');
                 });
             }
-            
+
             const API = 'https://fundamental-apparel-backend.onrender.com';
 
-            // NEW: Selectors for auth links
+            // Selectors for auth links
             const authLoggedOut = document.getElementById('auth-links-logged-out');
             const authLoggedIn = document.getElementById('auth-links-logged-in');
             const mobileAuthLoggedOut = document.getElementById('mobile-auth-logged-out');
@@ -193,23 +253,22 @@
                     const json = await res.json();
                     return json && json.success === true && json.data && json.data.role !== 'admin';
                 } catch (err) {
-                    console.error('Token validation error:', err);
                     return false;
                 }
             }
 
             async function fetchCartCount(token) {
-                if (!token) { 
+                if (!token) {
                     if (cartCountSpan) cartCountSpan.textContent = '0';
                     if (cartCountMobile) cartCountMobile.textContent = '0';
-                    return; 
+                    return;
                 }
                 try {
                     const res = await fetch(`${API}/api/cart`, { headers: { 'Authorization': `Bearer ${token}` } });
-                    if (!res.ok) { 
+                    if (!res.ok) {
                         cartCountSpan.textContent = '0';
                         if (cartCountMobile) cartCountMobile.textContent = '0';
-                        return; 
+                        return;
                     }
                     const json = await res.json();
                     if (json.success && json.data && Array.isArray(json.data.items)) {
@@ -221,29 +280,23 @@
                         if (cartCountMobile) cartCountMobile.textContent = '0';
                     }
                 } catch (err) {
-                    console.error('fetchCartCount error', err);
                     if (cartCountSpan) cartCountSpan.textContent = '0';
                     if (cartCountMobile) cartCountMobile.textContent = '0';
                 }
             }
 
-            // Set initial UI state
             setLoggedOutUI();
 
-            // Decide UI based on token validity at page load
             (async () => {
                 const token = localStorage.getItem('token');
-                if (!token) {
-                    return; // Already logged out
-                }
-
+                if (!token) { return; }
                 const isValid = await validateToken(token);
                 if (isValid) {
                     setLoggedInUI();
                     await fetchCartCount(token);
                 } else {
                     localStorage.removeItem('token');
-                    setLoggedOutUI(); // Ensure logged out UI if token is invalid
+                    setLoggedOutUI();
                 }
             })();
 
@@ -287,7 +340,6 @@
                     }
                     alert('Product added to cart!');
                 } catch (error) {
-                    console.error('Add to cart error', error);
                     alert('Failed to add product to cart. Please try again.');
                 } finally {
                     btnEl.disabled = false;
@@ -302,12 +354,12 @@
                     const result = await response.json();
 
                     if (result.success && result.data.length > 0) {
-                        renderProducts(result.data.slice(0, 8));
+                        renderProducts(result.data.slice(0, 10));
                     } else {
-                        productsContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No products found.</p>';
+                        productsContainer.innerHTML = '<p class="w-full text-center text-gray-500">No products found.</p>';
                     }
                 } catch (error) {
-                    productsContainer.innerHTML = `<p class="col-span-full text-center text-red-500">Failed to load products. ${error.message}</p>`;
+                    productsContainer.innerHTML = `<p class="w-full text-center text-red-500">Failed to load products.</p>`;
                 } finally {
                     if (loadingMessage) loadingMessage.style.display = 'none';
                 }
@@ -315,40 +367,71 @@
 
             function renderProducts(products) {
                 productsContainer.innerHTML = '';
+                
                 products.forEach(product => {
                     const imageUrl = product.imageUrl || 'https://placehold.co/400x400/e2e8f0/cccccc?text=N/A';
 
                     const productCard = document.createElement('div');
-                    productCard.className = 'group bg-white rounded-lg shadow-md overflow-hidden transform hover:-translate-y-2 transition-transform duration-300';
+                    
+                    // Fixed Card Widths (Responsive)
+                    productCard.className = 'snap-start flex-shrink-0 w-[45%] md:w-[23%] group bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow duration-300 flex flex-col';
 
                     productCard.innerHTML = `
-                <a href="product-detail.html?id=${product._id}" class="block">
-                  <div class="relative">
-                      <img src="${imageUrl}" alt="${product.name}" class="w-full h-40 md:h-64 object-cover">
-                  </div>
-                </a>
-                <div class="p-2 md:p-4">
-                    <h3 class="text-sm md:text-lg font-semibold text-gray-800 truncate">${product.name}</h3>
-                    <p class="text-xs md:text-sm text-gray-500 mt-1">${product.category}</p>
-                    <p class="text-xs md:text-sm text-gray-600 mt-1 md:mt-2 h-8 md:h-10 overflow-hidden line-clamp-2">${product.description || 'No description available.'}</p>
-                    <div class="flex justify-between items-center mt-2 md:mt-4">
-                        <p class="text-base md:text-xl font-bold text-indigo-600">₱${Number(product.price || 0).toLocaleString()}</p>
-                        <span class="text-xs md:text-sm text-gray-500">Stock: ${product.countInStock}</span>
-                    </div>
-                    <div class="mt-2 md:mt-4 flex gap-1 md:gap-2">
-                        <button class="add-to-cart-btn bg-indigo-600 text-white px-2 md:px-3 py-1.5 md:py-2 rounded hover:bg-indigo-700 text-xs md:text-sm flex-1" data-id="${product._id}">Add to Cart</button>
-                        <a href="product-detail.html?id=${product._id}" class="px-2 md:px-3 py-1.5 md:py-2 border rounded text-xs md:text-sm text-gray-700 text-center">View</a>
-                    </div>
-                </div>
-            `;
+                        <a href="product-detail.html?id=${product._id}" class="block">
+                            <div class="relative w-full h-48 md:h-64 bg-gray-100">
+                                <img src="${imageUrl}" alt="${product.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            </div>
+                        </a>
+                        
+                        <div class="p-3 md:p-4 flex-1 flex flex-col justify-between pb-6">
+                            <div class="mb-4">
+                                <h3 class="text-sm md:text-lg font-semibold text-gray-800 truncate" title="${product.name}">${product.name}</h3>
+                                <p class="text-xs md:text-sm text-gray-500 mt-1 truncate">${product.category}</p>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between items-center mb-3">
+                                    <p class="text-base md:text-xl font-bold text-indigo-600">₱${Number(product.price || 0).toLocaleString()}</p>
+                                </div>
+
+                                <div class="flex gap-2">
+                                    <button class="add-to-cart-btn bg-gray-900 text-white px-3 py-2 rounded hover:bg-black text-xs md:text-sm flex-1 transition whitespace-nowrap shadow-sm" data-id="${product._id}">
+                                        Add to Cart
+                                    </button>
+                                    <a href="product-detail.html?id=${product._id}" class="px-3 py-2 border border-gray-300 rounded text-xs md:text-sm text-gray-700 hover:bg-gray-50 transition flex items-center justify-center">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                     productsContainer.appendChild(productCard);
                 });
 
                 document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
-                        const id = btn.dataset.id;
-                        addToCart(id, btn);
+                        addToCart(btn.dataset.id, btn);
                     });
+                });
+                
+                initSliderLogic();
+            }
+
+            function initSliderLogic() {
+                const container = document.getElementById('products-container');
+                const nextBtn = document.getElementById('nextBtn');
+                const prevBtn = document.getElementById('prevBtn');
+
+                if (!container || !nextBtn || !prevBtn) return;
+
+                nextBtn.addEventListener('click', () => {
+                    const itemWidth = container.firstElementChild ? container.firstElementChild.offsetWidth : 300;
+                    container.scrollBy({ left: itemWidth + 16, behavior: 'smooth' });
+                });
+
+                prevBtn.addEventListener('click', () => {
+                    const itemWidth = container.firstElementChild ? container.firstElementChild.offsetWidth : 300;
+                    container.scrollBy({ left: -(itemWidth + 16), behavior: 'smooth' });
                 });
             }
 
@@ -356,14 +439,10 @@
         });
     </script>
 
-    <!-- Global Footer -->
     <div id="site-footer"></div>
     <script src="js/footer.js"></script>
 
-    <!-- Socket.io Client -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <!-- Chat Widget -->
     <script src="js/chat.js"></script>
 </body>
-
 </html>
