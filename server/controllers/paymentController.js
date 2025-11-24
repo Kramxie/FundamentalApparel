@@ -770,8 +770,12 @@ async function handlePaymentSuccess(eventData) {
             const product = await Product.findById(item.product).session(session);
             if (!product) continue;
 
+            // Prefer finding the Inventory document by productId so per-size
+            // allocations target the correct inventory entry (avoids name mismatches).
+            const linkedInventory = await Inventory.findOne({ productId: product._id }).session(session);
+
             if (item.size) {
-              const invName = product.name || product._id.toString();
+              const invName = linkedInventory ? linkedInventory.name : (product.name || product._id.toString());
               perInventorySizes[invName] = perInventorySizes[invName] || {};
               perInventorySizes[invName][item.size] = (perInventorySizes[invName][item.size] || 0) + (Number(item.quantity) || 0);
             } else {
@@ -780,7 +784,7 @@ async function handlePaymentSuccess(eventData) {
               await product.save({ session });
               console.log(`[Stock] Deducted ${item.quantity} from Product ${product.name}. New stock: ${newStock}`);
 
-              const inventoryItem = await Inventory.findOne({ productId: product._id }).session(session);
+              const inventoryItem = linkedInventory || await Inventory.findOne({ productId: product._id }).session(session);
               if (inventoryItem) {
                 inventoryItem.quantity = newStock;
                 await inventoryItem.save({ session });
@@ -840,15 +844,18 @@ async function handlePaymentSuccess(eventData) {
             const product = await Product.findById(item.product);
             if (!product) continue;
 
+            // Try linked inventory by productId first
+            const linkedInventory = await Inventory.findOne({ productId: product._id });
+
             if (item.size) {
-              const invName = product.name || product._id.toString();
+              const invName = linkedInventory ? linkedInventory.name : (product.name || product._id.toString());
               perInventorySizesFallback[invName] = perInventorySizesFallback[invName] || {};
               perInventorySizesFallback[invName][item.size] = (perInventorySizesFallback[invName][item.size] || 0) + (Number(item.quantity) || 0);
             } else {
               const newStock = Math.max(0, product.countInStock - item.quantity);
               product.countInStock = newStock;
               await product.save();
-              const inventoryItem = await Inventory.findOne({ productId: product._id });
+              const inventoryItem = linkedInventory || await Inventory.findOne({ productId: product._id });
               if (inventoryItem) {
                 inventoryItem.quantity = newStock;
                 await inventoryItem.save();

@@ -154,6 +154,19 @@ exports.createOrderWithReceipt = async (req, res) => {
             color: it.color || null
         })).filter(i => i.product);
 
+        // Server-side validation: if a product has per-size inventory, ensure a size was selected.
+        for (const it of itemsToProcess) {
+            if (!it.product) continue;
+            try {
+                const prod = it.product; // populated product
+                const sizesInv = prod.sizesInventory || prod.sizesInventoryMap || prod.sizes || {};
+                const hasPerSize = (sizesInv && typeof sizesInv === 'object' && Object.keys(sizesInv || {}).length > 0);
+                if (hasPerSize && !it.size) {
+                    return res.status(400).json({ success: false, msg: `Size selection required for product ${prod.name}` });
+                }
+            } catch (e) { /* ignore validation errors but continue */ }
+        }
+
         if (orderItems.length === 0) {
             return res.status(400).json({ success: false, msg: 'No valid items in cart.' });
         }
