@@ -373,6 +373,26 @@
                     window.location.href = `login.html?next=${encodeURIComponent(window.location.pathname)}`;
                     return;
                 }
+
+                // Fetch product to check whether it has sizes. If it does, require the user
+                // to pick a size on the product page instead of allowing a blind quick-add.
+                try {
+                    const pRes = await fetch(`${API}/api/products/${productId}`);
+                    if (pRes.ok) {
+                        const pJson = await pRes.json();
+                        const prod = pJson && pJson.data ? pJson.data : null;
+                        const hasSizes = (prod && ((prod.sizes && prod.sizes.length > 0) || (prod.sizesInventory && Object.keys(prod.sizesInventory || {}).length > 0)));
+                        if (hasSizes) {
+                            // Redirect to product detail so user can select size/color
+                            window.location.href = `product-detail.html?id=${productId}`;
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    // If product fetch fails, fall back to original behavior (best-effort)
+                    console.warn('Could not fetch product before quick add:', e && e.message);
+                }
+
                 const originalText = btnEl.textContent;
                 btnEl.textContent = 'Adding...';
                 btnEl.disabled = true;
@@ -389,7 +409,7 @@
                     } else {
                         throw new Error('Failed');
                     }
-                } catch (error) { alert('Could not add to cart. Try again.'); } 
+                } catch (error) { alert('Could not add to cart. Try again.'); }
                 finally { btnEl.disabled = false; btnEl.textContent = originalText; }
             }
 

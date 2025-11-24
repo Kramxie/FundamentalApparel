@@ -314,6 +314,23 @@
                     return;
                 }
 
+                // Prevent blind quick-add for products that have sizes. Redirect to
+                // product-detail so the user can explicitly choose size/color.
+                try {
+                    const pRes = await fetch(`${API}/api/products/${productId}`);
+                    if (pRes.ok) {
+                        const pJson = await pRes.json();
+                        const prod = pJson && pJson.data ? pJson.data : null;
+                        const hasSizes = (prod && ((prod.sizes && prod.sizes.length > 0) || (prod.sizesInventory && Object.keys(prod.sizesInventory || {}).length > 0)));
+                        if (hasSizes) {
+                            window.location.href = `product-detail.html?id=${productId}`;
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Could not fetch product before quick add:', e && e.message);
+                }
+
                 btnEl.disabled = true;
                 const originalText = btnEl.textContent;
                 btnEl.textContent = 'Adding...';

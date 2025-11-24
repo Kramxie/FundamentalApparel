@@ -437,13 +437,16 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ success: false, msg: 'No items selected for checkout.' });
     }
 
-    const orderItems = itemsToProcess.map((it) => ({
-      name: (it.product && it.product.name) ? it.product.name : 'Item',
-      quantity: it.quantity || 0,
-      imageUrl: (it.product && it.product.imageUrl) ? it.product.imageUrl : '',
-      price: (it.product && typeof it.product.price === 'number') ? it.product.price : 0,
-      product: it.product ? it.product._id : null,
-    })).filter(i => i.product);
+        const orderItems = itemsToProcess.map((it) => ({
+            name: (it.product && it.product.name) ? it.product.name : 'Item',
+            quantity: it.quantity || 0,
+            imageUrl: (it.product && it.product.imageUrl) ? it.product.imageUrl : '',
+            // Prefer the cart item's stored price (may be per-size); fallback to product base price
+            price: (it.price != null && !isNaN(Number(it.price))) ? Number(it.price) : ((it.product && typeof it.product.price === 'number') ? it.product.price : 0),
+            product: it.product ? it.product._id : null,
+            size: it.size || null,
+            color: it.color || null
+        })).filter(i => i.product);
 
     if (orderItems.length === 0) {
       return res.status(400).json({ success: false, msg: 'No valid items to order.' });
