@@ -354,7 +354,8 @@
 
             async function fetchProducts() {
                 try {
-                    const response = await fetch(`${API}/api/products`);
+                    // Exclude pre-design products from the main storefront
+                    const response = await fetch(`${API}/api/products?type=regular`);
                     if (!response.ok) throw new Error('Network response was not ok');
                     const result = await response.json();
 

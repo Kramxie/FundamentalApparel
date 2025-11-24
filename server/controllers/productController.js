@@ -122,7 +122,8 @@ exports.addProduct = async (req, res, next) => {
     try {
       const inventoryData = {
         name: product.name,
-        type: 'product',
+        // set inventory type based on product.type so Pre-Design products are distinguishable
+        type: (product.type === 'predesign' ? 'pre-design-apparel' : 'product'),
         quantity: product.countInStock,
         unit: 'pieces',
         price: product.price,
@@ -130,6 +131,7 @@ exports.addProduct = async (req, res, next) => {
         supplier: '',
         description: product.description || '',
         isProduct: true,
+        isPreDesign: (product.type === 'predesign'),
         productId: product._id,
         category: product.category || '',
         imageUrl: product.imageUrl || '',

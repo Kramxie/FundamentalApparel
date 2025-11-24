@@ -9,7 +9,7 @@ const inventorySchema = new mongoose.Schema({
     type: {
         type: String,
         required: [true, 'Item type is required'],
-        enum: ['fabric', 'product'],
+        enum: ['fabric', 'product', 'pre-design-apparel'],
         lowercase: true
     },
     quantity: {
