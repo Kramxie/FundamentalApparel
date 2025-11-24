@@ -869,13 +869,34 @@
                                        <a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>`;
                     } else if (order.status === 'Delivered' || order.status === 'Completed') {
                         const productIds = order.orderItems.map(it => it.product).filter(Boolean);
+                        // Refund window: allow refunds for 7 days after deliveredAt (if available)
+                        const refundWindowMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+                        const deliveredAtMs = order.deliveredAt ? new Date(order.deliveredAt).getTime() : null;
+                        const refundWindowExpired = deliveredAtMs ? (Date.now() > (deliveredAtMs + refundWindowMs)) : false;
+                        const hasRefundRequest = !!order.hasRefundRequest;
+
+                        // Build base button (view details always available)
+                        buttonsHtml = `<a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>`;
+
+                        // If user already left a review, show View Review; otherwise show Write Review
                         if (order.userHasReview) {
-                            buttonsHtml = `<a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>
-                                           <button data-order-id="${order._id}" class="btn-view-review px-4 py-2 border rounded text-sm">View Review</button>`;
+                            // Allow refund request even after review while within refund window and if no request exists
+                            if (!refundWindowExpired && !hasRefundRequest) {
+                                buttonsHtml += ` <button data-order-id="${order._id}" class="btn-request-refund px-4 py-2 border rounded text-sm">Request Refund</button>`;
+                            } else if (hasRefundRequest) {
+                                buttonsHtml += ` <button disabled class="px-4 py-2 border rounded text-sm text-gray-500">Refund Requested</button>`;
+                            }
+
+                            buttonsHtml += ` <button data-order-id="${order._id}" class="btn-view-review px-4 py-2 border rounded text-sm">View Review</button>`;
                         } else {
-                            buttonsHtml = `<a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>
-                                           <button data-order-id="${order._id}" class="btn-request-refund px-4 py-2 border rounded text-sm">Request Refund</button>
-                                           <button data-products="${productIds.join(',')}" class="btn-leave-feedback px-4 py-2 bg-indigo-600 text-white rounded text-sm">Write Review</button>`;
+                            // user has not reviewed yet
+                            if (!refundWindowExpired && !hasRefundRequest) {
+                                buttonsHtml += ` <button data-order-id="${order._id}" class="btn-request-refund px-4 py-2 border rounded text-sm">Request Refund</button>`;
+                            } else if (hasRefundRequest) {
+                                buttonsHtml += ` <button disabled class="px-4 py-2 border rounded text-sm text-gray-500">Refund Requested</button>`;
+                            }
+
+                            buttonsHtml += ` <button data-products="${productIds.join(',')}" class="btn-leave-feedback px-4 py-2 bg-indigo-600 text-white rounded text-sm">Write Review</button>`;
                         }
                     } else {
                         buttonsHtml = `<a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>`;
