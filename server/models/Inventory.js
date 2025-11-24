@@ -103,6 +103,18 @@ const inventorySchema = new mongoose.Schema({
         of: Number,
         default: {}
     },
+    // Map of size -> reserved quantity for that size
+    reservedSizes: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
+    // per-size prices map: { "S": 399.00 }
+    sizesPrice: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
     material: {
         type: String,
         default: ''
@@ -114,6 +126,13 @@ const inventorySchema = new mongoose.Schema({
     faqs: {
         type: String,
         default: ''
+    }
+    ,
+    // placements: allow marking inventory items for marketing placements if synced as product
+    placements: {
+        featured: { type: Boolean, default: false },
+        newArrivalExpiresAt: { type: Date, default: null },
+        services: { type: [String], default: [] }
     }
 }, {
     timestamps: true

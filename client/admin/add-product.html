@@ -135,6 +135,13 @@
                     </div>
                   </div>
                   <div>
+                    <label for="product-type" class="block text-sm font-medium text-gray-700">Product Type</label>
+                    <select id="product-type" name="type" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                      <option value="regular">Regular</option>
+                      <option value="predesign">Pre-Design Apparel</option>
+                    </select>
+                  </div>
+                  <div>
                     <label for="stock" class="block text-sm font-medium text-gray-700">Stock Quantity</label>
                     <div class="flex items-center gap-2 mt-1">
                       <input type="number" id="stock" name="countInStock" required class="w-full sm:w-48 md:w-44 lg:w-56 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
@@ -271,6 +278,35 @@
                   </div>
                 </div>
 
+                <!-- Pre-Design Front / Back Images (visible when Product Type = predesign) -->
+                <div id="predesign-images" class="mt-6 hidden">
+                  <h3 class="text-sm font-medium text-gray-700 mb-2">Pre-Design Images</h3>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <div class="w-full h-40 bg-gray-50 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
+                        <img id="front-preview" src="https://placehold.co/400x300/e2e8f0/9ca3af?text=Front" alt="Front preview" class="max-h-full" />
+                      </div>
+                      <div class="mt-2">
+                        <label class="cursor-pointer text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                          Upload Front Image
+                          <input id="front-input" name="front" type="file" accept="image/*" class="sr-only" />
+                        </label>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="w-full h-40 bg-gray-50 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
+                        <img id="back-preview" src="https://placehold.co/400x300/e2e8f0/9ca3af?text=Back" alt="Back preview" class="max-h-full" />
+                      </div>
+                      <div class="mt-2">
+                        <label class="cursor-pointer text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                          Upload Back Image
+                          <input id="back-input" name="back" type="file" accept="image/*" class="sr-only" />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Gallery -->
                 <div class="mt-6">
                   <label class="block text-sm font-medium text-gray-700 mb-2">Image Gallery</label>
@@ -391,6 +427,13 @@
     const submitBtn = document.getElementById('submit-btn');
     const stockInput = document.getElementById('stock');
     const priceInput = document.getElementById('price');
+
+    const productTypeSelect = document.getElementById('product-type');
+    const predesignImagesBox = document.getElementById('predesign-images');
+    const frontInput = document.getElementById('front-input');
+    const backInput = document.getElementById('back-input');
+    const frontPreview = document.getElementById('front-preview');
+    const backPreview = document.getElementById('back-preview');
 
     let galleryFiles = [];
     let mainFile = null;
@@ -682,6 +725,27 @@
       document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
     }
 
+    // Pre-design image previews
+    function handleFrontChange(e) {
+      const f = e.target.files[0];
+      if (!f) return;
+      frontPreview.src = URL.createObjectURL(f);
+    }
+    function handleBackChange(e) {
+      const f = e.target.files[0];
+      if (!f) return;
+      backPreview.src = URL.createObjectURL(f);
+    }
+
+    productTypeSelect?.addEventListener('change', (e) => {
+      if (e.target.value === 'predesign') {
+        // Redirect to the dedicated Pre-Design add page
+        window.location.href = 'add-predisign-product.html';
+      } else {
+        predesignImagesBox.classList.add('hidden');
+      }
+    });
+
     function handleGalleryChange(e) {
       const files = Array.from(e.target.files).slice(0, 8);
       galleryFiles = files;
@@ -775,6 +839,17 @@
         return;
       }
 
+      // If product type is predesign, append front/back files if provided
+      const selectedType = document.getElementById('product-type')?.value || 'regular';
+      if (selectedType === 'predesign') {
+        const f = frontInput?.files && frontInput.files[0];
+        const b = backInput?.files && backInput.files[0];
+        if (f) fd.set('front', f);
+        if (b) fd.set('back', b);
+        // ensure type field is present
+        fd.set('type', 'predesign');
+      }
+
       // Append gallery images, excluding the one that might be the main image
       galleryFiles.forEach((file) => {
         if (file !== mainFile) {
@@ -840,6 +915,8 @@
     // Event Listeners
     imageInput.addEventListener('change', handleMainImageChange);
     galleryInput.addEventListener('change', handleGalleryChange);
+    frontInput?.addEventListener('change', handleFrontChange);
+    backInput?.addEventListener('change', handleBackChange);
 
     // --- Stock/Price assign modal handling ---
     // Modal markup will be inserted in DOM via HTML (below). Hook handlers here.
@@ -954,8 +1031,39 @@
     // Initial Load
     (async () => {
       await fetchCategories();
+      // If URL contains ?type=predesign, pre-select and show predesign fields
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const t = params.get('type');
+        if (t && productTypeSelect) {
+          productTypeSelect.value = t;
+          productTypeSelect.dispatchEvent(new Event('change'));
+        }
+      } catch (e) { /* ignore */ }
     })();
   </script>
   </div>
 </body>
+<script>
+(function(){
+  document.addEventListener('DOMContentLoaded', function(){
+    const anchors = Array.from(document.querySelectorAll('a[href="add-product.html"]'));
+    if(anchors.length===0) return;
+    anchors.forEach(anchor=>{
+      let submenu = anchor.parentElement.querySelector('.add-product-submenu');
+      if(!submenu){
+                submenu = document.createElement('div');
+                submenu.className = 'add-product-submenu hidden mt-1 flex flex-col';
+                submenu.innerHTML = '<a href="add-predisign-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="w-6"></i><span class="ml-3 text-sm">Add Pre-Design Product</span></a>';
+        anchor.insertAdjacentElement('afterend', submenu);
+      }
+      anchor.style.cursor='pointer';
+      if (location.pathname.endsWith('add-product.html') || location.pathname.endsWith('add-predisign-product.html')) submenu.classList.remove('hidden');
+    });
+    const mainNavLinks = Array.from(document.querySelectorAll('nav a')).filter(a=>{ const h=a.getAttribute('href'); return h && h!=='add-product.html' && h!=='add-predisign-product.html'; });
+    mainNavLinks.forEach(l=>{ l.addEventListener('click', ()=>{ document.querySelectorAll('.add-product-submenu').forEach(s=>s.classList.add('hidden')); }); });
+    window.addEventListener('popstate', ()=> document.querySelectorAll('.add-product-submenu').forEach(s=>s.classList.add('hidden')));
+  });
+})();
+</script>
 </html>

@@ -102,7 +102,7 @@
                                 class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             >
                                 <option value="all">All Types</option>
-                                <option value="fabric">Fabric/Material</option>
+                                <option value="fabric">Fabric&Garment</option>
                                 <option value="product">Product</option>
                             </select>
                         </div>
@@ -121,13 +121,20 @@
                             </select>
                         </div>
 
-                        <!-- Add New Button -->
-                        <div class="col-span-1 flex items-end">
-                            <button 
-                                id="add-new-btn" 
-                                class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center"
+                        <!-- Add New Buttons -->
+                        <div class="col-span-1 flex items-end gap-2">
+                            <a
+                                id="add-new-btn"
+                                href="add-product.html"
+                                class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center text-center"
                             >
                                 <i class="fas fa-plus mr-2"></i>Add New Item
+                            </a>
+                            <button
+                                id="add-fabric-btn"
+                                class="flex-1 px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900 transition-colors flex items-center justify-center"
+                            >
+                                <i class="fas fa-layer-group mr-2"></i>Add Fabric&Garment
                             </button>
                         </div>
                     </div>
@@ -215,7 +222,7 @@
 
     <!-- Add/Edit Modal -->
     <div id="inventory-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
             <div class="px-6 py-4 border-b border-gray-200">
                 <div class="flex items-center justify-between">
                     <h3 id="modal-title" class="text-lg font-semibold text-gray-900">Add New Inventory Item</h3>
@@ -226,314 +233,219 @@
             </div>
 
             <form id="inventory-form" class="px-6 py-4">
-                <!-- Basic Information Section -->
-                <div class="mb-6">
-                    <h4 class="text-md font-semibold text-gray-700 mb-4 flex items-center">
-                        <i class="fas fa-info-circle text-indigo-600 mr-2"></i>
-                        Basic Information
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Item Name -->
-                        <div class="col-span-2">
-                            <label for="item-name" class="block text-sm font-medium text-gray-700 mb-2">
-                                Item Name <span class="text-red-500">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                id="item-name" 
-                                required 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                placeholder="Enter item name"
-                            />
-                        </div>
-
-                        <!-- Type -->
-                        <div>
-                            <label for="item-type" class="block text-sm font-medium text-gray-700 mb-2">
-                                Type <span class="text-red-500">*</span>
-                            </label>
-                            <select 
-                                id="item-type" 
-                                required 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            >
-                                <option value="">Select Type</option>
-                                <option value="fabric">Fabric/Material</option>
-                                <option value="product">Product</option>
-                            </select>
-                        </div>
-
-                        <!-- Unit -->
-                        <div>
-                            <label for="item-unit" class="block text-sm font-medium text-gray-700 mb-2">
-                                Unit <span class="text-red-500">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                id="item-unit" 
-                                required 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                placeholder="e.g., meters, pieces"
-                            />
-                        </div>
-
-                        <!-- Quantity -->
-                        <div>
-                            <label for="item-quantity" class="block text-sm font-medium text-gray-700 mb-2">
-                                Quantity <span class="text-red-500">*</span>
-                            </label>
-                            <input 
-                                type="number" 
-                                id="item-quantity" 
-                                required 
-                                min="0" 
-                                step="0.01"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                placeholder="0"
-                            />
-                        </div>
-
-                        <!-- Price -->
-                        <div>
-                            <label for="item-price" class="block text-sm font-medium text-gray-700 mb-2">
-                                Price (₱) <span class="text-red-500">*</span>
-                            </label>
-                            <input 
-                                type="number" 
-                                id="item-price" 
-                                required 
-                                min="0" 
-                                step="0.01"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                placeholder="0.00"
-                            />
-                        </div>
-
-                        <!-- Low Stock Threshold -->
-                        <div>
-                            <label for="item-threshold" class="block text-sm font-medium text-gray-700 mb-2">
-                                Low Stock Threshold
-                            </label>
-                            <input 
-                                type="number" 
-                                id="item-threshold" 
-                                min="0" 
-                                value="10"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            />
-                        </div>
-
-                        <!-- Supplier -->
-                        <div>
-                            <label for="item-supplier" class="block text-sm font-medium text-gray-700 mb-2">
-                                Supplier
-                            </label>
-                            <input 
-                                type="text" 
-                                id="item-supplier" 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                placeholder="Supplier name"
-                            />
-                        </div>
-
-                        <!-- SKU -->
-                        <div class="col-span-2">
-                            <label for="item-sku" class="block text-sm font-medium text-gray-700 mb-2">
-                                SKU (Stock Keeping Unit)
-                            </label>
-                            <input 
-                                type="text" 
-                                id="item-sku" 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                placeholder="e.g., FAB-001"
-                            />
-                        </div>
-
-                        <!-- Description -->
-                        <div class="col-span-2">
-                            <label for="item-description" class="block text-sm font-medium text-gray-700 mb-2">
-                                Description
-                            </label>
-                            <textarea 
-                                id="item-description" 
-                                rows="3"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                placeholder="Item description..."
-                            ></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Product Fields Checkbox -->
-                <div class="mb-6 border-t border-gray-200 pt-6">
-                    <div class="flex items-center">
-                        <input 
-                            type="checkbox" 
-                            id="is-product-checkbox" 
-                            class="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <label for="is-product-checkbox" class="ml-3 flex items-center cursor-pointer">
-                            <span class="text-md font-semibold text-gray-700">
-                                <i class="fas fa-store text-indigo-600 mr-2"></i>
-                                Mark as Sellable Product
-                            </span>
-                            <span class="ml-2 text-sm text-gray-500">(Will sync to customer product catalog)</span>
+                <!-- Modal variant selector (Product / Fabric / Garment) -->
+                <div id="variant-selector" class="mb-4">
+                    <div class="flex items-center gap-6">
+                        <label class="inline-flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="inventory-variant" id="variant-product" value="product" checked class="h-4 w-4" />
+                            <span class="text-sm font-medium">Product</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="inventory-variant" id="variant-fabric" value="fabric_garment" class="h-4 w-4" />
+                            <span class="text-sm font-medium">Fabric / Garment</span>
                         </label>
                     </div>
                 </div>
 
-                <!-- Product-Specific Fields (Hidden by default) -->
-                <div id="product-fields" class="hidden mb-6 border border-indigo-200 rounded-lg p-4 bg-indigo-50">
-                    <h4 class="text-md font-semibold text-indigo-700 mb-4 flex items-center">
-                        <i class="fas fa-box-open text-indigo-600 mr-2"></i>
-                        Product Information
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Category -->
-                        <div>
-                            <label for="product-category" class="block text-sm font-medium text-gray-700 mb-2">
-                                Category
-                            </label>
-                            <input 
-                                type="text" 
-                                id="product-category" 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                                placeholder="e.g., T-Shirts, Jerseys"
-                            />
-                        </div>
-
-                        <!-- Material -->
-                        <div>
-                            <label for="product-material" class="block text-sm font-medium text-gray-700 mb-2">
-                                Material
-                            </label>
-                            <input 
-                                type="text" 
-                                id="product-material" 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                                placeholder="e.g., 100% Cotton"
-                            />
-                        </div>
-
-                        <!-- Image URL -->
-                        <div class="col-span-2">
-                            <label for="product-image" class="block text-sm font-medium text-gray-700 mb-2">
-                                Main Product Image
-                            </label>
-                            <input 
-                                type="file" 
-                                id="product-image" 
-                                accept="image/*"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                            />
-                            <p class="mt-1 text-xs text-gray-500">Upload main product image (JPEG, PNG, GIF, WEBP - Max 5MB)</p>
-                            <!-- Image Preview -->
-                            <div id="main-image-preview" class="mt-3 hidden">
-                                <img src="" alt="Preview" class="h-32 w-32 object-cover rounded-md border-2 border-indigo-200">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Left: Preview area (large) -->
+                    <div class="col-span-1 md:col-span-1">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Preview Size with Stock & Price</label>
+                            <div id="preview-sizes" class="w-full h-[420px] p-3 border rounded bg-white text-sm text-gray-700 overflow-auto">
+                                <!-- dynamic preview rows -->
                             </div>
-                        </div>
-
-                        <!-- Gallery Images -->
-                        <div class="col-span-2">
-                            <label for="product-gallery" class="block text-sm font-medium text-gray-700 mb-2">
-                                Gallery Images
-                            </label>
-                            <input 
-                                type="file" 
-                                id="product-gallery" 
-                                accept="image/*"
-                                multiple
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                            />
-                            <p class="mt-1 text-xs text-gray-500">Upload up to 10 gallery images (Max 5MB each)</p>
-                            <!-- Gallery Preview -->
-                            <div id="gallery-preview" class="mt-3 grid grid-cols-4 gap-2 hidden"></div>
-                        </div>
-
-                        <!-- Sizes -->
-                        <div>
-                            <label for="product-sizes" class="block text-sm font-medium text-gray-700 mb-2">
-                                Available Sizes (comma-separated)
-                            </label>
-                            <input 
-                                type="text" 
-                                id="product-sizes" 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                                placeholder="S, M, L, XL, XXL"
-                            />
-                            <!-- Per-size inventory controls -->
-                            <div id="per-size-section" class="mt-3 hidden" aria-hidden="true">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <input id="sizes-generate" placeholder="S, M, L" class="flex-1 px-3 py-2 border rounded" />
-                                    <button type="button" id="generate-sizes-btn" class="px-3 py-2 bg-indigo-600 text-white rounded">Generate</button>
-                                    <button type="button" id="add-size-row" class="px-3 py-2 bg-green-600 text-white rounded">Add Row</button>
-                                    <button type="button" id="clear-sizes" class="px-3 py-2 bg-red-600 text-white rounded">Clear</button>
-                                </div>
-                                <div class="flex items-center gap-2 mb-3">
-                                    <input id="apply-qty-input" type="number" min="0" placeholder="Qty" class="w-24 px-3 py-2 border rounded" />
-                                    <button type="button" id="apply-qty-btn" class="px-3 py-2 bg-indigo-500 text-white rounded">Apply to selected</button>
-                                </div>
-                                <div id="sizes-rows" class="space-y-2"></div>
-                                <input type="hidden" id="sizesInventoryHidden" name="sizesInventory">
-                            </div>
-                        </div>
-
-                        <!-- Colors -->
-                        <div>
-                            <label for="product-colors" class="block text-sm font-medium text-gray-700 mb-2">
-                                Available Colors (comma-separated)
-                            </label>
-                            <input 
-                                type="text" 
-                                id="product-colors" 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                                placeholder="Red, Blue, Black, White"
-                            />
-                        </div>
-
-                        <!-- Product Details -->
-                        <div class="col-span-2">
-                            <label for="product-details" class="block text-sm font-medium text-gray-700 mb-2">
-                                Product Details
-                            </label>
-                            <textarea 
-                                id="product-details" 
-                                rows="4"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                                placeholder="Detailed product specifications, features, etc..."
-                            ></textarea>
-                        </div>
-
-                        <!-- FAQs -->
-                        <div class="col-span-2">
-                            <label for="product-faqs" class="block text-sm font-medium text-gray-700 mb-2">
-                                FAQs
-                            </label>
-                            <textarea 
-                                id="product-faqs" 
-                                rows="4"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                                placeholder="Frequently asked questions about this product..."
-                            ></textarea>
+                            <p class="text-xs text-gray-500 mt-2">Sizes with stock will appear here. Price shows when assigned.</p>
                         </div>
                     </div>
-                </div>
 
-                <div class="mt-6 flex justify-end space-x-3 border-t border-gray-200 pt-4">
-                    <button 
-                        type="button" 
-                        id="cancel-btn" 
-                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        type="submit" 
-                        id="submit-btn" 
-                        class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-                    >
-                        <i class="fas fa-save mr-2"></i>Save Item
-                    </button>
+                    <!-- Right: Form fields -->
+                    <div id="product-fields" class="col-span-1 md:col-span-2">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="col-span-2">
+                                <label for="item-name" class="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+                                <input id="item-name" type="text" required class="w-full px-4 py-2 border rounded" placeholder="Product name" />
+                            </div>
+
+                            <div>
+                                <label for="product-category" class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                                <input id="product-category" type="text" class="w-full px-4 py-2 border rounded" placeholder="Choose a Category" />
+                            </div>
+
+                            <div>
+                                <label for="item-sku" class="block text-sm font-medium text-gray-700 mb-2">SKU (Stock Keeping Unit)</label>
+                                <input id="item-sku" type="text" class="w-full px-4 py-2 border rounded" placeholder="e.g., FAB-001" />
+                            </div>
+
+                            <!-- Total quantity/unit/base price are not shown in this modal layout per design. Values will be derived from per-size entries when provided. -->
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Price Per Size</label>
+                                <div class="flex items-center gap-2">
+                                    <input id="price-per-size-preview" type="text" readonly class="flex-1 px-3 py-2 border rounded bg-gray-50" placeholder="Prices will show here" />
+                                    <button type="button" id="open-assign-price-btn" class="px-3 py-2 bg-yellow-500 text-white rounded">Assign</button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Quantity Per Size</label>
+                                <div class="flex items-center gap-2">
+                                    <input id="qty-per-size-preview" type="number" min="0" class="flex-1 px-3 py-2 border rounded" placeholder="Enter quantity per size (e.g. 10)" />
+                                    <button type="button" id="open-assign-stock-btn" class="px-3 py-2 bg-green-600 text-white rounded">Assign</button>
+                                </div>
+                            </div>
+
+                            <!-- Per-size editor (hidden unless sizes are present) -->
+                            <div id="per-size-section" class="col-span-2 mt-4 hidden">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Sizes</label>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <input id="sizes-generate" type="text" class="flex-1 px-3 py-2 border rounded" placeholder="Generate sizes e.g. S, M, L" />
+                                    <button id="generate-sizes-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded">Generate</button>
+                                    <button id="add-size-row" type="button" class="px-3 py-2 border rounded">Add Row</button>
+                                    <button id="clear-sizes" type="button" class="px-3 py-2 border rounded">Clear</button>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <input id="apply-qty-input" type="number" min="0" class="px-3 py-2 border rounded w-40" placeholder="Apply qty" />
+                                    <button id="apply-qty-btn" type="button" class="px-3 py-2 bg-green-600 text-white rounded">Apply To Selected</button>
+                                </div>
+                                <div id="sizes-rows" class="space-y-2"></div>
+                            </div>
+
+                            <div>
+                                <label for="item-threshold" class="block text-sm font-medium text-gray-700 mb-2">Low Stock Threshold</label>
+                                <input id="item-threshold" type="number" min="0" value="10" class="w-full px-3 py-2 border rounded" />
+                            </div>
+
+                            <div>
+                                <label for="item-supplier" class="block text-sm font-medium text-gray-700 mb-2">Supplier Name</label>
+                                <input id="item-supplier" type="text" class="w-full px-3 py-2 border rounded" />
+                            </div>
+
+                            <div class="col-span-2">
+                                <label for="item-description" class="block text-sm font-medium text-gray-700 mb-2">Short Description</label>
+                                <textarea id="item-description" rows="3" class="w-full px-3 py-2 border rounded" placeholder="Short description"></textarea>
+                            </div>
+
+                            <div class="col-span-2">
+                                <label for="product-details" class="block text-sm font-medium text-gray-700 mb-2">Additional Details</label>
+                                <textarea id="product-details" rows="3" class="w-full px-3 py-2 border rounded" placeholder="Additional details"></textarea>
+                            </div>
+
+                            <!-- product material/sizes/colors/faqs removed to keep modal matching requested layout -->
+
+                            <div class="col-span-2 md:col-span-1">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Preview Size with Stock & Price</label>
+                                <div id="preview-size-compact" class="w-full p-3 border rounded bg-white min-h-[120px]">
+                                    <!-- compact preview if needed -->
+                                </div>
+                            </div>
+
+                            <div class="col-span-2 md:col-span-1">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
+                                <div class="flex gap-3">
+                                    <div class="w-32">
+                                        <label class="block text-xs text-gray-600 mb-1">Main Image</label>
+                                        <input id="product-image" type="file" accept="image/*" class="w-full" />
+                                        <div id="main-image-preview" class="hidden mt-2 w-32 h-32 border rounded overflow-hidden bg-gray-50 flex items-center justify-center">
+                                            <img src="" alt="Main" class="object-cover w-full h-full" />
+                                        </div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="block text-xs text-gray-600 mb-1">Image Gallery</label>
+                                        <input id="product-gallery" type="file" accept="image/*" multiple class="w-full" />
+                                        <div id="gallery-preview" class="hidden mt-2 grid grid-cols-4 gap-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sellable toggle + Placement box -->
+                            <div class="col-span-2">
+                                <label class="inline-flex items-center gap-2 mb-2">
+                                    <input type="checkbox" id="is-product-checkbox" class="h-4 w-4" />
+                                    <span class="text-sm font-medium">Mark as Sellable Product</span>
+                                </label>
+
+                                <div id="placement-box" class="mt-2 hidden">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Placement</label>
+                                    <div class="p-3 bg-white border rounded">
+                                        <label class="inline-flex items-center gap-2"><input type="checkbox" id="featured-checkbox" class="h-4 w-4" /> <span class="text-sm">Featured Product</span></label>
+                                        <label class="inline-flex items-center gap-2 mt-2"><input type="checkbox" id="customize-checkbox" class="h-4 w-4" /> <span class="text-sm">Customize Apparel</span></label>
+                                        <div class="mt-3">
+                                            <label class="block text-sm text-gray-600 mb-1">New Arrivals Expiry</label>
+                                            <select id="new-arrival-presets" class="px-3 py-2 border rounded">
+                                                <option value="">None</option>
+                                                <option value="2">2 Days (Default)</option>
+                                                <option value="7">7 Days</option>
+                                                <option value="custom">Custom</option>
+                                            </select>
+                                            <input id="new-arrival-custom" type="date" class="mt-2 px-3 py-2 border rounded hidden" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <input type="hidden" id="placementsHidden" name="placements">
+                                <input type="hidden" id="item-type" name="type" value="product">
+                            </div>
+                        </div>
+
+                        <!-- Fabric / Garment inline variant section (hidden by default) -->
+                        <div id="variant-fabric-section" class="hidden mt-4 bg-white rounded p-4 border">
+                            <h2 class="text-2xl font-semibold text-center mb-4">Fabric&Garment</h2>
+                            <div class="flex items-center gap-3 mb-4">
+                                <select id="fabricGarmentSelect" class="flex-1 px-3 py-2 border rounded">
+                                    <option value="">Choose a Fabric with Garment</option>
+                                    <option value="Cotton - Jersey">Cotton - Jersey</option>
+                                    <option value="Cotton - T-Shirt">Cotton - T-Shirt</option>
+                                    <option value="Cotton - Hoodie">Cotton - Hoodie</option>
+                                    <option value="Dry-Fit - Jersey">Dry-Fit - Jersey</option>
+                                    <option value="Dry-Fit - T-Shirt">Dry-Fit - T-Shirt</option>
+                                    <option value="Polyester - Jersey">Polyester - Jersey</option>
+                                    <option value="Polyester - Hoodie">Polyester - Hoodie</option>
+                                </select>
+                                <button id="add-fabric-type" type="button" class="px-3 py-2 border rounded text-sm bg-gray-100">Or Add New Fabric Type</button>
+                                <button id="fabric-inline-add" type="button" class="px-4 py-2 bg-black text-white rounded">Add</button>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sizes</label>
+                                    <input id="fabric-sizes-inline" type="text" class="w-full px-3 py-2 border rounded" placeholder="e.g. S, M, L" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                                    <input id="fabric-stock-inline" type="number" min="0" class="w-full px-3 py-2 border rounded" />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
+                                    <input id="fabric-threshold-inline" type="number" min="0" class="w-full px-3 py-2 border rounded" value="10" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Name</label>
+                                    <input id="fabric-supplier-inline" type="text" class="w-full px-3 py-2 border rounded" />
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Keeping Unit)</label>
+                                <input id="fabric-sku-inline" type="text" class="w-full px-3 py-2 border rounded" />
+                            </div>
+
+                            <div class="flex justify-end gap-3">
+                                <button type="button" id="fabric-inline-cancel" class="px-4 py-2 border rounded">Cancel</button>
+                                <button type="button" id="fabric-inline-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
+                            </div>
+                        </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex justify-end space-x-3 border-t border-gray-200 pt-4">
+                            <button type="button" id="cancel-btn" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">Cancel</button>
+                            <button type="submit" id="submit-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"><i class="fas fa-save mr-2"></i>Save</button>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -572,6 +484,99 @@
                     </button>
                 </div>
             </div>
+
+                <!-- Assign Stock Modal -->
+                <div id="assign-stock-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+                    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                        <h3 class="text-lg font-semibold mb-4">Assign Stock to Size</h3>
+                        <div class="mb-3">
+                            <label class="block text-sm text-gray-600 mb-1">Size Name</label>
+                            <input id="assign-stock-size" type="text" class="w-full px-3 py-2 border rounded" placeholder="e.g. S, M, L" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm text-gray-600 mb-1">Quantity</label>
+                            <input id="assign-stock-qty" type="number" min="0" class="w-full px-3 py-2 border rounded" placeholder="0" />
+                        </div>
+                        <div class="flex justify-end gap-3">
+                            <button type="button" id="assign-stock-cancel" class="px-4 py-2 border rounded">Cancel</button>
+                            <button type="button" id="assign-stock-add" class="px-4 py-2 bg-indigo-600 text-white rounded">Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assign Price Modal -->
+                <div id="assign-price-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+                    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                        <h3 class="text-lg font-semibold mb-4">Assign Price to Size</h3>
+                        <div id="assign-price-sizes" class="mb-3 text-sm text-gray-700">
+                            <!-- Checkboxes for sizes with stock will be injected here -->
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm text-gray-600 mb-1">Price (₱)</label>
+                            <input id="assign-price-value" type="number" step="0.01" min="0" class="w-full px-3 py-2 border rounded" placeholder="0.00" />
+                        </div>
+                        <div class="flex justify-end gap-3">
+                            <button type="button" id="assign-price-cancel" class="px-4 py-2 border rounded">Cancel</button>
+                            <button type="button" id="assign-price-add" class="px-4 py-2 bg-indigo-600 text-white rounded">Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fabric/Garment Modal (combined) -->
+                <div id="fabric-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-60">
+                    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                        <h3 class="text-lg font-semibold mb-4">Add Fabric / Garment Item</h3>
+
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Material / Variant</label>
+                            <select id="fabric-variant" class="w-full px-3 py-2 border rounded">
+                                <option value="">Choose variant</option>
+                                <option value="Cotton - Jersey">Cotton - Jersey</option>
+                                <option value="Cotton - T-Shirt">Cotton - T-Shirt</option>
+                                <option value="Cotton - Hoodie">Cotton - Hoodie</option>
+                                <option value="Dry-Fit - Jersey">Dry-Fit - Jersey</option>
+                                <option value="Dry-Fit - T-Shirt">Dry-Fit - T-Shirt</option>
+                                <option value="Polyester - Jersey">Polyester - Jersey</option>
+                                <option value="Polyester - Hoodie">Polyester - Hoodie</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Size</label>
+                            <input id="fabric-size" type="text" class="w-full px-3 py-2 border rounded" placeholder="e.g. Small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                            <input id="fabric-qty" type="number" min="0" class="w-full px-3 py-2 border rounded" value="0" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
+                            <input id="fabric-threshold" type="number" min="0" class="w-full px-3 py-2 border rounded" value="5" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                            <input id="fabric-supplier" type="text" class="w-full px-3 py-2 border rounded" placeholder="Supplier name" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                            <input id="fabric-sku" type="text" class="w-full px-3 py-2 border rounded" placeholder="e.g. COT-J-S" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Item Name (optional)</label>
+                            <input id="fabric-name" type="text" class="w-full px-3 py-2 border rounded" placeholder="Fabric name (optional)" />
+                        </div>
+
+                        <div class="flex justify-end gap-3">
+                            <button type="button" id="fabric-cancel" class="px-4 py-2 border rounded">Cancel</button>
+                            <button type="button" id="fabric-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Add to Inventory</button>
+                        </div>
+                    </div>
+                </div>
         </div>
     </div>
 
@@ -586,6 +591,8 @@
         let currentSort = { field: 'name', order: 'asc' };
         let currentFilters = { type: 'all', status: 'all', search: '' };
         let editingItemId = null;
+        // Per-size price map kept in memory while editing modal
+        let sizesPriceMap = {};
 
         // Auth check
         if (!token) {
@@ -632,7 +639,12 @@
             });
 
             // Modal controls
-            document.getElementById('add-new-btn').addEventListener('click', openAddModal);
+            document.getElementById('add-fabric-btn')?.addEventListener('click', () => {
+                // Open the standalone fabric modal (new) and hide the inventory modal
+                document.getElementById('inventory-modal')?.classList.add('hidden');
+                document.getElementById('fabric-modal-standalone')?.classList.remove('hidden');
+                document.getElementById('fabric-modal-standalone')?.classList.add('flex');
+            });
             document.getElementById('close-modal-btn').addEventListener('click', closeModal);
             document.getElementById('cancel-btn').addEventListener('click', closeModal);
             document.getElementById('inventory-form').addEventListener('submit', handleSubmit);
@@ -641,23 +653,40 @@
             document.getElementById('cancel-delete-btn').addEventListener('click', closeDeleteModal);
             document.getElementById('confirm-delete-btn').addEventListener('click', handleDelete);
 
-            // Product fields toggle
+            // Product fields toggle and placement visibility
             const isProductCheckbox = document.getElementById('is-product-checkbox');
             const productFields = document.getElementById('product-fields');
+            if (isProductCheckbox) {
                 isProductCheckbox.addEventListener('change', () => {
                     const perSizeSection = document.getElementById('per-size-section');
+                    const placementBox = document.getElementById('placement-box');
                     if (isProductCheckbox.checked) {
-                        productFields.classList.remove('hidden');
+                        productFields?.classList.remove('hidden');
                         perSizeSection?.classList.remove('hidden');
+                        placementBox?.classList.remove('hidden');
                     } else {
-                        productFields.classList.add('hidden');
+                        productFields?.classList.add('hidden');
                         perSizeSection?.classList.add('hidden');
+                        placementBox?.classList.add('hidden');
                     }
                 });
+            }
+
+            // Placement preset handling
+            const featuredCheckbox = document.getElementById('featured-checkbox');
+            const newArrivalPresets = document.getElementById('new-arrival-presets');
+            const newArrivalCustom = document.getElementById('new-arrival-custom');
+            newArrivalPresets?.addEventListener('change', (e) => {
+                if (e.target.value === 'custom') {
+                    newArrivalCustom.classList.remove('hidden');
+                } else {
+                    newArrivalCustom.classList.add('hidden');
+                }
+            });
 
             // Image preview listeners
-            document.getElementById('product-image').addEventListener('change', handleMainImagePreview);
-            document.getElementById('product-gallery').addEventListener('change', handleGalleryPreview);
+            document.getElementById('product-image')?.addEventListener('change', handleMainImagePreview);
+            document.getElementById('product-gallery')?.addEventListener('change', handleGalleryPreview);
 
             // Per-size controls
             const sizesRowsContainer = document.getElementById('sizes-rows');
@@ -674,16 +703,24 @@
                 const obj = {};
                 sizes.forEach(s => { obj[s] = obj[s] || 0; });
                 renderSizeRows(obj);
+                renderPreviewSizes(obj, sizesPriceMap);
             });
 
             addSizeRowBtn?.addEventListener('click', () => {
                 renderSizeRows(Object.assign(getSizesInventoryObject(), { '': 0 }));
                 const last = sizesRowsContainer?.querySelector('div:last-child [data-size-input]');
                 if (last) last.focus();
+                renderPreviewSizes(getSizesInventoryObject(), sizesPriceMap);
             });
 
             clearSizesBtn?.addEventListener('click', () => {
                 if (sizesRowsContainer) sizesRowsContainer.innerHTML = '';
+                renderPreviewSizes({}, sizesPriceMap);
+            });
+
+            // Update preview when per-size qty or size name changes
+            sizesRowsContainer?.addEventListener('input', () => {
+                try { renderPreviewSizes(getSizesInventoryObject(), sizesPriceMap); } catch (e) {}
             });
 
             applyQtyBtn?.addEventListener('click', () => {
@@ -696,6 +733,312 @@
                         qtyInput.value = Math.max(0, Math.floor(v));
                     }
                 });
+            });
+
+            // Assign modal controls
+            document.getElementById('assign-stock-add')?.addEventListener('click', () => {
+                const size = String(document.getElementById('assign-stock-size')?.value||'').trim();
+                let qty = Math.max(0, Math.floor(Number(document.getElementById('assign-stock-qty')?.value||0)));
+                // If qty not explicitly provided in modal, fallback to the Quantity Per Size input
+                if (!qty || qty <= 0) {
+                    const fallback = Math.max(0, Math.floor(Number(document.getElementById('qty-per-size-preview')?.value||0)));
+                    if (fallback > 0) qty = fallback;
+                }
+                if (!size || qty <= 0) {
+                    showError('Please provide size and quantity');
+                    return;
+                }
+                // Merge into existing sizesInventory
+                const obj = getSizesInventoryObject();
+                obj[size] = (Number(obj[size]||0) + qty);
+                renderSizeRows(obj);
+                // keep sizesPriceMap unchanged; re-render preview with current price map
+                renderPreviewSizes(obj, sizesPriceMap);
+                // clear inputs
+                document.getElementById('assign-stock-size').value = '';
+                document.getElementById('assign-stock-qty').value = '';
+                // close modal
+                document.getElementById('assign-stock-modal').classList.add('hidden');
+            });
+            document.getElementById('assign-stock-cancel')?.addEventListener('click', () => {
+                // ensure qty input container re-shown for next open
+                const qtyEl = document.getElementById('assign-stock-qty');
+                if (qtyEl) { qtyEl.parentElement?.classList.remove('hidden'); }
+                document.getElementById('assign-stock-modal').classList.add('hidden');
+            });
+
+            document.getElementById('assign-price-add')?.addEventListener('click', () => {
+                const priceRaw = document.getElementById('assign-price-value')?.value || '';
+                const price = Number(priceRaw || 0);
+                if (!price || price <= 0) { showError('Please provide a valid price'); return; }
+                const formatted = Number(price).toFixed(2);
+                const checkboxes = Array.from(document.querySelectorAll('#assign-price-sizes input[data-price-size]:checked'));
+                if (checkboxes.length === 0) { showError('Select at least one size'); return; }
+                // update in-memory sizesPriceMap
+                checkboxes.forEach(cb => {
+                    const s = cb.value;
+                    sizesPriceMap[s] = Number(formatted);
+                });
+                // Apply to preview rows
+                renderPreviewSizes(getSizesInventoryObject(), sizesPriceMap);
+                // reflect formatted value in the Price Per Size preview input
+                const pricePreview = document.getElementById('price-per-size-preview');
+                if (pricePreview) pricePreview.value = formatted;
+                // clear inputs and close
+                document.getElementById('assign-price-value').value = '';
+                document.getElementById('assign-price-modal').classList.add('hidden');
+            });
+            document.getElementById('assign-price-cancel')?.addEventListener('click', () => {
+                document.getElementById('assign-price-modal').classList.add('hidden');
+            });
+
+            // Wire open assign modals buttons if present
+            document.getElementById('open-assign-stock-btn')?.addEventListener('click', () => {
+                const assignModal = document.getElementById('assign-stock-modal');
+                if (!assignModal) return;
+                // If admin entered a global Quantity Per Size, use that and hide the qty field in the modal
+                const globalQty = Math.max(0, Math.floor(Number(document.getElementById('qty-per-size-preview')?.value || 0)));
+                const qtyEl = document.getElementById('assign-stock-qty');
+                if (globalQty > 0 && qtyEl) {
+                    qtyEl.value = globalQty;
+                    // hide the qty row so the modal matches the "Size name only" layout
+                    qtyEl.parentElement?.classList.add('hidden');
+                } else {
+                    // ensure qty row visible
+                    qtyEl?.parentElement?.classList.remove('hidden');
+                }
+                assignModal.classList.remove('hidden');
+            });
+            document.getElementById('open-assign-price-btn')?.addEventListener('click', () => {
+                // populate assign-price modal with sizes that have stock
+                const obj = getSizesInventoryObject();
+                // Build a map for preview to show counts
+                const map = {};
+                Object.keys(obj).forEach(k => map[k] = obj[k]);
+                renderPriceRows(map);
+                document.getElementById('assign-price-modal').classList.remove('hidden');
+            });
+
+            // Variant radios (Product / Fabric-Garment combined)
+            const variantProduct = document.getElementById('variant-product');
+            const variantFabric = document.getElementById('variant-fabric');
+            const itemTypeHidden = document.getElementById('item-type');
+            const productFieldsEl = document.getElementById('product-fields');
+            const fabricSectionEl = document.getElementById('variant-fabric-section');
+
+            function showProductVariant(){
+                if (itemTypeHidden) itemTypeHidden.value = 'product';
+                productFieldsEl?.classList.remove('hidden');
+                fabricSectionEl?.classList.add('hidden');
+            }
+
+            function showFabricVariant(){
+                if (itemTypeHidden) itemTypeHidden.value = 'fabric';
+                productFieldsEl?.classList.add('hidden');
+                fabricSectionEl?.classList.remove('hidden');
+            }
+
+            variantProduct?.addEventListener('change', () => {
+                if (variantProduct.checked) {
+                    showProductVariant();
+                }
+            });
+
+            variantFabric?.addEventListener('change', () => {
+                if (variantFabric.checked) {
+                    // Open the standalone fabric modal instead of switching inline
+                    if (itemTypeHidden) itemTypeHidden.value = 'fabric';
+                    document.getElementById('inventory-modal')?.classList.add('hidden');
+                    document.getElementById('fabric-modal')?.classList.remove('hidden');
+                }
+            });
+
+            // Fabric modal actions (inline section handlers)
+            document.getElementById('fabric-inline-cancel')?.addEventListener('click', () => {
+                // reset variant back to product and show product fields
+                if (variantProduct) variantProduct.checked = true;
+                if (itemTypeHidden) itemTypeHidden.value = 'product';
+                showProductVariant();
+            });
+
+            document.getElementById('fabric-inline-save')?.addEventListener('click', async () => {
+                const variant = String(document.getElementById('fabricGarmentSelect')?.value || '').trim();
+                const sizesText = String(document.getElementById('fabric-sizes-inline')?.value || '').trim();
+                const qty = Math.max(0, Math.floor(Number(document.getElementById('fabric-stock-inline')?.value || 0)));
+                const threshold = Math.max(0, Math.floor(Number(document.getElementById('fabric-threshold-inline')?.value || 5)));
+                const supplier = String(document.getElementById('fabric-supplier-inline')?.value || '').trim();
+                const sku = String(document.getElementById('fabric-sku-inline')?.value || '').trim();
+
+                if (!variant) { showError('Please choose a fabric & garment variant'); return; }
+                if (!sizesText || qty <= 0) { showError('Please provide sizes and stock'); return; }
+
+                // Build sizesInventory from comma-separated sizes using the same stock per size
+                const sizesArr = sizesText.split(',').map(s => s.trim()).filter(Boolean);
+                const sizesObj = {};
+                sizesArr.forEach(s => { sizesObj[s] = Number(qty); });
+
+                const payload = {
+                    name: `${variant}`,
+                    type: 'fabric',
+                    quantity: qty * sizesArr.length,
+                    unit: 'pieces',
+                    price: 0,
+                    lowStockThreshold: threshold,
+                    supplier: supplier,
+                    sku: sku,
+                    sizesInventory: JSON.stringify(sizesObj)
+                };
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/inventory`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => null);
+                        showError((err && err.message) ? err.message : 'Failed to add inventory item');
+                        return;
+                    }
+
+                    await res.json().catch(() => null);
+                    // Keep UI stable: close inline flow and refresh inventory list only.
+                    showSuccess('Inventory item added');
+                    // Do not switch radio selection or open the Add Item modal automatically.
+                    loadInventory();
+                } catch (e) {
+                    console.error('Fabric add error', e);
+                    showError('Failed to add inventory item');
+                }
+            });
+
+            // Standalone Fabric modal buttons (opened via Add Fabric&Garment button)
+            document.getElementById('fabric-cancel')?.addEventListener('click', () => {
+                document.getElementById('fabric-modal')?.classList.add('hidden');
+                // restore inventory modal
+                document.getElementById('inventory-modal')?.classList.remove('hidden');
+                // reset variant radio
+                if (variantProduct) variantProduct.checked = true;
+                if (itemTypeHidden) itemTypeHidden.value = 'product';
+            });
+
+            document.getElementById('fabric-save')?.addEventListener('click', async () => {
+                const variant = String(document.getElementById('fabric-variant')?.value || '').trim();
+                const size = String(document.getElementById('fabric-size')?.value || '').trim();
+                const qty = Math.max(0, Math.floor(Number(document.getElementById('fabric-qty')?.value || 0)));
+                const threshold = Math.max(0, Math.floor(Number(document.getElementById('fabric-threshold')?.value || 5)));
+                const supplier = String(document.getElementById('fabric-supplier')?.value || '').trim();
+                const sku = String(document.getElementById('fabric-sku')?.value || '').trim();
+                const nameVal = String(document.getElementById('fabric-name')?.value || '').trim();
+
+                if (!variant) { showError('Please choose a variant'); return; }
+                if (!size || qty <= 0) { showError('Please provide size and quantity'); return; }
+
+                const payload = {
+                    name: nameVal || `${variant} - ${size}`,
+                    type: 'fabric',
+                    quantity: qty,
+                    unit: 'pieces',
+                    price: 0,
+                    lowStockThreshold: threshold,
+                    supplier: supplier,
+                    sku: sku,
+                    sizesInventory: JSON.stringify({ [size]: qty })
+                };
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/inventory`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => null);
+                        showError((err && err.message) ? err.message : 'Failed to add inventory item');
+                        return;
+                    }
+
+                    await res.json().catch(() => null);
+                    // Close the combined Fabric modal and refresh inventory only.
+                    showSuccess('Inventory item added');
+                    document.getElementById('fabric-modal')?.classList.add('hidden');
+                    // Do not reopen or alter the main inventory/product modal here.
+                    loadInventory();
+                } catch (e) {
+                    console.error('Fabric add error', e);
+                    showError('Failed to add inventory item');
+                }
+            });
+
+            // Handlers for standalone fabric modal
+            document.getElementById('fabric-standalone-cancel')?.addEventListener('click', () => {
+                // Close the standalone Fabric modal and keep the main inventory list visible.
+                document.getElementById('fabric-modal-standalone')?.classList.add('hidden');
+                document.getElementById('fabric-modal-standalone')?.classList.remove('flex');
+            });
+
+            document.getElementById('fabric-standalone-save')?.addEventListener('click', async () => {
+                const variant = String(document.getElementById('fabric-variant-standalone')?.value || '').trim();
+                const sizesText = String(document.getElementById('fabric-sizes-standalone')?.value || '').trim();
+                const qty = Math.max(0, Math.floor(Number(document.getElementById('fabric-qty-standalone')?.value || 0)));
+                const threshold = Math.max(0, Math.floor(Number(document.getElementById('fabric-threshold-standalone')?.value || 5)));
+                const supplier = String(document.getElementById('fabric-supplier-standalone')?.value || '').trim();
+                const sku = String(document.getElementById('fabric-sku-standalone')?.value || '').trim();
+
+                if (!variant) { showError('Please choose a fabric & garment variant'); return; }
+                if (!sizesText || qty <= 0) { showError('Please provide sizes and stock'); return; }
+
+                const sizesArr = sizesText.split(',').map(s => s.trim()).filter(Boolean);
+                const sizesObj = {};
+                sizesArr.forEach(s => { sizesObj[s] = Number(qty); });
+
+                const payload = {
+                    name: `${variant}`,
+                    type: 'fabric',
+                    quantity: qty * sizesArr.length,
+                    unit: 'pieces',
+                    price: 0,
+                    lowStockThreshold: threshold,
+                    supplier: supplier,
+                    sku: sku,
+                    sizesInventory: JSON.stringify(sizesObj)
+                };
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/inventory`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => null);
+                        showError((err && err.message) ? err.message : 'Failed to add inventory item');
+                        return;
+                    }
+
+                    await res.json().catch(() => null);
+                    // Close the standalone Fabric modal and refresh inventory only.
+                    showSuccess('Inventory item added');
+                    document.getElementById('fabric-modal-standalone')?.classList.add('hidden');
+                    document.getElementById('fabric-modal-standalone')?.classList.remove('flex');
+                    // Keep main inventory modal hidden — admin stays on the inventory list.
+                    loadInventory();
+                } catch (e) {
+                    console.error('Fabric add error', e);
+                    showError('Failed to add inventory item');
+                }
             });
 
             // Inventory table: toggle full per-size list
@@ -853,6 +1196,64 @@
                 if (size) obj[size] = Math.max(0, Math.floor(qty));
             });
             return obj;
+        }
+
+        // Price helpers
+        function renderPriceRows(obj) {
+            const container = document.getElementById('assign-price-sizes');
+            if (!container) return;
+            container.innerHTML = '';
+            const data = obj || {};
+            Object.keys(data).forEach(size => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2 mb-2';
+                row.innerHTML = `
+                    <label class="inline-flex items-center gap-2">
+                        <input type="checkbox" data-price-size value="${escapeHtml(size)}" />
+                        <span>${escapeHtml(size)} (${Number(data[size]||0)})</span>
+                    </label>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function getSizesPriceObject() {
+            return Object.assign({}, sizesPriceMap || {});
+        }
+
+        function renderPreviewSizes(sizesInv, sizesPrice) {
+            const container = document.getElementById('preview-sizes');
+            if (!container) return;
+            container.innerHTML = '';
+            const inv = sizesInv || {};
+            const priceMap = sizesPrice || {};
+            const keys = Object.keys(inv || {});
+            if (keys.length === 0) {
+                container.innerHTML = '<div class="text-gray-500">No sizes added yet.</div>';
+                return;
+            }
+            keys.forEach(size => {
+                const qty = Number(inv[size]||0);
+                const price = priceMap[size];
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between py-1 border-b';
+                row.setAttribute('data-preview-size', 'true');
+                row.dataset.size = size;
+                row.innerHTML = `
+                    <div class="text-sm">${escapeHtml(size)}</div>
+                    <div class="text-sm text-gray-700">Qty: <span class="font-medium">${qty}</span> &nbsp;|&nbsp; Price: <span data-preview-price class="font-medium">${price !== undefined ? Number(price).toFixed(2) : ''}</span></div>
+                `;
+                container.appendChild(row);
+            });
+            // Update the Price Per Size preview input: show a single formatted value when all prices match
+            try {
+                const pricePreviewInput = document.getElementById('price-per-size-preview');
+                if (pricePreviewInput) {
+                    const vals = Object.values(priceMap || {}).map(v => Number(v || 0).toFixed(2));
+                    const uniq = Array.from(new Set(vals.filter(v => v !== '0.00')));
+                    if (uniq.length === 1) pricePreviewInput.value = uniq[0]; else pricePreviewInput.value = '';
+                }
+            } catch (e) { /* ignore */ }
         }
 
         // Load inventory data
@@ -1066,6 +1467,24 @@
             editingItemId = null;
             document.getElementById('modal-title').textContent = 'Add New Inventory Item';
             document.getElementById('inventory-form').reset();
+            // reset variant and per-size state
+            const vp = document.getElementById('variant-product'); if (vp) vp.checked = true;
+            const vf = document.getElementById('variant-fabric'); if (vf) vf.checked = false;
+            const it = document.getElementById('item-type'); if (it) it.value = 'product';
+            const sizesRowsContainer = document.getElementById('sizes-rows'); if (sizesRowsContainer) sizesRowsContainer.innerHTML = '';
+            sizesPriceMap = {};
+            renderPreviewSizes({}, sizesPriceMap);
+            document.getElementById('fabric-modal')?.classList.add('hidden');
+            // ensure product fields are visible in the modal
+            const productFieldsEl = document.getElementById('product-fields'); if (productFieldsEl) productFieldsEl.classList.remove('hidden');
+            // reset sellable toggle and placement UI
+            const sellable = document.getElementById('is-product-checkbox'); if (sellable) { sellable.checked = false; }
+            const placementBox = document.getElementById('placement-box'); if (placementBox) placementBox.classList.add('hidden');
+            const perSizeSection = document.getElementById('per-size-section'); if (perSizeSection) perSizeSection.classList.add('hidden');
+            // hide inline fabric section if present
+            const fabricSectionEl = document.getElementById('variant-fabric-section'); if (fabricSectionEl) fabricSectionEl.classList.add('hidden');
+            // hide variant radio buttons for the Add New flow to simplify the modal
+            const variantSelectorEl = document.getElementById('variant-selector'); if (variantSelectorEl) variantSelectorEl.classList.add('hidden');
             document.getElementById('inventory-modal').classList.remove('hidden');
             document.getElementById('inventory-modal').classList.add('flex');
         }
@@ -1090,11 +1509,11 @@
                 const { data } = await response.json();
 
                 // Populate basic form fields
-                document.getElementById('item-name').value = data.name;
-                document.getElementById('item-type').value = data.type;
-                document.getElementById('item-quantity').value = data.quantity;
-                document.getElementById('item-unit').value = data.unit;
-                document.getElementById('item-price').value = data.price;
+                const itemNameEl = document.getElementById('item-name'); if (itemNameEl) itemNameEl.value = data.name;
+                const itemTypeEl = document.getElementById('item-type'); if (itemTypeEl) itemTypeEl.value = data.type;
+                const itemQuantityEl = document.getElementById('item-quantity'); if (itemQuantityEl) itemQuantityEl.value = data.quantity;
+                const itemUnitEl = document.getElementById('item-unit'); if (itemUnitEl) itemUnitEl.value = data.unit;
+                const itemPriceEl = document.getElementById('item-price'); if (itemPriceEl) itemPriceEl.value = data.price;
                 document.getElementById('item-threshold').value = data.lowStockThreshold;
                 document.getElementById('item-supplier').value = data.supplier || '';
                 document.getElementById('item-sku').value = data.sku || '';
@@ -1108,13 +1527,16 @@
                 
                 if (data.isProduct) {
                     productFields.classList.remove('hidden');
+                    // show placement and per-size editor for sellable products
+                    const placementBox = document.getElementById('placement-box'); if (placementBox) placementBox.classList.remove('hidden');
+                    const perSizeSection = document.getElementById('per-size-section'); if (perSizeSection) perSizeSection.classList.remove('hidden');
                     
-                    document.getElementById('product-category').value = data.category || '';
-                    document.getElementById('product-material').value = data.material || '';
-                    document.getElementById('product-sizes').value = data.sizes ? data.sizes.join(', ') : '';
-                    document.getElementById('product-colors').value = data.colors ? data.colors.join(', ') : '';
-                    document.getElementById('product-details').value = data.productDetails || '';
-                    document.getElementById('product-faqs').value = data.faqs || '';
+                    const prodCatEl = document.getElementById('product-category'); if (prodCatEl) prodCatEl.value = data.category || '';
+                    const prodMaterialEl = document.getElementById('product-material'); if (prodMaterialEl) prodMaterialEl.value = data.material || '';
+                    const prodSizesEl = document.getElementById('product-sizes'); if (prodSizesEl) prodSizesEl.value = data.sizes ? data.sizes.join(', ') : '';
+                    const prodColorsEl = document.getElementById('product-colors'); if (prodColorsEl) prodColorsEl.value = data.colors ? data.colors.join(', ') : '';
+                    const prodDetailsEl = document.getElementById('product-details'); if (prodDetailsEl) prodDetailsEl.value = data.productDetails || '';
+                    const prodFaqsEl = document.getElementById('product-faqs'); if (prodFaqsEl) prodFaqsEl.value = data.faqs || '';
                     
                     // Show existing main image
                     const mainImagePreview = document.getElementById('main-image-preview');
@@ -1124,6 +1546,12 @@
                     } else {
                         mainImagePreview.classList.add('hidden');
                     }
+                    // populate per-size prices map
+                    try {
+                        sizesPriceMap = data.sizesPrice || {};
+                    } catch (e) { sizesPriceMap = {}; }
+                    // render preview with sizes and prices
+                    try { renderPreviewSizes(data.sizesInventory || {}, sizesPriceMap); } catch (e) {}
                     
                     // Show existing gallery images
                     const galleryPreview = document.getElementById('gallery-preview');
@@ -1158,16 +1586,18 @@
                 } else {
                     productFields.classList.add('hidden');
                     // Clear product fields
-                    document.getElementById('product-category').value = '';
-                    document.getElementById('product-material').value = '';
-                    document.getElementById('product-sizes').value = '';
-                    document.getElementById('product-colors').value = '';
-                    document.getElementById('product-details').value = '';
-                    document.getElementById('product-faqs').value = '';
+                        const prodCatEl2 = document.getElementById('product-category'); if (prodCatEl2) prodCatEl2.value = '';
+                        const prodMaterialEl2 = document.getElementById('product-material'); if (prodMaterialEl2) prodMaterialEl2.value = '';
+                        const prodSizesEl2 = document.getElementById('product-sizes'); if (prodSizesEl2) prodSizesEl2.value = '';
+                        const prodColorsEl2 = document.getElementById('product-colors'); if (prodColorsEl2) prodColorsEl2.value = '';
+                        const prodDetailsEl2 = document.getElementById('product-details'); if (prodDetailsEl2) prodDetailsEl2.value = '';
+                        const prodFaqsEl2 = document.getElementById('product-faqs'); if (prodFaqsEl2) prodFaqsEl2.value = '';
                     document.getElementById('main-image-preview').classList.add('hidden');
                     document.getElementById('gallery-preview').classList.add('hidden');
                 }
 
+                // ensure variant selector visible when editing an existing item
+                const variantSelectorEl = document.getElementById('variant-selector'); if (variantSelectorEl) variantSelectorEl.classList.remove('hidden');
                 document.getElementById('inventory-modal').classList.remove('hidden');
                 document.getElementById('inventory-modal').classList.add('flex');
 
@@ -1186,6 +1616,10 @@
             // Reset product fields visibility
             const productFields = document.getElementById('product-fields');
             productFields.classList.add('hidden');
+            // reset sellable toggle and placement box
+            const sellable = document.getElementById('is-product-checkbox'); if (sellable) sellable.checked = false;
+            const placementBox = document.getElementById('placement-box'); if (placementBox) placementBox.classList.add('hidden');
+            const perSizeSection = document.getElementById('per-size-section'); if (perSizeSection) perSizeSection.classList.add('hidden');
             
             // Clear image previews
             document.getElementById('main-image-preview').classList.add('hidden');
@@ -1198,7 +1632,7 @@
             editingItemId = null;
         }
 
-        // Handle form submission
+            // Handle form submission
         async function handleSubmit(e) {
             e.preventDefault();
 
@@ -1209,7 +1643,8 @@
             formData.append('name', document.getElementById('item-name').value.trim());
             formData.append('type', document.getElementById('item-type').value);
             // Quantity: prefer sum of per-size inventory when provided
-            let initialQuantity = parseFloat(document.getElementById('item-quantity').value) || 0;
+            const itemQuantityElSubmit = document.getElementById('item-quantity');
+            let initialQuantity = itemQuantityElSubmit ? (parseFloat(itemQuantityElSubmit.value) || 0) : 0;
             let sizesInventoryObj = {};
             if (typeof getSizesInventoryObject === 'function') {
                 try { sizesInventoryObj = getSizesInventoryObject(); } catch (e) { sizesInventoryObj = {}; }
@@ -1221,8 +1656,10 @@
             } else {
                 formData.append('quantity', initialQuantity);
             }
-            formData.append('unit', document.getElementById('item-unit').value.trim());
-            formData.append('price', parseFloat(document.getElementById('item-price').value));
+            const itemUnitElSubmit = document.getElementById('item-unit');
+            formData.append('unit', itemUnitElSubmit ? itemUnitElSubmit.value.trim() : 'pieces');
+            const itemPriceElSubmit = document.getElementById('item-price');
+            formData.append('price', itemPriceElSubmit ? parseFloat(itemPriceElSubmit.value) || 0 : 0);
             formData.append('lowStockThreshold', parseInt(document.getElementById('item-threshold').value));
             formData.append('supplier', document.getElementById('item-supplier').value.trim());
             formData.append('sku', document.getElementById('item-sku').value.trim());
@@ -1231,8 +1668,10 @@
             // Product fields
             const isProduct = document.getElementById('is-product-checkbox').checked;
             formData.append('isProduct', isProduct);
-            formData.append('category', document.getElementById('product-category').value.trim());
-            formData.append('material', document.getElementById('product-material').value.trim());
+            const prodCatElSubmit = document.getElementById('product-category');
+            formData.append('category', prodCatElSubmit ? prodCatElSubmit.value.trim() : '');
+            const prodMaterialElSubmit = document.getElementById('product-material');
+            if (prodMaterialElSubmit) formData.append('material', prodMaterialElSubmit.value.trim());
             
             // Handle main image file
             const mainImageFile = document.getElementById('product-image').files[0];
@@ -1247,20 +1686,54 @@
             }
             
             // Sizes and colors (as JSON strings for arrays)
-            const sizes = document.getElementById('product-sizes').value
-                .split(',')
-                .map(s => s.trim())
-                .filter(s => s.length > 0);
-            formData.append('sizes', JSON.stringify(sizes));
-            
-            const colors = document.getElementById('product-colors').value
-                .split(',')
-                .map(c => c.trim())
-                .filter(c => c.length > 0);
-            formData.append('colors', JSON.stringify(colors));
-            
-            formData.append('productDetails', document.getElementById('product-details').value.trim());
-            formData.append('faqs', document.getElementById('product-faqs').value.trim());
+            const prodSizesElSubmit = document.getElementById('product-sizes');
+            if (prodSizesElSubmit) {
+                const sizes = prodSizesElSubmit.value
+                    .split(',')
+                    .map(s => s.trim())
+                    .filter(s => s.length > 0);
+                formData.append('sizes', JSON.stringify(sizes));
+            }
+
+            const prodColorsElSubmit = document.getElementById('product-colors');
+            if (prodColorsElSubmit) {
+                const colors = prodColorsElSubmit.value
+                    .split(',')
+                    .map(c => c.trim())
+                    .filter(c => c.length > 0);
+                formData.append('colors', JSON.stringify(colors));
+            }
+
+            formData.append('productDetails', document.getElementById('product-details') ? document.getElementById('product-details').value.trim() : '');
+            const prodFaqsElSubmit = document.getElementById('product-faqs');
+            if (prodFaqsElSubmit) formData.append('faqs', prodFaqsElSubmit.value.trim());
+
+            // Append per-size price map if any
+            try {
+                const prices = getSizesPriceObject();
+                if (prices && Object.keys(prices).length > 0) {
+                    formData.append('sizesPrice', JSON.stringify(prices));
+                }
+            } catch (e) { /* ignore */ }
+
+            // Serialize placements (featured/newArrival)
+            try {
+                let newArrivalExpiresAt = null;
+                const preset = document.getElementById('new-arrival-presets')?.value;
+                const custom = document.getElementById('new-arrival-custom')?.value;
+                if (preset === 'custom' && custom) {
+                    newArrivalExpiresAt = new Date(custom).toISOString();
+                } else if (preset && preset !== '') {
+                    const days = Number(preset) || 0;
+                    if (days > 0) newArrivalExpiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+                }
+                const placementsObj = { 
+                    featured: !!document.getElementById('featured-checkbox')?.checked, 
+                    customize: !!document.getElementById('customize-checkbox')?.checked,
+                    newArrivalExpiresAt 
+                };
+                formData.append('placements', JSON.stringify(placementsObj));
+            } catch (e) { /* ignore */ }
 
             try {
                 const url = editingItemId ? 
@@ -1433,5 +1906,80 @@
         }
         window.openCatalogAddModal = openCatalogAddModal;
     </script>
+
+    <!-- Standalone Fabric&Garment Modal (placed as direct child of body) -->
+    <div id="fabric-modal-standalone" class="hidden fixed inset-0 bg-black/40 items-center justify-center p-4 z-70">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+            <h3 class="text-lg font-semibold mb-4 text-center">Fabric&Garment</h3>
+
+            <div class="mb-3">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Choose a Fabric with Garment</label>
+                <select id="fabric-variant-standalone" class="w-full px-3 py-2 border rounded">
+                    <option value="">Choose variant</option>
+                    <option value="Cotton - Jersey">Cotton - Jersey</option>
+                    <option value="Cotton - T-Shirt">Cotton - T-Shirt</option>
+                    <option value="Cotton - Hoodie">Cotton - Hoodie</option>
+                    <option value="Dry-Fit - Jersey">Dry-Fit - Jersey</option>
+                    <option value="Dry-Fit - T-Shirt">Dry-Fit - T-Shirt</option>
+                    <option value="Polyester - Jersey">Polyester - Jersey</option>
+                    <option value="Polyester - Hoodie">Polyester - Hoodie</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sizes</label>
+                    <input id="fabric-sizes-standalone" type="text" class="w-full px-3 py-2 border rounded" placeholder="e.g. S, M, L" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                    <input id="fabric-qty-standalone" type="number" min="0" class="w-full px-3 py-2 border rounded" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
+                    <input id="fabric-threshold-standalone" type="number" min="0" class="w-full px-3 py-2 border rounded" value="10" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Name</label>
+                    <input id="fabric-supplier-standalone" type="text" class="w-full px-3 py-2 border rounded" />
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Keeping Unit)</label>
+                <input id="fabric-sku-standalone" type="text" class="w-full px-3 py-2 border rounded" />
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button id="fabric-standalone-cancel" type="button" class="px-4 py-2 border rounded">Cancel</button>
+                <button id="fabric-standalone-save" type="button" class="px-4 py-2 bg-black text-white rounded">Save</button>
+            </div>
+        </div>
+    </div>
 </body>
+<script>
+(function(){
+    document.addEventListener('DOMContentLoaded', function(){
+        const anchors = Array.from(document.querySelectorAll('a[href="add-product.html"]'));
+        if(anchors.length===0) return;
+        anchors.forEach(anchor=>{
+            let submenu = anchor.parentElement.querySelector('.add-product-submenu');
+            if(!submenu){
+                submenu = document.createElement('div');
+                submenu.className = 'add-product-submenu hidden mt-1 flex flex-col';
+                submenu.innerHTML = '<a href="add-predisign-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="w-6"></i><span class="ml-3 text-sm">Add Pre-Design Product</span></a>';
+                anchor.insertAdjacentElement('afterend', submenu);
+            }
+            anchor.style.cursor='pointer';
+            if (location.pathname.endsWith('add-product.html') || location.pathname.endsWith('add-predisign-product.html')) submenu.classList.remove('hidden');
+        });
+        const mainNavLinks = Array.from(document.querySelectorAll('nav a')).filter(a=>{ const h=a.getAttribute('href'); return h && h!=='add-product.html' && h!=='add-predisign-product.html'; });
+        mainNavLinks.forEach(l=>{ l.addEventListener('click', ()=>{ document.querySelectorAll('.add-product-submenu').forEach(s=>s.classList.add('hidden')); }); });
+        window.addEventListener('popstate', ()=> document.querySelectorAll('.add-product-submenu').forEach(s=>s.classList.add('hidden')));
+    });
+})();
+</script>
 </html>

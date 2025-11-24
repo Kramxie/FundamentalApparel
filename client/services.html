@@ -191,19 +191,18 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
                     <!-- Customize Jersey Card -->
-                    <div onclick="selectServiceCategory('customize-jersey')" class="group cursor-pointer">
+                    <div onclick="selectServiceCategory('predesign-product')" class="group cursor-pointer">
                         <div
                             class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 h-full transform hover:scale-105">
                             <div class="text-center">
                                 <i
                                     class="fas fa-tshirt text-6xl text-indigo-600 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
-                                <h3 class="text-2xl font-bold text-gray-900 mb-3">Customize Apparel</h3>
-                                <p class="text-gray-600 mb-6">Design your own Apparel with our live preview tool. Choose
-                                    colors, add text, upload logos, and see your design in real-time.</p>
+                                <h3 class="text-2xl font-bold text-gray-900 mb-3">Pre-Design Apparel</h3>
+                                <p class="text-gray-600 mb-6">Choose from our collection of pre-designed apparel. Customize the text to make each design uniquely yours.</p>
                                 <div class="space-y-2 text-sm text-gray-500 mb-6">
-                                    <p><i class="fas fa-check text-green-500 mr-2"></i>2D Live Preview</p>
-                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Custom Colors</p>
-                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Add Text & Logos</p>
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Ready-Made Designs</p>
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Text Personalization</p>
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Live Preview</p>
                                 </div>
                                 <button
                                     class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
@@ -220,15 +219,13 @@
                             <div class="text-center">
                                 <i
                                     class="fas fa-print text-6xl text-pink-600 mb-4 group-hover:scale-110 transition-transform duration-300"></i>
-                                <h3 class="text-2xl font-bold text-gray-900 mb-3">Printing Only</h3>
-                                <p class="text-gray-600 mb-6">Already have your jersey or apparel design? Upload your
-                                    layout and provide the order details—quantity, fabric, and garment style. We’ll take
-                                    care of professional printing with fast and reliable turnaround</p>
+                                <h3 class="text-2xl font-bold text-gray-900 mb-3">Upload Design</h3>
+                                <p class="text-gray-600 mb-6">Already have your jersey or apparel design? Upload your layout and provide the player details—names, numbers, team info, and quantity. We’ll handle the production with fast and reliable turnaround.</p>
                                 <div class="space-y-2 text-sm text-gray-500 mb-6">
-                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Upload Design</p>
-                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Select Fabric and Garment Type
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Upload Your Design</p>
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Enter Team & Player Details
                                     </p>
-                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Fast & Reliable Printing</p>
+                                    <p><i class="fas fa-check text-green-500 mr-2"></i>Fast & Reliable Production</p>
                                 </div>
                                 <button
                                     class="px-6 py-2 bg-pink-600 text-white rounded-lg font-semibold hover:bg-pink-700 transition">
@@ -1538,9 +1535,9 @@
         // Select a service category (from the initial screen)
         function selectServiceCategory(category) {
             // If user selects Customize Jersey, redirect to the new professional customizer
-            if (category === 'customize-jersey') {
+            if (category === 'predesign-product') {
 
-                window.location.href = 'customize-jersey-new.html';
+                window.location.href = 'predesign-product.html';
 
                 return;
 
@@ -2119,6 +2116,25 @@
         }
         // === INITIALIZATION ===
         document.addEventListener('DOMContentLoaded', () => {
+
+            const token = localStorage.getItem('token');
+            const authLoggedOut = document.getElementById('auth-links-logged-out');
+            const authLoggedIn = document.getElementById('auth-links-logged-in');
+            const mobileAuthLoggedOut = document.getElementById('mobile-auth-logged-out');
+            const mobileAuthLoggedIn = document.getElementById('mobile-auth-logged-in');
+
+            if (token) {
+                if (authLoggedOut) authLoggedOut.classList.add('hidden');
+                if (authLoggedIn) authLoggedIn.classList.remove('hidden');
+                if (mobileAuthLoggedOut) mobileAuthLoggedOut.classList.add('hidden');
+                if (mobileAuthLoggedIn) mobileAuthLoggedIn.classList.remove('hidden');
+            } else {
+                if (authLoggedOut) authLoggedOut.classList.remove('hidden');
+                if (authLoggedIn) authLoggedIn.classList.add('hidden');
+                if (mobileAuthLoggedOut) mobileAuthLoggedOut.classList.remove('hidden');
+                if (mobileAuthLoggedIn) mobileAuthLoggedIn.classList.add('hidden');
+            }
+            
             // Initialize canvas
             initializeCanvas();
 

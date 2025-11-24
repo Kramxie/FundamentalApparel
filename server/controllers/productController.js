@@ -58,6 +58,7 @@ exports.addProduct = async (req, res, next) => {
       material: material || "",
       productDetails: productDetails || "",
       faqs: faqs || "",
+      type: req.body.type || 'regular'
     };
 
     // Parse optional per-size structures (accept JSON strings or objects)
@@ -96,6 +97,19 @@ exports.addProduct = async (req, res, next) => {
         payload.gallery = req.files.gallery.map(
           (f) => `${BASE_URL}/uploads/products/${path.basename(f.path)}`
         );
+      }
+      // Handle predesign front/back uploads
+      if (req.files.front && req.files.front[0]) {
+        const frontUrl = `${BASE_URL}/uploads/products/${path.basename(req.files.front[0].path)}`;
+        payload.images = payload.images || {};
+        payload.images.front = frontUrl;
+        // Default main image to front if not set
+        if (!payload.imageUrl) payload.imageUrl = frontUrl;
+      }
+      if (req.files.back && req.files.back[0]) {
+        const backUrl = `${BASE_URL}/uploads/products/${path.basename(req.files.back[0].path)}`;
+        payload.images = payload.images || {};
+        payload.images.back = backUrl;
       }
     }
 
@@ -165,6 +179,10 @@ exports.getProducts = async (req, res, next) => {
         query._id = { $ne: req.query.exclude };
       }
       query.category = req.query.category;
+    }
+    // Filter by product type (e.g., predesign)
+    if (req.query.type) {
+      query.type = req.query.type;
     }
     if (req.query.minPrice || req.query.maxPrice) {
       query.price = {};

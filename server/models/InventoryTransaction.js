@@ -8,6 +8,13 @@ const InventoryTransactionSchema = new mongoose.Schema({
   qty: { type: Number, required: true }, // positive = allocate (deduct), negative = release (add)
   type: { type: String, enum: ['allocate', 'release', 'restore', 'adjust'], required: true },
   note: { type: String, default: '' }
+  ,
+  // optional per-size breakdown for allocate/consume operations
+  sizesMap: {
+    type: Map,
+    of: Number,
+    default: {}
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('InventoryTransaction', InventoryTransactionSchema);

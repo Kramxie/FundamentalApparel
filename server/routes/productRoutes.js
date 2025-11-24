@@ -51,7 +51,10 @@ router.route('/')
     .get(getProducts)
     .post(protect, authorize('admin','employee'), upload.fields([
         { name: 'image', maxCount: 1 },
-        { name: 'gallery', maxCount: 8 }
+        { name: 'gallery', maxCount: 8 },
+        // support predesign front/back uploads
+        { name: 'front', maxCount: 1 },
+        { name: 'back', maxCount: 1 }
     ]), addProduct); 
 
 

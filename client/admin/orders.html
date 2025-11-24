@@ -188,7 +188,7 @@
                 </select>
                 <select id="custom-filter-type" class="border rounded-md px-3 py-2 text-sm">
                   <option value="">Type</option>
-                  <option>Customize Product</option>
+                  <option>Pre-Design Product</option>
                   <option>Upload File</option>
                 </select>
                 <select id="custom-filter-shipmethod" class="border rounded-md px-3 py-2 text-sm">
@@ -1141,13 +1141,13 @@
         } catch (e) { console.warn('Failed to render mobile cards', e); }
       }
 
-      // --- MODIFIED: renderCustomOrders ---
+        // --- MODIFIED: renderCustomOrders ---
       function renderCustomOrders() {
         const typeLabel = (t) => {
           // Prefer service-based mapping for clarity
           return function(mapObj){
             if (mapObj.serviceType === 'printing-only') return 'Upload File';
-            if (t === 'Template' || t === 'LayoutCreation') return 'Customize Product';
+            if (t === 'Template' || t === 'LayoutCreation') return 'Pre-Design Product';
             if (t === 'PrintingOnly' || t === 'FileUpload') return 'Upload File';
             return t || '-';
           };

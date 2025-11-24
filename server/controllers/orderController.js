@@ -5,6 +5,7 @@ const Inventory = require('../models/Inventory');
 const User = require('../models/User');
 const mongoose = require('mongoose');
 const notify = require('../utils/notify');
+const { allocateInventoryBySizes, findInventoryByName } = require('../utils/inventory');
 
 function escapeRegex(text) {
     return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -305,89 +306,55 @@ exports.updateOrderStatus = async (req, res) => {
                 updates.isPaid = true;
                 updates.paidAt = new Date();
 
-                // Deduct stock for each order item and update Inventory if present
+                // Deduct stock for the whole order. Prefer atomic per-size allocations when sizes are present.
                 const items = order.orderItems || [];
+                // Group items per inventory/product name when sizes present
+                const perInventorySizes = {};
                 for (const it of items) {
+                    const qty = Number(it.quantity || 0) || 0;
+                    const size = it.size || null;
+                    if (!it.product) continue;
                     try {
-                        const itemQty = Number(it.quantity || 0);
-                        const itemSize = it.size || null;
-                        const productId = it.product;
-                        if (!productId) continue;
-
-                        const product = await Product.findById(productId);
-                        if (!product) continue;
-
-                        const previousStock = Number(product.countInStock || 0);
-                        const newStock = Math.max(0, previousStock - itemQty);
-                        product.countInStock = newStock;
-                        await product.save();
-                        console.log(`[Stock] Admin approved - Deducted ${itemQty} from Product ${product.name}. New stock: ${newStock}`);
-
-                        // Adjust Inventory document if linked
-                        const inventoryItem = await Inventory.findOne({ productId: product._id });
-                        if (inventoryItem) {
+                        const prod = await Product.findById(it.product);
+                        if (!prod) continue;
+                        const invName = prod.name || prod._id.toString();
+                        if (size) {
+                            perInventorySizes[invName] = perInventorySizes[invName] || {};
+                            perInventorySizes[invName][size] = (perInventorySizes[invName][size] || 0) + qty;
+                        } else {
+                            // fallback: decrement product.countInStock directly
+                            const previousStock = Number(prod.countInStock || 0);
+                            const newStock = Math.max(0, previousStock - qty);
+                            prod.countInStock = newStock;
+                            await prod.save();
+                            console.log(`[Stock] Admin approved - Deducted ${qty} from Product ${prod.name}. New stock: ${newStock}`);
+                            // adjust inventory doc if exists
                             try {
-                                if (inventoryItem.sizesInventory && itemSize) {
-                                    const getQty = (key) => (inventoryItem.sizesInventory.get ? Number(inventoryItem.sizesInventory.get(key) || 0) : Number(inventoryItem.sizesInventory[key] || 0));
-                                    const setQty = (key, val) => {
-                                        if (inventoryItem.sizesInventory.set) inventoryItem.sizesInventory.set(key, val);
-                                        else inventoryItem.sizesInventory[key] = val;
-                                    };
-
-                                    const prevSizeQty = getQty(itemSize);
-                                    const newSizeQty = Math.max(0, prevSizeQty - itemQty);
-                                    setQty(itemSize, newSizeQty);
-
-                                    // Recalculate total quantity from sizesInventory
-                                    let totalFromSizes = 0;
-                                    if (inventoryItem.sizesInventory.forEach) {
-                                        inventoryItem.sizesInventory.forEach(v => { totalFromSizes += Number(v || 0); });
-                                    } else {
-                                        for (const k of Object.keys(inventoryItem.sizesInventory || {})) {
-                                            totalFromSizes += Number(inventoryItem.sizesInventory[k] || 0);
-                                        }
-                                    }
-                                    inventoryItem.quantity = totalFromSizes;
-                                    await inventoryItem.save();
-                                    console.log(`[Stock] Deducted ${itemQty} of size ${itemSize} from Inventory ${inventoryItem.name}. New size qty: ${newSizeQty}. Total qty: ${totalFromSizes}`);
-
-                                    // Keep Product.countInStock in sync with inventory total when applicable
-                                    try {
-                                        product.countInStock = totalFromSizes;
-                                        await product.save();
-                                    } catch (syncErr) {
-                                        console.warn('[Stock] Failed to sync product countInStock with inventory total', syncErr && syncErr.message);
-                                    }
-                                } else {
-                                    // Fallback: set inventory quantity to newStock
-                                    inventoryItem.quantity = newStock;
-                                    await inventoryItem.save();
-                                    console.log(`[Stock] Synced Inventory for ${product.name}. New quantity: ${newStock}`);
+                                const inv = await Inventory.findOne({ productId: prod._id });
+                                if (inv) {
+                                    inv.quantity = newStock;
+                                    await inv.save();
                                 }
-                            } catch (invErr) {
-                                console.warn('[Stock] Failed to adjust per-size inventory:', invErr && invErr.message);
-                                inventoryItem.quantity = newStock;
-                                await inventoryItem.save();
-                            }
+                            } catch (e) { console.warn('Failed to sync inventory fallback:', e && e.message); }
                         }
+                    } catch (e) { console.warn('Skipping item during stock deduction grouping:', e && e.message); }
+                }
 
-                        // Emit low-stock notification when crossing threshold (e.g., <=5)
+                // Now perform atomic per-size allocations for each inventory group
+                for (const [invName, sizesMap] of Object.entries(perInventorySizes)) {
+                    try {
+                        // Attempt allocation by sizes using utils which performs atomic update checks
+                        await allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, adminId: req.user._id });
+                        // After allocation, sync linked Product.countInStock if inventory references a product
                         try {
-                            const THRESH = 5;
-                            if (previousStock > THRESH && newStock <= THRESH) {
-                                await notify.createNotification({
-                                    type: 'low_stock',
-                                    title: `Low stock: ${product.name}`,
-                                    body: `Product ${product.name} is low in stock (${newStock} left).`,
-                                    targetRole: 'admin',
-                                    meta: { productId: product._id, currentStock: newStock }
-                                });
+                            const invAfter = await findInventoryByName(invName);
+                            if (invAfter && invAfter.productId) {
+                                const prod = await Product.findById(invAfter.productId);
+                                if (prod) { prod.countInStock = Number(invAfter.quantity || 0); await prod.save(); }
                             }
-                        } catch (e) {
-                            console.warn('[Stock] Failed to create low-stock notification', e && e.message);
-                        }
-                    } catch (stockError) {
-                        console.error('[Stock] Failed to deduct stock on payment approval for an item:', stockError && stockError.message ? stockError.message : stockError);
+                        } catch (syncErr) { console.warn('Failed to sync product after sizes allocation:', syncErr && syncErr.message); }
+                    } catch (allocErr) {
+                        console.error('[Stock] Failed to allocate inventory by sizes for', invName, allocErr && allocErr.message);
                     }
                 }
             } else {

@@ -111,6 +111,10 @@ router.route('/:id/request-final-payment')
 router.route('/:id/verify-final-payment')
     .put(protect, authorize('admin','employee'), verifyFinalPayment);
 
+// Admin helper: consume reserved inventory for an order (admin-only)
+router.route('/:id/admin-consume')
+    .put(protect, authorize('admin','employee'), require('../controllers/customOrderController').adminConsumeReserved);
+
 // Customer chooses pickup or delivery
 router.route('/:id/fulfillment')
     .put(protect, setFulfillmentMethod);

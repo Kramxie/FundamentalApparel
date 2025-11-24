@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Add Pre-Design Product</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .thumb { width: 72px; height: 72px; object-fit: cover; }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="flex min-h-screen bg-gray-100">
+    <!-- Sidebar (desktop) -->
+    <div id="admin-sidebar" class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+      <div class="flex items-center justify-center h-16 bg-white shadow-md"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+          </a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
+          </a>
+          <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+          </a>
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
+          </a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
+          </a>
+          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
+          </a>
+          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
+          </a>
+          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+    <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/40 z-40 md:hidden"></div>
+    <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform -translate-x-full transition-transform z-50 md:hidden">
+      <div class="flex items-center justify-between h-16 bg-white shadow-md px-3">
+        <div class="flex items-center"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
+        <button id="mobile-sidebar-close" class="p-2 rounded-md hover:bg-gray-100 text-gray-700"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+          </a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
+          </a>
+          <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <header class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
+        <div class="flex items-center gap-3">
+          <button id="sidebar-toggle" class="md:hidden p-2 rounded bg-gray-100">
+            <i class="fas fa-bars"></i>
+          </button>
+          <h1 class="text-lg font-semibold">Add Pre-Design Product</h1>
+        </div>
+        <div class="flex items-center gap-4">
+          <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+          </button>
+        </div>
+      </header>
+
+      <main class="p-4 md:p-6">
+        <div id="message" class="hidden mb-4 p-3 rounded-md"></div>
+        
+        <form id="product-form" enctype="multipart/form-data" class="max-w-7xl mx-auto">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-6">
+              <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">General Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Product Name</label>
+                    <input type="text" id="name" name="name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                  </div>
+                  <div>
+                    <label for="category-select" class="block text-sm font-medium text-gray-700">Category</label>
+                    <div class="mt-1">
+                      <select id="category-select" name="category" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                        <option value="Jersey">Jersey</option>
+                        <option value="Shorts">Shorts</option>
+                        <option value="Dri-Fit T-Shirts">Dri-Fit T-Shirts</option>
+                      </select>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Allowed categories for Pre-Design products.</p>
+                  </div>
+                  <!-- Base Price and Stock removed — per-size controls below are canonical -->
+                </div>
+              </div>
+
+              <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Product Details</h2>
+                <div class="space-y-4">
+                  <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700">Short Description</label>
+                    <textarea id="description" name="description" rows="4" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"></textarea>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label for="sizes-select" class="block text-sm font-medium text-gray-700">Sizes</label>
+                      <div class="flex items-center gap-2 mt-1">
+                        <select id="sizes-select" name="sizesSelect" multiple class="flex-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"></select>
+                        <input id="new-size-input" placeholder="New size" class="border-gray-300 rounded-md shadow-sm sm:text-sm p-2 w-28" />
+                        <button id="add-size-btn" type="button" class="px-3 py-2 bg-green-600 text-white rounded-md">Add</button>
+                      </div>
+                      <div id="sizes-tags" class="mt-2 flex flex-wrap gap-2 text-sm"></div>
+                    </div>
+                    <div>
+                      <!-- placeholder to keep two-column layout; removed Colors/Material as not needed for Pre-Design -->
+                      <div class="text-sm text-gray-500">Only sizes are required for Pre-Design products. Add sizes using the field on the left.</div>
+                    </div>
+                  </div>
+                  <div id="per-size-section">
+                    <label class="block text-sm font-medium text-gray-700">Per-size inventory (optional)</label>
+                    <div class="mt-1 space-y-2">
+                      <div class="flex gap-2">
+                        <input id="sizes-generate" name="sizesGenerate" placeholder="e.g., S, M, L, XL" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2">
+                        <button id="generate-sizes-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md">Generate</button>
+                      </div>
+                      <div class="flex items-center gap-2 mt-2">
+                        <input id="apply-qty-input" type="number" min="0" placeholder="Qty to apply" class="w-36 border rounded p-2" />
+                        <button id="apply-qty-btn" type="button" class="px-3 py-2 bg-blue-600 text-white rounded-md">Apply to selected sizes</button>
+                        <span class="text-xs text-gray-500">Select sizes and apply one quantity to all selected.</span>
+                      </div>
+                      <div id="sizes-rows" class="space-y-2 mt-2"></div>
+                      <div class="flex gap-2">
+                        <button id="add-size-row" type="button" class="px-3 py-2 bg-green-600 text-white rounded-md">Add Size</button>
+                        <button id="clear-sizes" type="button" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md">Clear</button>
+                      </div>
+                      <input type="hidden" id="sizesInventoryHidden" name="sizesInventory">
+                      <p class="text-xs text-gray-500 mt-1">Use the controls to set per-size quantities. The values will be submitted as a JSON object.</p>
+                    </div>
+                  </div>
+                  <div id="per-price-section" class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700">Per-size price (optional)</label>
+                    <div class="mt-1 space-y-2">
+                      <div class="flex gap-2">
+                        <input id="sizes-for-price" placeholder="e.g., S, M, L" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2">
+                        <button id="generate-price-sizes-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md">Generate</button>
+                      </div>
+                      <div class="flex items-center gap-2 mt-2">
+                        <input id="apply-price-input" type="number" step="0.01" min="0" placeholder="Price to apply" class="w-40 border rounded p-2" />
+                        <button id="apply-price-btn" type="button" class="px-3 py-2 bg-blue-600 text-white rounded-md">Apply to selected sizes</button>
+                        <span class="text-xs text-gray-500">Select sizes and apply one price to all selected.</span>
+                      </div>
+                      <div id="prices-rows" class="space-y-2 mt-2"></div>
+                      <div class="flex gap-2">
+                        <button id="add-price-row" type="button" class="px-3 py-2 bg-green-600 text-white rounded-md">Add Price Row</button>
+                        <button id="clear-prices" type="button" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md">Clear</button>
+                      </div>
+                      <input type="hidden" id="sizesPriceHidden" name="sizesPrice">
+                      <p class="text-xs text-gray-500 mt-1">Set per-size prices. Values will be submitted as a JSON object.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Images -->
+            <div class="lg:col-span-1 space-y-6">
+              <!-- Placements removed for Pre-Design simplified UI -->
+
+              <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Product Images (Pre-Design)</h2>
+                <div class="mt-6">
+                  <h3 class="text-sm font-medium text-gray-700 mb-2">Main Image</h3>
+                  <div class="w-full h-64 bg-gray-50 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
+                    <img id="main-preview" src="https://placehold.co/600x400/e2e8f0/9ca3af?text=Main+Image" alt="Main preview">
+                  </div>
+                  <div class="mt-2">
+                    <label for="image-input" class="cursor-pointer text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                      Choose main image
+                      <input id="image-input" type="file" accept="image/*" class="sr-only" />
+                    </label>
+                  </div>
+                </div>
+
+                <div class="mt-6">
+                  <h3 class="text-sm font-medium text-gray-700 mb-2">Front / Back Images</h3>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <div class="w-full h-40 bg-gray-50 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
+                        <img id="front-preview" src="https://placehold.co/400x300/e2e8f0/9ca3af?text=Front" alt="Front preview" class="max-h-full" />
+                      </div>
+                      <div class="mt-2">
+                        <label class="cursor-pointer text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                          Upload Front Image
+                          <input id="front-input" name="front" type="file" accept="image/*" class="sr-only" />
+                        </label>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="w-full h-40 bg-gray-50 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
+                        <img id="back-preview" src="https://placehold.co/400x300/e2e8f0/9ca3af?text=Back" alt="Back preview" class="max-h-full" />
+                      </div>
+                      <div class="mt-2">
+                        <label class="cursor-pointer text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                          Upload Back Image
+                          <input id="back-input" name="back" type="file" accept="image/*" class="sr-only" />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white p-6 rounded-lg shadow-md">
+                 <h2 class="text-lg font-semibold text-gray-800 mb-4">Actions</h2>
+                 <div class="flex flex-col gap-3">
+                    <button id="submit-btn" type="submit" class="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                      Create Pre-Design Product
+                    </button>
+                    <a href="manage-products.html" class="w-full text-center px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-md hover:bg-gray-300">
+                      Cancel
+                    </a>
+                 </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://fundamental-apparel-backend.onrender.com';
+    const token = localStorage.getItem('adminToken');
+    const DEBUG = true;
+    if (!token) window.location.href = 'login.html';
+
+    // References
+    const imageInput = document.getElementById('image-input');
+    const galleryInput = document.getElementById('gallery-input') || { addEventListener: () => {} };
+    const mainPreview = document.getElementById('main-preview');
+    const thumbsContainer = document.getElementById('thumbs') || document.createElement('div');
+    const productForm = document.getElementById('product-form');
+    const categorySelect = document.getElementById('category-select');
+    const messageEl = document.getElementById('message');
+    const submitBtn = document.getElementById('submit-btn');
+    const frontInput = document.getElementById('front-input');
+    const backInput = document.getElementById('back-input');
+    const frontPreview = document.getElementById('front-preview');
+    const backPreview = document.getElementById('back-preview');
+
+    let galleryFiles = [];
+    let mainFile = null;
+
+    function showMessage(text, type = 'success') {
+      messageEl.textContent = text;
+      messageEl.className = `mb-4 p-3 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+      messageEl.classList.remove('hidden');
+      window.scrollTo(0, 0);
+      setTimeout(() => messageEl.classList.add('hidden'), 4000);
+    }
+
+    function createThumbnail(file, index) {
+      const url = URL.createObjectURL(file);
+      const img = document.createElement('img');
+      img.src = url; img.alt = `Thumb ${index+1}`; img.className = 'thumb'; img.dataset.index = index;
+      img.addEventListener('click', () => { document.querySelectorAll('.thumb').forEach(t=>t.classList.remove('active')); img.classList.add('active'); mainPreview.src = url; mainFile = file; });
+      return img;
+    }
+
+    function handleMainImageChange(e) { const file = e.target.files[0]; if (!file) return; mainFile = file; mainPreview.src = URL.createObjectURL(file); }
+    function handleFrontChange(e) { const f = e.target.files[0]; if (!f) return; frontPreview.src = URL.createObjectURL(f); }
+    function handleBackChange(e) { const f = e.target.files[0]; if (!f) return; backPreview.src = URL.createObjectURL(f); }
+
+    // Categories are restricted for Pre-Design products (Jersey, Shorts, Dri-Fit T-Shirts)
+
+    imageInput?.addEventListener('change', handleMainImageChange);
+    frontInput?.addEventListener('change', handleFrontChange);
+    backInput?.addEventListener('change', handleBackChange);
+
+    productForm?.addEventListener('submit', async (e) => {
+      e.preventDefault(); submitBtn.disabled = true; submitBtn.textContent = 'Creating...';
+      // serialize sizes and prices if present
+      try { document.getElementById('sizesInventoryHidden').value = JSON.stringify(getSizesInventoryObject()); } catch (e) { document.getElementById('sizesInventoryHidden').value = ''; }
+      try { document.getElementById('sizesPriceHidden').value = JSON.stringify(getSizesPriceObject()); } catch (e) { document.getElementById('sizesPriceHidden').value = ''; }
+
+      // Require at least one per-size inventory row
+      const invVal = document.getElementById('sizesInventoryHidden').value;
+      try {
+        const parsed = invVal ? JSON.parse(invVal) : {};
+        if (!parsed || Object.keys(parsed).length === 0) {
+          showMessage('Please add at least one size with quantity before submitting.','error');
+          submitBtn.disabled=false; submitBtn.textContent='Create Pre-Design Product';
+          return;
+        }
+      } catch(e){ /* ignore parse errors and continue */ }
+
+      const fd = new FormData();
+      for (const element of productForm.elements) {
+        if (!element.name) continue; if (element.type === 'file') continue; if (element.name && element.name.includes('[')) continue; if ((element.type === 'checkbox' || element.type === 'radio') && !element.checked) continue; fd.append(element.name, element.value);
+      }
+
+      if (!mainFile) { showMessage('Please select a main image for the product.','error'); submitBtn.disabled=false; submitBtn.textContent='Create Pre-Design Product'; return; }
+      fd.set('image', mainFile);
+      // append front/back if provided
+      if (frontInput?.files && frontInput.files[0]) fd.set('front', frontInput.files[0]);
+      if (backInput?.files && backInput.files[0]) fd.set('back', backInput.files[0]);
+      fd.set('type','predesign');
+
+      try {
+        if (DEBUG) { try { console.groupCollapsed('Debug: PreDesign FormData'); for (const entry of fd.entries()) { const [k,v]=entry; if (v instanceof File) console.log(k, `File: ${v.name}`, `${v.size} bytes`); else console.log(k, v); } console.groupEnd(); } catch(e){} }
+        const res = await fetch(`${API}/api/products`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
+        const json = await res.json(); if (!res.ok) throw new Error(json.msg || `Server ${res.status}`);
+        if (json.success) { showMessage('Pre-design product created successfully!'); productForm.reset(); mainPreview.src='https://placehold.co/600x400/e2e8f0/9ca3af?text=Main+Image'; frontPreview.src='https://placehold.co/400x300/e2e8f0/9ca3af?text=Front'; backPreview.src='https://placehold.co/400x300/e2e8f0/9ca3af?text=Back'; } else { showMessage(json.msg||'Failed','error'); }
+      } catch (err) { showMessage(err.message||'Server error','error'); }
+      finally { submitBtn.disabled=false; submitBtn.textContent='Create Pre-Design Product'; }
+    });
+
+    // Helpers used from main add-product.js logic (copied minimal implementations)
+    const sizesRowsContainer = document.getElementById('sizes-rows');
+    function renderSizeRows(obj){ sizesRowsContainer.innerHTML=''; const data=obj||{}; Object.keys(data).forEach(size=>{ const qty=data[size]; const row=document.createElement('div'); row.className='flex items-center gap-2'; row.innerHTML=`<input data-select type="checkbox" class="h-4 w-4" /><input class="flex-1 border rounded p-2" data-size-input type="text" value="${size}" /><input class="w-24 border rounded p-2" data-qty-input type="number" min="0" value="${Number(qty)||0}" /><button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>`; row.querySelector('[data-remove]').addEventListener('click', ()=>row.remove()); sizesRowsContainer.appendChild(row); }); }
+    function getSizesInventoryObject(){ const obj={}; const rows=sizesRowsContainer.querySelectorAll('div'); rows.forEach(row=>{ const sizeInput=row.querySelector('[data-size-input]'); const qtyInput=row.querySelector('[data-qty-input]'); if(!sizeInput||!qtyInput) return; const size=String(sizeInput.value||'').trim(); const qty=Math.max(0, Math.floor(Number(qtyInput.value||0))); if(size) obj[size]=qty; }); return obj; }
+    function getSizesPriceObject(){ const obj={}; const rows=document.getElementById('prices-rows')?.querySelectorAll('div')||[]; rows.forEach(row=>{ const sizeInput=row.querySelector('[data-price-size-input]'); const priceInput=row.querySelector('[data-price-input]'); if(!sizeInput||!priceInput) return; const size=String(sizeInput.value||'').trim(); const price=Number(priceInput.value||0); if(size) obj[size]=Number(price.toFixed(2)); }); return obj; }
+
+    // no-op: categories are static for Pre-Design
+
+    // Sizes management - dropdown + tags + per-size rows
+    const sizesSelect = document.getElementById('sizes-select');
+    const addSizeBtn = document.getElementById('add-size-btn');
+    const newSizeInput = document.getElementById('new-size-input');
+    const sizesTags = document.getElementById('sizes-tags');
+    const generateSizesInput = document.getElementById('sizes-generate');
+    const generateSizesBtn = document.getElementById('generate-sizes-btn');
+    const applyQtyInput = document.getElementById('apply-qty-input');
+    const applyQtyBtn = document.getElementById('apply-qty-btn');
+    const pricesRows = document.getElementById('prices-rows');
+    const addPriceRowBtn = document.getElementById('add-price-row');
+    const generatePriceSizesInput = document.getElementById('sizes-for-price');
+    const generatePriceSizesBtn = document.getElementById('generate-price-sizes-btn');
+    const applyPriceInput = document.getElementById('apply-price-input');
+    const applyPriceBtn = document.getElementById('apply-price-btn');
+    // top-level assign buttons removed; per-size controls are canonical
+
+    function removeSize(size){ size = String(size||'').trim(); if(!size) return;
+      // remove option from select
+      Array.from(sizesSelect.options).forEach(o=>{ if(o.value.toLowerCase()===size.toLowerCase()) o.remove(); });
+      // remove inventory rows
+      Array.from(sizesRowsContainer.querySelectorAll('div')).forEach(row=>{ const si=row.querySelector('[data-size-input]'); if(si && si.value.toLowerCase()===size.toLowerCase()) row.remove(); });
+      // remove price rows
+      Array.from(pricesRows.querySelectorAll('div')).forEach(row=>{ const si=row.querySelector('[data-price-size-input]'); if(si && si.value.toLowerCase()===size.toLowerCase()) row.remove(); });
+      updateSizesTags();
+    }
+
+    function updateSizesTags(){ sizesTags.innerHTML=''; Array.from(sizesSelect.options).forEach(opt=>{ const wrapper=document.createElement('span'); wrapper.className='inline-flex items-center gap-2 px-2 py-1 bg-gray-200 rounded-full'; const label=document.createElement('span'); label.textContent=opt.value; label.className='text-sm'; const btn=document.createElement('button'); btn.type='button'; btn.className='ml-2 text-xs text-gray-600 hover:text-red-600'; btn.innerHTML='✕'; btn.title='Remove size'; btn.addEventListener('click', ()=>{ showConfirmModal(opt.value, ()=> removeSize(opt.value)); }); wrapper.appendChild(label); wrapper.appendChild(btn); sizesTags.appendChild(wrapper); }); }
+
+    function addOptionIfMissing(size){ size=String(size||'').trim(); if(!size) return; const exists=Array.from(sizesSelect.options).some(o=>o.value.toLowerCase()===size.toLowerCase()); if(!exists){ const opt=document.createElement('option'); opt.value=size; opt.text=size; opt.selected=true; sizesSelect.appendChild(opt); updateSizesTags(); } else { Array.from(sizesSelect.options).forEach(o=>{ if(o.value.toLowerCase()===size.toLowerCase()) o.selected=true; }); }
+    }
+
+    function addSizeRow(size, qty=0){ size=String(size||'').trim(); if(!size) return; // avoid duplicate
+      const existing=Array.from(sizesRowsContainer.querySelectorAll('[data-size-input]')).some(i=>i.value.toLowerCase()===size.toLowerCase());
+      if(existing) return; const row=document.createElement('div'); row.className='flex items-center gap-2'; row.innerHTML=`<input data-select type="checkbox" class="h-4 w-4" /><input class="flex-1 border rounded p-2" data-size-input type="text" value="${size}" /><input class="w-24 border rounded p-2" data-qty-input type="number" min="0" value="${Number(qty)||0}" /><button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>`; row.querySelector('[data-remove]').addEventListener('click', ()=>row.remove()); sizesRowsContainer.appendChild(row);
+    }
+
+    function addPriceRow(size, price=0){ size=String(size||'').trim(); if(!size) return; const existing=Array.from(pricesRows.querySelectorAll('[data-price-size-input]')).some(i=>i.value.toLowerCase()===size.toLowerCase()); if(existing) return; const row=document.createElement('div'); row.className='flex items-center gap-2'; row.innerHTML=`<input data-price-select type="checkbox" class="h-4 w-4" /><input class="flex-1 border rounded p-2" data-price-size-input type="text" value="${size}" /><input class="w-28 border rounded p-2" data-price-input type="number" step="0.01" min="0" value="${Number(price)||0}" /><button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>`; row.querySelector('[data-remove]').addEventListener('click', ()=>row.remove()); pricesRows.appendChild(row);
+    }
+
+    addSizeBtn?.addEventListener('click', ()=>{ const v=newSizeInput.value.trim(); if(!v) return; addOptionIfMissing(v); addSizeRow(v); addPriceRow(v); newSizeInput.value=''; });
+    generateSizesBtn?.addEventListener('click', ()=>{ const raw=(generateSizesInput.value||'').trim(); if(!raw) return; const parts=raw.split(/[,;\s]+/).map(s=>s.trim()).filter(Boolean); parts.forEach(p=>{ addOptionIfMissing(p); addSizeRow(p); addPriceRow(p); }); generateSizesInput.value=''; });
+    generatePriceSizesBtn?.addEventListener('click', ()=>{ const raw=(generatePriceSizesInput.value||'').trim(); if(!raw) return; const parts=raw.split(/[,;\s]+/).map(s=>s.trim()).filter(Boolean); parts.forEach(p=>{ addOptionIfMissing(p); addPriceRow(p); addSizeRow(p); }); generatePriceSizesInput.value=''; });
+
+    applyQtyBtn?.addEventListener('click', ()=>{
+      const val=Number(applyQtyInput.value||0); const selected=Array.from(sizesSelect.selectedOptions).map(o=>o.value);
+      if(selected.length===0) { showMessage('Select sizes to apply quantity','error'); return; }
+      selected.forEach(sz=>{ // set or add row
+        let found=false; Array.from(sizesRowsContainer.querySelectorAll('div')).forEach(row=>{ const si=row.querySelector('[data-size-input]'); const qi=row.querySelector('[data-qty-input]'); if(si && si.value.toLowerCase()===sz.toLowerCase()){ qi.value = String(val); found=true; } }); if(!found) addSizeRow(sz, val);
+      });
+    });
+
+    applyPriceBtn?.addEventListener('click', ()=>{
+      const val=Number(applyPriceInput.value||0); const selected=Array.from(sizesSelect.selectedOptions).map(o=>o.value);
+      if(selected.length===0) { showMessage('Select sizes to apply price','error'); return; }
+      selected.forEach(sz=>{ let found=false; Array.from(pricesRows.querySelectorAll('div')).forEach(row=>{ const si=row.querySelector('[data-price-size-input]'); const pi=row.querySelector('[data-price-input]'); if(si && si.value.toLowerCase()===sz.toLowerCase()){ pi.value = String(Number(val).toFixed(2)); found=true; } }); if(!found) addPriceRow(sz, val);
+      });
+    });
+
+    // removed global assign handlers — admins should use per-size Apply controls
+
+    // keep tags updated when manual selection changes
+    sizesSelect?.addEventListener('change', ()=>{ updateSizesTags(); });
+
+    // Confirmation modal logic
+    let pendingConfirm = null;
+    function showConfirmModal(size, onConfirm){
+      const modal = document.getElementById('confirm-modal');
+      const text = document.getElementById('confirm-modal-text');
+      const yes = document.getElementById('confirm-modal-yes');
+      const no = document.getElementById('confirm-modal-no');
+      if(!modal || !text || !yes || !no) { if(onConfirm) onConfirm(); return; }
+      text.textContent = `Remove size "${size}" and its per-size rows? This cannot be undone.`;
+      modal.classList.remove('hidden');
+      pendingConfirm = ()=>{ try{ onConfirm && onConfirm(); } finally { hideConfirmModal(); } };
+      yes.focus();
+    }
+    function hideConfirmModal(){ const modal=document.getElementById('confirm-modal'); if(modal) modal.classList.add('hidden'); pendingConfirm = null; }
+    document.addEventListener('click', (e)=>{
+      const modal = document.getElementById('confirm-modal'); if(!modal || modal.classList.contains('hidden')) return; const target = e.target;
+      // click outside modal content should close
+      if(target.id === 'confirm-modal') hideConfirmModal();
+    });
+    document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ hideConfirmModal(); } if(e.key === 'Enter'){ const modal=document.getElementById('confirm-modal'); if(modal && !modal.classList.contains('hidden')){ e.preventDefault(); pendingConfirm && pendingConfirm(); } } });
+    document.addEventListener('click', (e)=>{ if(e.target && e.target.id === 'confirm-modal-yes'){ pendingConfirm && pendingConfirm(); } if(e.target && e.target.id === 'confirm-modal-no'){ hideConfirmModal(); } });
+  </script>
+  <!-- Confirm modal -->
+  <div id="confirm-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-md p-6">
+      <h3 class="text-lg font-semibold mb-2">Confirm removal</h3>
+      <p id="confirm-modal-text" class="text-sm text-gray-700 mb-4">Are you sure?</p>
+      <div class="flex justify-end gap-3">
+        <button id="confirm-modal-no" type="button" class="px-4 py-2 bg-gray-200 rounded-md">Cancel</button>
+        <button id="confirm-modal-yes" type="button" class="px-4 py-2 bg-red-600 text-white rounded-md">Remove</button>
+      </div>
+    </div>
+  </div>
+  <script>
+  (function(){
+    document.addEventListener('DOMContentLoaded', function(){
+      const anchors = Array.from(document.querySelectorAll('a[href="add-product.html"]'));
+      if(anchors.length===0) return;
+      anchors.forEach(anchor=>{
+        let submenu = anchor.parentElement.querySelector('.add-product-submenu');
+        if(!submenu){
+                submenu = document.createElement('div');
+                submenu.className = 'add-product-submenu hidden mt-1 flex flex-col';
+                submenu.innerHTML = '<a href="add-predisign-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="w-6"></i><span class="ml-3 text-sm">Add Pre-Design Product</span></a>';
+          anchor.insertAdjacentElement('afterend', submenu);
+        }
+        anchor.style.cursor='pointer';
+        // keep anchor navigable; auto-show submenu when on add pages
+        if (location.pathname.endsWith('add-product.html') || location.pathname.endsWith('add-predisign-product.html')) submenu.classList.remove('hidden');
+      });
+      const mainNavLinks = Array.from(document.querySelectorAll('nav a')).filter(a=>{ const h=a.getAttribute('href'); return h && h!=='add-product.html' && h!=='add-predisign-product.html'; });
+      mainNavLinks.forEach(l=>{ l.addEventListener('click', ()=>{ document.querySelectorAll('.add-product-submenu').forEach(s=>s.classList.add('hidden')); }); });
+      window.addEventListener('popstate', ()=> document.querySelectorAll('.add-product-submenu').forEach(s=>s.classList.add('hidden')));
+    });
+  })();
+  </script>
+</body>
+</html>

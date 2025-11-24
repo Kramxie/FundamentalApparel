@@ -7,7 +7,6 @@ async function syncToProduct(inventoryItem) {
         if (!inventoryItem.isProduct) {
             return null; // Don't sync if it's not marked as a product
         }
-
         const productData = {
             name: inventoryItem.name,
             description: inventoryItem.description || '',
@@ -17,6 +16,9 @@ async function syncToProduct(inventoryItem) {
             gallery: inventoryItem.gallery || [],
             countInStock: inventoryItem.quantity,
             sizes: inventoryItem.sizes || [],
+            // include per-size inventory and prices
+            sizesInventory: inventoryItem.sizesInventory || {},
+            sizesPrice: inventoryItem.sizesPrice || {},
             colors: inventoryItem.colors || [],
             material: inventoryItem.material || '',
             productDetails: inventoryItem.productDetails || '',
@@ -151,6 +153,46 @@ exports.getInventoryItem = async (req, res) => {
     }
 };
 
+// @desc    Get availability (per-size) for an inventory item by name or id
+// @route   GET /api/admin/inventory/availability
+// @access  Private (authenticated users)
+exports.getInventoryAvailability = async (req, res) => {
+    try {
+        const { name, id } = req.query;
+        let item = null;
+        if (id) {
+            item = await Inventory.findById(id);
+        } else if (name) {
+            item = await Inventory.findOne({ name: new RegExp('^' + name + '$', 'i') });
+        } else {
+            return res.status(400).json({ success: false, message: 'Provide inventory name or id' });
+        }
+
+        if (!item) return res.status(404).json({ success: false, message: 'Inventory item not found' });
+
+        // Convert Map fields to plain objects
+        const sizesInventory = item.sizesInventory ? Object.fromEntries(item.sizesInventory) : {};
+        const sizesPrice = item.sizesPrice ? Object.fromEntries(item.sizesPrice) : {};
+        const reservedSizes = item.reservedSizes ? Object.fromEntries(item.reservedSizes) : {};
+
+        res.status(200).json({
+            success: true,
+            data: {
+                id: item._id,
+                name: item.name,
+                quantity: item.quantity,
+                reserved: item.reserved,
+                sizesInventory,
+                sizesPrice,
+                reservedSizes
+            }
+        });
+    } catch (error) {
+        console.error('Get Inventory Availability Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch availability' });
+    }
+};
+
 // @desc    Create new inventory item
 // @desc    Create new inventory item
 // @route   POST /api/admin/inventory
@@ -215,6 +257,24 @@ exports.createInventoryItem = async (req, res) => {
                 parsedSizesInventory = {};
             }
         }
+        // parse sizesPrice if provided
+        let parsedSizesPrice = {};
+        if (req.body.sizesPrice) {
+            try {
+                parsedSizesPrice = (typeof req.body.sizesPrice === 'string') ? JSON.parse(req.body.sizesPrice) : req.body.sizesPrice;
+            } catch (e) {
+                parsedSizesPrice = {};
+            }
+        }
+        // parse placements if provided
+        let parsedPlacements = {};
+        if (req.body.placements) {
+            try {
+                parsedPlacements = (typeof req.body.placements === 'string') ? JSON.parse(req.body.placements) : req.body.placements;
+            } catch (e) {
+                parsedPlacements = {};
+            }
+        }
 
         const itemData = {
             name,
@@ -233,6 +293,8 @@ exports.createInventoryItem = async (req, res) => {
             gallery,
             sizes: parsedSizes,
             sizesInventory: parsedSizesInventory,
+            sizesPrice: parsedSizesPrice,
+            placements: parsedPlacements,
             colors: parsedColors,
             material: material || '',
             productDetails: productDetails || '',
@@ -325,6 +387,23 @@ exports.updateInventoryItem = async (req, res) => {
                 parsedSizesInventory = undefined;
             }
         }
+        // parse sizesPrice and placements for updates if provided
+        let parsedSizesPrice = undefined;
+        if (req.body.sizesPrice !== undefined) {
+            try {
+                parsedSizesPrice = (typeof req.body.sizesPrice === 'string') ? JSON.parse(req.body.sizesPrice) : req.body.sizesPrice;
+            } catch (e) {
+                parsedSizesPrice = undefined;
+            }
+        }
+        let parsedPlacements = undefined;
+        if (req.body.placements !== undefined) {
+            try {
+                parsedPlacements = (typeof req.body.placements === 'string') ? JSON.parse(req.body.placements) : req.body.placements;
+            } catch (e) {
+                parsedPlacements = undefined;
+            }
+        }
 
         // Update basic fields
         if (name !== undefined) item.name = name;
@@ -350,6 +429,8 @@ exports.updateInventoryItem = async (req, res) => {
         if (parsedSizes !== undefined) item.sizes = parsedSizes;
         if (parsedColors !== undefined) item.colors = parsedColors;
         if (parsedSizesInventory !== undefined) item.sizesInventory = parsedSizesInventory;
+        if (parsedSizesPrice !== undefined) item.sizesPrice = parsedSizesPrice;
+        if (parsedPlacements !== undefined) item.placements = parsedPlacements;
         if (material !== undefined) item.material = material;
         if (productDetails !== undefined) item.productDetails = productDetails;
         if (faqs !== undefined) item.faqs = faqs;
@@ -499,5 +580,63 @@ exports.getInventoryStats = async (req, res) => {
             success: false,
             message: 'Failed to fetch inventory statistics'
         });
+    }
+};
+
+// @desc    Decrement inventory stock (per-size or overall)
+// @route   POST /api/admin/inventory/:id/decrement
+// @access  Private/Admin|Employee
+exports.decrementStock = async (req, res) => {
+    try {
+        const { sizesDecrement, quantity } = req.body;
+
+        const item = await Inventory.findById(req.params.id);
+        if (!item) return res.status(404).json({ success: false, message: 'Inventory item not found' });
+
+        // Support two modes: per-size decrements (preferred) or overall quantity decrement
+        let totalDecrement = 0;
+
+        if (sizesDecrement && typeof sizesDecrement === 'object') {
+            // Validate availability per size
+            for (const [size, v] of Object.entries(sizesDecrement)) {
+                const need = Number(v || 0);
+                const available = Number(item.sizesInventory?.get(size) || 0);
+                if (need > available) {
+                    return res.status(400).json({ success: false, message: `Insufficient stock for size ${size}` });
+                }
+                totalDecrement += need;
+            }
+        } else if (quantity !== undefined) {
+            totalDecrement = Number(quantity || 0);
+            if (totalDecrement <= 0) return res.status(400).json({ success: false, message: 'Invalid quantity to decrement' });
+            if (totalDecrement > item.quantity) return res.status(400).json({ success: false, message: 'Insufficient overall quantity' });
+        } else {
+            return res.status(400).json({ success: false, message: 'Provide sizesDecrement or quantity' });
+        }
+
+        // Perform atomic decrement
+        const inc = { quantity: -totalDecrement };
+        if (sizesDecrement && typeof sizesDecrement === 'object') {
+            for (const [size, v] of Object.entries(sizesDecrement)) {
+                const need = Number(v || 0);
+                inc[`sizesInventory.${size}`] = -need;
+            }
+        }
+
+        const updated = await Inventory.findByIdAndUpdate(req.params.id, { $inc: inc }, { new: true });
+
+        // Re-evaluate status via save hook: ensure map values non-negative (we pre-validated)
+        if (updated) {
+            // If now a product, sync to Product collection
+            if (updated.isProduct) {
+                try { await syncToProduct(updated); } catch (e) { console.error('Sync after decrement failed', e); }
+            }
+            return res.status(200).json({ success: true, data: updated, message: 'Stock decremented' });
+        }
+
+        res.status(500).json({ success: false, message: 'Failed to decrement stock' });
+    } catch (error) {
+        console.error('Decrement Stock Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to decrement stock' });
     }
 };

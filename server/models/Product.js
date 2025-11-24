@@ -23,6 +23,17 @@ const ProductSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add an image URL']
     },
+    // For Pre-Design products we store explicit front/back images
+    images: {
+        front: { type: String, default: '' },
+        back: { type: String, default: '' }
+    },
+    // product type: regular | predesign
+    type: {
+        type: String,
+        enum: ['regular', 'predesign'],
+        default: 'regular'
+    },
     gallery: {
         type: [String],
         default: []

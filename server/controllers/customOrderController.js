@@ -4,6 +4,7 @@ const sendEmail = require("../utils/sendEmail");
 const path = require("path");
 const mongoose = require("mongoose"); // <-- Siguraduhin na na-import ito
 const { allocateInventory, releaseInventory, findInventoryByName } = require('../utils/inventory');
+const { allocateInventoryBySizes } = require('../utils/inventory');
 
 // Siguraduhin na ang SERVER_URL mo sa .env ay ang public URL mo (e.g., ngrok)
 const BASE_URL =
@@ -531,19 +532,61 @@ exports.verifyDownPayment = async (req, res) => {
     
     if (isFullPayment) {
       // 100% payment - go directly to Ready for Pickup/Delivery
-      // allocate inventory for printing-only orders
+      // allocate inventory for printing-only orders or by sizes for Pre-Design style orders
       const session = await mongoose.startSession();
       session.startTransaction();
       try {
-        if (order.serviceType === 'printing-only' && order.fabricType && !order.inventoryAllocated) {
-          const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
-          order.inventoryAllocated = true;
-          order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
-        }
+        // attempt per-size allocation first if applicable
+        const extractSizesMap = (ord) => {
+          const map = {};
+          if (Array.isArray(ord.teamMembers) && ord.teamMembers.length) {
+            for (const m of ord.teamMembers) {
+              const s = (m.size || m.sizeLabel || '').toString();
+              if (!s) continue;
+              map[s] = (map[s] || 0) + 1;
+            }
+          } else if (ord.quotePayload && Array.isArray(ord.quotePayload.teamEntries) && ord.quotePayload.teamEntries.length) {
+            for (const e of ord.quotePayload.teamEntries) {
+              const s = (e.size || e.sizeLabel || '').toString();
+              const qty = Number(e.qty || e.quantity || 1) || 1;
+              if (!s) continue;
+              map[s] = (map[s] || 0) + qty;
+            }
+          }
+          Object.keys(map).forEach(k => { if (!(map[k] > 0)) delete map[k]; });
+          return Object.keys(map).length ? map : null;
+        };
 
-        order.status = "Ready for Pickup/Delivery";
-        order.downPaymentPaid = true;
-        order.balancePaid = true;
+        const sizesMap = extractSizesMap(order);
+        if (sizesMap) {
+          const invName = order.productName || order.garmentType || order.fabricType || null;
+          if (!invName) throw new Error('Cannot determine inventory name for per-size allocation');
+          await allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, adminId: req.user._id, session, note: 'Allocate by sizes for pre-design full payment' });
+          // Sync linked product
+          try {
+            const invAfter = await findInventoryByName(invName, session);
+            if (invAfter && invAfter.productId) {
+              const Product = require('../models/Product');
+              const prod = await Product.findById(invAfter.productId).session(session);
+              if (prod) { prod.countInStock = Number(invAfter.quantity || 0); await prod.save({ session }); }
+            }
+          } catch (syncErr) { console.warn('Failed to sync product after sizes allocation:', syncErr && syncErr.message); }
+          order.inventoryAllocated = true;
+          order.allocatedItems = [{ inventoryId: null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
+        } else {
+          if (order.serviceType === 'printing-only' && order.fabricType && !order.inventoryAllocated) {
+            const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+            order.inventoryAllocated = true;
+            order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
+            try {
+              if (invDoc.productId) {
+                const Product = require('../models/Product');
+                const prod = await Product.findById(invDoc.productId).session(session);
+                if (prod) { prod.countInStock = Number(invDoc.quantity || 0); await prod.save({ session }); }
+              }
+            } catch (syncErr) { console.warn('Sync product after allocation failed:', syncErr && syncErr.message); }
+          }
+        }
       
       // Auto-set fulfillment method based on checkout selection
       if (order.shippingMethod === 'Pick-Up') {
@@ -606,10 +649,67 @@ exports.verifyDownPayment = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      if (order.serviceType === 'printing-only' && order.fabricType && !order.inventoryAllocated) {
-        const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+      // If this custom order contains per-size quantities (teamMembers or quotePayload.teamEntries),
+      // attempt to allocate by sizes atomically to prevent oversell.
+      const extractSizesMap = (ord) => {
+        const map = {};
+        if (Array.isArray(ord.teamMembers) && ord.teamMembers.length) {
+          for (const m of ord.teamMembers) {
+            const s = (m.size || m.sizeLabel || '').toString();
+            if (!s) continue;
+            map[s] = (map[s] || 0) + 1;
+          }
+        } else if (ord.quotePayload && Array.isArray(ord.quotePayload.teamEntries) && ord.quotePayload.teamEntries.length) {
+          for (const e of ord.quotePayload.teamEntries) {
+            const s = (e.size || e.sizeLabel || '').toString();
+            const qty = Number(e.qty || e.quantity || 1) || 1;
+            if (!s) continue;
+            map[s] = (map[s] || 0) + qty;
+          }
+        }
+        // filter zeros
+        Object.keys(map).forEach(k => { if (!(map[k] > 0)) delete map[k]; });
+        return Object.keys(map).length ? map : null;
+      };
+
+      const sizesMap = extractSizesMap(order);
+      if (sizesMap) {
+        // Prefer mapping inventory by product name; fall back to garmentType or fabricType
+        const invName = order.productName || order.garmentType || order.fabricType || null;
+        if (!invName) throw new Error('Cannot determine inventory name for per-size allocation');
+        await allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, adminId: req.user._id, session, note: 'Allocate for pre-design custom order on downpayment verification' });
+
+        // Sync linked Product.countInStock when Inventory references a productId
+        try {
+          const invAfter = await findInventoryByName(invName, session);
+          if (invAfter && invAfter.productId) {
+            const Product = require('../models/Product');
+            const prod = await Product.findById(invAfter.productId).session(session);
+            if (prod) {
+              prod.countInStock = Number(invAfter.quantity || 0);
+              await prod.save({ session });
+            }
+          }
+        } catch (syncErr) {
+          console.warn('Failed to sync product countInStock after sizes allocation:', syncErr && syncErr.message);
+        }
+        // mark inventory allocated for this order
         order.inventoryAllocated = true;
-        order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
+        order.allocatedItems = [{ inventoryId: null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
+      } else {
+        if (order.serviceType === 'printing-only' && order.fabricType && !order.inventoryAllocated) {
+          const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+          order.inventoryAllocated = true;
+          order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
+          // sync product count
+          try {
+            if (invDoc.productId) {
+              const Product = require('../models/Product');
+              const prod = await Product.findById(invDoc.productId).session(session);
+              if (prod) { prod.countInStock = Number(invDoc.quantity || 0); await prod.save({ session }); }
+            }
+          } catch (syncErr) { console.warn('Sync product after allocation failed:', syncErr && syncErr.message); }
+        }
       }
 
       // Update the order
@@ -1126,6 +1226,44 @@ exports.updateFulfillmentDetails = async (req, res) => {
     const customOrder = await CustomOrder.create(orderData);
   }
 };
+
+  // @desc    Admin: consume reserved inventory for an order (allocate inventory manually)
+  // @route   PUT /api/custom-orders/:id/admin-consume
+  // @access  Private/Admin
+  exports.adminConsumeReserved = async (req, res) => {
+    try {
+      const order = await CustomOrder.findById(req.params.id);
+      if (!order) return res.status(404).json({ success: false, msg: 'Custom order not found.' });
+
+      if (order.inventoryAllocated) {
+        return res.status(400).json({ success: false, msg: 'Inventory already allocated for this order.' });
+      }
+
+      if (!order.fabricType) {
+        return res.status(400).json({ success: false, msg: 'No fabric type associated with this order to allocate.' });
+      }
+
+      const session = await mongoose.startSession();
+      session.startTransaction();
+      try {
+        const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+        order.inventoryAllocated = true;
+        order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
+        const updated = await order.save({ session });
+        await session.commitTransaction();
+        session.endSession();
+        return res.status(200).json({ success: true, data: updated, msg: 'Inventory allocated successfully.' });
+      } catch (err) {
+        await session.abortTransaction();
+        session.endSession();
+        console.error('adminConsumeReserved transaction error:', err.message);
+        return res.status(500).json({ success: false, msg: 'Failed to allocate inventory: ' + err.message });
+      }
+    } catch (error) {
+      console.error('adminConsumeReserved error:', error);
+      return res.status(500).json({ success: false, msg: 'Server error' });
+    }
+  };
 
 // @desc    Submit customization quote from professional customizer (3-panel layout)
 // @route   POST /api/custom-orders/quote

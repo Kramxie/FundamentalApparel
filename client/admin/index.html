@@ -193,6 +193,31 @@
                                 <i class="fas fa-receipt text-2xl text-blue-600"></i>
                             </div>
                         </div>
+                    <script>
+                    (function(){
+                        document.addEventListener('DOMContentLoaded', function(){
+                            const anchors = Array.from(document.querySelectorAll('a[href="add-product.html"]'));
+                            if(anchors.length===0) return;
+                            anchors.forEach(anchor=>{
+                                let submenu = anchor.parentElement.querySelector('.add-product-submenu');
+                                if(!submenu){
+                                    submenu = document.createElement('div');
+                                    submenu.className = 'add-product-submenu hidden mt-1 flex flex-col';
+                                    submenu.innerHTML = '<a href="add-predisign-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="w-6"></i><span class="ml-3 text-sm">Add Pre-Design Product</span></a>';
+                                    anchor.insertAdjacentElement('afterend', submenu);
+                                }
+                                anchor.style.cursor='pointer';
+                                // keep anchor navigable; auto-show submenu when on add pages
+                                if (location.pathname.endsWith('add-product.html') || location.pathname.endsWith('add-predisign-product.html')) {
+                                    submenu.classList.remove('hidden');
+                                }
+                            });
+                                const mainNavLinks = Array.from(document.querySelectorAll('nav a')).filter(a=>{ const h=a.getAttribute('href'); return h && h!=='add-product.html' && h!=='add-predisign-product.html'; });
+                                mainNavLinks.forEach(l=>{ l.addEventListener('click', ()=>{ document.querySelectorAll('.add-product-submenu').forEach(s=>s.classList.add('hidden')); }); });
+                            window.addEventListener('popstate', ()=> document.querySelectorAll('.add-product-submenu').forEach(s=>s.classList.add('hidden')));
+                        });
+                    })();
+                    </script>
                     </div>
 
                     <div class="bg-white p-6 rounded-lg shadow-md">

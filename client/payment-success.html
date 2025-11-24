@@ -106,6 +106,21 @@
           </a>
         </div>
 
+        <!-- Dev Helper: Local testing only (hidden except on localhost) -->
+        <div id="dev-token-helper" class="mt-6 p-4 border border-dashed rounded bg-yellow-50 text-sm" style="display:none;">
+          <p class="font-semibold text-yellow-800 mb-2">Dev: Local Testing Helper</p>
+          <div class="flex gap-2 mb-2">
+            <input id="dev-token-input" type="text" placeholder="Paste JWT here" class="flex-1 border rounded px-3 py-2" />
+            <button id="dev-set-token-btn" class="px-3 py-2 bg-yellow-500 text-white rounded">Set token</button>
+            <button id="dev-clear-token-btn" class="px-3 py-2 bg-gray-100 border rounded">Clear</button>
+          </div>
+          <div class="flex gap-2">
+            <button id="dev-open-storefront-btn" class="px-3 py-2 bg-indigo-600 text-white rounded">Open Storefront</button>
+            <span class="text-xs text-gray-600 self-center ml-2">Opens your Live Server storefront (127.0.0.1:5500)</span>
+          </div>
+          <div id="dev-token-status" class="text-xs text-gray-700 mt-2"></div>
+        </div>
+
         <!-- Support -->
         <div class="mt-8 pt-6 border-t text-sm text-gray-600">
           <p>Need help? <a href="#" class="text-indigo-600 hover:underline font-medium">Contact Support</a></p>
@@ -517,6 +532,52 @@
         </div>
       `;
     }
+
+      // Dev helper bindings (only shown when running on localhost)
+      try {
+        (function initDevTokenHelper() {
+          const host = window.location.hostname;
+          const helper = document.getElementById('dev-token-helper');
+          if (!helper) return;
+          // show helper only on common local hostnames
+          if (host === '127.0.0.1' || host === 'localhost') {
+            helper.style.display = '';
+          }
+
+          const statusEl = document.getElementById('dev-token-status');
+          function updateStatus() {
+            const t = localStorage.getItem('token');
+            statusEl.textContent = t ? 'Token present in localStorage' : 'No token set';
+          }
+
+          const setBtn = document.getElementById('dev-set-token-btn');
+          const clearBtn = document.getElementById('dev-clear-token-btn');
+          const openBtn = document.getElementById('dev-open-storefront-btn');
+          const input = document.getElementById('dev-token-input');
+
+          if (setBtn) setBtn.addEventListener('click', () => {
+            const val = input.value.trim();
+            if (!val) { alert('Paste your token into the input first'); return; }
+            localStorage.setItem('token', val);
+            updateStatus();
+            alert('Token saved to localStorage for this origin. Reloading page...');
+            window.location.reload();
+          });
+
+          if (clearBtn) clearBtn.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            updateStatus();
+            alert('Token removed from localStorage');
+          });
+
+          if (openBtn) openBtn.addEventListener('click', () => {
+            const storefront = 'http://127.0.0.1:5500/client/index.html';
+            window.open(storefront, '_blank');
+          });
+
+          updateStatus();
+        })();
+      } catch (e) { console.warn('Dev helper init failed', e); }
 
       /* Return Request Modal */
       // inject modal into DOM

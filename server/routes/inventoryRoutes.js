@@ -13,6 +13,7 @@ const {
     bulkUpdateQuantities,
     getInventoryStats
 } = require('../controllers/inventoryController');
+const { decrementStock } = require('../controllers/inventoryController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -52,6 +53,9 @@ router.use(protect);
 // Get inventory statistics (read-only for admin and employee)
 router.get('/stats', authorize('admin','employee'), getInventoryStats);
 
+// Get per-size availability (authenticated users: admin/employee/user)
+router.get('/availability', authorize('admin','employee','user'), require('../controllers/inventoryController').getInventoryAvailability);
+
 // Bulk update quantities (admin and employee)
 router.post('/bulk-update', authorize('admin','employee'), bulkUpdateQuantities);
 
@@ -70,5 +74,8 @@ router.route('/:id')
         { name: 'galleryImages', maxCount: 10 }
     ]), updateInventoryItem)
     .delete(authorize('admin','employee'), deleteInventoryItem);
+
+// Decrement stock (per-size or overall) after payment verification or order processing
+router.post('/:id/decrement', authorize('admin','employee'), decrementStock);
 
 module.exports = router;
