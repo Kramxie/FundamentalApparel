@@ -58,10 +58,18 @@ exports.addToCart = async (req, res) => {
         // If product is backed by Inventory with sizesInventory, validate requested size availability
         try {
             const inventoryItem = await require('../models/Inventory').findOne({ productId: productId });
-            if (inventoryItem && inventoryItem.sizesInventory && size) {
-                const available = Number(inventoryItem.sizesInventory.get ? inventoryItem.sizesInventory.get(size) : (inventoryItem.sizesInventory[size] || 0));
-                if (available < Number(quantity)) {
-                    return res.status(400).json({ success: false, msg: `Requested quantity (${quantity}) for size '${size}' exceeds available stock (${available}).` });
+            if (inventoryItem && inventoryItem.sizesInventory) {
+                // If inventory has per-size buckets, require a size selection
+                const sizesObj = inventoryItem.sizesInventory.get ? Object.fromEntries(inventoryItem.sizesInventory) : (inventoryItem.sizesInventory || {});
+                const hasPerSize = Object.keys(sizesObj || {}).length > 0;
+                if (hasPerSize && !size) {
+                    return res.status(400).json({ success: false, msg: 'Please select a size for this product before adding to cart.' });
+                }
+                if (hasPerSize && size) {
+                    const available = Number(sizesObj[size] || 0);
+                    if (available < Number(quantity)) {
+                        return res.status(400).json({ success: false, msg: `Requested quantity (${quantity}) for size '${size}' exceeds available stock (${available}).` });
+                    }
                 }
             }
         } catch (err) {

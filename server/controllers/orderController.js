@@ -356,6 +356,14 @@ exports.updateOrderStatus = async (req, res) => {
                 // Now perform atomic per-size allocations for each inventory group
                 for (const [invName, sizesMap] of Object.entries(perInventorySizes)) {
                     try {
+                        // Safety: avoid double-allocation. If there is already an allocation
+                        // InventoryTransaction for this order, skip (idempotency guard).
+                        const InventoryTransaction = require('../models/InventoryTransaction');
+                        const existingAlloc = await InventoryTransaction.findOne({ orderId: order._id, type: 'allocate' });
+                        if (existingAlloc) {
+                            console.log(`[Stock] Allocation already recorded for order ${order._id}, skipping per-size allocation for ${invName}`);
+                            continue;
+                        }
                         // Attempt allocation by sizes using utils which performs atomic update checks
                         await allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, adminId: req.user._id });
                         // After allocation, sync linked Product.countInStock if inventory references a product
