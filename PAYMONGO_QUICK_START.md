@@ -41,16 +41,16 @@ npm start
 ## 🧪 Test Payment (2 Minutes)
 
 ### Test Product Checkout
-1. Browse products at `http://localhost:5000/client/products.html`
+1. Browse products at `https://fundamental-apparel-backend.onrender.com/client/products.html`
 2. Add items to cart
-3. Go to checkout: `http://localhost:5000/client/checkout.html`
+3. Go to checkout: `https://fundamental-apparel-backend.onrender.com/client/checkout.html`
 4. Fill in shipping address
 5. Select **GCash** or **Credit Card**
 6. Click **Proceed to Secure Payment**
 7. Use test credentials below
 
 ### Test Service Checkout
-1. Create custom design at `http://localhost:5000/client/customize-jersey.html`
+1. Create custom design at `https://fundamental-apparel-backend.onrender.com/client/customize-jersey.html`
 2. Submit for quote
 3. Go to services checkout
 4. Fill in contact info

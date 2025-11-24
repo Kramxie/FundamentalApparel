@@ -78,6 +78,17 @@ exports.addProduct = async (req, res, next) => {
     } catch (e) {
       payload.sizesPrice = {};
     }
+    // If no explicit base price provided, derive a sensible base price
+    // from per-size prices (use the minimum per-size price).
+    try {
+      const sp = payload.sizesPrice || {};
+      const vals = Object.keys(sp || {}).map(k => Number(sp[k])).filter(v => !isNaN(v));
+      if ((!payload.price || Number(payload.price) === 0) && vals.length > 0) {
+        payload.price = Math.min(...vals);
+      }
+    } catch (e) {
+      // ignore
+    }
     try {
       if (placements) {
         if (typeof placements === 'string') placements = JSON.parse(placements);
@@ -138,6 +149,8 @@ exports.addProduct = async (req, res, next) => {
         gallery: product.gallery || [],
         sizes: product.sizes || [],
         sizesInventory: product.sizesInventory || {},
+        // include per-size prices so inventory view can show the same per-size pricing
+        sizesPrice: product.sizesPrice || {},
         colors: product.colors || [],
         material: product.material || '',
         productDetails: product.productDetails || '',
@@ -311,7 +324,17 @@ exports.updateProduct = async (req, res, next) => {
       if (inventoryItem) {
         inventoryItem.name = product.name;
         inventoryItem.quantity = product.countInStock;
-        inventoryItem.price = product.price;
+        // Ensure inventory price follows product.price; if product.price is 0
+        // but per-size prices exist, derive a base price from sizesPrice.
+        let invPrice = Number(product.price) || 0;
+        try {
+          const sp = product.sizesPrice || {};
+          const vals = Object.keys(sp || {}).map(k => Number(sp[k])).filter(v => !isNaN(v));
+          if ((!invPrice || invPrice === 0) && vals.length > 0) invPrice = Math.min(...vals);
+        } catch (e) {}
+        inventoryItem.price = invPrice;
+        // Sync per-size prices as well
+        inventoryItem.sizesPrice = product.sizesPrice || {};
         inventoryItem.description = product.description || '';
         inventoryItem.category = product.category || '';
         inventoryItem.imageUrl = product.imageUrl || '';

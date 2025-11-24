@@ -103,240 +103,196 @@
         </div>
       </header>
 
-      <main class="p-4 md:p-6">
+      <main class="p-6 bg-gray-50 min-h-screen">
         <div id="message" class="hidden mb-4 p-3 rounded-md"></div>
         
-        <form id="product-form" enctype="multipart/form-data" class="max-w-7xl mx-auto">
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <form id="product-form" enctype="multipart/form-data" class="max-w-[1400px] mx-auto">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            <!-- Left Column: Form Fields -->
             <div class="lg:col-span-2 space-y-6">
-              <!-- General Information -->
-              <div class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">General Information</h2>
+              
+              <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+                <h2 class="text-lg font-bold text-gray-800 mb-6">General Information</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700">Product Name</label>
-                    <input type="text" id="name" name="name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                    <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">Product Name</label>
+                    <input type="text" id="name" name="name" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2.5 border text-sm" placeholder="e.g. Cotton T-Shirt">
                   </div>
+                  
                   <div>
-                    <label for="category-select" class="block text-sm font-medium text-gray-700">Category</label>
-                    <div class="flex items-center gap-2 mt-1">
-                      <select id="category-select" name="category" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"></select>
-                      <input id="new-category" placeholder="Or add new" class="border-gray-300 rounded-md shadow-sm sm:text-sm p-2 w-32">
-                      <button id="add-category-btn" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 whitespace-nowrap">Add</button>
+                    <label for="category-select" class="block text-sm font-semibold text-gray-700 mb-2">Category</label>
+                    <div class="flex gap-2">
+                        <select id="category-select" name="category" class="flex-1 border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2.5 border text-sm bg-white"></select>
+                        <div class="flex relative w-1/3">
+                             <input id="new-category" placeholder="New..." class="w-full border-gray-300 rounded-l-lg shadow-sm p-2.5 border text-sm">
+                             <button id="add-category-btn" type="button" class="bg-indigo-600 text-white px-3 rounded-r-lg hover:bg-indigo-700 text-xs font-bold"><i class="fas fa-plus"></i></button>
+                        </div>
                     </div>
+                    <p class="text-xs text-gray-400 mt-1">Select or add a new category.</p>
                   </div>
+                  
                   <div>
-                    <label for="price" class="block text-sm font-medium text-gray-700">Price (₱)</label>
-                    <div class="flex items-center gap-2 mt-1">
-                      <input type="number" id="price" name="price" step="0.01" required class="w-full sm:w-48 md:w-44 lg:w-56 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
-                      <button id="assign-price-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md">Assign</button>
-                    </div>
-                  </div>
-                  <div>
-                    <label for="product-type" class="block text-sm font-medium text-gray-700">Product Type</label>
-                    <select id="product-type" name="type" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
-                      <option value="regular">Regular</option>
-                      <option value="predesign">Pre-Design Apparel</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label for="stock" class="block text-sm font-medium text-gray-700">Stock Quantity</label>
-                    <div class="flex items-center gap-2 mt-1">
-                      <input type="number" id="stock" name="countInStock" required class="w-full sm:w-48 md:w-44 lg:w-56 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
-                      <button id="assign-stock-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md" title="Assign stock to sizes">Assign</button>
-                    </div>
+                    <label for="price" class="block text-sm font-semibold text-gray-700 mb-2">Base Price (₱)</label>
+                    <input type="number" id="price" name="price" step="0.01" min="0" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-2.5 border text-sm" placeholder="e.g. 499.00">
+                    <p class="text-xs text-gray-400 mt-1">Set a base product price. If per-size prices are provided they will override this value for specific sizes.</p>
                   </div>
                 </div>
               </div>
 
-              <!-- Product Details -->
-              <div class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">Product Details</h2>
-                <div class="space-y-4">
-                  <div>
-                    <label for="description" class="block text-sm font-medium text-gray-700">Short Description</label>
-                    <textarea id="description" name="description" rows="4" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"></textarea>
-                  </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <label for="sizes" class="block text-sm font-medium text-gray-700">Sizes</label>
-                      <input type="text" id="sizes" name="sizes" placeholder="e.g., S, M, L, XL" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
-                    </div>
-                    <div id="colors-section">
-                      <label for="colors" class="block text-sm font-medium text-gray-700">Colors</label>
-                      <input type="text" id="colors" name="colors" placeholder="e.g., Red, Blue, Green" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
-                    </div>
-                    <div id="materials-section">
-                      <label for="material" class="block text-sm font-medium text-gray-700">Material</label>
-                      <input type="text" id="material" name="material" placeholder="e.g., Cotton, Polyester" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
-                    </div>
-                  </div>
-                  <div>
-                    <label for="productDetails" class="block text-sm font-medium text-gray-700">Additional Details</label>
-                    <textarea id="productDetails" name="productDetails" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2" placeholder="Title::Content||Title2::Content2"></textarea>
-                     <p class="text-xs text-gray-500 mt-1">Use '::' to separate title and content, and '||' to separate entries.</p>
-                  </div>
-                  <div id="per-size-section">
-                    <label class="block text-sm font-medium text-gray-700">Per-size inventory (optional)</label>
-                    <div class="mt-1 space-y-2">
-                                      <div class="flex gap-2">
-                                        <input id="sizes-generate" name="sizesGenerate" placeholder="e.g., S, M, L, XL" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2">
-                                        <button id="generate-sizes-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md">Generate</button>
-                                      </div>
-                                      <div class="flex items-center gap-2 mt-2">
-                                        <input id="apply-qty-input" type="number" min="0" placeholder="Qty to apply" class="w-36 border rounded p-2" />
-                                        <button id="apply-qty-btn" type="button" class="px-3 py-2 bg-blue-600 text-white rounded-md">Apply to selected sizes</button>
-                                        <span class="text-xs text-gray-500">Select sizes and apply one quantity to all selected.</span>
-                                      </div>
-                                      <div id="sizes-rows" class="space-y-2 mt-2"></div>
-                                      <div class="flex gap-2">
-                                        <button id="add-size-row" type="button" class="px-3 py-2 bg-green-600 text-white rounded-md">Add Size</button>
-                                        <button id="clear-sizes" type="button" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md">Clear</button>
-                                      </div>
-                      <input type="hidden" id="sizesInventoryHidden" name="sizesInventory">
-                      <p class="text-xs text-gray-500 mt-1">Use the controls to set per-size quantities. The values will be submitted as a JSON object.</p>
-                    </div>
-                  </div>
-                  <div id="per-price-section" class="mt-4">
-                    <label class="block text-sm font-medium text-gray-700">Per-size price (optional)</label>
-                    <div class="mt-1 space-y-2">
-                      <div class="flex gap-2">
-                        <input id="sizes-for-price" placeholder="e.g., S, M, L" class="flex-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm p-2">
-                        <button id="generate-price-sizes-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-md">Generate</button>
-                      </div>
-                      <div class="flex items-center gap-2 mt-2">
-                        <input id="apply-price-input" type="number" step="0.01" min="0" placeholder="Price to apply" class="w-40 border rounded p-2" />
-                        <button id="apply-price-btn" type="button" class="px-3 py-2 bg-blue-600 text-white rounded-md">Apply to selected sizes</button>
-                        <span class="text-xs text-gray-500">Select sizes and apply one price to all selected.</span>
-                      </div>
-                      <div id="prices-rows" class="space-y-2 mt-2"></div>
-                      <div class="flex gap-2">
-                        <button id="add-price-row" type="button" class="px-3 py-2 bg-green-600 text-white rounded-md">Add Price Row</button>
-                        <button id="clear-prices" type="button" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md">Clear</button>
-                      </div>
-                      <input type="hidden" id="sizesPriceHidden" name="sizesPrice">
-                      <p class="text-xs text-gray-500 mt-1">Set per-size prices. Values will be submitted as a JSON object.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right Column: Images -->
-            <div class="lg:col-span-1 space-y-6">
-                <!-- Placements -->
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                  <h2 class="text-lg font-semibold text-gray-800 mb-4">Placements</h2>
-                  <div class="space-y-3">
-                    <div>
-                      <label class="inline-flex items-center gap-2">
-                        <input type="checkbox" id="featured-checkbox" name="placements[featured]" />
-                        <span class="text-sm text-gray-700">Featured</span>
-                      </label>
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700">New Arrivals expiry</label>
-                      <div class="flex items-center gap-2 mt-2">
-                        <select id="new-arrival-presets" class="border rounded p-2">
-                          <option value="">None</option>
-                          <option value="1">1 day</option>
-                          <option value="2" selected>2 days (default)</option>
-                          <option value="7">7 days</option>
-                          <option value="custom">Custom date</option>
-                        </select>
-                        <input id="new-arrival-custom" type="date" class="border rounded p-2 hidden" />
-                      </div>
-                    </div>
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700">Services</label>
-                      <p class="text-xs text-gray-500">Assign to service placements (predefined)</p>
-                      <div class="mt-2 flex flex-col gap-2">
-                        <label class="inline-flex items-center"><input type="checkbox" name="serviceKey" value="customizeApparel" /> <span class="ml-2">Customize Apparel</span></label>
-                        <label class="inline-flex items-center"><input type="checkbox" name="serviceKey" value="printing" /> <span class="ml-2">Printing</span></label>
-                        <label class="inline-flex items-center"><input type="checkbox" name="serviceKey" value="embroidery" /> <span class="ml-2">Embroidery</span></label>
-                      </div>
-                    </div>
-                    <input type="hidden" id="placementsHidden" name="placements">
-                  </div>
-                </div>
-              <div class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4">Product Images</h2>
+              <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+                <h2 class="text-lg font-bold text-gray-800 mb-6">Product Details</h2>
                 
-                <!-- Main Image -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Main Image</label>
-                  <div class="w-full h-64 bg-gray-50 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
-                    <img id="main-preview" src="https://placehold.co/600x400/e2e8f0/9ca3af?text=Main+Image" alt="Main preview">
-                  </div>
-                  <div class="mt-2">
-                    <label for="image-input" class="cursor-pointer text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                      Choose main image
-                      <input id="image-input" type="file" accept="image/*" class="sr-only" />
-                    </label>
-                  </div>
+                <div class="mb-8">
+                    <label for="description" class="block text-sm font-semibold text-gray-700 mb-2">Short Description</label>
+                    <textarea id="description" name="description" rows="4" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-3 border text-sm resize-none"></textarea>
                 </div>
 
-                <!-- Pre-Design Front / Back Images (visible when Product Type = predesign) -->
-                <div id="predesign-images" class="mt-6 hidden">
-                  <h3 class="text-sm font-medium text-gray-700 mb-2">Pre-Design Images</h3>
-                  <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 border-t border-gray-100 pt-6">
                     <div>
-                      <div class="w-full h-40 bg-gray-50 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
-                        <img id="front-preview" src="https://placehold.co/400x300/e2e8f0/9ca3af?text=Front" alt="Front preview" class="max-h-full" />
-                      </div>
-                      <div class="mt-2">
-                        <label class="cursor-pointer text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                          Upload Front Image
-                          <input id="front-input" name="front" type="file" accept="image/*" class="sr-only" />
-                        </label>
-                      </div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Sizes</label>
+                        <div class="flex gap-3 items-start h-40">
+                            <select id="sizes-list-box" class="flex-1 h-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50" multiple></select>
+                            
+                            <div class="flex flex-col gap-2 w-32">
+                                <input id="new-size-input" type="text" placeholder="New size" class="w-full border border-gray-300 rounded-lg p-2 text-sm text-center">
+                                <button type="button" id="add-size-btn" class="w-full bg-green-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-green-700 transition shadow-sm">Add</button>
+                                <button type="button" id="remove-size-btn" class="w-full bg-white text-red-600 border border-red-200 py-2 rounded-lg text-xs font-bold hover:bg-red-50 transition shadow-sm mt-auto">Remove</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="sizes" name="sizes">
                     </div>
-                    <div>
-                      <div class="w-full h-40 bg-gray-50 rounded-md flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
-                        <img id="back-preview" src="https://placehold.co/400x300/e2e8f0/9ca3af?text=Back" alt="Back preview" class="max-h-full" />
-                      </div>
-                      <div class="mt-2">
-                        <label class="cursor-pointer text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                          Upload Back Image
-                          <input id="back-input" name="back" type="file" accept="image/*" class="sr-only" />
-                        </label>
-                      </div>
+                    <div class="text-sm text-gray-500 flex flex-col justify-center">
+                        <p class="mb-2"><i class="fas fa-info-circle text-indigo-500 mr-1"></i> <strong>Managing Sizes:</strong></p>
+                        <ul class="list-disc pl-5 space-y-1 text-xs text-gray-400">
+                            <li>Add sizes (e.g., S, M, L) using the input field.</li>
+                            <li>Select multiple sizes in the box to remove them.</li>
+                            <li>These sizes will be used to generate inventory rows below.</li>
+                        </ul>
                     </div>
-                  </div>
                 </div>
 
-                <!-- Gallery -->
-                <div class="mt-6">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Image Gallery</label>
-                  <div id="thumbs" class="flex gap-3 flex-wrap p-2 bg-gray-50 rounded-md border border-gray-200 min-h-[88px]">
-                    <!-- Thumbnails will be inserted here -->
-                  </div>
-                  <div class="mt-2">
-                     <label for="gallery-input" class="cursor-pointer text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                      Upload gallery images (up to 8)
-                      <input id="gallery-input" type="file" accept="image/*" multiple class="sr-only" />
-                    </label>
-                  </div>
-                  <p class="text-xs text-gray-500 mt-1">Click a thumbnail to set it as the main image.</p>
+                <div id="per-size-section" class="mb-8">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Per-size inventory (optional)</label>
+                    
+                    <div class="flex flex-wrap items-end gap-3 mb-4">
+                        <div class="flex-1">
+                            <input id="sizes-generate" placeholder="e.g., S, M, L, XL" class="w-full border border-gray-300 rounded-lg shadow-sm p-2.5 text-sm">
+                        </div>
+                        <button type="button" id="generate-sizes-btn" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-sm transition">Generate</button>
+                    </div>
+
+                    <div class="flex items-center gap-2 mb-4 bg-indigo-50 p-3 rounded-lg border border-indigo-100">
+                        <input id="apply-qty-input" type="number" min="0" placeholder="Qty" class="w-24 border border-gray-300 rounded-md p-1.5 text-sm text-center">
+                        <button type="button" id="apply-qty-btn" class="px-4 py-1.5 bg-blue-600 text-white rounded-md text-xs font-bold hover:bg-blue-700 transition">Apply to selected sizes</button>
+                        <span class="text-xs text-gray-500 ml-auto hidden sm:inline">Select checkboxes to apply bulk quantity.</span>
+                    </div>
+
+                    <div id="sizes-rows" class="space-y-2 max-h-64 overflow-y-auto p-1 border border-gray-100 rounded-lg bg-gray-50"></div>
+
+                    <div class="flex gap-3 mt-3">
+                        <button type="button" id="add-size-row" class="px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition">Add Size Row</button>
+                        <button type="button" id="clear-sizes" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 transition">Clear</button>
+                    </div>
+                    
+                    <input type="hidden" id="sizesInventoryHidden" name="sizesInventory">
+                    <input type="hidden" id="stock" name="countInStock" value="0"> 
                 </div>
-              </div>
-              
-              <!-- Actions -->
-              <div class="bg-white p-6 rounded-lg shadow-md">
-                 <h2 class="text-lg font-semibold text-gray-800 mb-4">Actions</h2>
-                 <div class="flex flex-col gap-3">
-                    <button id="submit-btn" type="submit" class="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                      Create Product
-                    </button>
-                    <a href="manage-products.html" class="w-full text-center px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-md hover:bg-gray-300">
-                      Cancel
-                    </a>
-                 </div>
+
+                <div id="per-price-section">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Per-size price (optional)</label>
+                    
+                    <div class="flex flex-wrap items-end gap-3 mb-4">
+                        <div class="flex-1">
+                             <input id="sizes-for-price" placeholder="e.g., XXL, 3XL" class="w-full border border-gray-300 rounded-lg shadow-sm p-2.5 text-sm">
+                        </div>
+                        <button type="button" id="generate-price-sizes-btn" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-sm transition">Generate</button>
+                    </div>
+
+                    <div class="flex items-center gap-2 mb-4 bg-indigo-50 p-3 rounded-lg border border-indigo-100">
+                        <input id="apply-price-input" type="number" step="0.01" min="0" placeholder="Price" class="w-24 border border-gray-300 rounded-md p-1.5 text-sm text-center">
+                        <button type="button" id="apply-price-btn" class="px-4 py-1.5 bg-blue-600 text-white rounded-md text-xs font-bold hover:bg-blue-700 transition">Apply to selected sizes</button>
+                    </div>
+
+                    <div id="prices-rows" class="space-y-2 max-h-64 overflow-y-auto p-1 border border-gray-100 rounded-lg bg-gray-50"></div>
+
+                    <div class="flex gap-3 mt-3">
+                        <button type="button" id="add-price-row" class="px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition">Add Price Row</button>
+                        <button type="button" id="clear-prices" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 transition">Clear</button>
+                    </div>
+                    <input type="hidden" id="sizesPriceHidden" name="sizesPrice">
+                </div>
+
+                <div class="mt-8 border-t border-gray-100 pt-6">
+                     <label class="block text-sm font-bold text-gray-700 mb-2">Additional Details</label>
+                     <textarea id="productDetails" name="productDetails" rows="2" class="w-full border-gray-300 rounded-lg shadow-sm p-3 text-sm border" placeholder="Format: Title::Content||Title2::Content2"></textarea>
+                </div>
               </div>
             </div>
 
+            <div class="lg:col-span-1 space-y-6">
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                  <h2 class="text-lg font-bold text-gray-800 mb-4">Product Images</h2>
+                  
+                  <div class="mb-6">
+                    <label class="block text-xs font-bold text-gray-500 mb-2">Main Image</label>
+                    <div class="relative w-full aspect-square bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center overflow-hidden group hover:border-indigo-400 transition cursor-pointer">
+                      <img id="main-preview" class="hidden w-full h-full object-contain z-10">
+                      <div id="main-placeholder" class="text-center text-gray-400 group-hover:text-indigo-500 transition">
+                          <i class="fas fa-cloud-upload-alt text-4xl mb-2"></i>
+                          <p class="text-xs font-medium">Main Image</p>
+                      </div>
+                      <input id="image-input" type="file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-20" />
+                    </div>
+                    <p class="text-xs text-center text-indigo-600 mt-2 cursor-pointer hover:underline" onclick="document.getElementById('image-input').click()">Choose main image</p>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-2">Gallery (Max 8)</label>
+                    <div id="thumbs" class="grid grid-cols-4 gap-2 mb-3 min-h-[60px]"></div>
+                    
+                    <label class="flex items-center justify-center w-full py-3 border border-indigo-100 text-indigo-600 bg-indigo-50 rounded-lg text-sm font-bold cursor-pointer hover:bg-indigo-100 transition">
+                        <i class="fas fa-images mr-2"></i> Add Gallery Images
+                        <input id="gallery-input" type="file" accept="image/*" multiple class="hidden" />
+                    </label>
+                  </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">Settings</h2>
+                    <div class="space-y-4">
+                        <label class="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition border border-transparent hover:border-gray-200">
+                            <input type="checkbox" id="featured-checkbox" name="placements[featured]" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                            <span class="ml-3 text-sm font-medium text-gray-700">Mark as Featured</span>
+                        </label>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-2 uppercase">New Arrivals Badge</label>
+                            <select id="new-arrival-presets" class="w-full border-gray-300 rounded-lg text-sm p-2.5 bg-white focus:ring-indigo-500 focus:border-indigo-500 border">
+                                <option value="">None</option>
+                                <option value="2" selected>2 Days (Default)</option>
+                                <option value="7">7 Days</option>
+                                <option value="custom">Custom Date</option>
+                            </select>
+                            <input id="new-arrival-custom" type="date" class="mt-2 w-full border-gray-300 rounded-lg p-2 text-sm hidden border">
+                        </div>
+                        <input type="hidden" id="placementsHidden" name="placements">
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 sticky top-6">
+                   <h2 class="text-lg font-bold text-gray-800 mb-4">Actions</h2>
+                   <div class="flex flex-col gap-3">
+                      <button id="submit-btn" type="submit" class="w-full px-4 py-3.5 bg-green-600 text-white font-bold rounded-lg shadow-md hover:bg-green-700 transition transform active:scale-95 flex justify-center items-center gap-2">
+                        <i class="fas fa-check-circle"></i> Create Product
+                      </button>
+                      <a href="manage-products.html" class="w-full text-center px-4 py-3.5 bg-gray-100 text-gray-600 font-bold rounded-lg hover:bg-gray-200 transition">
+                        Cancel
+                      </a>
+                   </div>
+                </div>
+
+            </div>
           </div>
         </form>
       </main>
@@ -418,134 +374,176 @@
     const imageInput = document.getElementById('image-input');
     const galleryInput = document.getElementById('gallery-input');
     const mainPreview = document.getElementById('main-preview');
+    const mainPlaceholder = document.getElementById('main-placeholder'); // Added
     const thumbsContainer = document.getElementById('thumbs');
     const productForm = document.getElementById('product-form');
-    const categorySelect = document.getElementById('category-select');
-    const addCategoryBtn = document.getElementById('add-category-btn');
-    const newCategoryInput = document.getElementById('new-category');
+  
     const messageEl = document.getElementById('message');
     const submitBtn = document.getElementById('submit-btn');
+    const sizesListBox = document.getElementById('sizes-list-box');
+    const newSizeInput = document.getElementById('new-size-input');
+    const addSizeBtn = document.getElementById('add-size-btn');
+    const removeSizeBtn = document.getElementById('remove-size-btn');
+    const sizesHiddenInput = document.getElementById('sizes');
+    // Standardize hidden inputs / controls used later in the script
+    const sizesHidden = document.getElementById('sizesInventoryHidden') || document.getElementById('sizes');
+    const sizesPriceHidden = document.getElementById('sizesPriceHidden') || document.getElementById('sizesPrice');
+    const placementsHidden = document.getElementById('placementsHidden');
     const stockInput = document.getElementById('stock');
-    const priceInput = document.getElementById('price');
+    const featuredCheckbox = document.getElementById('featured-checkbox');
+    const newArrivalPresets = document.getElementById('new-arrival-presets');
+    const newArrivalCustom = document.getElementById('new-arrival-custom');
 
-    const productTypeSelect = document.getElementById('product-type');
-    const predesignImagesBox = document.getElementById('predesign-images');
-    const frontInput = document.getElementById('front-input');
-    const backInput = document.getElementById('back-input');
-    const frontPreview = document.getElementById('front-preview');
-    const backPreview = document.getElementById('back-preview');
+    
+    
+
+    // Pre-design front/back controls (now added)
+    
 
     let galleryFiles = [];
     let mainFile = null;
     
-    // SizesInventory helpers
+    // --- SIZES LIST BOX LOGIC (NEW) ---
+    // --- HELPER: Remove Row by Name (Auto-Sync) ---
+    function removeRowBySizeName(sizeVal, container) {
+        if (!container) return;
+        // Hanapin ang input na may value na kapareho ng size
+        const inputs = container.querySelectorAll('input[type="text"]');
+        inputs.forEach(input => {
+            if (input.value.trim().toUpperCase() === sizeVal.toUpperCase()) {
+                // Remove the whole row div
+                input.closest('div.flex').remove();
+            }
+        });
+    }
+
+    // --- HELPER: Create Inventory Row ---
+    function createSizeRow(size = '', qty = 0) {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2 p-2 bg-white border rounded-md mb-2';
+        row.innerHTML = `
+            <input type="checkbox" class="row-checkbox h-4 w-4 text-indigo-600 border-gray-300 rounded">
+            <input type="text" class="size-name-input flex-1 border-gray-300 rounded-md p-1.5 text-sm border" placeholder="Size" value="${size}">
+            <input type="number" class="size-qty-input w-24 border-gray-300 rounded-md p-1.5 text-sm border" placeholder="Qty" min="0" value="${qty}">
+            <button type="button" class="remove-row-btn text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
+        `;
+        row.querySelector('.remove-row-btn').addEventListener('click', () => row.remove());
+        return row;
+    }
+
+    // --- HELPER: Create Price Row ---
+    function createPriceRow(size = '', price = 0) {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2 p-2 bg-white border rounded-md mb-2';
+        row.innerHTML = `
+            <input type="checkbox" class="price-row-checkbox h-4 w-4 text-indigo-600 border-gray-300 rounded">
+            <input type="text" class="price-size-input flex-1 border-gray-300 rounded-md p-1.5 text-sm border" placeholder="Size" value="${size}">
+            <input type="number" class="price-val-input w-24 border-gray-300 rounded-md p-1.5 text-sm border" placeholder="Price" min="0" step="0.01" value="${price}">
+            <button type="button" class="remove-price-btn text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
+        `;
+        row.querySelector('.remove-price-btn').addEventListener('click', () => row.remove());
+        return row;
+    }
+
+    // --- SIZES LIST BOX LOGIC (UPDATED WITH AUTO-SYNC) ---
+    function updateHiddenSizes() {
+        if(!sizesListBox) return;
+        const options = Array.from(sizesListBox.options).map(opt => opt.value);
+        if(sizesHiddenInput) sizesHiddenInput.value = options.join(',');
+    }
+
+    if(addSizeBtn) {
+        addSizeBtn.addEventListener('click', () => {
+            const val = newSizeInput.value.trim().toUpperCase();
+            if (!val) return;
+            
+            // Prevent duplicates in list
+            const exists = Array.from(sizesListBox.options).some(opt => opt.value === val);
+            if (exists) {
+                alert('Size already exists!');
+                return;
+            }
+
+            // 1. Add to List Box
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.text = val;
+            sizesListBox.add(opt);
+            newSizeInput.value = '';
+            updateHiddenSizes();
+
+            // 2. AUTO-ADD TO INVENTORY (The Fix)
+            if (sizesRowsContainer) {
+                sizesRowsContainer.appendChild(createSizeRow(val, 0));
+            }
+
+            // 3. AUTO-ADD TO PRICE (The Fix)
+            if (pricesRowsContainer) {
+                pricesRowsContainer.appendChild(createPriceRow(val, 0));
+            }
+        });
+    }
+
+    if(removeSizeBtn) {
+        removeSizeBtn.addEventListener('click', () => {
+            const selected = Array.from(sizesListBox.selectedOptions);
+            if (selected.length === 0) return;
+            
+            selected.forEach(opt => {
+                const val = opt.value;
+                opt.remove();
+                
+                // AUTO-REMOVE from Inventory & Price
+                removeRowBySizeName(val, sizesRowsContainer);
+                removeRowBySizeName(val, pricesRowsContainer);
+            });
+            updateHiddenSizes();
+        });
+    }
+
+    // --- INVENTORY SECTION LOGIC ---
     const sizesRowsContainer = document.getElementById('sizes-rows');
-    const sizesHidden = document.getElementById('sizesInventoryHidden');
     const generateSizesBtn = document.getElementById('generate-sizes-btn');
+    const sizesGenerateInput = document.getElementById('sizes-generate');
     const addSizeRowBtn = document.getElementById('add-size-row');
     const clearSizesBtn = document.getElementById('clear-sizes');
 
-    // Per-size prices helpers
+    if(generateSizesBtn) {
+        generateSizesBtn.addEventListener('click', () => {
+            const raw = sizesGenerateInput.value.trim();
+            if (!raw) return;
+            const sizes = raw.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+            if(sizesRowsContainer) {
+                sizesRowsContainer.innerHTML = '';
+                sizes.forEach(s => sizesRowsContainer.appendChild(createSizeRow(s.toUpperCase(), 0)));
+            }
+        });
+    }
+    
+    if(addSizeRowBtn) addSizeRowBtn.addEventListener('click', () => sizesRowsContainer.appendChild(createSizeRow()));
+    if(clearSizesBtn) clearSizesBtn.addEventListener('click', () => sizesRowsContainer.innerHTML = '');
+
+    // --- PRICE SECTION LOGIC ---
     const pricesRowsContainer = document.getElementById('prices-rows');
-    const sizesPriceHidden = document.getElementById('sizesPriceHidden');
     const generatePriceSizesBtn = document.getElementById('generate-price-sizes-btn');
+    const sizesPriceInput = document.getElementById('sizes-for-price');
     const addPriceRowBtn = document.getElementById('add-price-row');
     const clearPricesBtn = document.getElementById('clear-prices');
 
-    // Placements helpers
-    const featuredCheckbox = document.getElementById('featured-checkbox');
-    const newArrivalPresets = document.getElementById('new-arrival-presets');
-    const newArrivalCustom = document.getElementById('new-arrival-custom');
-    const placementsHidden = document.getElementById('placementsHidden');
-
-    function renderSizeRows(obj) {
-      sizesRowsContainer.innerHTML = '';
-      const data = obj || {};
-      Object.keys(data).forEach(size => {
-        const qty = data[size];
-        const row = document.createElement('div');
-        row.className = 'flex items-center gap-2';
-        row.innerHTML = `
-          <input data-select type="checkbox" class="h-4 w-4" />
-          <input class="flex-1 border rounded p-2" data-size-input type="text" value="${size}" />
-          <input class="w-24 border rounded p-2" data-qty-input type="number" min="0" value="${Number(qty)||0}" />
-          <button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>
-        `;
-        row.querySelector('[data-remove]').addEventListener('click', () => { row.remove(); });
-        sizesRowsContainer.appendChild(row);
-      });
+    if(generatePriceSizesBtn) {
+        generatePriceSizesBtn.addEventListener('click', () => {
+            const raw = sizesPriceInput.value.trim();
+            if (!raw) return;
+            const sizes = raw.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+            if(pricesRowsContainer) {
+                pricesRowsContainer.innerHTML = '';
+                sizes.forEach(s => pricesRowsContainer.appendChild(createPriceRow(s.toUpperCase(), 0)));
+            }
+        });
     }
 
-    function getSizesInventoryObject() {
-      const obj = {};
-      const rows = sizesRowsContainer.querySelectorAll('div');
-      rows.forEach(row => {
-        const sizeInput = row.querySelector('[data-size-input]');
-        const qtyInput = row.querySelector('[data-qty-input]');
-        if (!sizeInput || !qtyInput) return;
-        const size = String(sizeInput.value||'').trim();
-        const qty = Number(qtyInput.value||0);
-        if (size) obj[size] = Math.max(0, Math.floor(qty));
-      });
-      return obj;
-    }
-
-    generateSizesBtn?.addEventListener('click', () => {
-      const sizesText = document.getElementById('sizes-generate')?.value || '';
-      const sizes = sizesText.split(',').map(s => s.trim()).filter(Boolean);
-      const obj = {};
-      sizes.forEach(s => { obj[s] = obj[s] || 0; });
-      renderSizeRows(obj);
-    });
-
-    // Price rows rendering
-    function renderPriceRows(obj) {
-      pricesRowsContainer.innerHTML = '';
-      const data = obj || {};
-      Object.keys(data).forEach(size => {
-        const price = data[size];
-        const row = document.createElement('div');
-        row.className = 'flex items-center gap-2';
-        row.innerHTML = `
-          <input data-select type="checkbox" class="h-4 w-4" />
-          <input class="flex-1 border rounded p-2" data-price-size-input type="text" value="${size}" />
-          <input class="w-32 border rounded p-2" data-price-input type="number" step="0.01" min="0" value="${Number(price)||0}" />
-          <button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>
-        `;
-        row.querySelector('[data-remove]').addEventListener('click', () => { row.remove(); });
-        pricesRowsContainer.appendChild(row);
-      });
-    }
-
-    function getSizesPriceObject() {
-      const obj = {};
-      const rows = pricesRowsContainer.querySelectorAll('div');
-      rows.forEach(row => {
-        const sizeInput = row.querySelector('[data-price-size-input]');
-        const priceInput = row.querySelector('[data-price-input]');
-        if (!sizeInput || !priceInput) return;
-        const size = String(sizeInput.value||'').trim();
-        const price = Number(priceInput.value||0);
-        if (size) obj[size] = Math.max(0, Number(price.toFixed(2)));
-      });
-      return obj;
-    }
-
-    generatePriceSizesBtn?.addEventListener('click', () => {
-      const sizesText = document.getElementById('sizes-for-price').value || '';
-      const sizes = sizesText.split(',').map(s => s.trim()).filter(Boolean);
-      const obj = {};
-      sizes.forEach(s => { obj[s] = obj[s] || 0; });
-      renderPriceRows(obj);
-    });
-
-    addPriceRowBtn?.addEventListener('click', () => {
-      renderPriceRows(Object.assign(getSizesPriceObject(), { '': 0 }));
-      const last = pricesRowsContainer.querySelector('div:last-child [data-price-size-input]');
-      if (last) last.focus();
-    });
-
-    clearPricesBtn?.addEventListener('click', () => {
+    if(addPriceRowBtn) addPriceRowBtn.addEventListener('click', () => pricesRowsContainer.appendChild(createPriceRow()));
+    if(clearPricesBtn) clearPricesBtn.addEventListener('click', () => pricesRowsContainer.innerHTML = '');clearPricesBtn?.addEventListener('click', () => {
       pricesRowsContainer.innerHTML = '';
     });
 
@@ -553,16 +551,72 @@
     const applyPriceInput = document.getElementById('apply-price-input');
     const applyPriceBtn = document.getElementById('apply-price-btn');
     applyPriceBtn?.addEventListener('click', () => {
-      const v = Number(applyPriceInput.value||0);
+      const raw = Number(applyPriceInput.value || 0);
+      const v = Number.isFinite(raw) ? raw : 0;
       const rows = pricesRowsContainer.querySelectorAll('div');
       rows.forEach(r => {
-        const chk = r.querySelector('[data-select]');
-        const priceInput = r.querySelector('[data-price-input]');
+        // Support markup variants: data-price-select, any checkbox, or class-based rows
+        const chk = r.querySelector('[data-price-select], input[type="checkbox"], .row-checkbox');
+        const priceInput = r.querySelector('[data-price-input], input[type="number"], .price-input, .size-price-input');
         if (chk && chk.checked && priceInput) {
-          priceInput.value = Number(v.toFixed(2));
+          // Set formatted value (2 decimal places)
+          priceInput.value = v.toFixed(2);
+          // trigger input so listeners update state
+          priceInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
       });
+
+      // Try to sync hidden sizesPrice object if helper exists
+      try {
+        if (typeof getSizesPriceObject === 'function') {
+          const obj = getSizesPriceObject();
+          if (sizesPriceHidden) sizesPriceHidden.value = JSON.stringify(obj);
+        }
+      } catch (e) { /* ignore */ }
     });
+
+    // Helpers for sizes inventory/prices (used by submit and UI helpers)
+    function renderSizeRows(obj){
+      if(!sizesRowsContainer) return;
+      sizesRowsContainer.innerHTML = '';
+      const data = obj || {};
+      Object.keys(data).forEach(size => {
+        const qty = data[size];
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        row.innerHTML = `<input data-select type="checkbox" class="h-4 w-4" /><input class="flex-1 border rounded p-2" data-size-input type="text" value="${size}" /><input class="w-24 border rounded p-2" data-qty-input type="number" min="0" value="${Number(qty)||0}" /><button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>`;
+        row.querySelector('[data-remove]')?.addEventListener('click', ()=>row.remove());
+        sizesRowsContainer.appendChild(row);
+      });
+    }
+
+    function getSizesInventoryObject(){
+      const obj = {};
+      const rows = sizesRowsContainer ? sizesRowsContainer.querySelectorAll('div') : [];
+      rows.forEach(row => {
+        const sizeInput = row.querySelector('[data-size-input]') || row.querySelector('.size-name-input') || row.querySelector('input[type="text"]');
+        const qtyInput = row.querySelector('[data-qty-input]') || row.querySelector('.size-qty-input') || row.querySelector('input[type="number"]');
+        if(!sizeInput || !qtyInput) return;
+        const size = String(sizeInput.value||'').trim();
+        const qty = Math.max(0, Math.floor(Number(qtyInput.value||0)));
+        if(size) obj[size] = qty;
+      });
+      return obj;
+    }
+
+    function getSizesPriceObject(){
+      const obj = {};
+      const rows = pricesRowsContainer ? pricesRowsContainer.querySelectorAll('div') : [];
+      rows.forEach(row => {
+        const sizeInput = row.querySelector('[data-price-size-input]') || row.querySelector('.price-size-input') || row.querySelector('input[type="text"]');
+        const priceInput = row.querySelector('[data-price-input]') || row.querySelector('.price-val-input') || row.querySelector('input[type="number"]');
+        if(!sizeInput || !priceInput) return;
+        const size = String(sizeInput.value||'').trim();
+        const price = Number(priceInput.value||0);
+        if(size) obj[size] = Number(price.toFixed(2));
+      });
+      return obj;
+    }
 
     // New arrival presets handling
     newArrivalPresets?.addEventListener('change', (e) => {
@@ -584,19 +638,61 @@
       sizesRowsContainer.innerHTML = '';
     });
 
-    // Batch apply quantity to selected sizes
+    // Sizes management - dropdown + tags + per-size rows (copied from Pre-Design UI)
+    const sizesSelect = document.getElementById('sizes-select');
+    
+    
+    const sizesTags = document.getElementById('sizes-tags');
+
+    function addOptionIfMissing(size){ size=String(size||'').trim(); if(!size) return; const exists=Array.from(sizesSelect.options).some(o=>o.value.toLowerCase()===size.toLowerCase()); if(!exists){ const opt=document.createElement('option'); opt.value=size; opt.text=size; opt.selected=true; sizesSelect.appendChild(opt); updateSizesTags(); } else { Array.from(sizesSelect.options).forEach(o=>{ if(o.value.toLowerCase()===size.toLowerCase()) o.selected=true; }); } }
+
+    function updateSizesTags(){ sizesTags.innerHTML=''; Array.from(sizesSelect.options).forEach(opt=>{ const wrapper=document.createElement('span'); wrapper.className='inline-flex items-center gap-2 px-2 py-1 bg-gray-200 rounded-full'; const label=document.createElement('span'); label.textContent=opt.value; label.className='text-sm'; const btn=document.createElement('button'); btn.type='button'; btn.className='ml-2 text-xs text-gray-600 hover:text-red-600'; btn.innerHTML='✕'; btn.title='Remove size'; btn.addEventListener('click', ()=>{ showConfirmModal(opt.value, ()=> removeSize(opt.value)); }); wrapper.appendChild(label); wrapper.appendChild(btn); sizesTags.appendChild(wrapper); }); }
+
+    function removeSize(size){ size = String(size||'').trim(); if(!size) return; Array.from(sizesSelect.options).forEach(o=>{ if(o.value.toLowerCase()===size.toLowerCase()) o.remove(); }); Array.from(sizesRowsContainer.querySelectorAll('div')).forEach(row=>{ const si=row.querySelector('[data-size-input]'); if(si && si.value.toLowerCase()===size.toLowerCase()) row.remove(); }); Array.from(pricesRowsContainer.querySelectorAll('div')).forEach(row=>{ const si=row.querySelector('[data-price-size-input]'); if(si && si.value.toLowerCase()===size.toLowerCase()) row.remove(); }); updateSizesTags(); }
+
+    function addSizeRow(size, qty=0){ size=String(size||'').trim(); if(!size) return; const existing=Array.from(sizesRowsContainer.querySelectorAll('[data-size-input]')).some(i=>i.value.toLowerCase()===size.toLowerCase()); if(existing) return; const row=document.createElement('div'); row.className='flex items-center gap-2'; row.innerHTML=`<input data-select type="checkbox" class="h-4 w-4" /><input class="flex-1 border rounded p-2" data-size-input type="text" value="${size}" /><input class="w-24 border rounded p-2" data-qty-input type="number" min="0" value="${Number(qty)||0}" /><button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>`; row.querySelector('[data-remove]').addEventListener('click', ()=>row.remove()); sizesRowsContainer.appendChild(row); }
+
+    function addPriceRow(size, price=0){ size=String(size||'').trim(); if(!size) return; const existing=Array.from(pricesRowsContainer.querySelectorAll('[data-price-size-input]')).some(i=>i.value.toLowerCase()===size.toLowerCase()); if(existing) return; const row=document.createElement('div'); row.className='flex items-center gap-2'; row.innerHTML=`<input data-price-select type="checkbox" class="h-4 w-4" /><input class="flex-1 border rounded p-2" data-price-size-input type="text" value="${size}" /><input class="w-28 border rounded p-2" data-price-input type="number" step="0.01" min="0" value="${Number(price)||0}" /><button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>`; row.querySelector('[data-remove]').addEventListener('click', ()=>row.remove()); pricesRowsContainer.appendChild(row); }
+
+    addSizeBtn?.addEventListener('click', ()=>{ const v=newSizeInput.value.trim(); if(!v) return; addOptionIfMissing(v); addSizeRow(v); addPriceRow(v); newSizeInput.value=''; });
+    // support generate field (already present) to bulk-add sizes
+    const generateSizesInput = document.getElementById('sizes-generate');
+    generateSizesBtn?.addEventListener('click', ()=>{ const raw=(generateSizesInput.value||'').trim(); if(!raw) return; const parts=raw.split(/[,;\s]+/).map(s=>s.trim()).filter(Boolean); parts.forEach(p=>{ addOptionIfMissing(p); addSizeRow(p); addPriceRow(p); }); generateSizesInput.value=''; });
+    const generatePriceSizesInput = document.getElementById('sizes-for-price');
+    generatePriceSizesBtn?.addEventListener('click', ()=>{ const raw=(generatePriceSizesInput.value||'').trim(); if(!raw) return; const parts=raw.split(/[,;\s]+/).map(s=>s.trim()).filter(Boolean); parts.forEach(p=>{ addOptionIfMissing(p); addPriceRow(p); addSizeRow(p); }); generatePriceSizesInput.value=''; });
+
+    // update tags when sizesSelect changes
+    sizesSelect?.addEventListener('change', updateSizesTags);
+
+    // expose removeSize for tag buttons
     const applyQtyInput = document.getElementById('apply-qty-input');
     const applyQtyBtn = document.getElementById('apply-qty-btn');
     applyQtyBtn?.addEventListener('click', () => {
-      const v = Number(applyQtyInput.value||0);
+      const v = Math.max(0, Math.floor(Number(applyQtyInput.value || 0)));
       const rows = sizesRowsContainer.querySelectorAll('div');
       rows.forEach(r => {
-        const chk = r.querySelector('[data-select]');
-        const qtyInput = r.querySelector('[data-qty-input]');
-        if (chk && chk.checked && qtyInput) {
-          qtyInput.value = Math.max(0, Math.floor(v));
+        // support multiple row markup variants: data-select / data-qty-input, or checkbox + .size-qty-input
+        const chk = r.querySelector('[data-select], input[type="checkbox"], .row-checkbox');
+        const qtyInput = r.querySelector('[data-qty-input], .size-qty-input, input[type="number"]');
+        // only apply when a checkbox is present and checked
+        if (chk && chk.checked) {
+          if (qtyInput) {
+            qtyInput.value = String(v);
+            // trigger input event so any listeners update state
+            qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+          }
         }
       });
+
+      // Try to sync hidden sizes inventory and total stock if helper exists
+      try {
+        if (typeof getSizesInventoryObject === 'function') {
+          const inv = getSizesInventoryObject();
+          if (sizesHidden) sizesHidden.value = JSON.stringify(inv);
+          const total = Object.values(inv || {}).reduce((acc, cur) => acc + Number(cur || 0), 0);
+          if (stockInput) stockInput.value = total;
+        }
+      } catch (e) { /* ignore sync errors */ }
     });
     function showMessage(text, type = 'success') {
       messageEl.textContent = text;
@@ -606,81 +702,73 @@
       setTimeout(() => messageEl.classList.add('hidden'), 4000);
     }
 
+    let categoriesLoaded = false;
+
+    const categorySelect = document.getElementById('category-select');
+    const addCategoryBtn = document.getElementById('add-category-btn');
+    const newCategoryInput = document.getElementById('new-category');
     async function fetchCategories() {
-      try {
-        const res = await fetch(`${API}/api/categories`);
-        const json = await res.json();
-        if (json.success) {
-          // store categories for client-side flag checks
-          window.__categories = json.data || [];
-          const currentCategory = categorySelect.value;
-          categorySelect.innerHTML = window.__categories.map(c => `<option value="${c.name}" ${c.name === currentCategory ? 'selected' : ''}>${c.name}</option>`).join('');
-          // apply flags for initially selected category
-          applyCategoryFlagsByName(categorySelect.value);
+        try {
+            const res = await fetch(`${API}/api/categories`);
+            const json = await res.json();
+            if (json.success) {
+                window.__categories = json.data || [];
+                populateCategorySelect();
+            }
+        } catch (e) { 
+            console.error('Fetch Categories Error:', e); 
         }
-      } catch (err) {
-        console.error('Could not fetch categories', err);
-        showMessage('Could not load categories.', 'error');
-      }
     }
 
-    function applyCategoryFlagsByName(name) {
-      try {
-        const cat = (window.__categories || []).find(c => c.name === name);
-        applyCategoryFlags(cat);
-      } catch (e) { applyCategoryFlags(null); }
+    function populateCategorySelect() {
+        if (!categorySelect || !window.__categories) return;
+
+        // I-save ang current selection kung meron
+        const currentVal = categorySelect.value; 
+
+        // I-render ang options
+        categorySelect.innerHTML = window.__categories.map(c => 
+            `<option value="${c.name}">${c.name}</option>`
+        ).join('');
+
+        // Ibalik ang selection kung valid pa
+        if (currentVal && Array.from(categorySelect.options).some(o => o.value === currentVal)) {
+            categorySelect.value = currentVal;
+        }
+
+        // Force show inventory (no logic needed, just show)
+        applyCategoryFlags();
+        
+        // Add change listener (optional, kung may idadagdag ka pa later)
+        categorySelect.onchange = () => applyCategoryFlags();
     }
 
-    function applyCategoryFlags(cat) {
-      // show/hide per-size sections based on requiresSizes flag
-      const perSizeSection = document.getElementById('per-size-section');
-      const perPriceSection = document.getElementById('per-price-section');
-      const sizesInput = document.getElementById('sizes');
-      const colorsSection = document.getElementById('colors-section');
-      const materialsSection = document.getElementById('materials-section');
-      const colorsInput = document.getElementById('colors');
-      const materialInput = document.getElementById('material');
-      if (cat && cat.requiresSizes) {
-        perSizeSection?.classList.remove('hidden');
-        perSizeSection?.removeAttribute('aria-hidden');
-        perPriceSection?.classList.remove('hidden');
-        perPriceSection?.removeAttribute('aria-hidden');
-        if (sizesInput) sizesInput.removeAttribute('disabled');
-        // colors and materials visibility when sizes are required is not implied; keep separate below
-      } else {
-        perSizeSection?.classList.add('hidden');
-        perSizeSection?.setAttribute('aria-hidden', 'true');
-        perPriceSection?.classList.add('hidden');
-        perPriceSection?.setAttribute('aria-hidden', 'true');
-        if (sizesInput) sizesInput.setAttribute('disabled', 'true');
-      }
+    function applyCategoryFlags() {
+        // FORCE SHOW: Siguraduhing laging nakikita ang Inventory at Price sections
+        const perSizeSection = document.getElementById('per-size-section');
+        const perPriceSection = document.getElementById('per-price-section');
 
-      // show/hide colors based on requiresColors
-      if (cat && cat.requiresColors) {
-        colorsSection?.classList.remove('hidden');
-        colorsSection?.removeAttribute('aria-hidden');
-        if (colorsInput) colorsInput.removeAttribute('disabled');
-      } else {
-        colorsSection?.classList.add('hidden');
-        colorsSection?.setAttribute('aria-hidden', 'true');
-        if (colorsInput) colorsInput.setAttribute('disabled', 'true');
-      }
-
-      // show/hide materials based on requiresMaterials
-      if (cat && cat.requiresMaterials) {
-        materialsSection?.classList.remove('hidden');
-        materialsSection?.removeAttribute('aria-hidden');
-        if (materialInput) materialInput.removeAttribute('disabled');
-      } else {
-        materialsSection?.classList.add('hidden');
-        materialsSection?.setAttribute('aria-hidden', 'true');
-        if (materialInput) materialInput.setAttribute('disabled', 'true');
-      }
+        if (perSizeSection) {
+            perSizeSection.classList.remove('hidden');
+            perSizeSection.removeAttribute('aria-hidden');
+        }
+        if (perPriceSection) {
+            perPriceSection.classList.remove('hidden');
+            perPriceSection.removeAttribute('aria-hidden');
+        }
     }
+
+    // --- ADD CATEGORY BUTTON LOGIC ---
+    // Listener implemented later (uses addCategory helper)
+
+    // Initial Load
+    fetchCategories();
+
+    
 
     // apply flags when category selection changes
     categorySelect?.addEventListener('change', (e) => {
-      applyCategoryFlagsByName(e.target.value);
+      applyCategoryFlags();
     });
 
     async function addCategory(name) {
@@ -719,32 +807,18 @@
       const file = e.target.files[0];
       if (!file) return;
       mainFile = file;
-      mainPreview.src = URL.createObjectURL(file);
+      if(mainPreview) {
+          mainPreview.src = URL.createObjectURL(file);
+          mainPreview.classList.remove('hidden');
+      }
+      if(mainPlaceholder) mainPlaceholder.classList.add('hidden');
       
-      // Clear active state from gallery if a new main image is chosen directly
+      // Clear active state from gallery
       document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
     }
 
-    // Pre-design image previews
-    function handleFrontChange(e) {
-      const f = e.target.files[0];
-      if (!f) return;
-      frontPreview.src = URL.createObjectURL(f);
-    }
-    function handleBackChange(e) {
-      const f = e.target.files[0];
-      if (!f) return;
-      backPreview.src = URL.createObjectURL(f);
-    }
-
-    productTypeSelect?.addEventListener('change', (e) => {
-      if (e.target.value === 'predesign') {
-        // Redirect to the dedicated Pre-Design add page
-        window.location.href = 'add-predisign-product.html';
-      } else {
-        predesignImagesBox.classList.add('hidden');
-      }
-    });
+    // Handlers for front/back previews (match Pre-Design page behavior)
+    
 
     function handleGalleryChange(e) {
       const files = Array.from(e.target.files).slice(0, 8);
@@ -786,6 +860,16 @@
       // serialize sizesInventory into hidden input so it's included in form data
       try {
         sizesHidden.value = JSON.stringify(getSizesInventoryObject());
+        // If per-size inventory present, compute aggregate and set Stock input and hidden count
+        try {
+          const inv = getSizesInventoryObject();
+          const total = Object.keys(inv || {}).reduce((s,k)=>s + (Number(inv[k])||0), 0);
+          if (total > 0) {
+            stockInput.value = String(total);
+            const hidden = document.getElementById('countInStockHidden');
+            if (hidden) hidden.value = String(total);
+          }
+        } catch(e) { /* ignore */ }
       } catch (err) {
         sizesHidden.value = '';
       }
@@ -795,9 +879,41 @@
       } catch (err) {
         sizesPriceHidden.value = '';
       }
+      // If per-size section is visible, require at least one size with quantity
+      try {
+        const invVal = sizesHidden.value;
+        const perSizeSectionEl = document.getElementById('per-size-section');
+        const perSizeVisible = perSizeSectionEl && !perSizeSectionEl.classList.contains('hidden');
+        if (perSizeVisible) {
+          const parsed = invVal ? JSON.parse(invVal) : {};
+          if (!parsed || Object.keys(parsed).length === 0) {
+            showMessage('Please add at least one size with quantity before submitting.','error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Product';
+            return;
+          }
+        }
+      } catch (e) { /* ignore */ }
+      
+let calculatedBasePrice = 0;
+try {
+    const sizesPriceData = getSizesPriceObject();
+    const prices = Object.values(sizesPriceData).filter(p => Number(p) > 0);
+
+    if (prices.length > 0) {
+        // Kunin ang pinakamababang presyo (cheapest size)
+        calculatedBasePrice = Math.min(...prices);
+        
+        // I-sync din ito sa hidden field na `countInStock` kung ginagamit mo
+        document.getElementById('countInStock').value = totalStock; 
+    }
+} catch (e) {
+    console.error('Error calculating base price:', e);
+}
+
       // serialize placements
       try {
-        const services = Array.from(document.querySelectorAll('input[name="serviceKey"]:checked')).map(i => i.value);
+        // services removed; only featured and newArrival handled
         let newArrivalExpiresAt = null;
         const preset = newArrivalPresets.value;
         if (preset === 'custom' && newArrivalCustom.value) {
@@ -808,7 +924,7 @@
             newArrivalExpiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
           }
         }
-        const placementsObj = { featured: !!featuredCheckbox.checked, newArrivalExpiresAt: newArrivalExpiresAt, services };
+        const placementsObj = { featured: !!featuredCheckbox.checked, newArrivalExpiresAt: newArrivalExpiresAt };
         placementsHidden.value = JSON.stringify(placementsObj);
       } catch (err) {
         placementsHidden.value = '';
@@ -839,16 +955,8 @@
         return;
       }
 
-      // If product type is predesign, append front/back files if provided
-      const selectedType = document.getElementById('product-type')?.value || 'regular';
-      if (selectedType === 'predesign') {
-        const f = frontInput?.files && frontInput.files[0];
-        const b = backInput?.files && backInput.files[0];
-        if (f) fd.set('front', f);
-        if (b) fd.set('back', b);
-        // ensure type field is present
-        fd.set('type', 'predesign');
-      }
+      // Append front/back files if provided (match Pre-Design UI behavior)
+      
 
       // Append gallery images, excluding the one that might be the main image
       galleryFiles.forEach((file) => {
@@ -915,8 +1023,7 @@
     // Event Listeners
     imageInput.addEventListener('change', handleMainImageChange);
     galleryInput.addEventListener('change', handleGalleryChange);
-    frontInput?.addEventListener('change', handleFrontChange);
-    backInput?.addEventListener('change', handleBackChange);
+    
 
     // --- Stock/Price assign modal handling ---
     // Modal markup will be inserted in DOM via HTML (below). Hook handlers here.
@@ -1028,22 +1135,47 @@
     });
 
 
+    // Confirmation modal logic
+    let pendingConfirm = null;
+    function showConfirmModal(size, onConfirm){
+      const modal = document.getElementById('confirm-modal');
+      const text = document.getElementById('confirm-modal-text');
+      const yes = document.getElementById('confirm-modal-yes');
+      const no = document.getElementById('confirm-modal-no');
+      if(!modal || !text || !yes || !no) { if(onConfirm) onConfirm(); return; }
+      text.textContent = `Remove size "${size}" and its per-size rows? This cannot be undone.`;
+      modal.classList.remove('hidden');
+      pendingConfirm = ()=>{ try{ onConfirm && onConfirm(); } finally { hideConfirmModal(); } };
+      yes.focus();
+    }
+    function hideConfirmModal(){ const modal=document.getElementById('confirm-modal'); if(modal) modal.classList.add('hidden'); pendingConfirm = null; }
+    document.addEventListener('click', (e)=>{
+      const modal = document.getElementById('confirm-modal'); if(!modal || modal.classList.contains('hidden')) return; const target = e.target;
+      if(target.id === 'confirm-modal') hideConfirmModal();
+    });
+    document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ hideConfirmModal(); } if(e.key === 'Enter'){ const modal=document.getElementById('confirm-modal'); if(modal && !modal.classList.contains('hidden')){ e.preventDefault(); pendingConfirm && pendingConfirm(); } } });
+    document.addEventListener('click', (e)=>{ if(e.target && e.target.id === 'confirm-modal-yes'){ pendingConfirm && pendingConfirm(); } if(e.target && e.target.id === 'confirm-modal-no'){ hideConfirmModal(); } });
+
     // Initial Load
     (async () => {
       await fetchCategories();
-      // If URL contains ?type=predesign, pre-select and show predesign fields
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const t = params.get('type');
-        if (t && productTypeSelect) {
-          productTypeSelect.value = t;
-          productTypeSelect.dispatchEvent(new Event('change'));
-        }
-      } catch (e) { /* ignore */ }
+      // Type-specific redirect removed; use dedicated Add Pre-Design page instead
     })();
   </script>
+  <!-- Confirm modal -->
+  <div id="confirm-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-md p-6">
+      <h3 class="text-lg font-semibold mb-2">Confirm removal</h3>
+      <p id="confirm-modal-text" class="text-sm text-gray-700 mb-4">Are you sure?</p>
+      <div class="flex justify-end gap-3">
+        <button id="confirm-modal-no" type="button" class="px-4 py-2 bg-gray-200 rounded-md">Cancel</button>
+        <button id="confirm-modal-yes" type="button" class="px-4 py-2 bg-red-600 text-white rounded-md">Remove</button>
+      </div>
+    </div>
+  </div>
   </div>
 </body>
+
 <script>
 (function(){
   document.addEventListener('DOMContentLoaded', function(){

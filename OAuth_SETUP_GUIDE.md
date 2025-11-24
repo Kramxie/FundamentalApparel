@@ -33,7 +33,7 @@ CLIENT_URL=https://fundamental-apparel-backend.onrender.com/client
 In `client/login.html` and `client/register.html`, update the `API_BASE` constant:
 
 ```javascript
-const API_BASE = 'http://localhost:5000'; // For local development
+const API_BASE = 'https://fundamental-apparel-backend.onrender.com'; // For local development
 // OR
 const API_BASE = 'https://your-ngrok-url.ngrok-free.dev'; // For ngrok
 ```
@@ -47,7 +47,7 @@ Go to [Google Cloud Console](https://console.cloud.google.com/):
 3. Click on your OAuth 2.0 Client ID
 4. Under **Authorized redirect URIs**, add:
    ```
-   http://localhost:5000/api/auth/google/callback
+   https://fundamental-apparel-backend.onrender.com/api/auth/google/callback
    https://your-ngrok-url.ngrok-free.dev/api/auth/google/callback
    ```
 
@@ -59,7 +59,7 @@ Go to [Facebook Developers](https://developers.facebook.com/):
 2. Go to **Facebook Login** → **Settings**
 3. Under **Valid OAuth Redirect URIs**, add:
    ```
-   http://localhost:5000/api/auth/facebook/callback
+   https://fundamental-apparel-backend.onrender.com/api/auth/facebook/callback
    https://your-ngrok-url.ngrok-free.dev/api/auth/facebook/callback
    ```
 

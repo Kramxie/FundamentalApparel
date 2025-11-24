@@ -338,6 +338,7 @@ exports.createOrderPaymentSession = async (req, res) => {
         name: item.name,
         price: item.price,
         quantity: item.quantity,
+        size: item.size || null,
         imageUrl: item.image || item.imageUrl || 'https://placehold.co/80x80'
       })),
       totalPrice: amount,
@@ -762,21 +763,47 @@ async function handlePaymentSuccess(eventData) {
           orderInSession.isPaid = true;
           orderInSession.paidAt = new Date();
 
-          // Deduct stock for each item
+          // Group per-inventory allocations for items that specify sizes
+          const perInventorySizes = {};
           for (const item of orderInSession.orderItems) {
             if (!item.product) continue;
             const product = await Product.findById(item.product).session(session);
             if (!product) continue;
-            const newStock = Math.max(0, product.countInStock - item.quantity);
-            product.countInStock = newStock;
-            await product.save({ session });
-            console.log(`[Stock] Deducted ${item.quantity} from Product ${product.name}. New stock: ${newStock}`);
 
-            const inventoryItem = await Inventory.findOne({ productId: product._id }).session(session);
-            if (inventoryItem) {
-              inventoryItem.quantity = newStock;
-              await inventoryItem.save({ session });
-              console.log(`[Stock] Synced Inventory for ${product.name}. New quantity: ${newStock}`);
+            if (item.size) {
+              const invName = product.name || product._id.toString();
+              perInventorySizes[invName] = perInventorySizes[invName] || {};
+              perInventorySizes[invName][item.size] = (perInventorySizes[invName][item.size] || 0) + (Number(item.quantity) || 0);
+            } else {
+              const newStock = Math.max(0, product.countInStock - item.quantity);
+              product.countInStock = newStock;
+              await product.save({ session });
+              console.log(`[Stock] Deducted ${item.quantity} from Product ${product.name}. New stock: ${newStock}`);
+
+              const inventoryItem = await Inventory.findOne({ productId: product._id }).session(session);
+              if (inventoryItem) {
+                inventoryItem.quantity = newStock;
+                await inventoryItem.save({ session });
+                console.log(`[Stock] Synced Inventory for ${product.name}. New quantity: ${newStock}`);
+              }
+            }
+          }
+
+          // Perform atomic per-size allocations for each inventory group
+          for (const [invName, sizesMap] of Object.entries(perInventorySizes)) {
+            try {
+              await require('../utils/inventory').allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, session, note: 'Allocated by sizes on payment success' });
+              // Sync linked Product.countInStock if inventory references a product
+              try {
+                const invAfter = await Inventory.findOne({ name: new RegExp('^' + invName + '$', 'i') }).session(session);
+                if (invAfter && invAfter.productId) {
+                  const prod = await Product.findById(invAfter.productId).session(session);
+                  if (prod) { prod.countInStock = Number(invAfter.quantity || 0); await prod.save({ session }); }
+                }
+              } catch (syncErr) { console.warn('Failed to sync product after sizes allocation (webhook):', syncErr && syncErr.message); }
+            } catch (allocErr) {
+              console.error('[PayMongo] Failed to allocate inventory by sizes for', invName, allocErr && allocErr.message);
+              throw allocErr;
             }
           }
 
@@ -806,10 +833,18 @@ async function handlePaymentSuccess(eventData) {
           order.isPaid = true;
           order.paidAt = new Date();
 
+          // Group per-inventory allocations for items that specify sizes (fallback non-transactional)
+          const perInventorySizesFallback = {};
           for (const item of order.orderItems) {
             if (!item.product) continue;
             const product = await Product.findById(item.product);
-            if (product) {
+            if (!product) continue;
+
+            if (item.size) {
+              const invName = product.name || product._id.toString();
+              perInventorySizesFallback[invName] = perInventorySizesFallback[invName] || {};
+              perInventorySizesFallback[invName][item.size] = (perInventorySizesFallback[invName][item.size] || 0) + (Number(item.quantity) || 0);
+            } else {
               const newStock = Math.max(0, product.countInStock - item.quantity);
               product.countInStock = newStock;
               await product.save();
@@ -818,6 +853,22 @@ async function handlePaymentSuccess(eventData) {
                 inventoryItem.quantity = newStock;
                 await inventoryItem.save();
               }
+            }
+          }
+
+          // Perform allocations for per-size groups (no session)
+          for (const [invName, sizesMap] of Object.entries(perInventorySizesFallback)) {
+            try {
+              await require('../utils/inventory').allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, note: 'Allocated by sizes on payment success (fallback)' });
+              try {
+                const invAfter = await Inventory.findOne({ name: new RegExp('^' + invName + '$', 'i') });
+                if (invAfter && invAfter.productId) {
+                  const prod = await Product.findById(invAfter.productId);
+                  if (prod) { prod.countInStock = Number(invAfter.quantity || 0); await prod.save(); }
+                }
+              } catch (syncErr) { console.warn('Failed to sync product after sizes allocation (webhook fallback):', syncErr && syncErr.message); }
+            } catch (allocErr) {
+              console.error('[PayMongo] Fallback allocation failed for', invName, allocErr && allocErr.message);
             }
           }
 

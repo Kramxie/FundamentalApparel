@@ -5,7 +5,8 @@ const InventoryTransaction = require('../models/InventoryTransaction');
 async function findInventoryByName(name, session = null) {
   if (!name) return null;
   // Case-insensitive match
-  return await Inventory.findOne({ name: new RegExp('^' + name + '$', 'i'), type: 'fabric' }).session(session);
+  // Search by name across inventory types (product/fabric/pre-design)
+  return await Inventory.findOne({ name: new RegExp('^' + name + '$', 'i') }).session(session);
 }
 
 async function allocateInventory({ name, qty, orderId = null, adminId = null, session = null, note = '' }) {

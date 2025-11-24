@@ -222,11 +222,14 @@
                 </button>
             `).join('');
 
-            // Size Logic
+            // Size Logic - normalize Map vs Object
             let sizesHtml = '';
-            if (product.sizesInventory && Object.keys(product.sizesInventory).length > 0) {
-                sizesHtml = Object.keys(product.sizesInventory).map(size => {
-                    const available = Number(product.sizesInventory[size] || 0);
+            const sizesInventoryObj = (product.sizesInventory && typeof product.sizesInventory === 'object')
+                ? (product.sizesInventory instanceof Map ? Object.fromEntries(product.sizesInventory) : product.sizesInventory)
+                : {};
+            if (sizesInventoryObj && Object.keys(sizesInventoryObj).length > 0) {
+                sizesHtml = Object.keys(sizesInventoryObj).map(size => {
+                    const available = Number(sizesInventoryObj[size] || 0);
                     return `<button class="px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium transition hover:border-indigo-600 hover:text-indigo-600 ${available===0 ? 'opacity-40 cursor-not-allowed bg-gray-50' : 'bg-white text-gray-700'}" data-size="${size}" ${available===0 ? 'disabled' : ''}>${size}</button>`;
                 }).join('');
             } else {
@@ -295,7 +298,7 @@
                             
                             ${avgRatingDisplay}
 
-                            <div class="text-3xl font-bold text-gray-900 mb-6">₱${Number(product.price||0).toLocaleString()}</div>
+                            <div id="product-price" class="text-3xl font-bold text-gray-900 mb-6">₱${Number(product.price||0).toLocaleString()}</div>
 
                             <div class="space-y-6 border-t border-b border-gray-100 py-6 mb-6">
                                 
@@ -316,10 +319,10 @@
                                     <div class="flex items-center gap-4">
                                         <div class="flex items-center border border-gray-300 rounded-lg">
                                             <button id="decrease-qty" class="px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-l-lg transition">-</button>
-                                            <div id="quantity-display" class="w-12 text-center font-medium text-gray-900">1</div>
+                                            <input id="quantity-input" type="number" inputmode="numeric" pattern="\d*" min="1" value="1" class="w-20 text-center font-medium text-gray-900 border-l border-r border-transparent focus:outline-none" />
                                             <button id="increase-qty" class="px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-r-lg transition">+</button>
                                         </div>
-                                        <span class="text-sm text-gray-500">${product.countInStock} items in stock</span>
+                                        <span id="stock-text" class="text-sm text-gray-500">${product.countInStock} items in stock</span>
                                     </div>
                                 </div>
                             </div>
@@ -376,6 +379,10 @@
 
             // Size Selection
             const sizeSelector = document.getElementById('size-selector');
+            // Track current displayed stock/price so quantity controls can use them
+            let currentStock = Number(product.countInStock || 0);
+            let currentPrice = Number(product.price || 0);
+
             sizeSelector?.addEventListener('click', (e) => {
                 const btn = e.target.closest('button');
                 if (!btn || btn.disabled) return;
@@ -386,6 +393,38 @@
                 btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
                 btn.classList.add('bg-gray-900', 'text-white', 'border-gray-900');
                 selectedSize = btn.dataset.size;
+
+                // Compute size-specific stock and price
+                try {
+                    const invSource = product.sizesInventory || {};
+                    const spSource = product.sizesPrice || {};
+                    const inv = (invSource instanceof Map) ? Object.fromEntries(invSource) : invSource;
+                    const sp = (spSource instanceof Map) ? Object.fromEntries(spSource) : spSource;
+                    const avail = Number((inv && inv[selectedSize]) || 0);
+                    const priceForSize = (sp && (selectedSize in sp)) ? Number(sp[selectedSize]) : Number(product.price || 0);
+
+                    // Update current trackers
+                    currentStock = Number.isFinite(avail) ? avail : Number(product.countInStock || 0);
+                    currentPrice = Number.isFinite(priceForSize) ? priceForSize : Number(product.price || 0);
+
+                    // Update UI: price and stock text
+                    const priceEl = document.getElementById('product-price');
+                    const stockEl = document.getElementById('stock-text');
+                    if (priceEl) priceEl.textContent = '₱' + Number(currentPrice || 0).toLocaleString();
+                    if (stockEl) stockEl.textContent = `${currentStock} items in stock`;
+
+                    // Adjust quantity if it exceeds available
+                    if (typeof qtyInput !== 'undefined' && qtyInput) {
+                        let q = Math.max(1, Math.floor(Number(qtyInput.value || 1)));
+                        if (q > currentStock) q = Math.max(1, currentStock);
+                        qtyInput.value = q;
+                        quantity = q;
+                    } else {
+                        if (quantity > currentStock) quantity = Math.max(1, currentStock);
+                    }
+                } catch (err) {
+                    console.warn('Error updating size-specific info', err);
+                }
             });
 
             // Color Selection
@@ -398,14 +437,53 @@
                 selectedColor = btn.dataset.color;
             });
 
-            // Quantity
+            // Quantity (now using an input so users can type numbers with validation)
+            const qtyInput = document.getElementById('quantity-input');
+            // initialize quantity value
             let quantity = 1;
-            const qtyDisplay = document.getElementById('quantity-display');
+            if (qtyInput) {
+                const initial = Math.max(1, Math.floor(Number(qtyInput.value || 1)));
+                qtyInput.value = initial;
+                quantity = initial;
+            }
+
             document.getElementById('decrease-qty')?.addEventListener('click', () => {
-                if (quantity > 1) { quantity--; qtyDisplay.textContent = quantity; }
+                if (!qtyInput) return;
+                let q = Math.max(1, Math.floor(Number(qtyInput.value || 1)));
+                if (q > 1) q = q - 1;
+                qtyInput.value = q;
+                quantity = q;
             });
+
             document.getElementById('increase-qty')?.addEventListener('click', () => {
-                if (quantity < product.countInStock) { quantity++; qtyDisplay.textContent = quantity; }
+                if (!qtyInput) return;
+                let q = Math.max(1, Math.floor(Number(qtyInput.value || 1)));
+                const max = (typeof currentStock !== 'undefined' ? currentStock : Number(product.countInStock || 0));
+                if (q < max) q = q + 1;
+                qtyInput.value = q;
+                quantity = q;
+            });
+
+            // Prevent non-numeric characters and clamp value on input
+            qtyInput?.addEventListener('keydown', (ev) => {
+                // Allow control keys
+                const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'];
+                if (allowed.includes(ev.key)) return;
+                // Prevent minus, plus and non-digit keys
+                if (!/^[0-9]$/.test(ev.key)) ev.preventDefault();
+            });
+
+            qtyInput?.addEventListener('input', (ev) => {
+                const el = ev.target;
+                let v = el.value;
+                // strip non-digits
+                v = String(v).replace(/\D+/g, '');
+                let n = Math.floor(Number(v || 0));
+                if (!Number.isFinite(n) || n < 1) n = 1;
+                const max = (typeof currentStock !== 'undefined' ? currentStock : Number(product.countInStock || 0));
+                if (n > max) n = max;
+                el.value = n;
+                quantity = n;
             });
 
             // Add to Cart
@@ -422,10 +500,11 @@
                 addToCartBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
 
                 try {
+                    const qtyToSend = Number((document.getElementById('quantity-input') && document.getElementById('quantity-input').value) || quantity);
                     const res = await fetch(`${API}/api/cart`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-                        body: JSON.stringify({ productId: product._id, quantity, size: selectedSize, color: selectedColor })
+                        body: JSON.stringify({ productId: product._id, quantity: qtyToSend, size: selectedSize, color: selectedColor })
                     });
                     if (res.ok) {
                         alert('Added to cart successfully!');

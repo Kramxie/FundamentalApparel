@@ -584,6 +584,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
     <script>
         const API_BASE = 'https://fundamental-apparel-backend.onrender.com';
+      
         const token = localStorage.getItem('adminToken');
 
         // State management
@@ -780,6 +781,21 @@
                     const s = cb.value;
                     sizesPriceMap[s] = Number(formatted);
                 });
+                // If rows contain inline price inputs, update them as well so the editor shows the assigned value
+                try {
+                    const rows = document.querySelectorAll('#sizes-rows div');
+                    rows.forEach(row => {
+                        const sizeEl = row.querySelector('[data-size-input]');
+                        if (!sizeEl) return;
+                        const name = String(sizeEl.value||'').trim();
+                        const priceInput = row.querySelector('[data-price-input]');
+                        if (priceInput && sizesPriceMap[name] !== undefined) {
+                            priceInput.value = Number(sizesPriceMap[name]).toFixed(2);
+                            // trigger input handler to keep preview & map consistent
+                            priceInput.dispatchEvent(new Event('input'));
+                        }
+                    });
+                } catch (e) { /* ignore - optional inline price inputs */ }
                 // Apply to preview rows
                 renderPreviewSizes(getSizesInventoryObject(), sizesPriceMap);
                 // reflect formatted value in the Price Per Size preview input
@@ -1060,6 +1076,21 @@
                         btn.textContent = 'Show';
                     }
                 }
+                // handle show/hide for per-size prices
+                if (target.classList && target.classList.contains('show-prices-btn')) {
+                    const btn = target;
+                    const container = btn.closest('div');
+                    if (!container) return;
+                    const full = container.querySelector('.prices-full');
+                    if (!full) return;
+                    if (full.classList.contains('hidden')) {
+                        full.classList.remove('hidden');
+                        btn.textContent = 'Hide';
+                    } else {
+                        full.classList.add('hidden');
+                        btn.textContent = 'Show';
+                    }
+                }
             });
         }
 
@@ -1172,13 +1203,54 @@
                 const qty = data[size];
                 const row = document.createElement('div');
                 row.className = 'flex items-center gap-2';
+                // populate per-row price from sizesPriceMap if available
+                const priceVal = (sizesPriceMap && sizesPriceMap[String(size)]) ? Number(sizesPriceMap[String(size)]).toFixed(2) : '';
                 row.innerHTML = `
                     <input data-select type="checkbox" class="h-4 w-4" />
-                    <input class="flex-1 border rounded p-2" data-size-input type="text" value="${size}" />
+                    <input class="flex-1 border rounded p-2" data-size-input type="text" value="${escapeHtml(size)}" />
                     <input class="w-24 border rounded p-2" data-qty-input type="number" min="0" value="${Number(qty)||0}" />
+                    <input class="w-28 border rounded p-2" data-price-input type="number" step="0.01" min="0" value="${priceVal}" placeholder="Price" />
                     <button type="button" class="px-3 py-2 bg-red-600 text-white rounded-md" data-remove>Remove</button>
                 `;
+                // attach handlers for remove and price change after DOM insertion
                 row.querySelector('[data-remove]').addEventListener('click', () => { row.remove(); });
+                // wire price input -> update in-memory sizesPriceMap and preview
+                const priceInput = row.querySelector('[data-price-input]');
+                const sizeInputEl = row.querySelector('[data-size-input]');
+                // store original size name on the row so renames can be handled
+                row.dataset.sizeOld = String(size || '').trim();
+                if (priceInput) {
+                    priceInput.addEventListener('input', () => {
+                        try {
+                            const sname = String(sizeInputEl.value||'').trim();
+                            const v = Number(priceInput.value) || 0;
+                            if (sname && v > 0) {
+                                sizesPriceMap[sname] = Number(v);
+                            } else if (sname && sizesPriceMap[sname] !== undefined && v === 0) {
+                                // clear zero prices to keep preview tidy
+                                delete sizesPriceMap[sname];
+                            }
+                        } catch (e) { /* ignore */ }
+                        renderPreviewSizes(getSizesInventoryObject(), sizesPriceMap);
+                    });
+                }
+                // when the size name changes, move the price key if present
+                if (sizeInputEl) {
+                    sizeInputEl.addEventListener('input', () => {
+                        try {
+                            const prev = String(row.dataset.sizeOld || '').trim();
+                            const next = String(sizeInputEl.value||'').trim();
+                            if (prev && prev !== next) {
+                                if (sizesPriceMap[prev] !== undefined) {
+                                    sizesPriceMap[next] = sizesPriceMap[prev];
+                                    delete sizesPriceMap[prev];
+                                }
+                                row.dataset.sizeOld = next;
+                                renderPreviewSizes(getSizesInventoryObject(), sizesPriceMap);
+                            }
+                        } catch (e) { /* ignore */ }
+                    });
+                }
                 sizesRowsContainer.appendChild(row);
             });
         }
@@ -1307,22 +1379,41 @@
                 `;
                 return;
             }
-
+            // (no debug logging) -- rendering per-size prices below
             tbody.innerHTML = items.map(item => {
                 const rowClass = item.status === 'low_stock' ? 'low-stock-row' : 
                                  item.status === 'out_of_stock' ? 'out-of-stock-row' : '';
-                
                 const statusBadge = getStatusBadge(item.status);
                 const typeBadge = item.type === 'fabric' ? 
                     '<span class="px-2 py-1 text-xs font-semibold text-purple-700 bg-purple-100 rounded-full">Fabric</span>' :
                     (item.isPreDesign || item.type === 'pre-design-apparel') ?
                     '<span class="px-2 py-1 text-xs font-semibold text-amber-700 bg-amber-100 rounded-full">Pre-Design</span>' :
                     '<span class="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">Product</span>';
-                
-                // Add product indicator badge if synced to product catalog
                 const productBadge = item.isProduct ? 
                     '<span class="ml-2 px-2 py-1 text-xs font-semibold text-indigo-700 bg-indigo-100 rounded-full" title="Synced to product catalog"><i class="fas fa-sync-alt"></i> Synced</span>' : '';
 
+                // Normalize sizesPrice (could be object or JSON string)
+                let sizesPriceObj = item.sizesPrice || {};
+                if (typeof sizesPriceObj === 'string') {
+                    try { sizesPriceObj = JSON.parse(sizesPriceObj); } catch (e) { sizesPriceObj = {}; }
+                }
+                let sizesPriceEntries = [];
+                try {
+                    sizesPriceEntries = Object.entries(sizesPriceObj || {}).map(([k, v]) => {
+                        let val = v;
+                        if (v && typeof v === 'object') {
+                            if (v.value !== undefined) val = v.value;
+                            else if (v.price !== undefined) val = v.price;
+                            else if (v.amount !== undefined) val = v.amount;
+                        }
+                        return [k, Number(val || 0)];
+                    }).filter(([k, v]) => String(k).trim() !== '' && v > 0);
+                } catch (e) { sizesPriceEntries = []; }
+                // Fallback: always use min per-size price if available
+                let displayPrice = Number(item.price) || 0;
+                if (sizesPriceEntries.length > 0) {
+                    displayPrice = Math.min(...sizesPriceEntries.map(([size, price]) => price));
+                }
                 return `
                     <tr class="${rowClass}">
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -1349,7 +1440,18 @@
                             ${escapeHtml(item.unit)}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">₱${item.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                            ${sizesPriceEntries && sizesPriceEntries.length > 0 ? `
+                                <div class="text-sm text-gray-900">
+                                    <span class="prices-short block max-w-[220px] truncate">${sizesPriceEntries.map(([s, v]) => `${escapeHtml(s)} - ₱${Number(v||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`).join(' · ')}</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    <button type="button" class="show-prices-btn text-indigo-600 text-xs ml-2">Show</button>
+                                    <div class="prices-full hidden text-xs text-gray-700 mt-1">${sizesPriceEntries.map(([s, v]) => `${escapeHtml(s)} - ₱${Number(v||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`).join('<br>')}</div>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">Min: <span class="font-semibold">₱${displayPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
+                            ` : `
+                                <div class="text-sm text-gray-900">₱${displayPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                            `}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             ${statusBadge}
@@ -1495,7 +1597,7 @@
         // Open edit modal
         async function openEditModal(itemId) {
             editingItemId = itemId;
-            document.getElementById('modal-title').textContent = 'Edit Inventory Item';
+            document.getElementById('modal-title').textContent = 'Edit Product Details';
 
             try {
                 const response = await fetch(`${API_BASE}/api/admin/inventory/${itemId}`, {
@@ -1588,6 +1690,21 @@
                     }
                 } else {
                     productFields.classList.add('hidden');
+                    // For non-products (like fabrics), still show per-size if they have sizes
+                    if (data.sizesInventory && Object.keys(data.sizesInventory).length > 0) {
+                        const perSizeSection = document.getElementById('per-size-section');
+                        if (perSizeSection) perSizeSection.classList.remove('hidden');
+                        // populate per-size prices map
+                        try {
+                            sizesPriceMap = data.sizesPrice || {};
+                        } catch (e) { sizesPriceMap = {}; }
+                        // render preview with sizes and prices
+                        try { renderPreviewSizes(data.sizesInventory || {}, sizesPriceMap); } catch (e) {}
+                        // Populate per-size inventory
+                        try {
+                            renderSizeRows(data.sizesInventory);
+                        } catch (e) { /* ignore */ }
+                    }
                     // Clear product fields
                         const prodCatEl2 = document.getElementById('product-category'); if (prodCatEl2) prodCatEl2.value = '';
                         const prodMaterialEl2 = document.getElementById('product-material'); if (prodMaterialEl2) prodMaterialEl2.value = '';
@@ -1599,8 +1716,16 @@
                     document.getElementById('gallery-preview').classList.add('hidden');
                 }
 
-                // ensure variant selector visible when editing an existing item
-                const variantSelectorEl = document.getElementById('variant-selector'); if (variantSelectorEl) variantSelectorEl.classList.remove('hidden');
+                // ensure variant selector hidden for edit modal
+                const variantSelectorEl = document.getElementById('variant-selector'); if (variantSelectorEl) variantSelectorEl.classList.add('hidden');
+                
+                // Hide basic inventory fields for edit modal, focus on product details
+                const fieldsToHide = ['item-type', 'item-quantity', 'item-unit', 'item-price', 'item-threshold', 'item-supplier', 'item-sku', 'item-description'];
+                fieldsToHide.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.closest('.mb-4')?.classList.add('hidden');
+                });
+                
                 document.getElementById('inventory-modal').classList.remove('hidden');
                 document.getElementById('inventory-modal').classList.add('flex');
 
@@ -1631,6 +1756,13 @@
             
             // Reset modal title
             document.getElementById('modal-title').textContent = 'Add New Item';
+            
+            // Show hidden fields
+            const fieldsToHide = ['item-type', 'item-quantity', 'item-unit', 'item-price', 'item-threshold', 'item-supplier', 'item-sku', 'item-description'];
+            fieldsToHide.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.closest('.mb-4')?.classList.remove('hidden');
+            });
             
             editingItemId = null;
         }

@@ -29,6 +29,32 @@ exports.addToCart = async (req, res) => {
         if (!product) {
             return res.status(404).json({ success: false, msg: 'Product not found' });
         }
+        // Determine price to use for this cart item. Prefer per-size price from Inventory when size provided.
+        let priceToUse = Number(product.price) || 0;
+        try {
+            const InventoryModel = require('../models/Inventory');
+            const inventoryItem = await InventoryModel.findOne({ productId: productId });
+            if (inventoryItem) {
+                // If a size is specified and a per-size price exists, use it
+                if (size) {
+                    const sp = inventoryItem.sizesPrice || {};
+                    const perSizeVal = sp && (sp.get ? sp.get(size) : sp[size]);
+                    if (perSizeVal != null && !isNaN(Number(perSizeVal))) {
+                        priceToUse = Number(perSizeVal);
+                    }
+                }
+                // If we still don't have a base price, derive from min per-size price if available
+                if ((!priceToUse || priceToUse === 0) && inventoryItem.sizesPrice) {
+                    try {
+                        const spObj = inventoryItem.sizesPrice.get ? Object.fromEntries(inventoryItem.sizesPrice) : (inventoryItem.sizesPrice || {});
+                        const vals = Object.keys(spObj).map(k => Number(spObj[k])).filter(v => !isNaN(v));
+                        if (vals.length > 0) priceToUse = Math.min(...vals);
+                    } catch (e) { /* ignore */ }
+                }
+            }
+        } catch (e) {
+            // ignore inventory lookup errors
+        }
         // If product is backed by Inventory with sizesInventory, validate requested size availability
         try {
             const inventoryItem = await require('../models/Inventory').findOne({ productId: productId });
@@ -48,7 +74,7 @@ exports.addToCart = async (req, res) => {
             if (itemIndex > -1) {
                 cart.items[itemIndex].quantity += Number(quantity);
             } else {
-                cart.items.push({ product: productId, quantity: Number(quantity), price: product.price, size: size || null });
+                cart.items.push({ product: productId, quantity: Number(quantity), price: priceToUse, size: size || null });
             }
             await cart.save();
             const updatedCart = await Cart.findById(cart._id).populate('items.product');
@@ -56,7 +82,7 @@ exports.addToCart = async (req, res) => {
         } else {
             const newCart = await Cart.create({
                 user: userId,
-                items: [{ product: productId, quantity: Number(quantity), price: product.price, size: size || null }]
+                items: [{ product: productId, quantity: Number(quantity), price: priceToUse, size: size || null }]
             });
             const populatedCart = await Cart.findById(newCart._id).populate('items.product');
             return res.status(201).json({ success: true, data: populatedCart });

@@ -42,7 +42,7 @@ $newProcess = Get-Process -Name node -ErrorAction SilentlyContinue | Where-Objec
 if ($newProcess) {
     Write-Host ""
     Write-Host "Server restarted successfully!" -ForegroundColor Green
-    Write-Host "Running on http://localhost:5000" -ForegroundColor Cyan
+    Write-Host "Running on https://fundamental-apparel-backend.onrender.com" -ForegroundColor Cyan
     Write-Host "Process ID: $($newProcess.Id)" -ForegroundColor Cyan
 } else {
     Write-Host ""
