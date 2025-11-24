@@ -151,6 +151,7 @@
                         <button id="clear-sizes" type="button" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md">Clear</button>
                       </div>
                       <input type="hidden" id="sizesInventoryHidden" name="sizesInventory">
+                      <input type="hidden" id="countInStockHidden" name="countInStock">
                       <p class="text-xs text-gray-500 mt-1">Use the controls to set per-size quantities. The values will be submitted as a JSON object.</p>
                     </div>
                   </div>
@@ -299,6 +300,12 @@
       // serialize sizes and prices if present
       try { document.getElementById('sizesInventoryHidden').value = JSON.stringify(getSizesInventoryObject()); } catch (e) { document.getElementById('sizesInventoryHidden').value = ''; }
       try { document.getElementById('sizesPriceHidden').value = JSON.stringify(getSizesPriceObject()); } catch (e) { document.getElementById('sizesPriceHidden').value = ''; }
+      // compute total stock from sizesInventory and sync to countInStock
+      try {
+        const inv = getSizesInventoryObject();
+        const total = Object.keys(inv || {}).reduce((s,k)=>s + (Number(inv[k])||0), 0);
+        document.getElementById('countInStockHidden').value = String(total);
+      } catch(e) { document.getElementById('countInStockHidden').value = '0'; }
 
       // Require at least one per-size inventory row
       const invVal = document.getElementById('sizesInventoryHidden').value;

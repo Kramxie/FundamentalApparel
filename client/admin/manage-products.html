@@ -165,7 +165,17 @@
                             <td class="px-4 py-2">${product.category}</td>
                             <td class="px-4 py-2">₱${(Number(product.price)||0).toLocaleString()}</td>
                             <td class="px-4 py-2">
-                                <div class="font-medium">${Number(product.countInStock)||0}</div>
+                                <div class="font-medium">
+                                    ${(() => {
+                                        try {
+                                            let total = Number(product.countInStock) || 0;
+                                            if ((!total || total === 0) && product.sizesInventory && Object.keys(product.sizesInventory).length > 0) {
+                                                total = Object.keys(product.sizesInventory).reduce((sum, k) => sum + (Number(product.sizesInventory[k]) || 0), 0);
+                                            }
+                                            return total;
+                                        } catch (e) { return Number(product.countInStock)||0; }
+                                    })()}
+                                </div>
                                 ${sizesHtml ? `
                                 <div class="text-xs text-gray-500 mt-1">
                                     <span class="sizes-short block max-w-[220px] truncate">${sizesHtml}</span>
