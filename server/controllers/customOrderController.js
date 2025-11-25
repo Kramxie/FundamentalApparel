@@ -1035,40 +1035,60 @@ exports.verifyFinalPayment = async (req, res) => {
         session.startTransaction();
         try {
           if (order.serviceType === 'printing-only' && (order.inventoryName || order.fabricType) && !order.inventoryAllocated) {
-            const allocName = order.inventoryName || order.fabricType;
-            const invDoc = await allocateInventory({ name: allocName, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
-            order.inventoryAllocated = true;
-            order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
+            // Try to allocate by sizes when available (team members or payload), otherwise fall back to allocate by total qty
+            const extractSizesMap = (ord) => {
+              const map = {};
+              if (Array.isArray(ord.teamMembers) && ord.teamMembers.length) {
+                for (const m of ord.teamMembers) {
+                  const s = (m.size || m.sizeLabel || '').toString();
+                  if (!s) continue;
+                  map[s] = (map[s] || 0) + 1;
+                }
+              } else if (ord.quotePayload && Array.isArray(ord.quotePayload.teamEntries) && ord.quotePayload.teamEntries.length) {
+                for (const e of ord.quotePayload.teamEntries) {
+                  const s = (e.size || e.sizeLabel || '').toString();
+                  const qty = Number(e.qty || e.quantity || 1) || 1;
+                  if (!s) continue;
+                  map[s] = (map[s] || 0) + qty;
+                }
+              }
+              Object.keys(map).forEach(k => { if (!(map[k] > 0)) delete map[k]; });
+              return Object.keys(map).length ? map : null;
+            };
+
+            const sizesMap = extractSizesMap(order);
+            if (sizesMap) {
+              const invName = order.inventoryName || order.productName || order.garmentType || order.fabricType || null;
+              if (!invName) throw new Error('Cannot determine inventory name for per-size allocation');
+              const invDoc = await findInventoryByName(invName, session);
+              const inventoryId = invDoc ? invDoc._id : null;
+              const allocRes = await allocateInventoryBySizes({ name: invName, inventoryId, sizesMap, orderId: order._id, adminId: req.user._id, session, note: 'Allocate by sizes on final verification' });
+              // sync linked Product.countInStock if needed
+              try {
+                let invAfter = allocRes;
+                if (!invAfter) invAfter = invDoc ? await Inventory.findById(invDoc._id).session(session) : await findInventoryByName(invName, session);
+                if (invAfter && invAfter.productId) {
+                  const Product = require('../models/Product');
+                  const prod = await Product.findById(invAfter.productId).session(session);
+                  if (prod) { prod.countInStock = Number(invAfter.quantity || 0); await prod.save({ session }); }
+                }
+              } catch (syncErr) { console.warn('Failed to sync product after sizes allocation (final verify):', syncErr && syncErr.message); }
+
+              order.inventoryAllocated = true;
+              order.allocatedItems = [{ inventoryId: invDoc ? invDoc._id : null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
+            } else {
+              const allocName = order.inventoryName || order.fabricType;
+              const invDoc = await allocateInventory({ name: allocName, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+              order.inventoryAllocated = true;
+              order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
+            }
           }
 
-          // Update the order - go directly to Ready for Pickup/Delivery
-          order.status = 'Ready for Pickup/Delivery';
+          // Update the order - mark production as started
+          // Admin verification of final payment starts production and triggers inventory deduction
+          order.status = 'In Production';
           order.balancePaid = true;
-          
-          // Auto-set fulfillment method based on checkout selection
-          if (order.shippingMethod === 'Pick-Up') {
-            order.fulfillmentMethod = 'pickup';
-          } else if (order.shippingAddress || order.deliveryAddress) {
-            order.fulfillmentMethod = 'delivery';
-          // Use shippingAddress from checkout if available, otherwise use deliveryAddress
-          if (order.shippingAddress && !order.deliveryAddress) {
-            const addr = order.shippingAddress;
-            // Format complete address with all fields
-            const parts = [];
-            if (addr.block) parts.push(`Block ${addr.block}`);
-            if (addr.lot) parts.push(`Lot ${addr.lot}`);
-            if (addr.street) parts.push(addr.street);
-            if (addr.building) parts.push(addr.building);
-            if (addr.city) parts.push(addr.city);
-            if (addr.province) parts.push(addr.province);
-            if (addr.zip) parts.push(addr.zip);
-            if (addr.phone) parts.push(`Tel: ${addr.phone}`);
-            order.deliveryAddress = parts.join(', ');
-          }
-        } else {
-          // Fallback: default to delivery if no method specified
-          order.fulfillmentMethod = 'delivery';
-        }
+          // Do not set fulfillment details here; fulfillment (pickup/delivery) is set after production completes
         
           const updatedOrder = await order.save({ session });
           await session.commitTransaction();

@@ -972,11 +972,11 @@ async function handlePaymentSuccess(eventData) {
           order.paymentType = 'downpayment';
         }
         // 2. Full payment in one go (100%) - check if amount matches total
-        // Keep at 'Pending Downpayment' so admin can verify and skip to completion
+        // Move to 'Pending Final Verification' so admin can explicitly verify full payments
         else if (!order.downPaymentPaid && Math.abs(paidAmount - totalAmount) <= (totalAmount * 0.05 + epsilon)) {
-          console.log('[PayMongo] Detected 100% full payment - awaiting admin verification');
-          // Don't change status! Admin must verify via "Verify Downpayment" button
-          // order.status stays 'Pending Downpayment'
+          console.log('[PayMongo] Detected 100% full payment - marking for final verification');
+          // Set status to pending final verification so admin UI shows proper final-payment flow
+          order.status = 'Pending Final Verification';
           order.downPaymentPaid = true; // Mark as paid
           order.balancePaid = true; // Mark both as paid for 100%
           order.paymentAmount = paidAmount;
