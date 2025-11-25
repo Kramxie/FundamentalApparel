@@ -241,6 +241,16 @@ exports.submitCustomOrder = async (req, res) => {
     }
 
     // Create the custom order
+    // Server-side validation: if team members were included, ensure each member has a size
+    if (orderData.includeTeamMembers && Array.isArray(orderData.teamMembers) && orderData.teamMembers.length) {
+      for (const m of orderData.teamMembers) {
+        const s = (m.size || m.sizeLabel || '').toString().trim();
+        if (!s) {
+          return res.status(400).json({ success: false, msg: 'Each team member must include a size selection.' });
+        }
+      }
+    }
+
     const customOrder = await CustomOrder.create(orderData);
 
     res.status(201).json({
@@ -576,7 +586,7 @@ exports.verifyDownPayment = async (req, res) => {
             }
           } catch (syncErr) { console.warn('Failed to sync product after sizes allocation:', syncErr && syncErr.message); }
           order.inventoryAllocated = true;
-          order.allocatedItems = [{ inventoryId: null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
+          order.allocatedItems = [{ inventoryId: invDoc ? invDoc._id : null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
         } else {
           if (order.serviceType === 'printing-only' && order.fabricType && !order.inventoryAllocated) {
             const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
@@ -701,7 +711,7 @@ exports.verifyDownPayment = async (req, res) => {
         }
         // mark inventory allocated for this order
         order.inventoryAllocated = true;
-        order.allocatedItems = [{ inventoryId: null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
+        order.allocatedItems = [{ inventoryId: invDoc ? invDoc._id : null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
       } else {
         if (order.serviceType === 'printing-only' && order.fabricType && !order.inventoryAllocated) {
           const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });

@@ -366,6 +366,25 @@ exports.createOrderPaymentSession = async (req, res) => {
 
     await order.save();
 
+    // Server-side validation: ensure size was provided when the linked Inventory has per-size stock
+    try {
+      for (const it of items) {
+        if (!it.productId) continue;
+        const prod = await Product.findById(it.productId);
+        if (!prod) continue;
+        const linkedInv = await Inventory.findOne({ productId: prod._id });
+        const sizesInv = linkedInv?.sizesInventory || null;
+        const hasPerSize = sizesInv && ((sizesInv instanceof Map && sizesInv.size > 0) || (typeof sizesInv === 'object' && Object.keys(sizesInv || {}).length > 0));
+        if (hasPerSize && (!it.size || String(it.size).trim() === '')) {
+          // remove the created order to avoid incomplete orders
+          await Order.findByIdAndDelete(order._id);
+          return res.status(400).json({ success: false, msg: `Size is required for product: ${it.name || prod.name}` });
+        }
+      }
+    } catch (e) {
+      console.warn('[Payment] Post-order size validation failed:', e && e.message);
+    }
+
     // Build success and cancel URLs with order reference
     const orderRef = order._id.toString().slice(-8).toUpperCase();
     // Include full orderId and session placeholder (will be replaced after session creation)
@@ -766,6 +785,7 @@ async function handlePaymentSuccess(eventData) {
           // Group per-inventory allocations for items that specify sizes
           const perInventorySizes = {};
             const invNameToId = {};
+          console.log('[PayMongo] Order items (for allocation):', JSON.stringify(orderInSession.orderItems || []));
           for (const item of orderInSession.orderItems) {
             if (!item.product) continue;
             const product = await Product.findById(item.product).session(session);

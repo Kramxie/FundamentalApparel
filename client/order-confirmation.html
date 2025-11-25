@@ -98,7 +98,7 @@
           <div class="flex items-center gap-4 border-b py-4">
             <img src="${it.imageUrl}" class="w-20 h-20 object-cover rounded" alt="${it.name}">
             <div class="flex-1">
-              <div class="font-semibold">${it.name}</div>
+              <div class="font-semibold">${it.name}${it.size ? ` • <span class="text-sm font-normal text-gray-600">Size: ${it.size}</span>` : ''}${it.color ? ` • <span class="text-sm font-normal text-gray-600">Color: ${it.color}</span>` : ''}</div>
               <div class="text-sm text-gray-500">Qty: ${it.quantity} · ₱${it.price.toLocaleString()}</div>
             </div>
             <div class="font-semibold">₱${(it.price * it.quantity).toLocaleString()}</div>
