@@ -2173,25 +2173,28 @@
 
               // Final payment section
               els.customModalFpSection.classList.remove('hidden');
+              const isFullPayment = (order.paymentType === 'full' || order.balancePaid === true);
               if (order.finalPaymentReceiptUrl) {
                 // Manual upload path (backward compat)
-                els.customModalFpReceipt.innerHTML = `<a href="${order.finalPaymentReceiptUrl}" target="_blank" class="text-indigo-600 font-medium hover:underline">Click to View Final Payment Receipt</a>`;
+                els.customModalFpReceipt.innerHTML = `<a href="${order.finalPaymentReceiptUrl}" target="_blank" class="text-indigo-600 font-medium hover:underline">Click to View ${isFullPayment ? 'Full' : 'Final'} Payment Receipt</a>`;
               } else if (order.paymentIntentId || order.receiptUrl) {
                 // PayMongo final payment
                 els.customModalFpReceipt.innerHTML = `
                   <button onclick="viewCustomOrderPayment('${order._id}')" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-                    <i class="fas fa-receipt"></i>View Final Payment Receipt
+                    <i class="fas fa-receipt"></i>View ${isFullPayment ? 'Full' : 'Final'} Payment Receipt
                   </button>
                   <p class="text-xs text-gray-500 mt-2">
                     <i class="fas fa-credit-card text-indigo-600"></i> Method: ${order.paymentMethod || 'N/A'} • Amount: ₱${(order.paymentAmount || 0).toLocaleString()}
                   </p>
                 `;
               } else {
-                els.customModalFpReceipt.innerHTML = `<span class="text-red-500 text-xs">No final payment receipt data found.</span>`;
+                els.customModalFpReceipt.innerHTML = `<span class="text-red-500 text-xs">No ${isFullPayment ? 'full' : 'final'} payment receipt data found.</span>`;
               }
               
-              // Ipakita ang "Verify Final" button
+              // Ipakita ang "Verify Final" button (label adjusts for full payments)
               els.customModalVerifyFinal.classList.remove('hidden');
+              const verifyFinalLabel = isFullPayment ? 'Verify Full-Payment & Start Production' : 'Verify Final Payment & Start Production';
+              els.customModalVerifyFinal.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${verifyFinalLabel}`;
           }
         else {
           // Para sa "In Production", "Completed", etc.

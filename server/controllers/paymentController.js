@@ -930,7 +930,7 @@ async function handlePaymentSuccess(eventData) {
       }
       console.log('[PayMongo] Order updated successfully:', order._id, 'New status:', order.status, 'New paymentStatus:', order.paymentStatus);
     } else {
-      // Service order - check payment option
+        // Service order - check payment option
         order.paymentStatus = 'paid';
 
         // Derive actual paid amount from PayMongo event line items
@@ -954,62 +954,47 @@ async function handlePaymentSuccess(eventData) {
           deliveryFee
         });
 
-        // Decide payment type based on current status and amount
+        // Decide payment type deterministically by amount first, then by status
         const epsilon = 0.01; // floating safety
         const halfAmount = totalAmount * 0.5;
-        
-        // Check payment scenarios in CORRECT order:
-        // IMPORTANT: Payments should be VERIFIED by admin, not auto-approved!
-        
-        // 1. Downpayment (50%) - check by status first
-        // Keep at 'Pending Downpayment' so admin can verify
-        if (order.status === 'Pending Downpayment' && !order.downPaymentPaid) {
-          console.log('[PayMongo] Detected 50% downpayment - awaiting admin verification');
-          // Don't change status! Admin must verify via "Verify Downpayment" button
-          // order.status stays 'Pending Downpayment'
-          order.downPaymentPaid = true; // Mark as paid so admin can verify
-          order.paymentAmount = paidAmount;
-          order.paymentType = 'downpayment';
-        }
-        // 2. Full payment in one go (100%) - check if amount matches total
-        // Move to 'Pending Final Verification' so admin can explicitly verify full payments
-        else if (!order.downPaymentPaid && Math.abs(paidAmount - totalAmount) <= (totalAmount * 0.05 + epsilon)) {
+        const fullTolerance = Math.max(totalAmount * 0.05, epsilon);
+        const halfTolerance = Math.max(totalAmount * 0.1, epsilon);
+
+        // 1. Full payment (100%) - identify by amount first
+        if (paidAmount && Math.abs(paidAmount - totalAmount) <= fullTolerance) {
           console.log('[PayMongo] Detected 100% full payment - marking for final verification');
-          // Set status to pending final verification so admin UI shows proper final-payment flow
-          order.status = 'Pending Final Verification';
-          order.downPaymentPaid = true; // Mark as paid
-          order.balancePaid = true; // Mark both as paid for 100%
           order.paymentAmount = paidAmount;
           order.paymentType = 'full';
+          order.downPaymentPaid = true;
+          order.balancePaid = true;
+          // Set to pending final verification so admin explicitly verifies
+          order.status = 'Pending Final Verification';
         }
-        // 3. Remaining balance payment (final 50%) - ONLY if status is 'Pending Balance'
-        // Change to 'Pending Final Verification' so admin can verify
+        // 2. Remaining balance (final 50%) - if order expects balance
         else if (order.status === 'Pending Balance' && order.downPaymentPaid && !order.balancePaid) {
           console.log('[PayMongo] Detected remaining balance payment - awaiting admin verification');
-          order.status = 'Pending Final Verification'; // This one DOES change status
           order.paymentAmount = paidAmount;
           order.paymentType = 'remaining';
           order.balancePaid = true;
+          order.status = 'Pending Final Verification';
         }
-        // 4. Downpayment by amount (if status check failed but amount matches ~50%)
-        else if (!order.downPaymentPaid && Math.abs(paidAmount - halfAmount) <= (totalAmount * 0.1)) {
+        // 3. Downpayment by amount (50%) when there is no previous downpayment
+        else if (!order.downPaymentPaid && paidAmount && Math.abs(paidAmount - halfAmount) <= halfTolerance) {
           console.log('[PayMongo] Detected 50% downpayment by amount - awaiting admin verification');
-          // Keep at current status for admin verification
-          order.downPaymentPaid = true;
           order.paymentAmount = paidAmount;
           order.paymentType = 'downpayment';
+          order.downPaymentPaid = true;
+          // keep order.status as-is (usually 'Pending Downpayment') so admin can verify
         }
-        // 5. Fallback: if downpayment already paid but balance not paid, treat as remaining
-        // ONLY if status is 'Pending Balance' (not for Pending Downpayment!)
-        else if (order.status === 'Pending Balance' && order.downPaymentPaid && !order.balancePaid) {
-          console.log('[PayMongo] Detected remaining balance (fallback) - awaiting admin verification');
-          order.status = 'Pending Final Verification';
-          order.paymentAmount = paidAmount;
-          order.paymentType = 'remaining';
-          order.balancePaid = true;
+        // 4. Status-driven case: if status indicates Pending Downpayment and none recorded yet
+        else if (order.status === 'Pending Downpayment' && !order.downPaymentPaid) {
+          console.log('[PayMongo] Status indicates Pending Downpayment - marking downPaymentPaid');
+          order.paymentAmount = paidAmount || order.paymentAmount;
+          order.paymentType = 'downpayment';
+          order.downPaymentPaid = true;
         }
         else {
-          // Last resort fallback - keep current status and just record payment info
+          // Fallback: record payment amount and keep existing flags/status
           console.log('[PayMongo] Fallback: recording payment, keeping current status:', order.status);
           if (paidAmount) order.paymentAmount = paidAmount;
           if (!order.paymentType) order.paymentType = order.downPaymentPaid ? 'remaining' : 'downpayment';
