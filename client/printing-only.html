@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Printing Only - Fundamental</title>
+  <title>Custom Upload - Fundamental</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -24,8 +24,8 @@
 
   <main class="max-w-5xl mx-auto px-4 py-8 space-y-8">
     <div class="text-center">
-      <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900">Printing Only</h1>
-      <p class="text-gray-600 mt-2">Upload your finished design and provide the specifics. We'll print it professionally.</p>
+      <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900">Custom Upload</h1>
+      <p class="text-gray-600 mt-2">Upload your finished design and provide the specifics. We'll make it professionally.</p>
     </div>
 
     <form id="po-form" class="bg-white rounded-2xl shadow p-6 space-y-8">
@@ -131,7 +131,7 @@
 
       <div class="pt-2">
         <button id="submitBtn" type="submit" class="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-teal-700">
-          <i class="fas fa-paper-plane mr-2"></i>Submit Printing Order
+          <i class="fas fa-paper-plane mr-2"></i>Submit Quote Order
         </button>
       </div>
     </form>
@@ -235,13 +235,13 @@
       e.preventDefault();
       const token = localStorage.getItem('token');
       if(!token){
-        alert('Please login to submit a printing order.');
+        alert('Please login to submit a quote order.');
         window.location.href = 'login.html';
         return;
       }
 
       const fd = new FormData();
-      fd.append('serviceType', 'printing-only');
+      fd.append('serviceType', 'Upload Design ');
       fd.append('printingMethod', (document.querySelector('input[name="printingMethod"]:checked')?.value)||'dye-sublimation');
       // split combined "Fabric - Garment" into separate fields for backend compatibility
       const fg = (els.fabricGarment && els.fabricGarment.value) ? els.fabricGarment.value : '';
