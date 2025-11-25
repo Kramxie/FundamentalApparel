@@ -764,82 +764,50 @@ async function handlePaymentSuccess(eventData) {
           orderInSession.paidAt = new Date();
 
           // Group per-inventory allocations for items that specify sizes
+          const perInventorySizes = {};
           for (const item of orderInSession.orderItems) {
             if (!item.product) continue;
-            
-            // 1. Fetch Product
             const product = await Product.findById(item.product).session(session);
             if (!product) continue;
 
-            const itemQty = Number(item.quantity || 1);
-            const itemSize = item.size; // E.g., "S", "M"
+            // Prefer finding the Inventory document by productId so per-size
+            // allocations target the correct inventory entry (avoids name mismatches).
+            const linkedInventory = await Inventory.findOne({ productId: product._id }).session(session);
 
-            // 2. Update Product (Customer Side)
-            if (itemSize && product.sizesInventory) {
-                // Handle both Map (if using Map in schema) and Object (if using JSON)
-                let currentSizeStock = 0;
-                
-                if (product.sizesInventory instanceof Map) {
-                    currentSizeStock = Number(product.sizesInventory.get(itemSize) || 0);
-                    let newSizeStock = Math.max(0, currentSizeStock - itemQty);
-                    product.sizesInventory.set(itemSize, newSizeStock);
-                } else {
-                    currentSizeStock = Number(product.sizesInventory[itemSize] || 0);
-                    let newSizeStock = Math.max(0, currentSizeStock - itemQty);
-                    product.sizesInventory[itemSize] = newSizeStock;
-                }
-                
-                // IMPORTANT: Force Mongoose to detect changes in Mixed/Map types
-                product.markModified('sizesInventory');
-
-                // Recalculate total
-                let totalStock = 0;
-                if (product.sizesInventory instanceof Map) {
-                     for (let val of product.sizesInventory.values()) totalStock += Number(val);
-                } else {
-                     totalStock = Object.values(product.sizesInventory).reduce((a, b) => a + Number(b), 0);
-                }
-                product.countInStock = totalStock;
-
+            if (item.size) {
+              const invName = linkedInventory ? linkedInventory.name : (product.name || product._id.toString());
+              perInventorySizes[invName] = perInventorySizes[invName] || {};
+              perInventorySizes[invName][item.size] = (perInventorySizes[invName][item.size] || 0) + (Number(item.quantity) || 0);
             } else {
-                // No size, deduct total directly
-                product.countInStock = Math.max(0, product.countInStock - itemQty);
-            }
+              const newStock = Math.max(0, product.countInStock - item.quantity);
+              product.countInStock = newStock;
+              await product.save({ session });
+              console.log(`[Stock] Deducted ${item.quantity} from Product ${product.name}. New stock: ${newStock}`);
 
-            await product.save({ session });
-
-            // 3. Update Inventory (Admin Side)
-            const inventoryItem = await Inventory.findOne({ productId: product._id }).session(session);
-            if (inventoryItem) {
-                if (itemSize && inventoryItem.sizesInventory) {
-                    let currentInvQty = 0;
-
-                    if (inventoryItem.sizesInventory instanceof Map) {
-                        currentInvQty = Number(inventoryItem.sizesInventory.get(itemSize) || 0);
-                        let newInvQty = Math.max(0, currentInvQty - itemQty);
-                        inventoryItem.sizesInventory.set(itemSize, newInvQty);
-                        
-                        // Recalc Total
-                        let totalInv = 0;
-                        for (let qty of inventoryItem.sizesInventory.values()) totalInv += Number(qty);
-                        inventoryItem.quantity = totalInv;
-                    } else {
-                        currentInvQty = Number(inventoryItem.sizesInventory[itemSize] || 0);
-                        let newInvQty = Math.max(0, currentInvQty - itemQty);
-                        inventoryItem.sizesInventory[itemSize] = newInvQty;
-                        
-                        // Recalc Total
-                        let totalInv = Object.values(inventoryItem.sizesInventory).reduce((a, b) => a + Number(b), 0);
-                        inventoryItem.quantity = totalInv;
-                    }
-                    
-                    // Force update
-                    inventoryItem.markModified('sizesInventory');
-                    
-                } else {
-                    inventoryItem.quantity = product.countInStock;
-                }
+              const inventoryItem = linkedInventory || await Inventory.findOne({ productId: product._id }).session(session);
+              if (inventoryItem) {
+                inventoryItem.quantity = newStock;
                 await inventoryItem.save({ session });
+                console.log(`[Stock] Synced Inventory for ${product.name}. New quantity: ${newStock}`);
+              }
+            }
+          }
+
+          // Perform atomic per-size allocations for each inventory group
+          for (const [invName, sizesMap] of Object.entries(perInventorySizes)) {
+            try {
+              await require('../utils/inventory').allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, session, note: 'Allocated by sizes on payment success' });
+              // Sync linked Product.countInStock if inventory references a product
+              try {
+                const invAfter = await Inventory.findOne({ name: new RegExp('^' + invName + '$', 'i') }).session(session);
+                if (invAfter && invAfter.productId) {
+                  const prod = await Product.findById(invAfter.productId).session(session);
+                  if (prod) { prod.countInStock = Number(invAfter.quantity || 0); await prod.save({ session }); }
+                }
+              } catch (syncErr) { console.warn('Failed to sync product after sizes allocation (webhook):', syncErr && syncErr.message); }
+            } catch (allocErr) {
+              console.error('[PayMongo] Failed to allocate inventory by sizes for', invName, allocErr && allocErr.message);
+              throw allocErr;
             }
           }
 
