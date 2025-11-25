@@ -441,10 +441,10 @@
           `;
         }
 
-        // Determine refund eligibility (7 days from delivery if deliveredAt exists, otherwise allow request now)
+        // Determine refund eligibility (7 days from delivery/completion if available)
         const refundWindowMs = 7 * 24 * 60 * 60 * 1000; // 7 days
-        const deliveredAtMs = order.deliveredAt ? new Date(order.deliveredAt).getTime() : null;
-        const refundWindowExpired = deliveredAtMs ? (Date.now() > (deliveredAtMs + refundWindowMs)) : false;
+        const referenceDateMs = (order.deliveredAt || order.completedAt) ? new Date(order.deliveredAt || order.completedAt).getTime() : null;
+        const refundWindowExpired = referenceDateMs ? (Date.now() > (referenceDateMs + refundWindowMs)) : false;
         const hasRefundRequest = !!order.hasRefundRequest;
 
         box.innerHTML = `
@@ -517,7 +517,7 @@
             <button onclick="confirmReceipt('${order._id}')" class="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition w-full mb-2">
               <i class="fas fa-check-circle mr-2"></i>Confirm Receipt & Complete Order
             </button>
-            ${(!order.deliveredAt || (Date.now() <= (new Date(order.deliveredAt).getTime() + (7*24*60*60*1000))) ) && !order.hasRefundRequest ? `<button onclick="requestRefund('${order._id}')" class="px-4 py-2 border rounded text-sm w-full">Request Refund</button>` : (order.hasRefundRequest ? `<button disabled class="px-4 py-2 border rounded text-sm w-full text-gray-500">Refund Requested</button>` : '')}
+            ${((!(order.deliveredAt || order.completedAt)) || (Date.now() <= ((new Date(order.deliveredAt || order.completedAt)).getTime() + (7*24*60*60*1000)))) && !order.hasRefundRequest ? `<button onclick="requestRefund('${order._id}')" class="px-4 py-2 border rounded text-sm w-full">Request Refund</button>` : (order.hasRefundRequest ? `<button disabled class="px-4 py-2 border rounded text-sm w-full text-gray-500">Refund Requested</button>` : '')}
           </div>
         `;
         wrap.appendChild(box);

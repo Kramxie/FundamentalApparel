@@ -211,11 +211,13 @@ exports.submitCustomOrder = async (req, res) => {
         if (teamName) orderData.teamName = teamName;
         if (includeTeamMembers === 'true' || includeTeamMembers === true) {
           orderData.includeTeamMembers = true;
-          if (teamMembers) {
+          // Accept team members submitted as `teamMembers` or `teamEntries` (client sometimes sends `teamEntries`)
+          const rawTeam = teamMembers || req.body.teamEntries || null;
+          if (rawTeam) {
             try {
-              orderData.teamMembers = typeof teamMembers === 'string' 
-                ? JSON.parse(teamMembers) 
-                : teamMembers;
+              orderData.teamMembers = typeof rawTeam === 'string'
+                ? JSON.parse(rawTeam)
+                : rawTeam;
             } catch (e) {
               console.error('Error parsing team members:', e);
             }
@@ -680,6 +682,13 @@ exports.verifyDownPayment = async (req, res) => {
               if (!s) continue;
               map[s] = (map[s] || 0) + qty;
             }
+          } else if (ord.garmentSize || ord.size) {
+            // Single-buyer predesign order: use garmentSize/size and order.quantity
+            const s = (ord.garmentSize || ord.size || '').toString();
+            if (s) {
+              const qty = Number(ord.quantity || 1) || 1;
+              map[s] = (map[s] || 0) + qty;
+            }
           }
           Object.keys(map).forEach(k => { if (!(map[k] > 0)) delete map[k]; });
           return Object.keys(map).length ? map : null;
@@ -796,6 +805,12 @@ exports.verifyDownPayment = async (req, res) => {
             const s = (e.size || e.sizeLabel || '').toString();
             const qty = Number(e.qty || e.quantity || 1) || 1;
             if (!s) continue;
+            map[s] = (map[s] || 0) + qty;
+          }
+        } else if (ord.garmentSize || ord.size) {
+          const s = (ord.garmentSize || ord.size || '').toString();
+          if (s) {
+            const qty = Number(ord.quantity || 1) || 1;
             map[s] = (map[s] || 0) + qty;
           }
         }
@@ -1049,6 +1064,12 @@ exports.verifyFinalPayment = async (req, res) => {
                   const s = (e.size || e.sizeLabel || '').toString();
                   const qty = Number(e.qty || e.quantity || 1) || 1;
                   if (!s) continue;
+                  map[s] = (map[s] || 0) + qty;
+                }
+              } else if (ord.garmentSize || ord.size) {
+                const s = (ord.garmentSize || ord.size || '').toString();
+                if (s) {
+                  const qty = Number(ord.quantity || 1) || 1;
                   map[s] = (map[s] || 0) + qty;
                 }
               }

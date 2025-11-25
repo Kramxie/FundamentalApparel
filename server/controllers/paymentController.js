@@ -7,6 +7,7 @@ const User = require('../models/User');
 const WebhookEvent = require('../models/WebhookEvent');
 const crypto = require('crypto');
 const mongoose = require('mongoose');
+const { allocateInventoryBySizes, allocateInventory, findInventoryByName } = require('../utils/inventory');
 
 // PayMongo API configuration
 // Use environment variables for production
@@ -969,6 +970,77 @@ async function handlePaymentSuccess(eventData) {
           order.balancePaid = true;
           // Set to pending final verification so admin explicitly verifies
           order.status = 'Pending Final Verification';
+          // Attempt idempotent allocation now (webhook) so inventory reflects payment immediately.
+          // This is safe because `allocateInventoryBySizes` has an idempotency guard.
+          if (!order.inventoryAllocated) {
+            try {
+              const allocSession = await mongoose.startSession();
+              await allocSession.withTransaction(async () => {
+                const extractSizesMap = (ord) => {
+                  const map = {};
+                  if (Array.isArray(ord.teamMembers) && ord.teamMembers.length) {
+                    for (const m of ord.teamMembers) {
+                      const s = (m.size || m.sizeLabel || '').toString();
+                      if (!s) continue;
+                      map[s] = (map[s] || 0) + 1;
+                    }
+                  } else if (ord.quotePayload && Array.isArray(ord.quotePayload.teamEntries) && ord.quotePayload.teamEntries.length) {
+                    for (const e of ord.quotePayload.teamEntries) {
+                      const s = (e.size || e.sizeLabel || '').toString();
+                      const qty = Number(e.qty || e.quantity || 1) || 1;
+                      if (!s) continue;
+                      map[s] = (map[s] || 0) + qty;
+                    }
+                  } else if (ord.garmentSize || ord.size) {
+                    const s = (ord.garmentSize || ord.size || '').toString();
+                    if (s) {
+                      const qty = Number(ord.quantity || 1) || 1;
+                      map[s] = (map[s] || 0) + qty;
+                    }
+                  }
+                  Object.keys(map).forEach(k => { if (!(map[k] > 0)) delete map[k]; });
+                  return Object.keys(map).length ? map : null;
+                };
+
+                const sizesMap = extractSizesMap(order);
+                if (sizesMap) {
+                  const invName = order.inventoryName || order.productName || order.garmentType || order.fabricType || null;
+                  if (!invName) throw new Error('Cannot determine inventory name for per-size allocation (webhook)');
+                  const invDoc = await findInventoryByName(invName, allocSession);
+                  const inventoryId = invDoc ? invDoc._id : null;
+                  const allocRes = await allocateInventoryBySizes({ name: invName, inventoryId, sizesMap, orderId: order._id, session: allocSession, note: 'Allocated by sizes on webhook full payment' });
+                  // sync linked Product.countInStock if inventory references product
+                  try {
+                    let invAfter = allocRes;
+                    if (!invAfter) invAfter = invDoc ? await Inventory.findById(invDoc._id).session(allocSession) : await findInventoryByName(invName, allocSession);
+                    if (invAfter && invAfter.productId) {
+                      const prod = await Product.findById(invAfter.productId).session(allocSession);
+                      if (prod) { prod.countInStock = Number(invAfter.quantity || 0); await prod.save({ session: allocSession }); }
+                    }
+                  } catch (syncErr) { console.warn('[PayMongo] Failed to sync product after webhook sizes allocation:', syncErr && syncErr.message); }
+                  order.inventoryAllocated = true;
+                  order.allocatedItems = [{ inventoryId: invDoc ? invDoc._id : null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
+                } else if (order.serviceType === 'printing-only' && (order.inventoryName || order.fabricType)) {
+                  const allocName = order.inventoryName || order.fabricType;
+                  const invDoc = await allocateInventory({ name: allocName, qty: Number(order.quantity || 1), orderId: order._id, session: allocSession, note: 'Allocated by webhook full payment' });
+                  order.inventoryAllocated = true;
+                  order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: Number(order.quantity || 1) }];
+                  try {
+                    if (invDoc.productId) {
+                      const prod = await Product.findById(invDoc.productId).session(allocSession);
+                      if (prod) { prod.countInStock = Number(invDoc.quantity || 0); await prod.save({ session: allocSession }); }
+                    }
+                  } catch (syncErr) { console.warn('[PayMongo] Failed to sync product after webhook allocation:', syncErr && syncErr.message); }
+                }
+
+                // Persist order allocation flags inside the transaction
+                await order.save({ session: allocSession });
+              });
+              allocSession.endSession();
+            } catch (allocErr) {
+              console.warn('[PayMongo] Webhook allocation attempt failed (non-fatal):', allocErr && allocErr.message);
+            }
+          }
         }
         // 2. Remaining balance (final 50%) - if order expects balance
         else if (order.status === 'Pending Balance' && order.downPaymentPaid && !order.balancePaid) {
