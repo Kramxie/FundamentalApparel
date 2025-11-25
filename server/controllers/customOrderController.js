@@ -15,6 +15,8 @@ const BASE_URL =
 // @route   POST /api/custom-orders
 // @access  Private
 exports.submitCustomOrder = async (req, res) => {
+  // Keep orderData visible to catch block to avoid ReferenceError when logging
+  let orderData = null;
   try {
     // Extract all fields from request body
     const { 
@@ -49,7 +51,9 @@ exports.submitCustomOrder = async (req, res) => {
       colorPalette,
       // Printing Only fields
       printingMethod,
-      garmentSize
+      garmentSize,
+      // Client uses `size` in predesign payload
+      size
     } = req.body;
     
     const userId = req.user._id;
@@ -87,7 +91,7 @@ exports.submitCustomOrder = async (req, res) => {
     }
 
     // Initialize order data with common fields
-    const orderData = {
+    orderData = {
       user: userId,
       serviceType: serviceType || 'customize-jersey',
       productName: productName || "Custom Jersey",
@@ -95,6 +99,9 @@ exports.submitCustomOrder = async (req, res) => {
       quantity: Number(quantity),
       notes: notes || "",
     };
+
+    // Keep the submitted size in a schema field (garmentSize) for later allocation logic
+    if (size) orderData.garmentSize = size;
 
     // Handle multiple file uploads
     if (req.files) {
@@ -252,6 +259,30 @@ exports.submitCustomOrder = async (req, res) => {
     }
 
     const customOrder = await CustomOrder.create(orderData);
+
+    // If this is a pre-design product submission and a size was selected, attempt to reserve per-size inventory now.
+    // If allocation fails (insufficient stock), remove the created quote and return an informative error.
+    if ((orderData.serviceType === 'predesign-product' || serviceType === 'predesign-product') && (size || orderData.garmentSize)) {
+      const allocSize = size || orderData.garmentSize;
+      const sizesMap = { [allocSize]: Number(orderData.quantity || 1) };
+      try {
+        const invName = orderData.productName || orderData.garmentType || orderData.fabricType || null;
+        if (!invName) throw new Error('Cannot determine inventory name for reservation');
+        // Try to find inventory doc to pass inventoryId when possible
+        const invDoc = await findInventoryByName(invName);
+        const inventoryId = invDoc ? invDoc._id : null;
+        const allocResult = await allocateInventoryBySizes({ name: invName, inventoryId, sizesMap, orderId: customOrder._id, adminId: req.user._id, note: 'Reserved on predesign quote submission' });
+        // Mark order as allocated and record allocatedItems
+        customOrder.inventoryAllocated = true;
+        customOrder.allocatedItems = [{ inventoryId: allocResult && allocResult._id ? allocResult._id : (invDoc?invDoc._id:null), name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
+        await customOrder.save();
+      } catch (allocErr) {
+        // Remove the created quote since reservation failed, and surface error to client
+        try { await CustomOrder.findByIdAndDelete(customOrder._id); } catch (delErr) { console.error('Failed to delete order after allocation failure:', delErr && delErr.message); }
+        console.error('Pre-design reservation failed:', allocErr && allocErr.message);
+        return res.status(400).json({ success: false, msg: 'Reservation failed: ' + (allocErr && allocErr.message) });
+      }
+    }
 
     res.status(201).json({
       success: true,

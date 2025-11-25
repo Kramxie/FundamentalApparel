@@ -10,7 +10,7 @@ const CustomOrderSchema = new mongoose.Schema({
     // Service Type
     serviceType: {
         type: String,
-        enum: ['customize-jersey', 'layout-creation', 'printing-only'],
+        enum: ['customize-jersey', 'layout-creation', 'printing-only', 'predesign-product'],
         required: true,
         default: 'customize-jersey'
     },
