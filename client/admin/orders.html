@@ -823,13 +823,16 @@
       // Connect socket.io with auth token
       let socket = null;
       try {
-        socket = io(API, { auth: { token } });
+        // Prefer websocket transport to avoid XHR polling errors in environments
+        // where polling requests are blocked or misconfigured (400 responses).
+        socket = io(API, { auth: { token }, transports: ['websocket'] });
         socket.on('connect', () => console.log('Socket connected'));
+        socket.on('connect_error', (err) => console.warn('Socket connect_error', err && err.message));
         socket.on('notification', (n) => {
           // Prepend notification
           prependNotif(n);
         });
-      } catch (e) { console.warn('Socket init failed', e.message); }
+      } catch (e) { console.warn('Socket init failed', e && e.message); }
 
       async function loadNotifications() {
         try {
@@ -2270,12 +2273,20 @@
                   fullAddress = order.deliveryAddress;
                 }
                 
+                // If shippingMethod/address exists but fulfillmentMethod not set yet, show details and allow admin to open fulfillment form when In Production
+                let ctaHtml = '';
+                if (order.status === 'In Production') {
+                  ctaHtml = `\n                  <div class="mt-3"><button id="custom-modal-open-fulfillment" class="px-4 py-2 bg-purple-600 text-white rounded">Set Ready for Pickup/Delivery</button></div>\n                  <p class="mt-2 text-sm text-gray-600">Production is ongoing. Click the button to set tracking details and mark order Ready for Pickup/Delivery.</p>`;
+                } else {
+                  ctaHtml = '<p class="mt-1 text-yellow-600">⏳ Awaiting admin to set tracking details</p>';
+                }
+
                 fulfillmentInfo.innerHTML = `
                   <p class="font-semibold text-blue-900">🚚 Standard Delivery Selected</p>
                   <p class="mt-1"><strong>Address:</strong> ${fullAddress}</p>
                   ${addr && addr.phone ? `<p class="mt-1"><strong>Contact:</strong> ${addr.phone}</p>` : ''}
                   <p class="mt-1 text-sm text-gray-600">Delivery Fee: ₱${order.deliveryFee || 80}</p>
-                  <p class="mt-1 text-yellow-600">⏳ Awaiting admin to set tracking details</p>
+                  ${ctaHtml}
                 `;
               }
             } else {

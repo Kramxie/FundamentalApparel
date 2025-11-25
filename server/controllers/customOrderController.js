@@ -1311,14 +1311,19 @@ exports.cancelQuote = async (req, res) => {
 // @access  Private/Admin
 exports.updateFulfillmentDetails = async (req, res) => {
   try {
-    const { trackingNumber, estimatedDeliveryDate, pickupDate, pickupLocation, courier } =
-      req.body;
+    const { fulfillmentMethod, deliveryAddress, trackingNumber, estimatedDeliveryDate, pickupDate, pickupLocation, courier } = req.body;
     const order = await CustomOrder.findById(req.params.id);
 
     if (!order) {
-      return res
-        .status(404)
-        .json({ success: false, msg: "Custom order not found" });
+      return res.status(404).json({ success: false, msg: 'Custom order not found' });
+    }
+
+    // Allow admin to specify fulfillmentMethod/deliveryAddress in this request
+    if (fulfillmentMethod && ['delivery', 'pickup', 'pending'].includes(fulfillmentMethod)) {
+      order.fulfillmentMethod = fulfillmentMethod;
+    }
+    if (deliveryAddress) {
+      order.deliveryAddress = deliveryAddress;
     }
 
     // Allow updating fulfillment when order is Ready or still In Production
@@ -1386,7 +1391,7 @@ exports.updateFulfillmentDetails = async (req, res) => {
     });
   } catch (err) {
     console.error("updateFulfillmentDetails error:", err);
-    const customOrder = await CustomOrder.create(orderData);
+    res.status(500).json({ success: false, msg: 'Server error' });
   }
 };
 
