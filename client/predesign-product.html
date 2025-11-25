@@ -326,6 +326,10 @@
                 const stockContainer = document.getElementById('predesign-size-stock');
                 const stockList = document.getElementById('predesign-size-stock-list');
                 const inv = p.sizesInventory || {};
+                // Persist sizesInventory on the form for client-side validation
+                const form = document.getElementById('predesign-form');
+                if (form) form.dataset.sizesInventory = JSON.stringify(inv || {});
+
                 if (stockContainer && stockList) {
                     const keys = Object.keys(inv || {}).filter(k => (inv[k] !== undefined));
                     if (keys.length > 0) {
@@ -336,6 +340,26 @@
                         stockContainer.classList.remove('hidden');
                     }
                 }
+
+                // Populate size dropdown with only available sizes (qty > 0).
+                try {
+                    const sizeSelect = document.getElementById('predesign-size');
+                    if (sizeSelect) {
+                        // preserve default option
+                        const defaultOpt = sizeSelect.querySelector('option[value=""]') ? sizeSelect.querySelector('option[value=""]').outerHTML : '<option value="">Choose Size</option>';
+                        const opts = [defaultOpt];
+                        const availableSizes = Object.keys(inv || {}).filter(s => Number(inv[s] || 0) > 0);
+                        if (availableSizes.length > 0) {
+                            availableSizes.forEach(sz => { opts.push(`<option value="${escapeHtml(sz)}">${escapeHtml(sz)}</option>`); });
+                        } else {
+                            // Fallback: show sizes but disabled if no inventory info
+                            const fallback = ['XS','S','M','L','XL','XXL'];
+                            fallback.forEach(sz => opts.push(`<option value="${sz}">${sz}</option>`));
+                        }
+                        sizeSelect.innerHTML = opts.join('');
+                    }
+                } catch (e) { /* ignore dropdown errors */ }
+
             } catch (e) { /* ignore UI errors */ }
 
             closeProductCatalog();
@@ -410,6 +434,100 @@
 
             // Form Submit
             document.getElementById('predesign-form')?.addEventListener('submit', handlePreDesignFormSubmit);
+
+            // Add validation listeners for size and quantity inputs
+            const sizeEl = document.getElementById('predesign-size');
+            const qtyEl = document.getElementById('predesign-qty');
+            const formEl = document.getElementById('predesign-form');
+            const errorEl = document.createElement('div');
+            errorEl.id = 'predesign-form-error';
+            errorEl.className = 'text-sm text-red-600 mt-2 hidden';
+            qtyEl && qtyEl.parentNode && qtyEl.parentNode.appendChild(errorEl);
+
+            function getSizesInventory() {
+                try { return formEl && formEl.dataset.sizesInventory ? JSON.parse(formEl.dataset.sizesInventory) : {}; } catch(e){ return {}; }
+            }
+
+            function updateQtyLimitForSelectedSize() {
+                const sizesInv = getSizesInventory();
+                const selected = sizeEl ? (sizeEl.value || '') : '';
+                if (selected && sizesInv && typeof sizesInv[selected] !== 'undefined') {
+                    const available = Number(sizesInv[selected] || 0);
+                    if (qtyEl) {
+                        qtyEl.max = String(Math.max(1, available));
+                        if (Number(qtyEl.value) > available) qtyEl.value = available || 1;
+                    }
+                    showFormErrorIfNeeded();
+                } else {
+                    if (qtyEl) qtyEl.removeAttribute('max');
+                }
+            }
+
+            function showFormErrorIfNeeded(msg) {
+                const e = document.getElementById('predesign-form-error');
+                if (!e) return;
+                if (typeof msg === 'string' && msg) {
+                    e.textContent = msg;
+                    e.classList.remove('hidden');
+                } else {
+                    // validate current values
+                    const sizesInv = getSizesInventory();
+                    const selected = sizeEl ? (sizeEl.value || '') : '';
+                    if (formEl && formEl.dataset.teamMode === 'on') {
+                        // team mode: ensure team entries counts per-size do not exceed available
+                        let entries = [];
+                        try { entries = JSON.parse(formEl.dataset.teamEntries || '[]'); } catch(e){ entries = []; }
+                        const counts = {};
+                        entries.forEach(en => { const s = en.size || ''; if (s) counts[s] = (counts[s]||0) + 1; });
+                        const invalid = Object.keys(counts).filter(s => (Number(sizesInv[s]||0) < counts[s]));
+                        if (invalid.length) {
+                            e.textContent = `Team entries exceed stock for size(s): ${invalid.join(', ')}`;
+                            e.classList.remove('hidden');
+                            return true;
+                        }
+                        e.classList.add('hidden');
+                        return false;
+                    } else {
+                        if (!selected) { e.classList.add('hidden'); return false; }
+                        const available = Number(sizesInv[selected] || 0);
+                        const qty = Number(qtyEl?.value || 0);
+                        if (qty > available) {
+                            e.textContent = `Quantity exceeds available stock (${available}) for size ${selected}`;
+                            e.classList.remove('hidden');
+                            return true;
+                        }
+                        e.classList.add('hidden');
+                        return false;
+                    }
+                }
+            }
+
+            sizeEl && sizeEl.addEventListener('change', () => {
+                updateQtyLimitForSelectedSize();
+                // when team modal open, we should also update team entries options if present
+            });
+
+            qtyEl && qtyEl.addEventListener('input', () => {
+                showFormErrorIfNeeded();
+            });
+
+            // When team mode toggled, disable/enable qty input and validate
+            const teamBtnEl = document.getElementById('team-mode-toggle');
+            if (teamBtnEl) {
+                teamBtnEl.addEventListener('click', () => {
+                    setTimeout(() => {
+                        const mode = formEl.dataset.teamMode === 'on' ? 'on' : 'off';
+                        if (mode === 'on') {
+                            if (qtyEl) { qtyEl.disabled = true; qtyEl.classList.add('opacity-60'); }
+                        } else {
+                            if (qtyEl) { qtyEl.disabled = false; qtyEl.classList.remove('opacity-60'); }
+                        }
+                        showFormErrorIfNeeded();
+                    }, 10);
+                });
+                // set initial state
+                if (formEl && formEl.dataset.teamMode === 'on') { if (qtyEl) { qtyEl.disabled = true; qtyEl.classList.add('opacity-60'); } }
+            }
         });
 
         async function handlePreDesignFormSubmit(e) {
@@ -532,21 +650,23 @@
             const form = document.getElementById('predesign-form');
             let entries = [];
             try { entries = JSON.parse(form.dataset.teamEntries || '[]'); } catch(e){ entries = []; }
-            const rows = (entries.length ? entries : [{name:'', number:'', size:'M'}]).map((e, i) => `
+            // Build size options dynamically from current product sizesInventory
+            function getAvailableSizes() {
+                try { const inv = form && form.dataset.sizesInventory ? JSON.parse(form.dataset.sizesInventory) : {}; return Object.keys(inv || {}).filter(s => Number(inv[s] || 0) > 0); } catch(e) { return ['XS','S','M','L','XL','XXL']; }
+            }
+            const availableSizes = getAvailableSizes();
+            const defaultEntries = entries.length ? entries : [{name:'', number:'', size:(availableSizes[0]||'M')}];
+            const rows = defaultEntries.map((e, i) => {
+                const sizeOptions = (availableSizes.length ? availableSizes : ['XS','S','M','L','XL','XXL']).map(sz => `<option value="${escapeHtml(sz)}" ${ (e.size||'')===sz ? 'selected' : '' }>${escapeHtml(sz)}</option>`).join('');
+                return `
                 <div class="team-entry mb-3 flex gap-2 items-center" data-idx="${i}">
                     <input class="team-entry-name flex-1 px-3 py-2 border rounded" placeholder="Name (optional)" value="${escapeHtml(e.name||'')}">
                     <input class="team-entry-number w-20 px-2 py-2 border rounded" placeholder="# (optional)" value="${escapeHtml(e.number||'')}">
-                    <select class="team-entry-size px-3 py-2 border rounded">
-                        <option ${ (e.size||'M')==='XS' ? 'selected':'' }>XS</option>
-                        <option ${ (e.size||'M')==='S' ? 'selected':'' }>S</option>
-                        <option ${ (e.size||'M')==='M' ? 'selected':'' }>M</option>
-                        <option ${ (e.size||'M')==='L' ? 'selected':'' }>L</option>
-                        <option ${ (e.size||'M')==='XL' ? 'selected':'' }>XL</option>
-                        <option ${ (e.size||'M')==='XXL' ? 'selected':'' }>XXL</option>
-                    </select>
+                    <select class="team-entry-size px-3 py-2 border rounded">${sizeOptions}</select>
                     <button class="team-entry-remove px-3 py-2 bg-red-500 text-white rounded">X</button>
                 </div>
-            `).join('');
+                `;
+            }).join('');
 
             body.innerHTML = `
                 <h3 class="text-lg font-bold mb-4">Team Entries</h3>
@@ -562,18 +682,23 @@
             document.getElementById('team-add-entry').addEventListener('click', addTeamEntryRow);
             document.getElementById('team-entries-apply').addEventListener('click', applyTeamEntries);
             document.querySelectorAll('.team-entry-remove').forEach(btn => btn.addEventListener('click', (ev) => { const row = ev.target.closest('.team-entry'); if (row) row.remove(); }));
+            // When size selects change, re-validate (validation runs on apply)
+            document.querySelectorAll('.team-entry-size').forEach(sel => sel.addEventListener('change', () => { /* noop, validation on apply */ }));
         }
 
         function addTeamEntryRow() {
             const list = document.getElementById('team-entries-list'); if (!list) return;
+            const form = document.getElementById('predesign-form');
+            let available = [];
+            try { available = form && form.dataset.sizesInventory ? Object.keys(JSON.parse(form.dataset.sizesInventory)).filter(s => Number(JSON.parse(form.dataset.sizesInventory)[s]||0) > 0) : []; } catch(e){ available = []; }
+            if (!available.length) available = ['XS','S','M','L','XL','XXL'];
             const div = document.createElement('div');
             div.className = 'team-entry mb-3 flex gap-2 items-center';
+            const sizeOptions = available.map(sz => `<option value="${escapeHtml(sz)}">${escapeHtml(sz)}</option>`).join('');
             div.innerHTML = `
                 <input class="team-entry-name flex-1 px-3 py-2 border rounded" placeholder="Name">
                 <input class="team-entry-number w-20 px-2 py-2 border rounded" placeholder="# (optional)">
-                <select class="team-entry-size px-3 py-2 border rounded">
-                    <option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option>
-                </select>
+                <select class="team-entry-size px-3 py-2 border rounded">${sizeOptions}</select>
                 <button class="team-entry-remove px-3 py-2 bg-red-500 text-white rounded">X</button>
             `;
             list.appendChild(div);
@@ -591,9 +716,26 @@
                 if (name || number || size) entries.push({ name, number, size });
             });
             const form = document.getElementById('predesign-form');
+            // Validate entries against sizesInventory
+            try {
+                const sizesInv = form && form.dataset.sizesInventory ? JSON.parse(form.dataset.sizesInventory) : {};
+                const counts = {};
+                entries.forEach(en => { const s = en.size || ''; if (s) counts[s] = (counts[s]||0) + 1; });
+                const invalid = Object.keys(counts).filter(s => Number(sizesInv[s] || 0) < counts[s]);
+                if (invalid.length) {
+                    alert('Team entries exceed available stock for sizes: ' + invalid.join(', '));
+                    return; // do not apply
+                }
+            } catch(e) { /* if validation fails, allow apply but warn */ }
+
             if (form) {
                 form.dataset.teamEntries = JSON.stringify(entries);
                 document.getElementById('predesign-teamname').value = entries[0]?.name || '';
+                // If team mode is on, set qty input to number of entries
+                if (form.dataset.teamMode === 'on') {
+                    const qtyEl = document.getElementById('predesign-qty');
+                    if (qtyEl) { qtyEl.value = String(entries.length || 1); }
+                }
             }
             closeTeamModal();
         }

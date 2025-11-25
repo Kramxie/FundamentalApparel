@@ -258,31 +258,48 @@ exports.submitCustomOrder = async (req, res) => {
       }
     }
 
+    // Server-side inventory-aware validation (do NOT allocate here).
+    // For pre-design products, ensure the requested size(s) exist in the Inventory and
+    // that requested quantities do not exceed available stock. This validates inputs
+    // but leaves actual allocation for payment/verification flows.
+    try {
+      if ((orderData.serviceType === 'predesign-product' || serviceType === 'predesign-product')) {
+        // Determine inventory name and lookup
+        const invName = orderData.productName || orderData.garmentType || orderData.fabricType || null;
+        if (invName) {
+          const invDoc = await findInventoryByName(invName);
+          const sizesInv = invDoc ? (invDoc.sizesInventory && (typeof invDoc.sizesInventory === 'object' ? (invDoc.sizesInventory.get ? Object.fromEntries(invDoc.sizesInventory) : invDoc.sizesInventory) : {}) ) : {};
+
+          if (orderData.includeTeamMembers && Array.isArray(orderData.teamMembers) && orderData.teamMembers.length) {
+            const counts = {};
+            for (const m of orderData.teamMembers) {
+              const s = (m.size || m.sizeLabel || '').toString().trim();
+              if (s) counts[s] = (counts[s] || 0) + 1;
+            }
+            const invalid = Object.keys(counts).filter(s => Number(sizesInv[s] || 0) < counts[s]);
+            if (invalid.length) return res.status(400).json({ success: false, msg: `Insufficient stock for sizes: ${invalid.join(', ')}` });
+          } else if (orderData.garmentSize || size) {
+            const sel = (orderData.garmentSize || size).toString().trim();
+            const qty = Number(orderData.quantity || 1);
+            if (typeof sizesInv[sel] === 'undefined' || Number(sizesInv[sel] || 0) < qty) {
+              return res.status(400).json({ success: false, msg: `Selected size ${sel} is unavailable or does not have enough stock` });
+            }
+          }
+        }
+      }
+    } catch (invValErr) {
+      console.warn('[submitCustomOrder] Inventory validation failed (non-fatal):', invValErr && invValErr.message);
+      // Do not block submit on validation check failure due to lookup error; allow admin to handle.
+    }
+
     const customOrder = await CustomOrder.create(orderData);
 
-    // If this is a pre-design product submission and a size was selected, attempt to reserve per-size inventory now.
-    // If allocation fails (insufficient stock), remove the created quote and return an informative error.
-    if ((orderData.serviceType === 'predesign-product' || serviceType === 'predesign-product') && (size || orderData.garmentSize)) {
-      const allocSize = size || orderData.garmentSize;
-      const sizesMap = { [allocSize]: Number(orderData.quantity || 1) };
-      try {
-        const invName = orderData.productName || orderData.garmentType || orderData.fabricType || null;
-        if (!invName) throw new Error('Cannot determine inventory name for reservation');
-        // Try to find inventory doc to pass inventoryId when possible
-        const invDoc = await findInventoryByName(invName);
-        const inventoryId = invDoc ? invDoc._id : null;
-        const allocResult = await allocateInventoryBySizes({ name: invName, inventoryId, sizesMap, orderId: customOrder._id, adminId: req.user._id, note: 'Reserved on predesign quote submission' });
-        // Mark order as allocated and record allocatedItems
-        customOrder.inventoryAllocated = true;
-        customOrder.allocatedItems = [{ inventoryId: allocResult && allocResult._id ? allocResult._id : (invDoc?invDoc._id:null), name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
-        await customOrder.save();
-      } catch (allocErr) {
-        // Remove the created quote since reservation failed, and surface error to client
-        try { await CustomOrder.findByIdAndDelete(customOrder._id); } catch (delErr) { console.error('Failed to delete order after allocation failure:', delErr && delErr.message); }
-        console.error('Pre-design reservation failed:', allocErr && allocErr.message);
-        return res.status(400).json({ success: false, msg: 'Reservation failed: ' + (allocErr && allocErr.message) });
-      }
-    }
+    // NOTE: Do NOT reserve/decrement inventory on quote submission.
+    // Inventory allocations for pre-design products must only occur when payment
+    // is confirmed (or when admin verifies payment). Previous behavior reserved
+    // inventory here on quote submit which led to premature stock decrements.
+    // Allocation is handled in the payment verification / admin verification
+    // flows (see allocation calls in paymentController and verification handlers).
 
     res.status(201).json({
       success: true,
