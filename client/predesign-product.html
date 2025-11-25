@@ -357,6 +357,17 @@
                             fallback.forEach(sz => opts.push(`<option value="${sz}">${sz}</option>`));
                         }
                         sizeSelect.innerHTML = opts.join('');
+                        // If there are available sizes (we computed `availableSizes` above), default to the first one and set qty limit
+                        if (availableSizes && availableSizes.length) {
+                            sizeSelect.value = availableSizes[0];
+                            const qtyEl = document.getElementById('predesign-qty');
+                            if (qtyEl) {
+                                qtyEl.max = String(Math.max(1, Number(inv[sizeSelect.value] || 0)));
+                                if (Number(qtyEl.value) > Number(qtyEl.max)) qtyEl.value = qtyEl.max;
+                            }
+                            // trigger change so listeners update
+                            try { sizeSelect.dispatchEvent(new Event('change')); } catch(e){}
+                        }
                     }
                 } catch (e) { /* ignore dropdown errors */ }
 
@@ -508,6 +519,13 @@
             });
 
             qtyEl && qtyEl.addEventListener('input', () => {
+                try {
+                    const max = Number(qtyEl.max || Infinity);
+                    let val = Number(qtyEl.value || 0) || 0;
+                    if (val < 1) val = 1;
+                    if (Number.isFinite(max) && val > max) val = max;
+                    if (String(val) !== String(qtyEl.value)) qtyEl.value = String(val);
+                } catch(e) { /* ignore clamping errors */ }
                 showFormErrorIfNeeded();
             });
 
