@@ -1156,10 +1156,12 @@ exports.setFulfillmentMethod = async (req, res) => {
       return res.status(403).json({ success: false, msg: "Not authorized" });
     }
 
-    if (order.status !== "Completed") {
+    // Allow setting fulfillment when production is finished (In Production)
+    // Admin should be able to set fulfillment once production has started/finished.
+    if (order.status !== "In Production" && order.status !== "Ready for Pickup/Delivery" && order.status !== "Out for Delivery") {
       return res
         .status(400)
-        .json({ success: false, msg: "Order must be completed first" });
+        .json({ success: false, msg: "Order must be In Production to set fulfillment (or already ready/out for delivery)." });
     }
 
     if (

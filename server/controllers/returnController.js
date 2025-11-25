@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const RefundRequest = require('../models/RefundRequest');
 const Order = require('../models/Order');
+const CustomOrder = require('../models/CustomOrder');
 const User = require('../models/User');
 const notify = require('../utils/notify');
 
@@ -17,7 +18,13 @@ exports.createReturnRequest = async (req, res) => {
 
     if (!reason) return res.status(400).json({ success: false, msg: 'Reason is required' });
 
-    const order = await Order.findById(orderId);
+    // Support both regular Orders and CustomOrders
+    let order = await Order.findById(orderId);
+    let isCustom = false;
+    if (!order) {
+      order = await CustomOrder.findById(orderId);
+      if (order) isCustom = true;
+    }
     if (!order) return res.status(404).json({ success: false, msg: 'Order not found' });
     if (order.user.toString() !== userId.toString()) return res.status(403).json({ success: false, msg: 'Not authorized to request return for this order' });
 
@@ -36,7 +43,7 @@ exports.createReturnRequest = async (req, res) => {
       details: details || '',
       videos,
       images,
-      amount: amount ? Number(amount) : order.totalPrice
+      amount: amount ? Number(amount) : (order.totalPrice || order.price || 0)
     });
 
     await refund.save();

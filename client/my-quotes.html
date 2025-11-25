@@ -441,6 +441,12 @@
           `;
         }
 
+        // Determine refund eligibility (7 days from delivery if deliveredAt exists, otherwise allow request now)
+        const refundWindowMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+        const deliveredAtMs = order.deliveredAt ? new Date(order.deliveredAt).getTime() : null;
+        const refundWindowExpired = deliveredAtMs ? (Date.now() > (deliveredAtMs + refundWindowMs)) : false;
+        const hasRefundRequest = !!order.hasRefundRequest;
+
         box.innerHTML = `
           <div class="flex items-center gap-2 mb-3">
             <i class="fas fa-box-open text-green-600 text-lg"></i>
@@ -449,9 +455,10 @@
           ${fulfillmentInfo}
           <div class="pt-3 border-t border-green-300">
             <p class="text-gray-700 mb-3">Have you received your order?</p>
-            <button onclick="confirmReceipt('${order._id}')" class="px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition w-full">
+            <button onclick="confirmReceipt('${order._id}')" class="px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition w-full mb-2">
               <i class="fas fa-check-circle mr-2"></i>Confirm Receipt & Complete Order
             </button>
+            ${(!refundWindowExpired && !hasRefundRequest) ? `<button onclick="requestRefund('${order._id}')" class="px-4 py-2 border rounded text-sm w-full">Request Refund</button>` : (hasRefundRequest ? `<button disabled class="px-4 py-2 border rounded text-sm w-full text-gray-500">Refund Requested</button>` : '')}
           </div>
         `;
         wrap.appendChild(box);
@@ -507,9 +514,10 @@
           </div>
           <div class="pt-3 border-t border-blue-300">
             <p class="text-gray-700 mb-3">Once you receive your order, please confirm:</p>
-            <button onclick="confirmReceipt('${order._id}')" class="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition w-full">
+            <button onclick="confirmReceipt('${order._id}')" class="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition w-full mb-2">
               <i class="fas fa-check-circle mr-2"></i>Confirm Receipt & Complete Order
             </button>
+            ${(!order.deliveredAt || (Date.now() <= (new Date(order.deliveredAt).getTime() + (7*24*60*60*1000))) ) && !order.hasRefundRequest ? `<button onclick="requestRefund('${order._id}')" class="px-4 py-2 border rounded text-sm w-full">Request Refund</button>` : (order.hasRefundRequest ? `<button disabled class="px-4 py-2 border rounded text-sm w-full text-gray-500">Refund Requested</button>` : '')}
           </div>
         `;
         wrap.appendChild(box);
@@ -771,6 +779,32 @@
         fetchMine(); // Refresh the list
       } catch (err) {
         console.error('Error confirming receipt:', err);
+        alert('An error occurred. Please try again.');
+      }
+    }
+
+    async function requestRefund(orderId) {
+      const reason = prompt('Please enter a short reason for the refund request (e.g. Wrong size, Damaged item):');
+      if (!reason || !reason.trim()) { alert('Refund reason is required'); return; }
+      const details = prompt('Optional: add more details (press Cancel to skip)') || '';
+
+      try {
+        const fd = new FormData();
+        fd.append('reason', reason);
+        if (details) fd.append('details', details);
+
+        const res = await fetch(`/api/custom-orders/${orderId}/returns`, {
+          method: 'POST',
+          headers: { 'ngrok-skip-browser-warning': 'true' },
+          body: fd
+        });
+
+        const json = await res.json();
+        if (!json.success) { alert(json.msg || 'Failed to submit refund request'); return; }
+        alert('Refund request submitted. Our team will review and contact you.');
+        fetchMine();
+      } catch (err) {
+        console.error('Refund request error:', err);
         alert('An error occurred. Please try again.');
       }
     }

@@ -687,6 +687,16 @@
           <!-- Admin form to add tracking/pickup details -->
           <div id="custom-modal-fulfillment-form" class="hidden space-y-3 p-3 bg-indigo-50 rounded-md border border-indigo-200">
             <p class="text-xs font-medium text-indigo-900">Add Fulfillment Details:</p>
+
+            <!-- Select method: Delivery or Pickup -->
+            <div>
+              <label class="block text-sm font-medium mb-1">Fulfillment Method</label>
+              <select id="fulfillment-method-select" class="w-full border rounded px-3 py-2 text-sm">
+                <option value="">Select method</option>
+                <option value="delivery">Delivery</option>
+                <option value="pickup">Pick-Up</option>
+              </select>
+            </div>
             
             <!-- For Delivery -->
             <div id="fulfillment-delivery-fields" class="hidden space-y-2">
@@ -1307,6 +1317,14 @@
           const banner = document.getElementById('dev-error-banner');
           if (banner) { banner.textContent = 'Error loading orders: ' + (err.message || err); banner.classList.remove('hidden'); }
         }
+      }
+
+      // Expose a helper to open fulfillment form from other parts
+      function openFulfillmentForm() {
+        const fulfillmentSection = document.getElementById('custom-modal-fulfillment-section');
+        const fulfillmentForm = document.getElementById('custom-modal-fulfillment-form');
+        fulfillmentSection.classList.remove('hidden');
+        fulfillmentForm.classList.remove('hidden');
       }
 
       // Wire filter change handlers
@@ -2213,7 +2231,7 @@
         fulfillmentSection.classList.add('hidden');
         fulfillmentForm.classList.add('hidden');
 
-        if (order.status === 'Completed' || order.status === 'Ready for Pickup/Delivery' || order.status === 'Out for Delivery') {
+        if (order.status === 'Completed' || order.status === 'Ready for Pickup/Delivery' || order.status === 'Out for Delivery' || order.status === 'In Production') {
           fulfillmentSection.classList.remove('hidden');
 
           if (order.fulfillmentMethod === 'pending' || !order.fulfillmentMethod) {
@@ -2261,7 +2279,15 @@
                 `;
               }
             } else {
-              fulfillmentInfo.innerHTML = '<p class="text-gray-600">⏳ Customer has not chosen a fulfillment method yet.</p>';
+              // If order is In Production, show CTA to set Ready for Pickup/Delivery
+              if (order.status === 'In Production') {
+                fulfillmentInfo.innerHTML = `
+                  <p class="text-gray-600">Production started. You can now mark this order as <strong>Ready for pickup/delivery</strong> and provide tracking details.</p>
+                  <div class="mt-3"><button id="custom-modal-open-fulfillment" class="px-4 py-2 bg-purple-600 text-white rounded">Set Ready for Pickup/Delivery</button></div>
+                `;
+              } else {
+                fulfillmentInfo.innerHTML = '<p class="text-gray-600">⏳ Customer has not chosen a fulfillment method yet.</p>';
+              }
             }
           } else if (order.fulfillmentMethod === 'delivery') {
             fulfillmentInfo.innerHTML = `
@@ -2315,6 +2341,24 @@
             }
           }
         }
+        // Attach dynamic listener for opening the fulfillment form when present
+        setTimeout(() => {
+          const openBtn = document.getElementById('custom-modal-open-fulfillment');
+          if (openBtn) {
+            openBtn.addEventListener('click', () => {
+              // show the form and default to delivery if shippingMethod indicates so
+              fulfillmentForm.classList.remove('hidden');
+              document.getElementById('custom-modal-fulfillment-form').classList.remove('hidden');
+              const methodSelect = document.getElementById('fulfillment-method-select');
+              if (methodSelect) {
+                if ((selectedCustomOrder.shippingMethod || '').toLowerCase().includes('pick')) methodSelect.value = 'pickup';
+                else methodSelect.value = 'delivery';
+                // trigger display change
+                methodSelect.dispatchEvent(new Event('change'));
+              }
+            });
+          }
+        }, 50);
       }
 
       async function saveCustomQuote() {
@@ -2583,8 +2627,11 @@
       async function saveFulfillmentDetails() {
         if (!selectedCustomOrder) return;
 
-        const fulfillmentMethod = selectedCustomOrder.fulfillmentMethod;
+        // Prefer explicit selector value if admin just selected method in the form
+        const methodSelectEl = document.getElementById('fulfillment-method-select');
+        let fulfillmentMethod = (methodSelectEl && methodSelectEl.value) ? methodSelectEl.value : selectedCustomOrder.fulfillmentMethod;
         const data = {};
+        if (fulfillmentMethod) data.fulfillmentMethod = fulfillmentMethod;
 
         if (fulfillmentMethod === 'delivery') {
           const courier = document.getElementById('fulfillment-courier').value.trim();
@@ -2603,6 +2650,20 @@
           data.courier = courier;
           data.trackingNumber = trackingNumber;
           if (deliveryDate) data.estimatedDeliveryDate = deliveryDate;
+          // If deliveryAddress missing on order, populate from shippingAddress
+          if (!selectedCustomOrder.deliveryAddress && selectedCustomOrder.shippingAddress) {
+            const addr = selectedCustomOrder.shippingAddress;
+            const parts = [];
+            if (addr.block) parts.push(`Block ${addr.block}`);
+            if (addr.lot) parts.push(`Lot ${addr.lot}`);
+            if (addr.street) parts.push(addr.street);
+            if (addr.building) parts.push(addr.building);
+            if (addr.city) parts.push(addr.city);
+            if (addr.province) parts.push(addr.province);
+            if (addr.zip) parts.push(addr.zip);
+            const formatted = parts.length ? parts.join(', ') : '';
+            if (formatted) data.deliveryAddress = formatted;
+          }
         } else if (fulfillmentMethod === 'pickup') {
           const pickupDate = document.getElementById('fulfillment-pickup-date').value;
           const pickupLocation = document.getElementById('fulfillment-pickup-location').value.trim();
@@ -2647,6 +2708,26 @@
       }
 
       document.getElementById('custom-modal-save-fulfillment').addEventListener('click', saveFulfillmentDetails);
+
+      // Toggle fulfillment form fields based on selected method
+      const methodSelect = document.getElementById('fulfillment-method-select');
+      if (methodSelect) {
+        methodSelect.addEventListener('change', (e) => {
+          const v = e.target.value;
+          const deliveryFields = document.getElementById('fulfillment-delivery-fields');
+          const pickupFields = document.getElementById('fulfillment-pickup-fields');
+          if (v === 'delivery') {
+            if (deliveryFields) deliveryFields.classList.remove('hidden');
+            if (pickupFields) pickupFields.classList.add('hidden');
+          } else if (v === 'pickup') {
+            if (pickupFields) pickupFields.classList.remove('hidden');
+            if (deliveryFields) deliveryFields.classList.add('hidden');
+          } else {
+            if (deliveryFields) deliveryFields.classList.add('hidden');
+            if (pickupFields) pickupFields.classList.add('hidden');
+          }
+        });
+      }
 
       // --- Initial load ---
       loadRegularOrders();

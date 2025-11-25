@@ -61,6 +61,26 @@ const upload = multer({
 });
 // --- End Multer Config ---
 
+// Returns uploads (videos/images) - reused for custom order return requests
+const returnsDir = path.join(__dirname, '..', 'uploads', 'returns');
+fs.mkdirSync(returnsDir, { recursive: true });
+const returnsStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, returnsDir),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const safe = `${Date.now()}-${Math.round(Math.random()*1e9)}${ext}`;
+        cb(null, safe);
+    }
+});
+const returnsFileFilter = (req, file, cb) => {
+    const allowedVideo = ['.mp4', '.mov', '.webm', '.mkv'];
+    const allowedImage = ['.png', '.jpg', '.jpeg', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedVideo.includes(ext) || allowedImage.includes(ext)) return cb(null, true);
+    return cb(new Error('Only video/image files allowed for returns'));
+};
+const returnsUpload = multer({ storage: returnsStorage, fileFilter: returnsFileFilter, limits: { fileSize: 50 * 1024 * 1024 } });
+
 
 // User route: Submit a new custom order
 router.route('/my-custom-orders')
@@ -126,6 +146,9 @@ router.route('/:id/fulfillment-details')
 // Customer confirms receipt (final completion)
 router.route('/:id/confirm-receipt')
     .put(protect, confirmReceipt);
+
+// Customer create return/refund request for a custom order (supports videos/images)
+router.post('/:id/returns', returnsUpload.fields([{ name: 'videos' }, { name: 'images' }]), protect, require('../controllers/returnController').createReturnRequest);
 
 // Customer cancels quote
 router.route('/:id/cancel')
