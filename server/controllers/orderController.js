@@ -330,11 +330,18 @@ exports.updateOrderStatus = async (req, res) => {
                     try {
                         const prod = await Product.findById(it.product);
                         if (!prod) continue;
-                        const invName = prod.name || prod._id.toString();
-                        if (size) {
-                            perInventorySizes[invName] = perInventorySizes[invName] || {};
-                            perInventorySizes[invName][size] = (perInventorySizes[invName][size] || 0) + qty;
-                        } else {
+                                // Prefer linked Inventory document (by productId) to determine the inventory name
+                                let invName;
+                                try {
+                                    const linkedInv = await Inventory.findOne({ productId: prod._id });
+                                    invName = linkedInv ? linkedInv.name : (prod.name || prod._id.toString());
+                                } catch (e) {
+                                    invName = prod.name || prod._id.toString();
+                                }
+                                if (size) {
+                                    perInventorySizes[invName] = perInventorySizes[invName] || {};
+                                    perInventorySizes[invName][size] = (perInventorySizes[invName][size] || 0) + qty;
+                                } else {
                             // fallback: decrement product.countInStock directly
                             const previousStock = Number(prod.countInStock || 0);
                             const newStock = Math.max(0, previousStock - qty);
@@ -457,6 +464,19 @@ exports.createOrder = async (req, res) => {
     if (itemsToProcess.length === 0) {
       return res.status(400).json({ success: false, msg: 'No items selected for checkout.' });
     }
+
+        // Server-side validation: if a product has per-size inventory, ensure a size was selected.
+        for (const it of itemsToProcess) {
+            if (!it.product) continue;
+            try {
+                const prod = it.product; // populated product
+                const sizesInv = prod.sizesInventory || prod.sizesInventoryMap || prod.sizes || {};
+                const hasPerSize = (sizesInv && typeof sizesInv === 'object' && Object.keys(sizesInv || {}).length > 0);
+                if (hasPerSize && !it.size) {
+                    return res.status(400).json({ success: false, msg: `Size selection required for product ${prod.name}` });
+                }
+            } catch (e) { /* ignore validation errors but continue */ }
+        }
 
         const orderItems = itemsToProcess.map((it) => ({
             name: (it.product && it.product.name) ? it.product.name : 'Item',
