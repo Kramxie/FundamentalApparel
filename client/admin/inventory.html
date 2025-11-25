@@ -1147,6 +1147,52 @@
                 const arr = txt.split(',').map(s=>s.trim()).filter(Boolean);
                 renderFabricStandaloneRows(arr);
             });
+            // Fabric sizes list Add/Remove (auto-add rows)
+            const fabricSizesListBox = document.getElementById('fabric-sizes-list-box');
+            const fabricNewSizeInput = document.getElementById('fabric-new-size-input');
+            const fabricAddSizeBtn = document.getElementById('fabric-add-size-btn');
+            const fabricRemoveSizeBtn = document.getElementById('fabric-remove-size-btn');
+
+            function removeFabricRowBySizeName(sizeVal) {
+                if (!sizeVal) return;
+                const rows = Array.from(document.querySelectorAll('#fabric-sizes-rows [data-size-input]'));
+                rows.forEach(input => {
+                    if (String(input.value||'').trim().toUpperCase() === String(sizeVal||'').trim().toUpperCase()) {
+                        const parent = input.closest('div');
+                        if (parent) parent.remove();
+                    }
+                });
+            }
+
+            fabricAddSizeBtn?.addEventListener('click', () => {
+                const val = String(fabricNewSizeInput?.value||'').trim().toUpperCase();
+                if (!val) return;
+                // Prevent duplicates in list
+                const exists = Array.from((fabricSizesListBox?.options||[])).some(opt => opt.value === val);
+                if (exists) {
+                    alert('Size already exists!');
+                    return;
+                }
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.text = val;
+                fabricSizesListBox?.add(opt);
+                fabricNewSizeInput.value = '';
+                // Auto-add combined row
+                const rowsContainer = document.getElementById('fabric-sizes-rows');
+                if (rowsContainer) rowsContainer.appendChild(createFabricRow(val, 0, 0));
+            });
+
+            fabricRemoveSizeBtn?.addEventListener('click', () => {
+                const selected = Array.from(fabricSizesListBox?.selectedOptions || []);
+                if (selected.length === 0) return;
+                selected.forEach(opt => {
+                    const val = opt.value;
+                    opt.remove();
+                    // remove associated rows
+                    removeFabricRowBySizeName(val);
+                });
+            });
             document.getElementById('fabric-add-size-row')?.addEventListener('click', () => {
                 const rowsContainer = document.getElementById('fabric-sizes-rows');
                 if (!rowsContainer) return;
@@ -2216,6 +2262,16 @@
             <!-- Per-size inventory & pricing (matches admin inventory modal) -->
             <div class="mb-4 border-t pt-4">
                 <h4 class="font-semibold mb-2">Per-size inventory (optional)</h4>
+                <!-- Sizes list (matches Add Product behavior) -->
+                <div class="flex items-start gap-3 mb-4">
+                    <select id="fabric-sizes-list-box" class="flex-1 h-32 border border-gray-300 rounded-lg p-2 text-sm bg-gray-50" multiple></select>
+                    <div class="flex flex-col gap-2 w-40">
+                        <input id="fabric-new-size-input" type="text" placeholder="New size" class="w-full border border-gray-300 rounded-lg p-2 text-sm text-center" />
+                        <button id="fabric-add-size-btn" type="button" class="w-full bg-green-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-green-700 transition shadow-sm">Add</button>
+                        <button id="fabric-remove-size-btn" type="button" class="w-full bg-white text-red-600 border border-red-200 py-2 rounded-lg text-xs font-bold hover:bg-red-50 transition shadow-sm mt-auto">Remove</button>
+                    </div>
+                </div>
+
                 <div class="flex items-center gap-2 mb-3">
                     <input id="fabric-sizes-generate" type="text" class="flex-1 px-3 py-2 border rounded" placeholder="e.g. S, M, L, XL" />
                     <button id="fabric-generate-sizes-btn" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded">Generate</button>
