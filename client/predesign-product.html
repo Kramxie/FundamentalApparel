@@ -74,6 +74,7 @@
                     <div id="predesign-size-stock" class="mt-4 bg-white border border-gray-100 rounded-xl p-3 text-sm text-gray-700 hidden">
                         <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Stock by Size</div>
                         <div id="predesign-size-stock-list" class="space-y-1"></div>
+                            <div id="predesign-size-debug" class="text-xs text-gray-400 mt-2"></div>
                     </div>
                 </div>
             </div>
@@ -358,6 +359,7 @@
                 let inv = p.sizesInventory || {};
                 // Attempt to fetch authoritative inventory (only if API reachable and user token present or endpoint allows public)
                 let usedSource = 'productPayload';
+                let fetchError = null;
                 try {
                     const remote = await fetchInventoryAvailability();
                     if (remote && remote.success && remote.data) {
@@ -368,6 +370,8 @@
                             form.dataset.inventoryId = remote.data.id || '';
                             form.dataset.inventoryName = remote.data.name || '';
                         }
+                    } else if (remote && !remote.success && remote.error) {
+                        fetchError = remote.error;
                     }
                 } catch (e) { /* ignore */ }
 
@@ -391,7 +395,18 @@
                     }
                 }
 
-                console.debug('[Predesign] Using inventory source:', usedSource, 'sizes:', inv);
+                console.debug('[Predesign] Using inventory source:', usedSource, 'sizes:', inv, 'fetchError:', fetchError);
+
+                // Update debug UI element so it's visible without opening console
+                try {
+                    const debugEl = document.getElementById('predesign-size-debug');
+                    if (debugEl) {
+                        let msg = `Source: ${usedSource}`;
+                        if (form && form.dataset.inventoryId) msg += ` • invId: ${form.dataset.inventoryId}`;
+                        if (fetchError) msg += ` • err: ${escapeHtml(String(fetchError))}`;
+                        debugEl.textContent = msg;
+                    }
+                } catch (uiErr) { /* ignore */ }
 
                 // Persist sizesInventory on the form for client-side validation
                 if (form) form.dataset.sizesInventory = JSON.stringify(inv || {});
