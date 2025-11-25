@@ -296,7 +296,7 @@
             renderProductCatalog(filtered);
         }
 
-        function selectProductFromCatalog(id) {
+        async function selectProductFromCatalog(id) {
             const p = (window.__predesign_catalog && window.__predesign_catalog[id]);
             if (!p) return;
 
@@ -321,19 +321,83 @@
             form.dataset.productImages = images ? JSON.stringify(images) : '';
             if (chosen) form.dataset.productImage = chosen;
 
-            // Render per-size stock for customer visibility (if available)
+            // Render per-size stock for customer visibility (fetch authoritative inventory if possible)
             try {
                 const stockContainer = document.getElementById('predesign-size-stock');
                 const stockList = document.getElementById('predesign-size-stock-list');
-                const inv = p.sizesInventory || {};
-                // Persist sizesInventory on the form for client-side validation
                 const form = document.getElementById('predesign-form');
+
+                // Helper: try to fetch inventory availability from backend (preferred)
+                async function fetchInventoryAvailability() {
+                    try {
+                        // Prefer Inventory API by productId if available, else by name
+                        const token = localStorage.getItem('token');
+                        const headers = { 'Content-Type': 'application/json' };
+                        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+                        // try by productId first
+                        if (p._id) {
+                            const url = (API || '') + '/api/admin/inventory/availability?id=' + encodeURIComponent(p._id);
+                            const resp = await fetch(url, { headers });
+                            if (resp.ok) return await resp.json();
+                        }
+
+                        // fallback by name (case-insensitive)
+                        if (p.name) {
+                            const url = (API || '') + '/api/admin/inventory/availability?name=' + encodeURIComponent(p.name);
+                            const resp = await fetch(url, { headers });
+                            if (resp.ok) return await resp.json();
+                        }
+                    } catch (err) {
+                        // ignore fetch errors and fall back to product payload
+                        console.warn('Inventory availability fetch failed:', err && err.message);
+                    }
+                    return null;
+                }
+
+                let inv = p.sizesInventory || {};
+                // Attempt to fetch authoritative inventory (only if API reachable and user token present or endpoint allows public)
+                try {
+                    const remote = await fetchInventoryAvailability();
+                    if (remote && remote.success && remote.data) {
+                        inv = remote.data.sizesInventory || {};
+                        // if backend returned inventory id/name, persist for debugging
+                        if (form) {
+                            form.dataset.inventoryId = remote.data.id || '';
+                            form.dataset.inventoryName = remote.data.name || '';
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+
+                // Persist sizesInventory on the form for client-side validation
                 if (form) form.dataset.sizesInventory = JSON.stringify(inv || {});
 
                 if (stockContainer && stockList) {
-                    const keys = Object.keys(inv || {}).filter(k => (inv[k] !== undefined));
-                    if (keys.length > 0) {
-                        stockList.innerHTML = keys.map(k => `<div class="flex justify-between"><span class="font-medium">${escapeHtml(k)}</span><span class="text-gray-600">${Number(inv[k]||0)}</span></div>`).join('');
+                    const allSizes = Object.keys(inv || {});
+                    const positive = allSizes.filter(k => Number(inv[k] || 0) > 0);
+                    const zeroOrMissing = allSizes.filter(k => Number(inv[k] || 0) <= 0);
+
+                    if (positive.length > 0) {
+                        stockList.innerHTML = positive.map(k => `
+                            <div class="flex justify-between items-center">
+                                <span class="font-medium">${escapeHtml(k)}</span>
+                                <span class="text-gray-600">${Number(inv[k] || 0)}</span>
+                            </div>
+                        `).join('');
+
+                        if (zeroOrMissing.length > 0) {
+                            stockList.innerHTML += `<div class="mt-2 text-xs font-semibold text-gray-400 uppercase">Out of stock</div>`;
+                            stockList.innerHTML += zeroOrMissing.map(k => `
+                                <div class="flex justify-between items-center text-gray-400">
+                                    <span>${escapeHtml(k)}</span>
+                                    <span>0</span>
+                                </div>
+                            `).join('');
+                        }
+
+                        stockContainer.classList.remove('hidden');
+                    } else if (allSizes.length > 0) {
+                        stockList.innerHTML = '<div class="text-gray-500">Currently out of stock for all sizes</div>';
                         stockContainer.classList.remove('hidden');
                     } else {
                         stockList.innerHTML = '<div class="text-gray-400">No stock information available</div>';
@@ -357,7 +421,7 @@
                             fallback.forEach(sz => opts.push(`<option value="${sz}">${sz}</option>`));
                         }
                         sizeSelect.innerHTML = opts.join('');
-                        // If there are available sizes (we computed `availableSizes` above), default to the first one and set qty limit
+                        // If there are available sizes, default to the first one and set qty limit
                         if (availableSizes && availableSizes.length) {
                             sizeSelect.value = availableSizes[0];
                             const qtyEl = document.getElementById('predesign-qty');
@@ -365,7 +429,6 @@
                                 qtyEl.max = String(Math.max(1, Number(inv[sizeSelect.value] || 0)));
                                 if (Number(qtyEl.value) > Number(qtyEl.max)) qtyEl.value = qtyEl.max;
                             }
-                            // trigger change so listeners update
                             try { sizeSelect.dispatchEvent(new Event('change')); } catch(e){}
                         }
                     }
