@@ -929,6 +929,38 @@
                 }
             });
 
+            // Ensure inline Fabric "Add" also updates per-size rows (qty + price inputs)
+            document.getElementById('fabric-inline-add')?.addEventListener('click', () => {
+                const sizesText = String(document.getElementById('fabric-sizes-inline')?.value || '').trim();
+                if (!sizesText) return;
+                const parts = sizesText.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+                if (!parts.length) return;
+                const qty = Math.max(0, Math.floor(Number(document.getElementById('fabric-stock-inline')?.value || 0)));
+
+                try {
+                    // Merge into existing inventory rows shown in the modal
+                    const existing = getSizesInventoryObject();
+                    parts.forEach(p => {
+                        const key = String(p || '').trim();
+                        if (!key) return;
+                        // If qty provided, add; otherwise ensure key exists with 0
+                        existing[key] = Math.max(0, Math.floor(Number(existing[key] || 0) + (qty || 0)));
+                        // Ensure price map has a key so the per-row price input is rendered (value may be blank)
+                        if (sizesPriceMap[key] === undefined) sizesPriceMap[key] = sizesPriceMap[key];
+                    });
+
+                    // Re-render per-size rows and preview
+                    renderSizeRows(existing);
+                    try { renderPreviewSizes(existing, sizesPriceMap); } catch (e) {}
+                } catch (e) {
+                    console.error('Error updating per-size rows for inline fabric add', e);
+                }
+
+                // Clear inputs after adding
+                document.getElementById('fabric-sizes-inline').value = '';
+                document.getElementById('fabric-stock-inline').value = '';
+            });
+
             // Standalone Fabric modal buttons (opened via Add Fabric&Garment button)
             document.getElementById('fabric-cancel')?.addEventListener('click', () => {
                 document.getElementById('fabric-modal')?.classList.add('hidden');

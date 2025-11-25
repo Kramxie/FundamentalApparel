@@ -452,7 +452,37 @@
         if(sizesHiddenInput) sizesHiddenInput.value = options.join(',');
     }
 
-    // Consolidated add-size handler exists later; avoid duplicate listeners here.
+    if(addSizeBtn) {
+        addSizeBtn.addEventListener('click', () => {
+            const val = newSizeInput.value.trim().toUpperCase();
+            if (!val) return;
+            
+            // Prevent duplicates in list
+            const exists = Array.from(sizesListBox.options).some(opt => opt.value === val);
+            if (exists) {
+                alert('Size already exists!');
+                return;
+            }
+
+            // 1. Add to List Box
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.text = val;
+            sizesListBox.add(opt);
+            newSizeInput.value = '';
+            updateHiddenSizes();
+
+            // 2. AUTO-ADD TO INVENTORY (The Fix)
+            if (sizesRowsContainer) {
+                sizesRowsContainer.appendChild(createSizeRow(val, 0));
+            }
+
+            // 3. AUTO-ADD TO PRICE (The Fix)
+            if (pricesRowsContainer) {
+                pricesRowsContainer.appendChild(createPriceRow(val, 0));
+            }
+        });
+    }
 
     if(removeSizeBtn) {
         removeSizeBtn.addEventListener('click', () => {
@@ -478,7 +508,17 @@
     const addSizeRowBtn = document.getElementById('add-size-row');
     const clearSizesBtn = document.getElementById('clear-sizes');
 
-    // Use the consolidated generator handler defined later to keep inventory and price rows in sync.
+    if(generateSizesBtn) {
+        generateSizesBtn.addEventListener('click', () => {
+            const raw = sizesGenerateInput.value.trim();
+            if (!raw) return;
+            const sizes = raw.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+            if(sizesRowsContainer) {
+                sizesRowsContainer.innerHTML = '';
+                sizes.forEach(s => sizesRowsContainer.appendChild(createSizeRow(s.toUpperCase(), 0)));
+            }
+        });
+    }
     
     if(addSizeRowBtn) addSizeRowBtn.addEventListener('click', () => sizesRowsContainer.appendChild(createSizeRow()));
     if(clearSizesBtn) clearSizesBtn.addEventListener('click', () => sizesRowsContainer.innerHTML = '');
@@ -490,7 +530,17 @@
     const addPriceRowBtn = document.getElementById('add-price-row');
     const clearPricesBtn = document.getElementById('clear-prices');
 
-    // Use the consolidated generator handler defined later to keep inventory and price rows in sync.
+    if(generatePriceSizesBtn) {
+        generatePriceSizesBtn.addEventListener('click', () => {
+            const raw = sizesPriceInput.value.trim();
+            if (!raw) return;
+            const sizes = raw.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+            if(pricesRowsContainer) {
+                pricesRowsContainer.innerHTML = '';
+                sizes.forEach(s => pricesRowsContainer.appendChild(createPriceRow(s.toUpperCase(), 0)));
+            }
+        });
+    }
 
     if(addPriceRowBtn) addPriceRowBtn.addEventListener('click', () => pricesRowsContainer.appendChild(createPriceRow()));
     if(clearPricesBtn) clearPricesBtn.addEventListener('click', () => pricesRowsContainer.innerHTML = '');clearPricesBtn?.addEventListener('click', () => {
