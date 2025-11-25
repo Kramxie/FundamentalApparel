@@ -206,6 +206,26 @@
                 if (!res.ok) throw new Error('Product not found.');
                 const json = await res.json();
                 if (!json.success) throw new Error(json.msg || 'Failed to fetch product');
+
+                // Attempt to fetch authoritative inventory availability and merge per-size counts
+                try {
+                    const invRes = await fetch(`${API}/api/admin/inventory/availability?name=${encodeURIComponent(json.data.name)}`, {
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
+                    if (invRes && invRes.ok) {
+                        const invJson = await invRes.json();
+                        if (invJson && invJson.success && invJson.data) {
+                            // Merge sizesInventory and quantity from inventory into product object
+                            json.data.sizesInventory = invJson.data.sizesInventory || json.data.sizesInventory || {};
+                            json.data.sizesPrice = invJson.data.sizesPrice || json.data.sizesPrice || {};
+                            // Keep product.countInStock in sync with inventory quantity (total)
+                            if (typeof invJson.data.quantity !== 'undefined') json.data.countInStock = Number(invJson.data.quantity || 0);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Could not fetch inventory availability:', e && e.message);
+                }
+
                 renderProduct(json.data);
             } catch (err) {
                 mainContent.innerHTML = `<div class="container mx-auto px-4 text-center py-20"><p class="text-red-500">${err.message}</p><a href="products.html" class="text-indigo-600 hover:underline mt-4 block">Return to Shop</a></div>`;
