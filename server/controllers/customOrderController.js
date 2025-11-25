@@ -5,6 +5,7 @@ const path = require("path");
 const mongoose = require("mongoose"); // <-- Siguraduhin na na-import ito
 const { allocateInventory, releaseInventory, findInventoryByName } = require('../utils/inventory');
 const { allocateInventoryBySizes } = require('../utils/inventory');
+const Inventory = require('../models/Inventory');
 
 // Siguraduhin na ang SERVER_URL mo sa .env ay ang public URL mo (e.g., ngrok)
 const BASE_URL =
@@ -561,10 +562,13 @@ exports.verifyDownPayment = async (req, res) => {
         if (sizesMap) {
           const invName = order.productName || order.garmentType || order.fabricType || null;
           if (!invName) throw new Error('Cannot determine inventory name for per-size allocation');
-          await allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, adminId: req.user._id, session, note: 'Allocate by sizes for pre-design full payment' });
+          // Try to resolve Inventory doc first so we can pass inventoryId (more robust than name-only)
+          const invDoc = await findInventoryByName(invName, session);
+          const inventoryId = invDoc ? invDoc._id : null;
+          await allocateInventoryBySizes({ name: invName, inventoryId, sizesMap, orderId: order._id, adminId: req.user._id, session, note: 'Allocate by sizes for pre-design full payment' });
           // Sync linked product
           try {
-            const invAfter = await findInventoryByName(invName, session);
+            const invAfter = invDoc ? await Inventory.findById(invDoc._id).session(session) : await findInventoryByName(invName, session);
             if (invAfter && invAfter.productId) {
               const Product = require('../models/Product');
               const prod = await Product.findById(invAfter.productId).session(session);
@@ -677,11 +681,13 @@ exports.verifyDownPayment = async (req, res) => {
         // Prefer mapping inventory by product name; fall back to garmentType or fabricType
         const invName = order.productName || order.garmentType || order.fabricType || null;
         if (!invName) throw new Error('Cannot determine inventory name for per-size allocation');
-        await allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, adminId: req.user._id, session, note: 'Allocate for pre-design custom order on downpayment verification' });
+        const invDoc = await findInventoryByName(invName, session);
+        const inventoryId = invDoc ? invDoc._id : null;
+        await allocateInventoryBySizes({ name: invName, inventoryId, sizesMap, orderId: order._id, adminId: req.user._id, session, note: 'Allocate for pre-design custom order on downpayment verification' });
 
         // Sync linked Product.countInStock when Inventory references a productId
         try {
-          const invAfter = await findInventoryByName(invName, session);
+          const invAfter = invDoc ? await Inventory.findById(invDoc._id).session(session) : await findInventoryByName(invName, session);
           if (invAfter && invAfter.productId) {
             const Product = require('../models/Product');
             const prod = await Product.findById(invAfter.productId).session(session);

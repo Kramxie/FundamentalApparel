@@ -93,7 +93,13 @@ async function main() {
         // If apply mode, attempt to allocate using inventory util
         if (doApply) {
           try {
-            await inventoryUtil.allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, note: 'Backfill allocation (reconcile_sizes_inventory)' });
+            // Try to resolve the inventory document id to pass to the util for more robust allocation
+            let invDoc = null;
+            try {
+              invDoc = await inventoriesCol.findOne({ name: new RegExp('^' + invName + '$', 'i') });
+            } catch (e) { invDoc = null; }
+            const inventoryId = invDoc ? invDoc._id : null;
+            await inventoryUtil.allocateInventoryBySizes({ name: invName, inventoryId, sizesMap, orderId: order._id, note: 'Backfill allocation (reconcile_sizes_inventory)' });
             report.applied = (report.applied || 0) + 1;
             console.log(`[apply] Allocated for order ${order._id} inventory ${invName} sizes ${JSON.stringify(sizesMap)}`);
           } catch (applyErr) {

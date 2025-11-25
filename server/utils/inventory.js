@@ -109,6 +109,22 @@ async function allocateInventoryBySizes({ name, inventoryId = null, sizesMap, or
     if (!inv) throw new Error('Inventory item not found: ' + name);
   }
 
+  // Idempotency guard: if an allocation InventoryTransaction already exists for this order+inventory, skip
+  if (orderId) {
+    try {
+      const existing = await InventoryTransaction.findOne({ orderId: orderId, inventory: inv._id, type: 'allocate' }).session(session);
+      if (existing) {
+        // If an allocation record already exists for this order and inventory, assume allocation already applied
+        // Return fresh inventory document so callers see current totals.
+        const existingInv = await Inventory.findById(inv._id).session(session);
+        return existingInv || inv;
+      }
+    } catch (e) {
+      // If the check fails for any reason, proceed with allocation attempt (we don't want to block orders)
+      console.warn('Inventory idempotency check failed, proceeding with allocation:', e && e.message);
+    }
+  }
+
   // Validate availability per size and compute total
   let total = 0;
   const filter = { _id: inv._id };

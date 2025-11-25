@@ -372,15 +372,28 @@ exports.updateOrderStatus = async (req, res) => {
                             continue;
                         }
                         // Attempt allocation by sizes using utils which performs atomic update checks
-                        await allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, adminId: req.user._id });
-                        // After allocation, sync linked Product.countInStock if inventory references a product
-                        try {
-                            const invAfter = await findInventoryByName(invName);
-                            if (invAfter && invAfter.productId) {
-                                const prod = await Product.findById(invAfter.productId);
-                                if (prod) { prod.countInStock = Number(invAfter.quantity || 0); await prod.save(); }
-                            }
-                        } catch (syncErr) { console.warn('Failed to sync product after sizes allocation:', syncErr && syncErr.message); }
+                                                // Resolve inventory document by name so we can pass inventoryId (more robust)
+                                                let invDoc = null;
+                                                try { invDoc = await findInventoryByName(invName); } catch (e) { invDoc = null; }
+                                                const inventoryId = invDoc ? invDoc._id : null;
+                                                // Better idempotency: check allocation specifically for this inventory if we have its id
+                                                if (inventoryId) {
+                                                    const InventoryTransaction = require('../models/InventoryTransaction');
+                                                    const existingAllocForInv = await InventoryTransaction.findOne({ orderId: order._id, inventory: inventoryId, type: 'allocate' });
+                                                    if (existingAllocForInv) {
+                                                        console.log(`[Stock] Allocation already recorded for order ${order._id} and inventory ${inventoryId}, skipping`);
+                                                        continue;
+                                                    }
+                                                }
+                                                await allocateInventoryBySizes({ name: invName, inventoryId, sizesMap, orderId: order._id, adminId: req.user._id });
+                                                // After allocation, sync linked Product.countInStock if inventory references a product
+                                                try {
+                                                        const invAfter = inventoryId ? await Inventory.findById(inventoryId) : await findInventoryByName(invName);
+                                                        if (invAfter && invAfter.productId) {
+                                                                const prod = await Product.findById(invAfter.productId);
+                                                                if (prod) { prod.countInStock = Number(invAfter.quantity || 0); await prod.save(); }
+                                                        }
+                                                } catch (syncErr) { console.warn('Failed to sync product after sizes allocation:', syncErr && syncErr.message); }
                     } catch (allocErr) {
                         console.error('[Stock] Failed to allocate inventory by sizes for', invName, allocErr && allocErr.message);
                     }
