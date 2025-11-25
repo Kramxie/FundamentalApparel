@@ -1051,40 +1051,67 @@
                 }
             });
 
-            // --- Standalone fabric modal helpers ---
+            // --- Standalone fabric modal helpers (combined rows: size + qty + price) ---
+            function createFabricRow(size = '', qty = 0, price = 0) {
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2 p-2 bg-white border rounded-md mb-2';
+                row.innerHTML = `
+                    <input type="checkbox" class="row-checkbox w-4 h-4" />
+                    <input data-size-input type="text" value="${escapeHtml(size)}" class="px-3 py-2 border rounded w-32" placeholder="Size" />
+                    <input data-qty-input type="number" min="0" value="${Number(qty)||0}" class="px-3 py-2 border rounded w-24" placeholder="Qty" />
+                    <input data-price-input type="number" step="0.01" min="0" value="${Number(price)||0}" class="px-3 py-2 border rounded w-36" placeholder="Price (₱)" />
+                    <button type="button" class="remove-row-btn text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
+                `;
+                row.querySelector('.remove-row-btn').addEventListener('click', () => row.remove());
+                // keep price map in sync when price input changes
+                const priceInput = row.querySelector('[data-price-input]');
+                const sizeInput = row.querySelector('[data-size-input]');
+                priceInput?.addEventListener('input', () => {
+                    try {
+                        const s = String(sizeInput.value||'').trim();
+                        const v = Number(priceInput.value) || 0;
+                        if (s) {
+                            if (v > 0) sizesPriceMap[s] = Number(v);
+                            else delete sizesPriceMap[s];
+                        }
+                    } catch (e) {}
+                });
+                // when size name changes, move price key if present
+                sizeInput?.addEventListener('input', () => {
+                    try {
+                        const old = row.dataset.sizeOld || '';
+                        const next = String(sizeInput.value||'').trim();
+                        if (old && old !== next) {
+                            if (sizesPriceMap[old] !== undefined) {
+                                sizesPriceMap[next] = sizesPriceMap[old];
+                                delete sizesPriceMap[old];
+                            }
+                        }
+                        row.dataset.sizeOld = next;
+                    } catch (e) {}
+                });
+                row.dataset.sizeOld = String(size||'').trim();
+                return row;
+            }
+
             function renderFabricStandaloneRows(sizesArr) {
                 const rows = document.getElementById('fabric-sizes-rows');
-                const priceRows = document.getElementById('fabric-price-rows');
-                if (!rows || !priceRows) return;
+                if (!rows) return;
                 rows.innerHTML = '';
-                priceRows.innerHTML = '';
-                sizesArr.forEach(s => {
-                    const size = String(s||'').trim();
+                // sizesArr may be array of strings or array of objects {size,qty,price}
+                (sizesArr || []).forEach(s => {
+                    let size = '';
+                    let qty = 0;
+                    let price = 0;
+                    if (typeof s === 'string') size = s.trim();
+                    else if (s && typeof s === 'object') { size = String(s.size||'').trim(); qty = Number(s.qty||0); price = Number(s.price||0); }
                     if (!size) return;
-                    // size row
-                    const r = document.createElement('div');
-                    r.className = 'flex items-center gap-2';
-                    r.innerHTML = `
-                        <input type="checkbox" data-select class="w-4 h-4" />
-                        <input data-size-input type="text" value="${escapeHtml(size)}" class="px-3 py-2 border rounded w-32" />
-                        <input data-qty-input type="number" min="0" value="0" class="px-3 py-2 border rounded w-24" />
-                    `;
-                    rows.appendChild(r);
-
-                    // price row
-                    const pr = document.createElement('div');
-                    pr.className = 'flex items-center gap-2';
-                    pr.innerHTML = `
-                        <input type="checkbox" data-price-select class="w-4 h-4" />
-                        <div class="w-32 text-sm">${escapeHtml(size)}</div>
-                        <input data-price-input type="number" step="0.01" min="0" value="0" class="px-3 py-2 border rounded w-36" />
-                    `;
-                    priceRows.appendChild(pr);
+                    rows.appendChild(createFabricRow(size, qty, price));
                 });
             }
 
             function getFabricStandaloneSizesInventory() {
-                const rows = document.querySelectorAll('#fabric-sizes-rows [data-size-input]');
+                const rows = Array.from(document.querySelectorAll('#fabric-sizes-rows [data-size-input]'));
                 const obj = {};
                 rows.forEach(r => {
                     const size = String(r.value||'').trim();
@@ -1098,15 +1125,15 @@
             }
 
             function getFabricStandaloneSizesPrice() {
-                const rows = document.querySelectorAll('#fabric-price-rows [data-price-input]');
+                const rows = Array.from(document.querySelectorAll('#fabric-sizes-rows [data-size-input]'));
                 const obj = {};
                 rows.forEach(r => {
-                    const parent = r.closest('div');
-                    const sizeLabel = parent ? parent.querySelector('div') : null;
-                    const size = sizeLabel ? String(sizeLabel.textContent||'').trim() : '';
+                    const size = String(r.value||'').trim();
                     if (!size) return;
-                    const price = Number(r.value||0) || 0;
-                    obj[size] = price;
+                    const parent = r.closest('div');
+                    const priceEl = parent ? parent.querySelector('[data-price-input]') : null;
+                    const price = Number(priceEl?.value||0) || 0;
+                    if (price > 0) obj[size] = Number(price.toFixed(2));
                 });
                 return obj;
             }
@@ -1121,34 +1148,53 @@
                 renderFabricStandaloneRows(arr);
             });
             document.getElementById('fabric-add-size-row')?.addEventListener('click', () => {
-                // append empty row
-                renderFabricStandaloneRows([...Array.from(document.querySelectorAll('#fabric-sizes-rows [data-size-input]')).map(i=>i.value), '']);
+                const rowsContainer = document.getElementById('fabric-sizes-rows');
+                if (!rowsContainer) return;
+                rowsContainer.appendChild(createFabricRow('', 0, 0));
             });
             document.getElementById('fabric-clear-sizes')?.addEventListener('click', () => {
                 document.getElementById('fabric-sizes-rows').innerHTML = '';
-                document.getElementById('fabric-price-rows').innerHTML = '';
             });
             document.getElementById('fabric-apply-qty-btn')?.addEventListener('click', () => {
                 const v = Math.max(0, Math.floor(Number(document.getElementById('fabric-apply-qty-input')?.value||0)));
                 const rows = Array.from(document.querySelectorAll('#fabric-sizes-rows div'));
-                rows.forEach(r =>{ const chk = r.querySelector('[data-select]'); const q = r.querySelector('[data-qty-input]'); if (chk && chk.checked && q) q.value = v; });
+                rows.forEach(r =>{
+                    const chk = r.querySelector('[data-select]') || r.querySelector('.row-checkbox');
+                    const q = r.querySelector('[data-qty-input]');
+                    if (chk && chk.checked && q) q.value = v;
+                });
             });
 
             document.getElementById('fabric-generate-price-sizes-btn')?.addEventListener('click', () => {
+                // This generator will add sizes to the combined rows. If rows exist, append missing sizes; otherwise render all.
                 const txt = String(document.getElementById('fabric-price-sizes-generate')?.value||'');
                 const arr = txt.split(',').map(s=>s.trim()).filter(Boolean);
-                // if size rows already exist, reuse ordering and only add missing
-                const existing = Array.from(document.querySelectorAll('#fabric-sizes-rows [data-size-input]')).map(i=>i.value);
-                const all = existing.length ? existing : arr;
-                renderFabricStandaloneRows(all);
+                if (!arr.length) return;
+                const existing = Array.from(document.querySelectorAll('#fabric-sizes-rows [data-size-input]')).map(i=>String(i.value||'').trim());
+                const rowsContainer = document.getElementById('fabric-sizes-rows');
+                if (!rowsContainer) return;
+                if (existing.length === 0) {
+                    renderFabricStandaloneRows(arr);
+                } else {
+                    // append only missing sizes
+                    arr.forEach(s => {
+                        if (!existing.includes(s)) rowsContainer.appendChild(createFabricRow(s, 0, 0));
+                    });
+                }
             });
             document.getElementById('fabric-clear-price-sizes')?.addEventListener('click', () => {
-                document.getElementById('fabric-price-rows').innerHTML = '';
+                // clear prices by zeroing price inputs in combined rows
+                const priceEls = Array.from(document.querySelectorAll('#fabric-sizes-rows [data-price-input]'));
+                priceEls.forEach(p => p.value = '0');
             });
             document.getElementById('fabric-apply-price-btn')?.addEventListener('click', () => {
                 const v = Number(document.getElementById('fabric-apply-price-input')?.value||0) || 0;
-                const rows = Array.from(document.querySelectorAll('#fabric-price-rows div'));
-                rows.forEach(r =>{ const chk = r.querySelector('[data-price-select]'); const p = r.querySelector('[data-price-input]'); if (chk && chk.checked && p) p.value = Number(v).toFixed(2); });
+                const rows = Array.from(document.querySelectorAll('#fabric-sizes-rows div'));
+                rows.forEach(r =>{
+                    const chk = r.querySelector('[data-price-select]') || r.querySelector('.row-checkbox');
+                    const p = r.querySelector('[data-price-input]');
+                    if (chk && chk.checked && p) p.value = Number(v).toFixed(2);
+                });
             });
 
             // Inventory table: toggle full per-size list
