@@ -156,7 +156,7 @@
                                         Type <i class="fas fa-sort ml-1"></i>
                                     </th>
                                     <th class="sortable px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="quantity">
-                                        Quantity <i class="fas fa-sort ml-1"></i>
+                                        Sizes (qty) <i class="fas fa-sort ml-1"></i>
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Unit
@@ -1427,14 +1427,16 @@
                             ${typeBadge}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">${item.quantity.toLocaleString()}</div>
                             ${item.sizesInventory && Object.keys(item.sizesInventory || {}).length > 0 ? `
+                                <div class="text-sm text-gray-900">${Object.keys(item.sizesInventory).reduce((acc, s) => acc + Number(item.sizesInventory[s]||0), 0).toLocaleString()}</div>
                                 <div class="text-xs text-gray-500 mt-1">
                                     <span class="sizes-short block max-w-[220px] truncate">${Object.keys(item.sizesInventory).map(s => `${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}`).join(' · ')}</span>
                                     <button type="button" class="show-sizes-btn text-indigo-600 text-xs ml-2">Show</button>
                                     <div class="sizes-full hidden text-xs text-gray-700 mt-1">${Object.keys(item.sizesInventory).map(s => `${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}`).join('<br>')}</div>
                                 </div>
-                            ` : ''}
+                            ` : `
+                                <div class="text-sm text-gray-900">${item.quantity.toLocaleString()}</div>
+                            `}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             ${escapeHtml(item.unit)}

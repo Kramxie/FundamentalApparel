@@ -7,6 +7,21 @@ async function syncToProduct(inventoryItem) {
         if (!inventoryItem.isProduct) {
             return null; // Don't sync if it's not marked as a product
         }
+        // If sizesInventory exists, compute total from per-size buckets
+        let computedCountInStock = Number(inventoryItem.quantity || 0);
+        try {
+            const si = inventoryItem.sizesInventory || {};
+            if (si && ((si instanceof Map && si.size > 0) || (typeof si === 'object' && Object.keys(si || {}).length > 0))) {
+                let t = 0;
+                if (si instanceof Map) {
+                    for (const v of si.values()) t += Number(v || 0);
+                } else {
+                    for (const k of Object.keys(si)) t += Number(si[k] || 0);
+                }
+                computedCountInStock = t;
+            }
+        } catch (e) { /* ignore */ }
+
         const productData = {
             name: inventoryItem.name,
             description: inventoryItem.description || '',
@@ -14,7 +29,7 @@ async function syncToProduct(inventoryItem) {
             category: inventoryItem.category || 'Uncategorized',
             imageUrl: inventoryItem.imageUrl || '',
             gallery: inventoryItem.gallery || [],
-            countInStock: inventoryItem.quantity,
+            countInStock: computedCountInStock,
             sizes: inventoryItem.sizes || [],
             // include per-size inventory and prices
             sizesInventory: inventoryItem.sizesInventory || {},

@@ -145,12 +145,40 @@ inventorySchema.index({ type: 1, status: 1 });
 
 // Auto-update status based on quantity
 inventorySchema.pre('save', function(next) {
-    if (this.quantity === 0) {
-        this.status = 'out_of_stock';
-    } else if (this.quantity <= this.lowStockThreshold) {
-        this.status = 'low_stock';
-    } else {
-        this.status = 'in_stock';
+    // If per-size inventory exists, derive overall quantity from sum of sizes
+    try {
+        const sizesInv = this.sizesInventory || {};
+        let derivedTotal = 0;
+        if (sizesInv && typeof sizesInv === 'object' && Object.keys(sizesInv || {}).length > 0) {
+            // sizesInventory may be a Map in mongoose; handle both
+            if (sizesInv instanceof Map) {
+                for (const v of sizesInv.values()) {
+                    derivedTotal += Number(v || 0);
+                }
+            } else {
+                for (const k of Object.keys(sizesInv)) {
+                    derivedTotal += Number(sizesInv[k] || 0);
+                }
+            }
+            this.quantity = derivedTotal;
+        }
+
+        if (this.quantity === 0) {
+            this.status = 'out_of_stock';
+        } else if (this.quantity <= this.lowStockThreshold) {
+            this.status = 'low_stock';
+        } else {
+            this.status = 'in_stock';
+        }
+    } catch (e) {
+        // Fallback to previous behavior on error
+        if (this.quantity === 0) {
+            this.status = 'out_of_stock';
+        } else if (this.quantity <= this.lowStockThreshold) {
+            this.status = 'low_stock';
+        } else {
+            this.status = 'in_stock';
+        }
     }
     next();
 });
