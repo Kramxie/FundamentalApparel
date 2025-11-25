@@ -23,6 +23,8 @@ exports.submitCustomOrder = async (req, res) => {
       serviceType,
       customType, 
       productName, 
+      productImage,
+      imageUrl,
       designDetails, 
       quantity, 
       notes,
@@ -99,6 +101,10 @@ exports.submitCustomOrder = async (req, res) => {
       quantity: Number(quantity),
       notes: notes || "",
     };
+
+    // Preserve product image if submitted (used by admin UI)
+    if (productImage) orderData.productImage = productImage;
+    else if (imageUrl) orderData.productImage = imageUrl;
 
     // Keep the submitted size in a schema field (garmentSize) for later allocation logic
     if (size) orderData.garmentSize = size;
