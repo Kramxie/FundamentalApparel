@@ -765,6 +765,7 @@ async function handlePaymentSuccess(eventData) {
 
           // Group per-inventory allocations for items that specify sizes
           const perInventorySizes = {};
+            const invNameToId = {};
           for (const item of orderInSession.orderItems) {
             if (!item.product) continue;
             const product = await Product.findById(item.product).session(session);
@@ -776,6 +777,7 @@ async function handlePaymentSuccess(eventData) {
 
             if (item.size) {
               const invName = linkedInventory ? linkedInventory.name : (product.name || product._id.toString());
+                if (linkedInventory && linkedInventory._id) invNameToId[invName] = linkedInventory._id.toString();
               perInventorySizes[invName] = perInventorySizes[invName] || {};
               perInventorySizes[invName][item.size] = (perInventorySizes[invName][item.size] || 0) + (Number(item.quantity) || 0);
             } else {
@@ -796,10 +798,15 @@ async function handlePaymentSuccess(eventData) {
           // Perform atomic per-size allocations for each inventory group
           for (const [invName, sizesMap] of Object.entries(perInventorySizes)) {
             try {
-              await require('../utils/inventory').allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, session, note: 'Allocated by sizes on payment success' });
+              console.log('[PayMongo] Allocating sizes for inventory:', invName, 'sizesMap:', JSON.stringify(sizesMap));
+                const inventoryId = invNameToId[invName] || null;
+                const allocResult = await require('../utils/inventory').allocateInventoryBySizes({ name: invName, inventoryId, sizesMap, orderId: order._id, session, note: 'Allocated by sizes on payment success' });
+              console.log('[PayMongo] Allocation result for', invName, 'inventoryId:', allocResult && allocResult._id ? allocResult._id.toString() : '(unknown)');
               // Sync linked Product.countInStock if inventory references a product
               try {
-                const invAfter = await Inventory.findOne({ name: new RegExp('^' + invName + '$', 'i') }).session(session);
+                  let invAfter = null;
+                  if (invNameToId[invName]) invAfter = await Inventory.findById(invNameToId[invName]).session(session);
+                  if (!invAfter) invAfter = await Inventory.findOne({ name: new RegExp('^' + invName + '$', 'i') }).session(session);
                 if (invAfter && invAfter.productId) {
                   const prod = await Product.findById(invAfter.productId).session(session);
                   if (prod) { prod.countInStock = Number(invAfter.quantity || 0); await prod.save({ session }); }
@@ -839,6 +846,7 @@ async function handlePaymentSuccess(eventData) {
 
           // Group per-inventory allocations for items that specify sizes (fallback non-transactional)
           const perInventorySizesFallback = {};
+          const invNameToIdFallback = {};
           for (const item of order.orderItems) {
             if (!item.product) continue;
             const product = await Product.findById(item.product);
@@ -849,6 +857,7 @@ async function handlePaymentSuccess(eventData) {
 
             if (item.size) {
               const invName = linkedInventory ? linkedInventory.name : (product.name || product._id.toString());
+              if (linkedInventory && linkedInventory._id) invNameToIdFallback[invName] = linkedInventory._id.toString();
               perInventorySizesFallback[invName] = perInventorySizesFallback[invName] || {};
               perInventorySizesFallback[invName][item.size] = (perInventorySizesFallback[invName][item.size] || 0) + (Number(item.quantity) || 0);
             } else {
@@ -866,9 +875,14 @@ async function handlePaymentSuccess(eventData) {
           // Perform allocations for per-size groups (no session)
           for (const [invName, sizesMap] of Object.entries(perInventorySizesFallback)) {
             try {
-              await require('../utils/inventory').allocateInventoryBySizes({ name: invName, sizesMap, orderId: order._id, note: 'Allocated by sizes on payment success (fallback)' });
+              console.log('[PayMongo] (fallback) Allocating sizes for inventory:', invName, 'sizesMap:', JSON.stringify(sizesMap));
+              const inventoryId = invNameToIdFallback[invName] || null;
+              const allocResultFallback = await require('../utils/inventory').allocateInventoryBySizes({ name: invName, inventoryId, sizesMap, orderId: order._id, note: 'Allocated by sizes on payment success (fallback)' });
+              console.log('[PayMongo] (fallback) Allocation result for', invName, 'inventoryId:', allocResultFallback && allocResultFallback._id ? allocResultFallback._id.toString() : '(unknown)');
               try {
-                const invAfter = await Inventory.findOne({ name: new RegExp('^' + invName + '$', 'i') });
+                let invAfter = null;
+                if (invNameToIdFallback[invName]) invAfter = await Inventory.findById(invNameToIdFallback[invName]);
+                if (!invAfter) invAfter = await Inventory.findOne({ name: new RegExp('^' + invName + '$', 'i') });
                 if (invAfter && invAfter.productId) {
                   const prod = await Product.findById(invAfter.productId);
                   if (prod) { prod.countInStock = Number(invAfter.quantity || 0); await prod.save(); }

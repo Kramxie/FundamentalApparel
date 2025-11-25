@@ -95,12 +95,19 @@ async function consumeReserved({ name, qty, orderId = null, adminId = null, sess
 }
 
 // Allocate inventory by sizes: sizesMap is { "S": 2, "M": 1 }
-async function allocateInventoryBySizes({ name, sizesMap, orderId = null, adminId = null, session = null, note = '' }) {
-  if (!name) throw new Error('Inventory name is required');
+async function allocateInventoryBySizes({ name, inventoryId = null, sizesMap, orderId = null, adminId = null, session = null, note = '' }) {
+  if (!name && !inventoryId) throw new Error('Inventory name or inventoryId is required');
   if (!sizesMap || typeof sizesMap !== 'object') throw new Error('sizesMap is required');
 
-  const inv = await findInventoryByName(name, session);
-  if (!inv) throw new Error('Inventory item not found: ' + name);
+  // Prefer lookup by inventoryId when provided (more robust than name-based lookup)
+  let inv = null;
+  if (inventoryId) {
+    inv = await Inventory.findById(inventoryId).session(session);
+    if (!inv) throw new Error('Inventory item not found by id: ' + inventoryId);
+  } else {
+    inv = await findInventoryByName(name, session);
+    if (!inv) throw new Error('Inventory item not found: ' + name);
+  }
 
   // Validate availability per size and compute total
   let total = 0;
@@ -145,7 +152,9 @@ async function allocateInventoryBySizes({ name, sizesMap, orderId = null, adminI
     sizesMap
   }], { session });
 
-  return inv;
+  // Return the updated inventory document (fresh read) so caller sees current totals
+  const invAfter = await Inventory.findById(inv._id).session(session);
+  return invAfter || inv;
 }
 
 // Consume reserved by sizes: reduces global reserved by total (per-size reserved tracking not stored yet)
