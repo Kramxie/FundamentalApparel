@@ -7,6 +7,54 @@ const { allocateInventory, releaseInventory, findInventoryByName } = require('..
 const { allocateInventoryBySizes } = require('../utils/inventory');
 const Inventory = require('../models/Inventory');
 
+// Helpers: normalize incoming fabric/garment strings to match Mongoose enum values
+function normalizeFabricType(val){
+  if(!val) return undefined;
+  const s = String(val).trim().toLowerCase();
+  if(s.includes('dry') || s.includes('drifit') || s.includes('drifit')) return 'Dry Fit';
+  if(s.includes('poly') || s.includes('polyester')) return 'Polyester';
+  if(s.includes('mix') || s.includes('polycotton')) return 'Polycotton';
+  if(s.includes('cotton')) return 'Cotton';
+  return undefined;
+}
+
+function normalizeGarmentType(val){
+  if(!val) return undefined;
+  const raw = String(val).trim();
+  const s = raw.toLowerCase();
+  // direct mappings for common labels
+  const map = {
+    'jersey': 'jersey',
+    't-shirt': 't-shirt', 't shirt': 't-shirt', 'tshirt': 't-shirt',
+    'hoodie': 'hoodie',
+    'polo': 'polo',
+    'dry-fit': 'drifit', 'dry fit': 'drifit', 'drifit': 'drifit',
+    'longsleeve': 'longsleeve', 'long-sleeve': 'longsleeve', 'long sleeve': 'longsleeve',
+    'raglan': 'raglan',
+    'pullup-jacket': 'pullup-jacket', 'pullup jacket': 'pullup-jacket',
+    'zipper-jacket': 'zipper-jacket', 'zipper jacket': 'zipper-jacket',
+    'drifit-short': 'drifit-short', 'shorts': 'drifit-short',
+    'jogging-pants': 'jogging-pants', 'jogging pants': 'jogging-pants',
+    'scrub-suit': 'scrub-suit', 'fabric-banner': 'fabric-banner',
+    'vneck-tshirt': 'vneck-tshirt', 'v-neck tshirt': 'vneck-tshirt',
+    'round-tshirt': 'round-tshirt', 'classic-polo': 'classic-polo',
+    '2tone-polo': '2tone-polo', '2tone-polo-ladies': '2tone-polo-ladies',
+    'drifit-polo': 'drifit-polo', 'drifit-vneck': 'drifit-vneck', 'hoodie-jacket':'hoodie-jacket'
+  };
+  // exact or trimmed lookup
+  if(map[s]) return map[s];
+  // try to normalize punctuation/spacing to a key
+  const key = s.replace(/[^a-z0-9]+/g, '-');
+  if(map[key]) return map[key];
+  // fallback: if value already matches any allowed simple token, return that
+  // e.g. 'Jersey' -> 'jersey'
+  const simple = s.replace(/[^a-z0-9]/g,'');
+  for(const k of Object.keys(map)){
+    if(k.replace(/[^a-z0-9]/g,'') === simple) return map[k];
+  }
+  return undefined;
+}
+
 // Siguraduhin na ang SERVER_URL mo sa .env ay ang public URL mo (e.g., ngrok)
 const BASE_URL =
   process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
@@ -214,9 +262,17 @@ exports.submitCustomOrder = async (req, res) => {
         // Add printing method and garment size
         if (printingMethod) orderData.printingMethod = printingMethod;
         if (garmentSize) orderData.garmentSize = garmentSize;
-        // Optional shared fields
-        if (req.body.fabricType) orderData.fabricType = req.body.fabricType;
-        if (req.body.garmentType) orderData.garmentType = req.body.garmentType;
+        // Optional shared fields (normalize to model enum values when possible)
+        if (req.body.fabricType) {
+          const nf = normalizeFabricType(req.body.fabricType);
+          if (nf) orderData.fabricType = nf;
+          else console.warn('[submitCustomOrder] Unrecognized fabricType (skipping):', req.body.fabricType);
+        }
+        if (req.body.garmentType) {
+          const ng = normalizeGarmentType(req.body.garmentType);
+          if (ng) orderData.garmentType = ng;
+          else console.warn('[submitCustomOrder] Unrecognized garmentType (skipping):', req.body.garmentType);
+        }
         // Accept team members info for jersey printing
         if (req.body.includeTeamMembers === 'true' || req.body.includeTeamMembers === true) {
           orderData.includeTeamMembers = true;
