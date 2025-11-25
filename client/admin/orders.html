@@ -1572,7 +1572,15 @@
         // Basic Information
         els.customModalUser.textContent = `${order.user?.name || 'N/A'} (${order.user?.email || 'N/A'})`;
         els.customModalQty.textContent = order.quantity;
-        els.customModalType.textContent = order.customType;
+        // Show human-friendly service type (prefer serviceType over customType)
+        const svc = order.serviceType || order.customType || 'customize-jersey';
+        const svcLabelMap = {
+          'customize-jersey': 'Customize Jersey',
+          'layout-creation': 'Layout Creation',
+          'printing-only': 'Printing Only',
+          'predesign-product': 'Pre-Design Product'
+        };
+        els.customModalType.textContent = svcLabelMap[svc] || svc;
         els.customModalNotes.textContent = order.notes || 'N/A';
         els.formCustomPrice.value = order.price || '';
         els.formPricingNotes.value = order.adminNotes || '';
@@ -1654,6 +1662,19 @@
             }
           }
 
+          // Product display (show selected product name/image when available)
+          try {
+            const productHtmlParts = [];
+            if (order.productImage || order.imageUrl || order.designFileUrl) {
+              const imgSrc = order.productImage || order.imageUrl || order.designFileUrl;
+              productHtmlParts.push(`<div class="mb-2"><img src="${imgSrc}" alt="product" class="w-32 h-32 object-contain border rounded" /></div>`);
+            }
+            if (order.productName) productHtmlParts.push(`<div class="font-medium">${order.productName}</div>`);
+            if (productHtmlParts.length) {
+              document.getElementById('custom-modal-details').innerHTML = productHtmlParts.join('');
+            }
+          } catch(e){ /* ignore UI errors */ }
+
           // Team Details
           if (order.teamName || order.includeTeamMembers) {
             const teamSection = document.getElementById('custom-modal-team-section');
@@ -1663,15 +1684,15 @@
             if (order.includeTeamMembers && order.teamMembers && order.teamMembers.length > 0) {
               const membersContainer = document.getElementById('custom-modal-team-members-container');
               membersContainer.classList.remove('hidden');
-
-              const tbody = document.getElementById('custom-modal-team-members-tbody');
-              const rowsHtml = order.teamMembers.map(member => `
-                <tr>
-                  <td class=\"border px-2 py-1\">${member.name || 'N/A'}</td>
-                  <td class=\"border px-2 py-1\">${member.jerseyNumber || 'N/A'}</td>
-                  <td class=\"border px-2 py-1\">${member.size || 'N/A'}</td>
-                </tr>
-              `).join('');
+                const tbody = document.getElementById('custom-modal-team-members-tbody');
+                // Render editable inputs so admin can adjust names/numbers/sizes and we can validate sizes
+                const rowsHtml = order.teamMembers.map((member, idx) => `
+                  <tr data-idx="${idx}">
+                    <td class="border px-2 py-1"><input data-field="name" value="${member.name || ''}" class="w-full px-2 py-1 text-sm" /></td>
+                    <td class="border px-2 py-1"><input data-field="number" value="${member.jerseyNumber || ''}" class="w-full px-2 py-1 text-sm" /></td>
+                    <td class="border px-2 py-1"><input data-field="size" value="${member.size || ''}" class="w-full px-2 py-1 text-sm" /></td>
+                  </tr>
+                `).join('');
               // Collapse control
               const maxVisible = 8;
               if (order.teamMembers.length > maxVisible) {
@@ -2295,12 +2316,42 @@
 
       async function saveCustomQuote() {
         if (!selectedCustomOrder) return;
-
         const price = els.formCustomPrice.value;
         if (!price || Number(price) <= 0) {
           els.customModalError.textContent = 'Please enter a valid price.';
           els.customModalError.classList.remove('hidden');
           return;
+        }
+
+        // If team members exist, validate sizes against inventory availability before sending quote
+        try {
+          if (selectedCustomOrder.includeTeamMembers && selectedCustomOrder.teamMembers && selectedCustomOrder.teamMembers.length > 0) {
+            // Read current team member sizes from modal inputs
+            const tbody = document.getElementById('custom-modal-team-members-tbody');
+            const inputs = tbody ? Array.from(tbody.querySelectorAll('input[data-field="size"]')) : [];
+            const usedSizes = inputs.map(i => (i.value || '').toString().trim()).filter(Boolean);
+            if (usedSizes.length) {
+              const invName = selectedCustomOrder.productName || selectedCustomOrder.garmentType || selectedCustomOrder.fabricType || selectedCustomOrder.productName;
+              if (invName) {
+                const availRes = await fetch(`${API}/api/admin/inventory/availability?name=${encodeURIComponent(invName)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (availRes.ok) {
+                  const availJson = await availRes.json();
+                  if (availJson.success && availJson.data && availJson.data.sizesInventory) {
+                    const allowed = Object.keys(availJson.data.sizesInventory || {}).map(s => s.toString().trim());
+                    const invalid = usedSizes.filter(s => !allowed.includes(s));
+                    if (invalid.length) {
+                      els.customModalError.textContent = `Invalid size(s): ${invalid.join(', ')}. Available sizes: ${allowed.join(', ')}`;
+                      els.customModalError.classList.remove('hidden');
+                      return;
+                    }
+                  }
+                }
+                // If availability lookup fails, continue but warn (do not block)
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Size validation error (non-blocking):', e && e.message);
         }
 
         els.customModalSaveQuote.disabled = true;
