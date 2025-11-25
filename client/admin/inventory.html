@@ -543,13 +543,9 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Size</label>
-                            <input id="fabric-size" type="text" class="w-full px-3 py-2 border rounded" placeholder="e.g. Small" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                            <input id="fabric-qty" type="number" min="0" class="w-full px-3 py-2 border rounded" value="0" />
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Price (₱)</label>
+                            <input id="fabric-min-price" type="number" step="0.01" min="0" class="w-full px-3 py-2 border rounded" placeholder="e.g. 150.00" />
+                            <p class="text-xs text-gray-400 mt-1">Set a minimum starting price for this Fabric & Garment variant. Final price will be determined during quoting.</p>
                         </div>
 
                         <div class="mb-3">
@@ -945,26 +941,24 @@
 
             document.getElementById('fabric-save')?.addEventListener('click', async () => {
                 const variant = String(document.getElementById('fabric-variant')?.value || '').trim();
-                const size = String(document.getElementById('fabric-size')?.value || '').trim();
-                const qty = Math.max(0, Math.floor(Number(document.getElementById('fabric-qty')?.value || 0)));
+                const minPrice = Number(document.getElementById('fabric-min-price')?.value || 0);
                 const threshold = Math.max(0, Math.floor(Number(document.getElementById('fabric-threshold')?.value || 5)));
                 const supplier = String(document.getElementById('fabric-supplier')?.value || '').trim();
                 const sku = String(document.getElementById('fabric-sku')?.value || '').trim();
                 const nameVal = String(document.getElementById('fabric-name')?.value || '').trim();
 
                 if (!variant) { showError('Please choose a variant'); return; }
-                if (!size || qty <= 0) { showError('Please provide size and quantity'); return; }
 
                 const payload = {
-                    name: nameVal || `${variant} - ${size}`,
+                    name: nameVal || `${variant}`,
                     type: 'fabric',
-                    quantity: qty,
+                    quantity: 0,
                     unit: 'pieces',
-                    price: 0,
+                    price: Number(isNaN(minPrice) ? 0 : minPrice),
                     lowStockThreshold: threshold,
                     supplier: supplier,
                     sku: sku,
-                    sizesInventory: JSON.stringify({ [size]: qty })
+                    sizesInventory: JSON.stringify({})
                 };
 
                 try {
@@ -1004,29 +998,23 @@
 
             document.getElementById('fabric-standalone-save')?.addEventListener('click', async () => {
                 const variant = String(document.getElementById('fabric-variant-standalone')?.value || '').trim();
-                const sizesText = String(document.getElementById('fabric-sizes-standalone')?.value || '').trim();
-                const qty = Math.max(0, Math.floor(Number(document.getElementById('fabric-qty-standalone')?.value || 0)));
+                const minPrice = Number(document.getElementById('fabric-min-price-standalone')?.value || 0);
                 const threshold = Math.max(0, Math.floor(Number(document.getElementById('fabric-threshold-standalone')?.value || 5)));
                 const supplier = String(document.getElementById('fabric-supplier-standalone')?.value || '').trim();
                 const sku = String(document.getElementById('fabric-sku-standalone')?.value || '').trim();
 
                 if (!variant) { showError('Please choose a fabric & garment variant'); return; }
-                if (!sizesText || qty <= 0) { showError('Please provide sizes and stock'); return; }
-
-                const sizesArr = sizesText.split(',').map(s => s.trim()).filter(Boolean);
-                const sizesObj = {};
-                sizesArr.forEach(s => { sizesObj[s] = Number(qty); });
 
                 const payload = {
                     name: `${variant}`,
                     type: 'fabric',
-                    quantity: qty * sizesArr.length,
+                    quantity: 0,
                     unit: 'pieces',
-                    price: 0,
+                    price: Number(isNaN(minPrice) ? 0 : minPrice),
                     lowStockThreshold: threshold,
                     supplier: supplier,
                     sku: sku,
-                    sizesInventory: JSON.stringify(sizesObj)
+                    sizesInventory: JSON.stringify({})
                 };
 
                 try {
@@ -2065,12 +2053,12 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Sizes</label>
-                    <input id="fabric-sizes-standalone" type="text" class="w-full px-3 py-2 border rounded" placeholder="e.g. S, M, L" />
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Price (₱)</label>
+                    <input id="fabric-min-price-standalone" type="number" step="0.01" min="0" class="w-full px-3 py-2 border rounded" placeholder="e.g. 150.00" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Stock</label>
-                    <input id="fabric-qty-standalone" type="number" min="0" class="w-full px-3 py-2 border rounded" />
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
+                    <input id="fabric-threshold-standalone" type="number" min="0" class="w-full px-3 py-2 border rounded" value="10" />
                 </div>
             </div>
 

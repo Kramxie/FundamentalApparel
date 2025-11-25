@@ -197,6 +197,7 @@ exports.getInventoryAvailability = async (req, res) => {
                 name: item.name,
                 quantity: item.quantity,
                 reserved: item.reserved,
+                price: Number(item.price || 0),
                 sizesInventory,
                 sizesPrice,
                 reservedSizes
@@ -219,6 +220,7 @@ exports.getPublicVariants = async (req, res) => {
         const data = items.map(it => {
             const sizesInventory = it.sizesInventory ? Object.fromEntries(it.sizesInventory) : {};
             const reservedSizes = it.reservedSizes ? Object.fromEntries(it.reservedSizes) : {};
+            const sizesPrice = it.sizesPrice ? Object.fromEntries(it.sizesPrice) : {};
             const available = Number(it.quantity || 0);
             return {
                 id: it._id,
@@ -226,7 +228,9 @@ exports.getPublicVariants = async (req, res) => {
                 quantity: it.quantity,
                 reserved: it.reserved,
                 available,
+                price: Number(it.price || 0),
                 sizesInventory,
+                sizesPrice,
                 reservedSizes
             };
         });
