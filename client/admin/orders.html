@@ -2298,6 +2298,7 @@
               ${order.estimatedDeliveryDate ? `<p class="mt-1"><strong>Est. Delivery:</strong> ${new Date(order.estimatedDeliveryDate).toLocaleDateString()}</p>` : ''}
             `;
             
+            // Allow admin to set tracking even if production is still ongoing
             if (order.status === 'Ready for Pickup/Delivery') {
               fulfillmentForm.classList.remove('hidden');
               deliveryFields.classList.remove('hidden');
@@ -2324,6 +2325,13 @@
               document.getElementById('fulfillment-tracking').value = order.trackingNumber || '';
               document.getElementById('fulfillment-delivery-date').value = order.estimatedDeliveryDate ? order.estimatedDeliveryDate.split('T')[0] : '';
             }
+            else if (order.status === 'In Production') {
+              // Show a CTA so admin can mark Ready and add tracking details now
+              fulfillmentInfo.innerHTML += `
+                <div class="mt-3"><button id="custom-modal-open-fulfillment" class="px-4 py-2 bg-purple-600 text-white rounded">Set Ready for Pickup/Delivery</button></div>
+                <p class="mt-2 text-sm text-gray-600">Production is ongoing. Click the button to set tracking details and mark order Ready for Pickup/Delivery.</p>
+              `;
+            }
           } else if (order.fulfillmentMethod === 'pickup') {
             fulfillmentInfo.innerHTML = `
               <p class="font-semibold text-green-900">📦 Pickup Selected</p>
@@ -2338,6 +2346,12 @@
               
               document.getElementById('fulfillment-pickup-date').value = order.pickupDate ? order.pickupDate.split('T')[0] : '';
               document.getElementById('fulfillment-pickup-location').value = order.pickupLocation || 'Fundamental Store - 123 Main St, Manila';
+            }
+            else if (order.status === 'In Production') {
+              fulfillmentInfo.innerHTML += `
+                <div class="mt-3"><button id="custom-modal-open-fulfillment" class="px-4 py-2 bg-purple-600 text-white rounded">Set Ready for Pickup/Delivery</button></div>
+                <p class="mt-2 text-sm text-gray-600">Production is ongoing. Click the button to set pickup details and mark order Ready for Pickup/Delivery.</p>
+              `;
             }
           }
         }

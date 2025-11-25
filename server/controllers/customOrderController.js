@@ -1321,23 +1321,28 @@ exports.updateFulfillmentDetails = async (req, res) => {
         .json({ success: false, msg: "Custom order not found" });
     }
 
-    if (order.status !== "Ready for Pickup/Delivery") {
+    // Allow updating fulfillment when order is Ready or still In Production
+    if (order.status !== "Ready for Pickup/Delivery" && order.status !== 'In Production') {
       return res
         .status(400)
-        .json({ success: false, msg: "Order is not ready for fulfillment" });
+        .json({ success: false, msg: "Order must be In Production or Ready for Pickup/Delivery to set fulfillment details" });
     }
 
     if (order.fulfillmentMethod === "delivery") {
       if (trackingNumber) order.trackingNumber = trackingNumber;
       if (courier) order.courier = courier;
-      if (estimatedDeliveryDate)
-        order.estimatedDeliveryDate = estimatedDeliveryDate;
-      // Change status to "Out for Delivery" when admin submits tracking details
-      order.status = "Out for Delivery";
+      if (estimatedDeliveryDate) order.estimatedDeliveryDate = estimatedDeliveryDate;
+      // If admin provides a tracking number, move to Out for Delivery; otherwise mark Ready
+      if (trackingNumber) {
+        order.status = "Out for Delivery";
+      } else {
+        order.status = "Ready for Pickup/Delivery";
+      }
     } else if (order.fulfillmentMethod === "pickup") {
       if (pickupDate) order.pickupDate = pickupDate;
       if (pickupLocation) order.pickupLocation = pickupLocation;
-      // For pickup, keep status as "Ready for Pickup/Delivery"
+      // For pickup, mark Ready for Pickup/Delivery
+      order.status = 'Ready for Pickup/Delivery';
     }
 
     await order.save();
