@@ -330,7 +330,7 @@
             updateTotals(0);
             return;
           }
-          // Normalize items for payment payload
+          // Normalize items for payment payload (include size when present)
           cartItems = cart.items.map(it => {
             const p = it.product || {};
             const price = it.price ?? p.price ?? 0;
@@ -339,6 +339,7 @@
               name: p.name || it.name || 'Product',
               price: price,
               quantity: it.quantity || 1,
+              size: it.size || null,
               image: p.imageUrl || it.image || ''
             };
           });
@@ -352,7 +353,6 @@
                         <div class="font-medium">${p.name || 'Item'}</div>
                         <div class="text-sm text-gray-500">Qty: ${qty} · ${peso(price)}</div>
                         ${it.size ? `<div class="text-sm text-gray-500">Size: ${it.size}</div>` : ''}
-                        ${it.color ? `<div class="text-sm text-gray-500">Color: ${it.color}</div>` : ''}
                       </div>
                       <div class="font-semibold">${peso(price * qty)}</div>
                     </div>`;
