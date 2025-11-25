@@ -208,6 +208,39 @@ exports.getInventoryAvailability = async (req, res) => {
     }
 };
 
+// @desc    Public: Get visible inventory variants for customers (fabric/combined variants)
+// @route   GET /api/admin/inventory/public/variants
+// @access  Public
+exports.getPublicVariants = async (req, res) => {
+    try {
+        // Return fabric-type inventory variants that have positive available quantity
+        const items = await Inventory.find({ type: 'fabric' }).select('name quantity reserved sizesInventory reservedSizes').sort({ name: 1 });
+
+        const data = items.map(it => {
+            const sizesInventory = it.sizesInventory ? Object.fromEntries(it.sizesInventory) : {};
+            const reservedSizes = it.reservedSizes ? Object.fromEntries(it.reservedSizes) : {};
+            const available = Number(it.quantity || 0);
+            return {
+                id: it._id,
+                name: it.name,
+                quantity: it.quantity,
+                reserved: it.reserved,
+                available,
+                sizesInventory,
+                reservedSizes
+            };
+        });
+
+        // Filter out fully depleted variants (available <= 0)
+        const visible = data.filter(d => Number(d.available) > 0);
+
+        return res.status(200).json({ success: true, data: visible });
+    } catch (error) {
+        console.error('Get Public Variants Error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to fetch variants' });
+    }
+};
+
 // @desc    Create new inventory item
 // @desc    Create new inventory item
 // @route   POST /api/admin/inventory

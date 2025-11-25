@@ -273,6 +273,13 @@ exports.submitCustomOrder = async (req, res) => {
           if (ng) orderData.garmentType = ng;
           else console.warn('[submitCustomOrder] Unrecognized garmentType (skipping):', req.body.garmentType);
         }
+        // Preserve the combined inventory name when provided by client (e.g. "Cotton - Jersey")
+        if (req.body.inventoryName) {
+          orderData.inventoryName = String(req.body.inventoryName).trim();
+        } else if (req.body.fabricType && req.body.garmentType) {
+          // reconstruct combined name from the submitted dropdown value pieces
+          orderData.inventoryName = `${String(req.body.fabricType).trim()} - ${String(req.body.garmentType).trim()}`;
+        }
         // Accept team members info for jersey printing
         if (req.body.includeTeamMembers === 'true' || req.body.includeTeamMembers === true) {
           orderData.includeTeamMembers = true;
@@ -327,7 +334,7 @@ exports.submitCustomOrder = async (req, res) => {
     try {
       if ((orderData.serviceType === 'predesign-product' || serviceType === 'predesign-product')) {
         // Determine inventory name and lookup
-        const invName = orderData.productName || orderData.garmentType || orderData.fabricType || null;
+        const invName = orderData.inventoryName || orderData.productName || orderData.garmentType || orderData.fabricType || null;
         if (invName) {
           const invDoc = await findInventoryByName(invName);
           const sizesInv = invDoc ? (invDoc.sizesInventory && (typeof invDoc.sizesInventory === 'object' ? (invDoc.sizesInventory.get ? Object.fromEntries(invDoc.sizesInventory) : invDoc.sizesInventory) : {}) ) : {};
@@ -680,7 +687,7 @@ exports.verifyDownPayment = async (req, res) => {
 
         const sizesMap = extractSizesMap(order);
         if (sizesMap) {
-          const invName = order.productName || order.garmentType || order.fabricType || null;
+            const invName = order.inventoryName || order.productName || order.garmentType || order.fabricType || null;
           if (!invName) throw new Error('Cannot determine inventory name for per-size allocation');
           // Try to resolve Inventory doc first so we can pass inventoryId (more robust than name-only)
           const invDoc = await findInventoryByName(invName, session);
@@ -698,8 +705,9 @@ exports.verifyDownPayment = async (req, res) => {
           order.inventoryAllocated = true;
           order.allocatedItems = [{ inventoryId: invDoc ? invDoc._id : null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
         } else {
-          if (order.serviceType === 'printing-only' && order.fabricType && !order.inventoryAllocated) {
-            const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+          if (order.serviceType === 'printing-only' && (order.inventoryName || order.fabricType) && !order.inventoryAllocated) {
+            const allocName = order.inventoryName || order.fabricType;
+            const invDoc = await allocateInventory({ name: allocName, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
             order.inventoryAllocated = true;
             order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
             try {
@@ -798,8 +806,8 @@ exports.verifyDownPayment = async (req, res) => {
 
       const sizesMap = extractSizesMap(order);
       if (sizesMap) {
-        // Prefer mapping inventory by product name; fall back to garmentType or fabricType
-        const invName = order.productName || order.garmentType || order.fabricType || null;
+        // Prefer mapping inventory by explicit inventoryName (combined), then product name; fall back to garmentType or fabricType
+        const invName = order.inventoryName || order.productName || order.garmentType || order.fabricType || null;
         if (!invName) throw new Error('Cannot determine inventory name for per-size allocation');
         const invDoc = await findInventoryByName(invName, session);
         const inventoryId = invDoc ? invDoc._id : null;
@@ -823,8 +831,9 @@ exports.verifyDownPayment = async (req, res) => {
         order.inventoryAllocated = true;
         order.allocatedItems = [{ inventoryId: invDoc ? invDoc._id : null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
       } else {
-        if (order.serviceType === 'printing-only' && order.fabricType && !order.inventoryAllocated) {
-          const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+        if (order.serviceType === 'printing-only' && (order.inventoryName || order.fabricType) && !order.inventoryAllocated) {
+          const allocName = order.inventoryName || order.fabricType;
+          const invDoc = await allocateInventory({ name: allocName, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
           order.inventoryAllocated = true;
           order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
           // sync product count
@@ -1025,8 +1034,9 @@ exports.verifyFinalPayment = async (req, res) => {
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
-          if (order.serviceType === 'printing-only' && order.fabricType && !order.inventoryAllocated) {
-            const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+          if (order.serviceType === 'printing-only' && (order.inventoryName || order.fabricType) && !order.inventoryAllocated) {
+            const allocName = order.inventoryName || order.fabricType;
+            const invDoc = await allocateInventory({ name: allocName, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
             order.inventoryAllocated = true;
             order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
           }
@@ -1365,14 +1375,15 @@ exports.updateFulfillmentDetails = async (req, res) => {
         return res.status(400).json({ success: false, msg: 'Inventory already allocated for this order.' });
       }
 
-      if (!order.fabricType) {
-        return res.status(400).json({ success: false, msg: 'No fabric type associated with this order to allocate.' });
+      if (!(order.inventoryName || order.fabricType)) {
+        return res.status(400).json({ success: false, msg: 'No fabric/variant associated with this order to allocate.' });
       }
 
       const session = await mongoose.startSession();
       session.startTransaction();
       try {
-        const invDoc = await allocateInventory({ name: order.fabricType, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+        const allocName = order.inventoryName || order.fabricType;
+        const invDoc = await allocateInventory({ name: allocName, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
         order.inventoryAllocated = true;
         order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
         const updated = await order.save({ session });

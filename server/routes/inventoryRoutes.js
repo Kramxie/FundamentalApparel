@@ -11,7 +11,8 @@ const {
     updateInventoryItem,
     deleteInventoryItem,
     bulkUpdateQuantities,
-    getInventoryStats
+    getInventoryStats,
+    getPublicVariants
 } = require('../controllers/inventoryController');
 const { decrementStock } = require('../controllers/inventoryController');
 
@@ -47,7 +48,10 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB per file
 });
 
-// All routes require authentication; restrict per-route by role
+// Public route: list visible variants for customers (no auth)
+router.get('/public/variants', getPublicVariants);
+
+// All routes below require authentication; restrict per-route by role
 router.use(protect);
 
 // Get inventory statistics (read-only for admin and employee)

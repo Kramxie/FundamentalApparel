@@ -156,6 +156,8 @@
     };
 
     let teamMode = false;
+    let availableVariants = [];
+    let currentInventory = null; // latest availability object for selected variant
 
     function genTeamRows() {
       const qty = Math.max(1, parseInt(els.quantity.value || '1', 10));
@@ -252,6 +254,8 @@
       } else {
         fabricVal = fg;
       }
+      // Send the original combined selection as inventoryName so backend can match admin-created inventory entries
+      if (fg) fd.append('inventoryName', fg);
       fd.append('fabricType', fabricVal);
       fd.append('garmentType', garmentVal);
       fd.append('quantity', document.getElementById('quantity').value);
@@ -266,6 +270,45 @@
         fd.append('teamMembers', JSON.stringify(collectTeamMembers()));
       }else{
         fd.append('garmentSize', document.getElementById('garmentSize').value);
+      }
+
+      // Validate inventory availability before sending the quote
+      // Ensure currentInventory is populated (try preloaded or fetch), then check requested sizes
+      if (fg) {
+        await showVariantAvailability(fg);
+      }
+      const inv = typeof currentInventory !== 'undefined' ? currentInventory : null;
+      const qtyRequested = Number(document.getElementById('quantity').value) || 0;
+      if (inv) {
+        const sizes = inv.sizesInventory || {};
+        const reserved = inv.reservedSizes || {};
+        if (teamMode) {
+          const team = collectTeamMembers();
+          const counts = {};
+          team.forEach(m => { counts[m.size] = (counts[m.size]||0) + 1; });
+          for (const sz in counts) {
+            const needed = counts[sz] || 0;
+            const total = Number(sizes[sz] || 0);
+            const resv = Number(reserved[sz] || 0);
+            const avail = Math.max(0, total - resv);
+            if (avail < needed) {
+              alert(`Not enough stock for size ${sz}. Available: ${avail}, required: ${needed}`);
+              return;
+            }
+          }
+        } else {
+          const size = document.getElementById('garmentSize').value;
+          const total = Number(sizes[size] || 0);
+          const resv = Number(reserved[size] || 0);
+          const avail = Math.max(0, total - resv);
+          if (avail < qtyRequested) {
+            alert(`Not enough stock for size ${size}. Available: ${avail}, requested: ${qtyRequested}`);
+            return;
+          }
+        }
+      } else {
+        // No inventory info available — proceed but warn in console
+        console.debug('No inventory data available to validate before submit for', fg);
       }
 
       const btn = document.getElementById('submitBtn');
@@ -323,6 +366,94 @@
     }
 
     els.checkSizesBtn.addEventListener('click', checkAvailableSizesFG);
+    // Populate Fabric & Garment dropdown from public inventory variants
+    async function loadAvailableVariants(){
+      try{
+        const res = await fetch(`${API}/api/admin/inventory/public/variants`);
+        if(!res.ok) return;
+        const json = await res.json();
+        if(!json.success) return;
+        availableVariants = json.data || [];
+        const sel = document.getElementById('fabricGarment');
+        // clear existing options but keep placeholder
+        const placeholder = sel.querySelector('option[value=""]');
+        sel.innerHTML = '';
+        if(placeholder) sel.appendChild(placeholder);
+        // add options
+        availableVariants.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.name;
+          opt.textContent = v.name;
+          sel.appendChild(opt);
+        });
+      }catch(err){ console.debug('Failed to load variants:', err && err.message); }
+    }
+
+    // Show availability for selected variant using preloaded data or fallback to API
+    function renderStockPanel(inv){
+      els.sizesAvailability.innerHTML = '';
+      currentInventory = inv || null;
+      if(!inv){
+        els.sizesAvailability.innerHTML = '<div class="text-sm text-gray-500">No availability info</div>';
+        return;
+      }
+      const container = document.createElement('div');
+      container.className = 'bg-white border rounded p-3';
+      const title = document.createElement('div');
+      title.className = 'text-xs font-semibold text-gray-700 mb-2';
+      title.textContent = 'Stock by Size';
+      container.appendChild(title);
+      const list = document.createElement('div');
+      list.className = 'text-sm text-gray-800 space-y-1';
+      const sizes = inv.sizesInventory || {};
+      const reserved = inv.reservedSizes || {};
+      // show in-stock sizes first
+      Object.keys(sizes).sort().forEach(sz=>{
+        const total = Number(sizes[sz]||0);
+        const resv = Number(reserved[sz]||0);
+        const avail = Math.max(0, total - resv);
+        const row = document.createElement('div');
+        row.innerHTML = `<strong>${sz}</strong>: ${avail}`;
+        list.appendChild(row);
+      });
+      container.appendChild(list);
+      // footer with source and total
+      const footer = document.createElement('div');
+      footer.className = 'text-xs text-gray-500 mt-2';
+      footer.textContent = `Source: inventory/availability • invId: ${inv.id || inv._id || ''}`;
+      container.appendChild(footer);
+      els.sizesAvailability.appendChild(container);
+    }
+
+    async function showVariantAvailability(name){
+      if(!name){ renderStockPanel(null); return; }
+      // try preloaded list
+      const found = availableVariants.find(v => (v.name||'').toLowerCase() === name.toLowerCase());
+      if(found){
+        renderStockPanel(found);
+        return;
+      }
+      // fallback to API call
+      try{
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API}/api/admin/inventory/availability?name=${encodeURIComponent(name)}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+        const data = await res.json();
+        if(data && data.success && data.data){
+          renderStockPanel(data.data);
+        } else {
+          renderStockPanel(null);
+        }
+      }catch(err){ console.debug('availability fetch failed', err && err.message); renderStockPanel(null); }
+    }
+
+    // wire dropdown change to show availability
+    document.getElementById('fabricGarment').addEventListener('change', (e)=>{
+      const val = e.target.value;
+      showVariantAvailability(val);
+    });
+
+    // load variants on page load
+    loadAvailableVariants();
     });
   </script>
 </body>
