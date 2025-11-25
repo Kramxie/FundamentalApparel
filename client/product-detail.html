@@ -489,7 +489,9 @@
             // Add to Cart
             const addToCartBtn = document.getElementById('add-to-cart-btn');
             addToCartBtn?.addEventListener('click', async () => {
-                if (product.sizes?.length > 0 && !selectedSize) return alert('Please select a size.');
+                // Check if size selection is required (either old sizes array or new sizesInventory)
+                const hasSizes = (product.sizes && product.sizes.length > 0) || (product.sizesInventory && Object.keys(product.sizesInventory).length > 0);
+                if (hasSizes && !selectedSize) return alert('Please select a size.');
                 if (product.colors?.length > 0 && !selectedColor) return alert('Please select a color.');
                 if (!localStorage.getItem('token')) {
                     alert('Please log in to continue.');
