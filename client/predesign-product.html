@@ -357,10 +357,12 @@
 
                 let inv = p.sizesInventory || {};
                 // Attempt to fetch authoritative inventory (only if API reachable and user token present or endpoint allows public)
+                let usedSource = 'productPayload';
                 try {
                     const remote = await fetchInventoryAvailability();
                     if (remote && remote.success && remote.data) {
                         inv = remote.data.sizesInventory || {};
+                        usedSource = 'inventoryAvailability';
                         // if backend returned inventory id/name, persist for debugging
                         if (form) {
                             form.dataset.inventoryId = remote.data.id || '';
@@ -368,6 +370,28 @@
                         }
                     }
                 } catch (e) { /* ignore */ }
+
+                // If inventory availability wasn't available, try fetching the latest product document
+                if (usedSource === 'productPayload' && p._id) {
+                    try {
+                        console.debug('[Predesign] Falling back to GET /api/products/:id for latest product data', p._id);
+                        const resp = await fetch((API || '') + '/api/products/' + encodeURIComponent(p._id));
+                        if (resp && resp.ok) {
+                            const pj = await resp.json();
+                            if (pj && pj.success && pj.data) {
+                                const prodDoc = pj.data;
+                                if (prodDoc.sizesInventory && Object.keys(prodDoc.sizesInventory || {}).length > 0) {
+                                    inv = prodDoc.sizesInventory || {};
+                                    usedSource = 'productEndpoint';
+                                }
+                            }
+                        }
+                    } catch (pfErr) {
+                        console.debug('[Predesign] Product fetch fallback failed:', pfErr && pfErr.message);
+                    }
+                }
+
+                console.debug('[Predesign] Using inventory source:', usedSource, 'sizes:', inv);
 
                 // Persist sizesInventory on the form for client-side validation
                 if (form) form.dataset.sizesInventory = JSON.stringify(inv || {});
