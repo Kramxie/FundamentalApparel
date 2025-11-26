@@ -382,26 +382,34 @@
     </script>
 
         <!-- Policy Modal (contains Privacy Policy and Terms & Conditions) -->
-        <div id="policyModal" class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center">
-            <div class="bg-white max-w-4xl w-[90%] max-h-[85vh] overflow-y-auto rounded-lg p-6 mx-auto">
-                <div class="flex items-start justify-between gap-4 mb-4">
-                    <h2 class="text-xl font-bold">Privacy Policy &amp; Terms &amp; Conditions</h2>
-                    <button id="policyClose" class="text-gray-600 hover:text-gray-900">Close ✕</button>
+        <div id="policyModal" class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="policyTitle" tabindex="-1">
+            <div class="bg-white max-w-4xl w-[90%] max-h-[85vh] overflow-y-auto rounded-lg p-6 mx-auto shadow-lg ring-1 ring-black/5">
+                <div class="flex items-center justify-between gap-4 mb-4">
+                    <h2 id="policyTitle" class="text-2xl font-semibold text-gray-900">Privacy Policy &amp; Terms &amp; Conditions</h2>
+                    <button id="policyClose" class="text-gray-600 hover:text-gray-900 bg-gray-100 px-3 py-1 rounded-md">Close ✕</button>
                 </div>
-                <div class="prose text-sm text-gray-800">
-                    <h3>Privacy Policy</h3>
-                    <p>Fundamental Apparel collects and processes personal information necessary to provide our services, manage orders, and communicate with customers. We collect contact information (name, email, phone), shipping addresses, order history, and any files you upload when using our Custom Upload services. Images and files uploaded as part of reviews or custom orders are stored securely and are accessible to staff for fulfillment and moderation purposes.</p>
-                    <p>We use this information to fulfill orders, provide customer support, send transactional emails (order confirmations, shipping updates), and for fraud prevention. We do not sell personal data to third parties. For payment processing we share only necessary data with payment providers. You may request data access or deletion by contacting support.</p>
+                <div class="prose text-sm text-gray-700">
+                    <section class="space-y-3">
+                        <h3 class="text-lg font-semibold text-gray-900">Privacy Policy</h3>
+                        <p class="leading-relaxed">Fundamental Apparel collects and processes personal information necessary to provide our services, manage orders, and communicate with customers. We collect contact information (name, email, phone), shipping addresses, order history, and any files you upload when using our Custom Upload services. Images and files uploaded as part of reviews or custom orders are stored securely and are accessible to staff for fulfillment and moderation purposes.</p>
+                        <p class="leading-relaxed">We use this information to fulfill orders, provide customer support, send transactional emails (order confirmations, shipping updates), and for fraud prevention. We do not sell personal data to third parties. For payment processing we share only necessary data with payment providers. You may request data access or deletion by contacting support.</p>
+                    </section>
 
-                    <h3>Data and Image Usage</h3>
-                    <p>By uploading images (reviews or custom designs), you grant Fundamental Apparel a non-exclusive license to store and process those images for the purpose of order fulfillment, displaying reviews (if allowed), and customer service. If an uploaded image contains sensitive content, please contact support to request removal.</p>
+                    <section class="space-y-3 mt-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Data and Image Usage</h3>
+                        <p class="leading-relaxed">By uploading images (reviews or custom designs), you grant Fundamental Apparel a non-exclusive license to store and process those images for the purpose of order fulfillment, displaying reviews (if allowed), and customer service. If an uploaded image contains sensitive content, please contact support to request removal.</p>
+                    </section>
 
-                    <h3>Terms &amp; Conditions</h3>
-                    <p>Orders are subject to stock availability and our inventory checks. Custom orders submitted via the Custom Upload flow are quotes and require confirmation. Payments, refunds, and returns are handled according to our Returns &amp; Refunds policy. Service orders may be excluded from loyalty rewards; admin controls apply.</p>
-                    <p>Customers must provide accurate contact and shipping information. We reserve the right to cancel or modify orders in case of inventory errors, pricing mistakes, or suspected fraud. By creating an account and placing orders you agree to pay applicable fees and follow our usage guidelines.</p>
+                    <section class="space-y-3 mt-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Terms &amp; Conditions</h3>
+                        <p class="leading-relaxed">Orders are subject to stock availability and our inventory checks. Custom orders submitted via the Custom Upload flow are quotes and require confirmation. Payments, refunds, and returns are handled according to our Returns &amp; Refunds policy. Service orders may be excluded from loyalty rewards; admin controls apply.</p>
+                        <p class="leading-relaxed">Customers must provide accurate contact and shipping information. We reserve the right to cancel or modify orders in case of inventory errors, pricing mistakes, or suspected fraud. By creating an account and placing orders you agree to pay applicable fees and follow our usage guidelines.</p>
+                    </section>
 
-                    <h3>Contact</h3>
-                    <p>If you have questions about privacy or these terms, contact us at support@fundamental.example (replace with your operational support email) or through the admin contact channels.</p>
+                    <section class="space-y-2 mt-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Contact</h3>
+                        <p class="leading-relaxed">If you have questions about privacy or these terms, contact us at <a href="mailto:support@fundamental.example" class="text-indigo-600 hover:underline">support@fundamental.example</a> (replace with your operational support email) or through the admin contact channels.</p>
+                    </section>
                 </div>
             </div>
         </div>

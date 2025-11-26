@@ -65,6 +65,10 @@ const BASE_URL =
 exports.submitCustomOrder = async (req, res) => {
   // Keep orderData visible to catch block to avoid ReferenceError when logging
   let orderData = null;
+  // Guard: ensure authenticated user is present (protect middleware should set req.user)
+  if (!req.user || !req.user._id) {
+    return res.status(401).json({ success: false, msg: 'Authentication required.' });
+  }
   try {
     // Extract all fields from request body
     const { 
@@ -334,27 +338,35 @@ exports.submitCustomOrder = async (req, res) => {
     // that requested quantities do not exceed available stock. This validates inputs
     // but leaves actual allocation for payment/verification flows.
     try {
-      if ((orderData.serviceType === 'predesign-product' || serviceType === 'predesign-product')) {
+      // Validate inventory for predesign products and printing-only submissions
+      if (
+        (orderData.serviceType === 'predesign-product' || serviceType === 'predesign-product')
+        || (orderData.serviceType === 'printing-only' || serviceType === 'printing-only')
+      ) {
         // Determine inventory name and lookup
         const invName = orderData.inventoryName || orderData.productName || orderData.garmentType || orderData.fabricType || null;
         if (invName) {
           const invDoc = await findInventoryByName(invName);
           const sizesInv = invDoc ? (invDoc.sizesInventory && (typeof invDoc.sizesInventory === 'object' ? (invDoc.sizesInventory.get ? Object.fromEntries(invDoc.sizesInventory) : invDoc.sizesInventory) : {}) ) : {};
 
-          if (orderData.includeTeamMembers && Array.isArray(orderData.teamMembers) && orderData.teamMembers.length) {
-            const counts = {};
-            for (const m of orderData.teamMembers) {
-              const s = (m.size || m.sizeLabel || '').toString().trim();
-              if (s) counts[s] = (counts[s] || 0) + 1;
+          // For printing-only: support validation using orderData.garmentSize or teamMembers
+          if (orderData.serviceType === 'printing-only' || serviceType === 'printing-only') {
+            if (orderData.includeTeamMembers && Array.isArray(orderData.teamMembers) && orderData.teamMembers.length) {
+              const counts = {};
+              for (const m of orderData.teamMembers) {
+                const s = (m.size || m.sizeLabel || '').toString().trim();
+                if (s) counts[s] = (counts[s] || 0) + 1;
+              }
+              const invalid = Object.keys(counts).filter(s => Number(sizesInv[s] || 0) < counts[s]);
+              if (invalid.length) return res.status(400).json({ success: false, msg: `Insufficient stock for sizes: ${invalid.join(', ')}` });
+            } else if (orderData.garmentSize || size) {
+              const sel = (orderData.garmentSize || size).toString().trim();
+              const qty = Number(orderData.quantity || 1);
+              if (typeof sizesInv[sel] === 'undefined' || Number(sizesInv[sel] || 0) < qty) {
+                return res.status(400).json({ success: false, msg: `Selected size ${sel} is unavailable or does not have enough stock` });
+              }
             }
-            const invalid = Object.keys(counts).filter(s => Number(sizesInv[s] || 0) < counts[s]);
-            if (invalid.length) return res.status(400).json({ success: false, msg: `Insufficient stock for sizes: ${invalid.join(', ')}` });
-          } else if (orderData.garmentSize || size) {
-            const sel = (orderData.garmentSize || size).toString().trim();
-            const qty = Number(orderData.quantity || 1);
-            if (typeof sizesInv[sel] === 'undefined' || Number(sizesInv[sel] || 0) < qty) {
-              return res.status(400).json({ success: false, msg: `Selected size ${sel} is unavailable or does not have enough stock` });
-            }
+            // finished printing-only validation branch
           }
         }
       }

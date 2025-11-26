@@ -35,8 +35,10 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => {
         const ext = path.extname(file.originalname).toLowerCase();
         // Gumamit ng user ID at date para unique ang filename
-        const safeName = `${req.user._id}-${Date.now()}${ext}`;
-        cb(null, safeName);
+            // protect against missing req.user during upload (fallback to anon)
+            const uid = (req.user && req.user._id) ? String(req.user._id) : `anon`;
+            const safeName = `${uid}-${Date.now()}${ext}`;
+            cb(null, safeName);
     }
 });
 

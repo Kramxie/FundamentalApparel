@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQs - Fundamental Apparel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        .chev { transition: transform .2s ease; }
+        details[open] .chev { transform: rotate(180deg); }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+<header class="bg-white border-b border-gray-100 sticky top-0 z-50">
+    <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+        <a href="index.html" class="flex items-center gap-3 group">
+            <img src="images/logo.png" alt="Fundamental Logo" class="w-10 h-10 object-contain group-hover:opacity-80 transition">
+            <span class="text-xl font-extrabold text-gray-900 tracking-tight group-hover:text-indigo-600 transition">Fundamental</span>
+        </a>
+
+        <div class="hidden md:flex space-x-8 items-center font-medium text-sm">
+            <a href="index.html" class="text-indigo-600 font-semibold">Home</a>
+            <a href="products.html" class="text-gray-500 hover:text-indigo-600 transition">Products</a>
+            <a href="services.html" class="text-gray-500 hover:text-indigo-600 transition">Services</a>
+            <a href="about-us.html" class="text-gray-500 hover:text-indigo-600 transition">About</a>
+            <a href="faqs.html" class="text-gray-500 hover:text-indigo-600 transition">FAQs</a>
+        </div>
+
+        <div class="hidden md:flex items-center space-x-6">
+            <button class="text-gray-400 hover:text-indigo-600 transition"><i class="fas fa-search text-lg"></i></button>
+
+            <a href="cart.html" class="text-gray-400 hover:text-indigo-600 relative transition">
+                <i class="fas fa-shopping-bag text-lg"></i>
+                <span id="cart-count" class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+            </a>
+
+            <div id="auth-links-logged-out" class="flex items-center space-x-3 pl-4 border-l border-gray-200">
+                <a href="login.html" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">Log In</a>
+                <a href="register.html" class="text-sm font-bold bg-gray-900 text-white px-5 py-2.5 rounded-lg hover:bg-black transition shadow-sm transform hover:scale-105 duration-200">Sign Up</a>
+            </div>
+
+            <div id="auth-links-logged-in" class="hidden pl-4 border-l border-gray-200">
+                <a href="profile.html" id="user-link" class="text-gray-500 hover:text-indigo-600 transition flex items-center gap-2">
+                    <i id="user-icon" class="fas fa-user-circle text-2xl"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="md:hidden">
+            <button id="menu-btn" class="text-gray-800 focus:outline-none p-2">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 absolute w-full left-0 top-full shadow-lg z-40">
+        <div class="flex flex-col p-4 space-y-3">
+            <a href="index.html" class="text-indigo-600 font-semibold block py-2">Home</a>
+            <a href="products.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">Products</a>
+            <a href="services.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">Services</a>
+            <a href="about-us.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">About Us</a>
+            <a href="faqs.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">FAQs</a>
+
+            <hr class="border-gray-100">
+
+            <a href="cart.html" class="flex items-center text-gray-600 py-2 hover:text-indigo-600 transition">
+                <i class="fas fa-shopping-bag mr-3"></i> Cart (<span id="cart-count-mobile">0</span>)
+            </a>
+
+            <div id="mobile-auth-logged-out" class="flex flex-col gap-3 mt-2 pt-2 border-t border-gray-100">
+                <a href="login.html" class="text-center w-full border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition">Log In</a>
+                <a href="register.html" class="text-center w-full bg-gray-900 text-white py-2.5 rounded-lg font-bold hover:bg-black transition">Sign Up</a>
+            </div>
+
+            <div id="mobile-auth-logged-in" class="hidden mt-2 pt-2 border-t border-gray-100">
+                <a href="profile.html" class="flex items-center text-gray-600 font-medium py-2 hover:text-indigo-600 transition">
+                    <i class="fas fa-user-circle mr-3 text-xl"></i> My Profile
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="container mx-auto px-6 py-12">
+    <div class="max-w-3xl mx-auto text-center mb-10">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900">Frequently Asked Questions</h1>
+        <p class="text-gray-600 mt-2">Answers to common questions about ordering, shipping, payments, and returns.</p>
+    </div>
+
+    <div class="max-w-3xl mx-auto space-y-4">
+        <details class="bg-white shadow-sm rounded-lg p-5">
+            <summary class="flex justify-between items-center cursor-pointer text-gray-800 font-medium">
+                <span>How do I place an order?</span>
+                <i class="fas fa-chevron-down chev text-gray-400 ml-4"></i>
+            </summary>
+            <div class="mt-3 text-gray-600">Browse products, add items to your cart, then proceed to checkout. Create an account or log in to save your details and track orders.</div>
+        </details>
+
+        <details class="bg-white shadow-sm rounded-lg p-5">
+            <summary class="flex justify-between items-center cursor-pointer text-gray-800 font-medium">
+                <span>What payment methods do you accept?</span>
+                <i class="fas fa-chevron-down chev text-gray-400 ml-4"></i>
+            </summary>
+            <div class="mt-3 text-gray-600">We accept major credit/debit cards via PayMongo. Occasionally we offer bank transfers or cash-on-delivery for select services — check the checkout page for available options.</div>
+        </details>
+
+        <details class="bg-white shadow-sm rounded-lg p-5">
+            <summary class="flex justify-between items-center cursor-pointer text-gray-800 font-medium">
+                <span>How are shipping fees calculated?</span>
+                <i class="fas fa-chevron-down chev text-gray-400 ml-4"></i>
+            </summary>
+            <div class="mt-3 text-gray-600">Shipping fees depend on your province and chosen courier. We show an estimated fee at checkout and compute the authoritative fee on the server before confirming payment.</div>
+        </details>
+
+        <details class="bg-white shadow-sm rounded-lg p-5">
+            <summary class="flex justify-between items-center cursor-pointer text-gray-800 font-medium">
+                <span>Do you ship internationally?</span>
+                <i class="fas fa-chevron-down chev text-gray-400 ml-4"></i>
+            </summary>
+            <div class="mt-3 text-gray-600">At the moment we ship within the Philippines only. If you need international shipping, contact support for a custom quote.</div>
+        </details>
+
+        <details class="bg-white shadow-sm rounded-lg p-5">
+            <summary class="flex justify-between items-center cursor-pointer text-gray-800 font-medium">
+                <span>Can I cancel or modify my order?</span>
+                <i class="fas fa-chevron-down chev text-gray-400 ml-4"></i>
+            </summary>
+            <div class="mt-3 text-gray-600">Orders can be modified or cancelled within a short window before production/fulfillment starts. Contact support immediately if you need changes.</div>
+        </details>
+
+        <details class="bg-white shadow-sm rounded-lg p-5">
+            <summary class="flex justify-between items-center cursor-pointer text-gray-800 font-medium">
+                <span>What if my item is out of stock?</span>
+                <i class="fas fa-chevron-down chev text-gray-400 ml-4"></i>
+            </summary>
+            <div class="mt-3 text-gray-600">If an item becomes out of stock after you order, we'll notify you with options: waitlist, refund, or similar substitution. Low-stock alerts are sent to admins to restock fast.</div>
+        </details>
+
+        <details class="bg-white shadow-sm rounded-lg p-5">
+            <summary class="flex justify-between items-center cursor-pointer text-gray-800 font-medium">
+                <span>How long before my custom order is ready?</span>
+                <i class="fas fa-chevron-down chev text-gray-400 ml-4"></i>
+            </summary>
+            <div class="mt-3 text-gray-600">Custom orders depend on complexity; typical turnaround is 7–14 business days. The product page will list expected lead times for custom items.</div>
+        </details>
+
+        <details class="bg-white shadow-sm rounded-lg p-5">
+            <summary class="flex justify-between items-center cursor-pointer text-gray-800 font-medium">
+                <span>Do you offer returns or exchanges?</span>
+                <i class="fas fa-chevron-down chev text-gray-400 ml-4"></i>
+            </summary>
+            <div class="mt-3 text-gray-600">We accept returns or exchanges for manufacturing defects within a defined period. For sizing issues, we may offer exchanges depending on stock availability. See our Returns policy for details.</div>
+        </details>
+
+        <details class="bg-white shadow-sm rounded-lg p-5">
+            <summary class="flex justify-between items-center cursor-pointer text-gray-800 font-medium">
+                <span>How can I track my order?</span>
+                <i class="fas fa-chevron-down chev text-gray-400 ml-4"></i>
+            </summary>
+            <div class="mt-3 text-gray-600">Once shipped, you'll receive tracking details via email and on your orders page in your account. You can also contact support with your order number.</div>
+        </details>
+
+        <details class="bg-white shadow-sm rounded-lg p-5">
+            <summary class="flex justify-between items-center cursor-pointer text-gray-800 font-medium">
+                <span>Are prices inclusive of taxes?</span>
+                <i class="fas fa-chevron-down chev text-gray-400 ml-4"></i>
+            </summary>
+            <div class="mt-3 text-gray-600">Displayed prices do not include any applicable taxes unless stated. Taxes will be shown during checkout if they apply.</div>
+        </details>
+
+        <details class="bg-white shadow-sm rounded-lg p-5">
+            <summary class="flex justify-between items-center cursor-pointer text-gray-800 font-medium">
+                <span>How do vouchers and discounts work?</span>
+                <i class="fas fa-chevron-down chev text-gray-400 ml-4"></i>
+            </summary>
+            <div class="mt-3 text-gray-600">Apply voucher codes at checkout. Some vouchers may exclude shipping or certain items; free-shipping vouchers will be honored at server-side calculation if eligible.</div>
+        </details>
+
+        <div class="text-center mt-8">
+            <p class="text-gray-600">Still have questions? <a href="contact.html" class="text-indigo-600 font-semibold hover:underline">Contact our support team</a> and we'll be happy to help.</p>
+        </div>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const menuBtn = document.getElementById('menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (menuBtn && mobileMenu) {
+            menuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+        }
+
+        // Improve keyboard accessibility for details/summary: toggle on Enter/Space
+        document.querySelectorAll('details > summary').forEach(summary => {
+            summary.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    summary.parentElement.open = !summary.parentElement.open;
+                }
+            });
+        });
+    });
+</script>
+
+</body>
+</html>

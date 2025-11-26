@@ -29,6 +29,7 @@
     </div>
 
     <form id="po-form" class="bg-white rounded-2xl shadow p-6 space-y-8">
+      <div id="formMessage" class="rounded p-3 text-sm hidden"></div>
       <!-- Printing Type -->
       <section>
         <label class="block text-sm font-bold text-gray-800 mb-3">Printing Type</label>
@@ -77,6 +78,7 @@
               <i class="fas fa-search mr-2"></i>Check Available Sizes
             </button>
             <div id="sizesAvailability" class="flex flex-wrap gap-2"></div>
+            <span id="fabricStatusBadge" class="ml-3 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 hidden"></span>
         </div>
         <div>
           <label class="block text-sm font-bold text-gray-800 mb-2">Quantity</label>
@@ -138,6 +140,7 @@
   </main>
 
   <script>
+    document.addEventListener('DOMContentLoaded', () => {
     const API = 'https://fundamental-apparel-backend.onrender.com';
 
     const els = {
@@ -169,9 +172,6 @@
           <input class="name border rounded px-2 py-1" placeholder="Surname / Name (optional)" />
           <input class="number border rounded px-2 py-1" placeholder="Number (optional)" />
           <select class="size border rounded px-2 py-1">
-            <option value="">Size</option>
-            <option>XS</option><option>S</option><option>M</option><option>L</option>
-            <option>XL</option><option>XXL</option><option>3XL</option>
           </select>
         `;
         els.teamContainer.appendChild(row);
@@ -186,6 +186,8 @@
         els.singleSizeRow.classList.add('hidden');
         els.teamToggle.querySelector('span').textContent = 'Team Mode: On';
         genTeamRows();
+        // populate team size selects from current inventory if available
+        if(currentInventory) updateSizeDropdowns();
       }else{
         els.teamBox.classList.add('hidden');
         els.uploadNamesBtn.classList.add('hidden');
@@ -231,12 +233,139 @@
       return arr;
     }
 
+    // --- Inventory-size helpers ---
+    function getAvailableSizes(){
+      const inv = currentInventory;
+      if(!inv) return [];
+      const sizesObj = inv.sizesInventory || {};
+      const reserved = inv.reservedSizes || {};
+      const sizeOrder = ['XS','S','M','L','XL','XXL','3XL'];
+      const keys = Object.keys(sizesObj || {});
+      keys.sort((a,b)=>{
+        const ia = sizeOrder.indexOf(a);
+        const ib = sizeOrder.indexOf(b);
+        if(ia === -1 && ib === -1) return a.localeCompare(b);
+        if(ia === -1) return 1;
+        if(ib === -1) return -1;
+        return ia - ib;
+      });
+      return keys.filter(sz => {
+        const total = Number(sizesObj[sz] || 0);
+        const resv = Number(reserved[sz] || 0);
+        return (total - resv) > 0;
+      });
+    }
+
+    function buildSizeOptionsHTML(sizes){
+      let html = '<option value="">Select size</option>';
+      (sizes || []).forEach(sz => { html += `<option value="${sz}">${sz}</option>`; });
+      return html;
+    }
+
+    function updateSizeDropdowns(){
+      const sizes = getAvailableSizes();
+      const sel = document.getElementById('garmentSize');
+      if(sel){
+        sel.innerHTML = buildSizeOptionsHTML(sizes);
+        sel.disabled = sizes.length === 0;
+      }
+      // regenerate team rows so their size selects reflect availability
+      if(teamMode){
+        genTeamRows();
+        // populate each team row size select
+        const rows = els.teamContainer.querySelectorAll('.grid');
+        rows.forEach(r=>{
+          const s = r.querySelector('.size');
+          if(s){ s.innerHTML = buildSizeOptionsHTML(sizes); s.disabled = sizes.length === 0; }
+        });
+      }
+    }
+
+    // Inline message helpers (replace alert())
+    function showMessage(msg, type){
+      const el = document.getElementById('formMessage');
+      if(!el) return;
+      el.className = 'rounded p-3 text-sm';
+      if(type === 'error') el.classList.add('bg-red-50','text-red-700','border','border-red-100');
+      else if(type === 'success') el.classList.add('bg-green-50','text-green-700','border','border-green-100');
+      else el.classList.add('bg-yellow-50','text-yellow-700','border','border-yellow-100');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      // auto-clear success messages after a short delay
+      if(type === 'success') setTimeout(()=>{ clearMessage(); }, 2500);
+    }
+    function clearMessage(){ const el = document.getElementById('formMessage'); if(el){ el.classList.add('hidden'); el.textContent=''; el.className='rounded p-3 text-sm hidden'; } }
+
+    // Sizes modal helpers
+    function openSizesModal(){ const m = document.getElementById('sizesModal'); if(!m) return; m.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
+    function closeSizesModal(){ const m = document.getElementById('sizesModal'); if(!m) return; m.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
+
+    // Display sizes into modal with CTA buttons
+    function displaySizesAvailability(item, opts){
+      els.sizesAvailability.innerHTML = '';
+      if(!item) return;
+      currentInventory = item;
+      updateSizeDropdowns();
+      const modal = document.getElementById('sizesModal');
+      const list = modal.querySelector('.sizes-list');
+      list.innerHTML = '';
+      const sizesInventory = item.sizesInventory || {};
+      const sizesPrice = item.sizesPrice || {};
+      const reservedSizes = item.reservedSizes || {};
+      Object.keys(sizesInventory).forEach(sz=>{
+        const total = Number(sizesInventory[sz]||0);
+        const reserved = Number(reservedSizes[sz]||0);
+        const available = Math.max(0, total - reserved);
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between py-2 border-b';
+        row.innerHTML = `
+          <div class="text-sm"><strong>${sz}</strong>${sizesPrice[sz] ? ` • ₱${sizesPrice[sz]}` : ''}</div>
+          <div class="flex items-center gap-2">
+            <div class="text-xs text-gray-500">${available} available</div>
+            <button class="choose-size px-3 py-1 rounded text-sm bg-green-600 text-white" data-size="${sz}" data-available="${available}">${available>0? 'Choose' : 'Notify'}</button>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+      if(opts && opts.openModal) openSizesModal();
+    }
+
+    // Click handler for choose-size buttons inside modal
+    document.addEventListener('click', (ev)=>{
+      const btn = ev.target.closest && ev.target.closest('.choose-size');
+      if(!btn) return;
+      const sz = btn.dataset.size;
+      const avail = Number(btn.dataset.available||0);
+      if(!teamMode){
+        const sel = document.getElementById('garmentSize');
+        if(sel && avail>0){ sel.value = sz; showMessage(`Selected size ${sz}`, 'success'); }
+        else if(avail<=0){ showMessage(`Size ${sz} is out of stock`, 'error'); }
+        closeSizesModal();
+        return;
+      }
+      // team mode: apply selected size to all members that don't yet have a size
+      if(teamMode){
+        const rows = els.teamContainer.querySelectorAll('.grid');
+        rows.forEach(r=>{ const s = r.querySelector('.size'); if(s && !s.value) s.value = sz; });
+        showMessage(`Applied size ${sz} to team members (empty entries)`, 'success');
+        closeSizesModal();
+      }
+    });
+
+    // wire modal close buttons and overlay click
+    const closeBtn = document.getElementById('sizesModalClose');
+    const cancelBtn = document.getElementById('sizesModalCancel');
+    const modal = document.getElementById('sizesModal');
+    if(closeBtn) closeBtn.addEventListener('click', closeSizesModal);
+    if(cancelBtn) cancelBtn.addEventListener('click', closeSizesModal);
+    if(modal) modal.addEventListener('click', (ev)=>{ if(ev.target === modal) closeSizesModal(); });
+
     els.form.addEventListener('submit', async (e)=>{
       e.preventDefault();
       const token = localStorage.getItem('token');
       if(!token){
-        alert('Please login to submit a quote order.');
-        window.location.href = 'login.html';
+        showMessage('Please login to submit a quote order. Redirecting...', 'error');
+        setTimeout(()=> window.location.href = 'login.html', 1000);
         return;
       }
 
@@ -276,6 +405,22 @@
       // Ensure currentInventory is populated (try preloaded or fetch), then check requested sizes
       if (fg) {
         await showVariantAvailability(fg);
+        // If single-mode and user didn't pick a size, auto-select the first available size
+        if (!teamMode) {
+          const sel = document.getElementById('garmentSize');
+          try{
+            if (sel && (!sel.value || sel.value === '')) {
+              const sizes = getAvailableSizes();
+              if (sizes && sizes.length) {
+                sel.value = sizes[0];
+                showMessage(`Auto-selected available size ${sizes[0]}`, 'success');
+              } else {
+                showMessage('No available sizes for the selected variant.', 'error');
+                return;
+              }
+            }
+          }catch(e){ console.debug('Auto-select size failed', e && e.message); }
+        }
       }
       const inv = typeof currentInventory !== 'undefined' ? currentInventory : null;
       const qtyRequested = Number(document.getElementById('quantity').value) || 0;
@@ -292,7 +437,7 @@
             const resv = Number(reserved[sz] || 0);
             const avail = Math.max(0, total - resv);
             if (avail < needed) {
-              alert(`Not enough stock for size ${sz}. Available: ${avail}, required: ${needed}`);
+              showMessage(`Not enough stock for size ${sz}. Available: ${avail}, required: ${needed}`, 'error');
               return;
             }
           }
@@ -302,7 +447,7 @@
           const resv = Number(reserved[size] || 0);
           const avail = Math.max(0, total - resv);
           if (avail < qtyRequested) {
-            alert(`Not enough stock for size ${size}. Available: ${avail}, requested: ${qtyRequested}`);
+            showMessage(`Not enough stock for size ${size}. Available: ${avail}, requested: ${qtyRequested}`, 'error');
             return;
           }
         }
@@ -312,23 +457,33 @@
       }
 
       const btn = document.getElementById('submitBtn');
-      const original = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+      const original = btn ? btn.innerHTML : 'Submit';
+      if(btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...'; }
       try{
         const res = await fetch(`${API}/api/custom-orders`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
-        const data = await res.json();
+        let data = null;
+        try{
+          data = await res.json();
+        }catch(parseErr){
+          const text = await res.text().catch(()=>null);
+          throw new Error(`Server responded with ${res.status}: ${text || res.statusText}`);
+        }
         if(!data.success) throw new Error(data.msg || 'Failed to submit order');
-        alert('Printing order submitted! We will contact you with a quote.');
-        window.location.href = 'profile.html';
+        showMessage('Printing order submitted! We will contact you with a quote.', 'success');
+        setTimeout(()=> window.location.href = 'profile.html', 900);
       }catch(err){
-        alert(err.message);
+        console.error('Submit quote error:', err);
+        showMessage(err.message || 'Failed to submit quote. See console for details.', 'error');
       }finally{
-        btn.disabled = false; btn.innerHTML = original;
+        if(btn){ btn.disabled = false; btn.innerHTML = original; }
       }
-       // Check Available Sizes handler
+      });
+
+      // Check Available Sizes handler
     async function checkAvailableSizesFG(){
       const token = localStorage.getItem('token');
       const fg = (els.fabricGarment && els.fabricGarment.value) ? els.fabricGarment.value : '';
-      if(!fg){ alert('Please select a fabric & garment option first.'); return; }
+      if(!fg){ showMessage('Please select a fabric & garment option first.', 'error'); return; }
       // Use the combined name as inventory 'name' for lookup
       const nameQuery = fg;
       try{
@@ -337,32 +492,21 @@
         const res = await fetch(`${API}/api/admin/inventory/availability?name=${encodeURIComponent(nameQuery)}`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
-        const data = await res.json();
-        if(!data.success) throw new Error(data.message || 'Failed to fetch availability');
-        displaySizesAvailability(data.data);
+        if(!res.ok){
+          const txt = await res.text().catch(()=>res.statusText);
+          throw new Error(`Availability API error ${res.status}: ${txt}`);
+        }
+        const data = await res.json().catch(()=>null);
+        if(!data || !data.success) throw new Error((data && data.message) || 'Failed to fetch availability');
+        // set current inventory and show availability modal
+        currentInventory = data.data;
+        displaySizesAvailability(data.data, { openModal: true });
       }catch(err){
-        alert(err.message || 'Error checking sizes');
+        showMessage(err.message || 'Error checking sizes', 'error');
       }finally{
         els.checkSizesBtn.disabled = false;
         els.checkSizesBtn.innerHTML = '<i class="fas fa-search mr-2"></i>Check Available Sizes';
       }
-    }
-
-    function displaySizesAvailability(item){
-      els.sizesAvailability.innerHTML = '';
-      if(!item) return;
-      const sizesInventory = item.sizesInventory || {};
-      const sizesPrice = item.sizesPrice || {};
-      const reservedSizes = item.reservedSizes || {};
-      Object.keys(sizesInventory).forEach(sz=>{
-        const total = Number(sizesInventory[sz]||0);
-        const reserved = Number(reservedSizes[sz]||0);
-        const available = Math.max(0, total - reserved);
-        const badge = document.createElement('div');
-        badge.className = 'px-3 py-1 rounded-full bg-gray-100 text-sm border';
-        badge.innerHTML = `<strong>${sz}</strong>: ${available} available${sizesPrice[sz] ? ` • ₱${sizesPrice[sz]}` : ''}`;
-        els.sizesAvailability.appendChild(badge);
-      });
     }
 
     els.checkSizesBtn.addEventListener('click', checkAvailableSizesFG);
@@ -370,11 +514,12 @@
     async function loadAvailableVariants(){
       try{
         const res = await fetch(`${API}/api/admin/inventory/public/variants`);
-        if(!res.ok) return;
-        const json = await res.json();
-        if(!json.success) return;
+        if(!res.ok){ console.debug('Variants API returned', res.status); return; }
+        const json = await res.json().catch(()=>null);
+        if(!json || !json.success){ console.debug('Variants API response invalid'); return; }
         availableVariants = json.data || [];
         const sel = document.getElementById('fabricGarment');
+        if(!sel) return;
         // clear existing options but keep placeholder
         const placeholder = sel.querySelector('option[value=""]');
         sel.innerHTML = '';
@@ -382,11 +527,19 @@
         // add options
         availableVariants.forEach(v => {
           const opt = document.createElement('option');
-          opt.value = v.name;
-          const pricePart = (v.price || v.price === 0) ? ` • ₱${Number(v.price).toFixed(2)}` : '';
-          opt.textContent = `${v.name}${pricePart}`;
+          opt.value = v.name || '';
+          // compute available total across sizes
+          const sizesObj = v.sizesInventory || {};
+          const reserved = v.reservedSizes || {};
+          let totalAvail = 0;
+          Object.keys(sizesObj).forEach(k=>{ const t = Number(sizesObj[k]||0); const r = Number(reserved[k]||0); totalAvail += Math.max(0, t - r); });
+          opt.dataset.available = totalAvail;
+          if(totalAvail === 0){ opt.textContent = `${v.name || ''} — Out of stock`; opt.dataset.oos = '1'; }
+          else { opt.textContent = `${v.name || ''} (${totalAvail})`; }
           sel.appendChild(opt);
         });
+        // update badge for current selection (placeholder or first option)
+        setTimeout(()=>{ const opt = sel.selectedOptions && sel.selectedOptions[0]; if(opt) updateFabricBadge(opt); }, 50);
       }catch(err){ console.debug('Failed to load variants:', err && err.message); }
     }
 
@@ -394,6 +547,7 @@
     function renderStockPanel(inv){
       els.sizesAvailability.innerHTML = '';
       currentInventory = inv || null;
+      updateSizeDropdowns();
       if(!inv){
         els.sizesAvailability.innerHTML = '<div class="text-sm text-gray-500">No availability info</div>';
         return;
@@ -416,12 +570,13 @@
       const sizes = inv.sizesInventory || {};
       const reserved = inv.reservedSizes || {};
       // show in-stock sizes first
+      const sizesPrice = inv.sizesPrice || {};
       Object.keys(sizes).sort().forEach(sz=>{
         const total = Number(sizes[sz]||0);
         const resv = Number(reserved[sz]||0);
         const avail = Math.max(0, total - resv);
         const row = document.createElement('div');
-        row.innerHTML = `<strong>${sz}</strong>: ${avail}`;
+        row.innerHTML = `<strong>${sz}</strong>: ${avail}${sizesPrice[sz] ? ` • ₱${sizesPrice[sz]}` : ''}`;
         list.appendChild(row);
       });
       container.appendChild(list);
@@ -455,14 +610,38 @@
     }
 
     // wire dropdown change to show availability
-    document.getElementById('fabricGarment').addEventListener('change', (e)=>{
-      const val = e.target.value;
-      showVariantAvailability(val);
-    });
+    function updateFabricBadge(option){
+      const badge = document.getElementById('fabricStatusBadge');
+      if(!badge) return;
+      if(!option){ badge.classList.add('hidden'); return; }
+      const avail = Number(option.dataset.available||0);
+      if(option.dataset.oos === '1' || avail === 0){ badge.textContent = 'Out of stock'; badge.classList.remove('hidden'); badge.classList.remove('bg-green-100'); badge.classList.add('bg-red-50','text-red-700'); }
+      else { badge.textContent = `${avail} in stock`; badge.classList.remove('hidden'); badge.classList.remove('bg-red-50','text-red-700'); badge.classList.add('bg-green-50','text-green-700'); }
+    }
+    const fabricEl = document.getElementById('fabricGarment');
+    if(fabricEl){
+      fabricEl.addEventListener('change', (e)=>{ const val = e.target.value; const opt = e.target.selectedOptions && e.target.selectedOptions[0]; updateFabricBadge(opt); showVariantAvailability(val); });
+    }
 
     // load variants on page load
     loadAvailableVariants();
     });
+    
   </script>
+  <!-- Sizes Modal -->
+  <div id="sizesModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg max-w-md w-full mx-4 shadow-lg overflow-hidden">
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <div class="text-sm font-semibold">Available Sizes</div>
+        <button id="sizesModalClose" class="text-gray-500 hover:text-gray-700">✕</button>
+      </div>
+      <div class="p-4">
+        <div class="sizes-list space-y-2 text-sm text-gray-800"></div>
+      </div>
+      <div class="px-4 py-3 border-t text-right">
+        <button id="sizesModalCancel" class="px-3 py-2 rounded border text-sm">Close</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

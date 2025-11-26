@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Size Guide — Fundamental Apparel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #fff; color: #000; }
+    .rule { border-top: 1px solid #e5e7eb; }
+    table td, table th { border-color: #e5e7eb; }
+    .unit-toggle button.active { background: #111827; color: white; }
+  </style>
+</head>
+<body class="bg-white text-black">
+  <!-- Header copied from index for consistency -->
+  <header class="bg-white border-b border-gray-100 sticky top-0 z-50">
+    <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="index.html" class="flex items-center gap-3 group">
+        <img src="images/logo.png" alt="Fundamental Logo" class="w-10 h-10 object-contain group-hover:opacity-80 transition">
+        <span class="text-xl font-extrabold text-gray-900 tracking-tight group-hover:text-indigo-600 transition">Fundamental</span>
+      </a>
+
+      <div class="hidden md:flex space-x-8 items-center font-medium text-sm">
+        <a href="index.html" class="text-gray-600 hover:text-indigo-600 transition">Home</a>
+        <a href="products.html" class="text-gray-600 hover:text-indigo-600 transition">Products</a>
+        <a href="services.html" class="text-gray-600 hover:text-indigo-600 transition">Services</a>
+        <a href="about-us.html" class="text-gray-600 hover:text-indigo-600 transition">About</a>
+        <a href="faqs.html" class="text-gray-600 hover:text-indigo-600 transition">FAQs</a>
+        <a href="size-guide.html" class="text-indigo-600 font-semibold">Size Guide</a>
+      </div>
+
+      <div class="hidden md:flex items-center space-x-6">
+        <button class="text-gray-400 hover:text-indigo-600 transition"><i class="fas fa-search text-lg"></i></button>
+        <a href="cart.html" class="text-gray-400 hover:text-indigo-600 relative transition">
+          <i class="fas fa-shopping-bag text-lg"></i>
+          <span id="cart-count" class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+        </a>
+        <div id="auth-links-logged-out" class="flex items-center space-x-3 pl-4 border-l border-gray-200">
+          <a href="login.html" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">Log In</a>
+          <a href="register.html" class="text-sm font-bold bg-gray-900 text-white px-5 py-2.5 rounded-lg hover:bg-black transition shadow-sm transform hover:scale-105 duration-200">Sign Up</a>
+        </div>
+      </div>
+
+      <div class="md:hidden">
+        <button id="menu-btn" class="text-gray-800 focus:outline-none p-2">
+          <i class="fas fa-bars text-xl"></i>
+        </button>
+      </div>
+    </nav>
+
+    <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 absolute w-full left-0 top-full shadow-lg z-40">
+      <div class="flex flex-col p-4 space-y-3">
+        <a href="index.html" class="text-indigo-600 font-semibold block py-2">Home</a>
+        <a href="products.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">Products</a>
+        <a href="services.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">Services</a>
+        <a href="about-us.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">About Us</a>
+        <a href="faqs.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">FAQs</a>
+        <a href="size-guide.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">Size Guide</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-6 py-12">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-8">
+        <h1 class="text-3xl md:text-4xl font-extrabold">Size Guide</h1>
+        <p class="text-gray-600 mt-2">Use this guide to choose the best fit. Sizes and measurements are approximate and may vary by product.</p>
+      </div>
+
+      <div class="flex justify-end mb-4">
+        <div class="unit-toggle inline-flex bg-gray-100 rounded-md p-1">
+          <button id="unit-cm" class="px-3 py-1 text-sm font-medium">cm</button>
+          <button id="unit-in" class="px-3 py-1 text-sm font-medium">in</button>
+        </div>
+      </div>
+
+      <section class="mb-12">
+        <h2 class="text-2xl font-semibold mb-3">Men's Size Chart</h2>
+        <p class="text-gray-600 text-sm mb-4">Common sizing for tops and bottoms. Measure garments or your body as shown on product pages.</p>
+
+        <div class="overflow-x-auto border rounded-lg">
+          <table class="min-w-full table-auto text-sm border-collapse">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left">Measurement</th>
+                <th class="px-4 py-3 text-center">XS</th>
+                <th class="px-4 py-3 text-center">S</th>
+                <th class="px-4 py-3 text-center">M</th>
+                <th class="px-4 py-3 text-center">L</th>
+                <th class="px-4 py-3 text-center">XL</th>
+                <th class="px-4 py-3 text-center">XXL</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white">
+              <tr>
+                <td class="px-4 py-3 font-medium">Chest</td>
+                <td class="px-4 py-3 text-center" data-cm="86-91" data-in="34-36">86-91 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="91-97" data-in="36-38">91-97 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="97-102" data-in="38-40">97-102 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="102-107" data-in="40-42">102-107 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="107-112" data-in="42-44">107-112 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="112-117" data-in="44-46">112-117 cm</td>
+              </tr>
+              <tr class="border-t">
+                <td class="px-4 py-3 font-medium">Waist</td>
+                <td class="px-4 py-3 text-center" data-cm="71-76" data-in="28-30">71-76 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="76-81" data-in="30-32">76-81 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="81-86" data-in="32-34">81-86 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="86-91" data-in="34-36">86-91 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="91-97" data-in="36-38">91-97 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="97-102" data-in="38-40">97-102 cm</td>
+              </tr>
+              <tr class="border-t">
+                <td class="px-4 py-3 font-medium">Hips</td>
+                <td class="px-4 py-3 text-center" data-cm="86-91" data-in="34-36">86-91 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="91-97" data-in="36-38">91-97 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="97-102" data-in="38-40">97-102 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="102-107" data-in="40-42">102-107 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="107-112" data-in="42-44">107-112 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="112-117" data-in="44-46">112-117 cm</td>
+              </tr>
+              <tr class="border-t">
+                <td class="px-4 py-3 font-medium">Inseam (regular)</td>
+                <td class="px-4 py-3 text-center" data-cm="76" data-in="30">76 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="76" data-in="30">76 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="79" data-in="31">79 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="81" data-in="32">81 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="81" data-in="32">81 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="81" data-in="32">81 cm</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="mb-12">
+        <h2 class="text-2xl font-semibold mb-3">Women's Size Chart</h2>
+        <p class="text-gray-600 text-sm mb-4">Typical women's measurements. Sizes vary by style (fitted vs relaxed). Measure at the fullest points.</p>
+
+        <div class="overflow-x-auto border rounded-lg">
+          <table class="min-w-full table-auto text-sm border-collapse">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left">Measurement</th>
+                <th class="px-4 py-3 text-center">XS</th>
+                <th class="px-4 py-3 text-center">S</th>
+                <th class="px-4 py-3 text-center">M</th>
+                <th class="px-4 py-3 text-center">L</th>
+                <th class="px-4 py-3 text-center">XL</th>
+                <th class="px-4 py-3 text-center">XXL</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white">
+              <tr>
+                <td class="px-4 py-3 font-medium">Bust</td>
+                <td class="px-4 py-3 text-center" data-cm="79-84" data-in="31-33">79-84 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="84-89" data-in="33-35">84-89 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="89-94" data-in="35-37">89-94 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="94-99" data-in="37-39">94-99 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="99-104" data-in="39-41">99-104 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="104-109" data-in="41-43">104-109 cm</td>
+              </tr>
+              <tr class="border-t">
+                <td class="px-4 py-3 font-medium">Waist</td>
+                <td class="px-4 py-3 text-center" data-cm="61-66" data-in="24-26">61-66 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="66-71" data-in="26-28">66-71 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="71-76" data-in="28-30">71-76 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="76-81" data-in="30-32">76-81 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="81-86" data-in="32-34">81-86 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="86-91" data-in="34-36">86-91 cm</td>
+              </tr>
+              <tr class="border-t">
+                <td class="px-4 py-3 font-medium">Hips</td>
+                <td class="px-4 py-3 text-center" data-cm="86-91" data-in="34-36">86-91 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="91-97" data-in="36-38">91-97 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="97-102" data-in="38-40">97-102 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="102-107" data-in="40-42">102-107 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="107-112" data-in="42-44">107-112 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="112-117" data-in="44-46">112-117 cm</td>
+              </tr>
+              <tr class="border-t">
+                <td class="px-4 py-3 font-medium">Inseam (regular)</td>
+                <td class="px-4 py-3 text-center" data-cm="74" data-in="29">74 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="74" data-in="29">74 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="76" data-in="30">76 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="78" data-in="30.5">78 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="80" data-in="31.5">80 cm</td>
+                <td class="px-4 py-3 text-center" data-cm="80" data-in="31.5">80 cm</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="mb-12">
+        <h3 class="text-lg font-semibold mb-2">How to measure</h3>
+        <ul class="list-disc pl-5 text-gray-600 text-sm">
+          <li><strong>Chest / Bust:</strong> Measure around the fullest part of the chest, under the arms.</li>
+          <li><strong>Waist:</strong> Measure around the natural waistline, typically above the belly button.</li>
+          <li><strong>Hips:</strong> Measure around the fullest part of the hips.</li>
+          <li><strong>Inseam:</strong> Measure from crotch to ankle along the inner leg.</li>
+        </ul>
+        <p class="text-xs text-gray-500 mt-3">Note: These ranges are typical approximations derived from common e‑commerce size tables (ASOS, Uniqlo, general industry standards). Individual product fit may differ — always check the product-specific size chart if available.</p>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    // Unit toggle: switch displayed values between cm and in
+    (function(){
+      const btnCm = document.getElementById('unit-cm');
+      const btnIn = document.getElementById('unit-in');
+      function setUnit(unit){
+        document.querySelectorAll('[data-cm]').forEach(td => {
+          if (unit === 'cm') td.textContent = td.getAttribute('data-cm') + ' cm';
+          else td.textContent = td.getAttribute('data-in') + ' in';
+        });
+        btnCm.classList.toggle('active', unit === 'cm');
+        btnIn.classList.toggle('active', unit === 'in');
+      }
+      btnCm.addEventListener('click', ()=> setUnit('cm'));
+      btnIn.addEventListener('click', ()=> setUnit('in'));
+      // default
+      setUnit('cm');
+
+      // Mobile menu toggle (shared header)
+      const menuBtn = document.getElementById('menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      if (menuBtn && mobileMenu) menuBtn.addEventListener('click', ()=> mobileMenu.classList.toggle('hidden'));
+    })();
+  </script>
+</body>
+</html>
