@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>About Us — Fundamental Apparel</title>
+  <meta name="description" content="Fundamental Apparel — handcrafted sportswear and apparel. Learn our story, meet the team, and see featured products.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>body{font-family:'Inter',sans-serif}</style>
+</head>
+<body class="bg-gray-50">
+
+  <!-- HEADER (copied from index for consistency) -->
+  <header class="bg-white border-b border-gray-100 sticky top-0 z-50">
+      <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+          <a href="index.html" class="flex items-center gap-3 group">
+              <img src="images/logo.png" alt="Fundamental Logo" class="w-10 h-10 object-contain group-hover:opacity-80 transition">
+              <span class="text-xl font-extrabold text-gray-900 tracking-tight group-hover:text-indigo-600 transition">Fundamental</span>
+          </a>
+
+          <div class="hidden md:flex space-x-8 items-center font-medium text-sm">
+              <a href="index.html" class="text-gray-500 hover:text-indigo-600 transition">Home</a>
+              <a href="products.html" class="text-gray-500 hover:text-indigo-600 transition">Products</a>
+              <a href="services.html" class="text-gray-500 hover:text-indigo-600 transition">Services</a>
+              <a href="about-us.html" class="text-indigo-600 font-semibold">About</a>
+              <a href="#" class="text-gray-500 hover:text-indigo-600 transition">FAQs</a>
+          </div>
+
+          <div class="hidden md:flex items-center space-x-6">
+              <button class="text-gray-400 hover:text-indigo-600 transition"><i class="fas fa-search text-lg"></i></button>
+              <a href="cart.html" class="text-gray-400 hover:text-indigo-600 relative transition">
+                  <i class="fas fa-shopping-bag text-lg"></i>
+                  <span id="cart-count" class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+              </a>
+
+              <div id="auth-links-logged-out" class="flex items-center space-x-3 pl-4 border-l border-gray-200">
+                  <a href="login.html" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">Log In</a>
+                  <a href="register.html" class="text-sm font-bold bg-gray-900 text-white px-5 py-2.5 rounded-lg hover:bg-black transition shadow-sm">Sign Up</a>
+              </div>
+
+              <div id="auth-links-logged-in" class="hidden pl-4 border-l border-gray-200">
+                  <a href="profile.html" id="user-link" class="text-gray-500 hover:text-indigo-600 transition flex items-center gap-2">
+                      <i id="user-icon" class="fas fa-user-circle text-2xl"></i>
+                  </a>
+              </div>
+          </div>
+
+          <div class="md:hidden">
+              <button id="menu-btn" class="text-gray-800 focus:outline-none p-2">
+                  <i class="fas fa-bars text-xl"></i>
+              </button>
+          </div>
+      </nav>
+
+      <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 absolute w-full left-0 top-full shadow-lg z-40">
+          <div class="flex flex-col p-4 space-y-3">
+              <a href="index.html" class="text-indigo-600 font-semibold block py-2">Home</a>
+              <a href="products.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">Products</a>
+              <a href="services.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">Services</a>
+              <a href="about-us.html" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">About Us</a>
+              <a href="#" class="text-gray-600 font-medium block py-2 hover:text-indigo-600 transition">FAQs</a>
+
+              <hr class="border-gray-100">
+
+              <a href="cart.html" class="flex items-center text-gray-600 py-2 hover:text-indigo-600 transition">
+                  <i class="fas fa-shopping-bag mr-3"></i> Cart (<span id="cart-count-mobile">0</span>)
+              </a>
+
+              <div id="mobile-auth-logged-out" class="flex flex-col gap-3 mt-2 pt-2 border-t border-gray-100">
+                  <a href="login.html" class="text-center w-full border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition">Log In</a>
+                  <a href="register.html" class="text-center w-full bg-gray-900 text-white py-2.5 rounded-lg font-bold hover:bg-black transition">Sign Up</a>
+              </div>
+
+              <div id="mobile-auth-logged-in" class="hidden mt-2 pt-2 border-t border-gray-100">
+                  <a href="profile.html" class="flex items-center text-gray-600 font-medium py-2 hover:text-indigo-600 transition">
+                      <i class="fas fa-user-circle mr-3 text-xl"></i> My Profile
+                  </a>
+              </div>
+          </div>
+      </div>
+  </header>
+
+  <!-- HERO / ABOUT INTRO -->
+  <main class="container mx-auto px-6 py-12">
+    <section class="bg-white rounded-lg p-8 shadow-sm">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div class="lg:col-span-1">
+          <h2 class="text-3xl font-extrabold tracking-tight">ABOUT US</h2>
+        </div>
+        <div class="lg:col-span-2 text-gray-600">
+          <p class="mb-4">At Fundamental Apparel, we craft performance-driven sportswear with precision and pride. Our journey began in 2019 with a simple mission — provide teams and athletes with high-quality, customizable jerseys and apparel that reflect identity, passion, and teamwork.</p>
+          <p>We’re a small team focused on craftsmanship, fast turnaround times, and attention to detail. Based in Imus, Cavite, we have grown steadily while keeping the same values that shaped our start-up: pride in workmanship and customer-first service.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-white p-6 rounded-lg shadow-sm text-center">
+        <div class="text-indigo-600 text-4xl mb-3"><i class="fas fa-user"></i></div>
+        <div class="text-sm text-gray-500">Over</div>
+        <div class="text-2xl font-bold text-indigo-600">10,000</div>
+        <div class="text-xs text-gray-500">Selling Products</div>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow-sm text-center">
+        <div class="text-indigo-600 text-4xl mb-3"><i class="fas fa-people-group"></i></div>
+        <div class="text-sm text-gray-500">Trusted by</div>
+        <div class="text-2xl font-bold text-indigo-600">500+</div>
+        <div class="text-xs text-gray-500">Teams & Clubs</div>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow-sm text-center">
+        <div class="text-indigo-600 text-4xl mb-3"><i class="fas fa-clock"></i></div>
+        <div class="text-sm text-gray-500">Average</div>
+        <div class="text-2xl font-bold text-indigo-600">3 days</div>
+        <div class="text-xs text-gray-500">Turnaround Time</div>
+      </div>
+    </section>
+
+    <!-- STORY + IMAGE -->
+    <section class="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div class="lg:col-span-1">
+        <h3 class="text-xl font-semibold">OUR STORY</h3>
+      </div>
+      <div class="lg:col-span-2 text-gray-600">
+        <p class="mb-4">At Fundamental Apparel, we believe that every athlete—whether amateur or pro—deserves access to quality, customized sportswear that reflects their passion, identity, and team pride. Since our humble beginnings in 2019, we've grown from a small local business into a trusted name in sports customization.</p>
+        <div class="mt-6">
+          <img src="images/hero-about.jpg" alt="Showcase" class="w-full rounded shadow-md object-cover h-56">
+        </div>
+      </div>
+    </section>
+
+    <!-- PRODUCT SHOWCASE -->
+    <section class="mt-12">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-2xl font-semibold">Designed for Athletes, Built for Champions</h3>
+        <a href="products.html" class="text-sm text-indigo-600 hover:underline">See all products</a>
+      </div>
+
+      <div id="showcase-products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6"></div>
+
+    </section>
+
+    <section class="mt-12 text-gray-600">
+      <p>Here's one of our proudly crafted jersey designs — made with precision, style, and the athlete's comfort in mind. From the first sketch to the final stitch, every product is tailored to empower movement, identity, and pride.</p>
+    </section>
+
+    <footer class="mt-12 py-10 text-sm text-gray-500">
+      <div class="border-t border-gray-100 pt-6">© <span id="year"></span> Fundamental Apparel. All rights reserved.</div>
+    </footer>
+  </main>
+
+  <script>
+    // Menu toggle (reuse site behavior)
+    document.getElementById('menu-btn')?.addEventListener('click', () => {
+      document.getElementById('mobile-menu')?.classList.toggle('hidden');
+    });
+
+    // Fill copyright year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Fetch two products for showcase; fallback to placeholders
+    (async function loadShowcase(){
+      const container = document.getElementById('showcase-products');
+      try {
+        const res = await fetch('https://fundamental-apparel-backend.onrender.com/api/products?limit=2');
+        const json = await res.json();
+        const items = (json && json.success && Array.isArray(json.data) && json.data.length) ? json.data : [];
+        if (!items.length) throw new Error('No products');
+        container.innerHTML = items.map(p => `
+          <a href="product-detail.html?id=${p._id}" class="bg-white p-4 rounded-lg shadow-sm flex gap-4 items-center hover:shadow-md transition">
+            <div class="w-36 h-36 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+              <img src="${p.imageUrl || (p.gallery && p.gallery[0]) || 'images/placeholder.png'}" alt="${p.name}" class="w-full h-full object-cover">
+            </div>
+            <div>
+              <h4 class="font-semibold text-gray-900">${p.name}</h4>
+              <p class="text-gray-600 mt-1 text-sm line-clamp-3">${(p.productDetails || p.description || '').substring(0,150)}</p>
+              <div class="mt-3 text-indigo-600 font-bold">₱${Number(p.price||0).toLocaleString()}</div>
+            </div>
+          </a>
+        `).join('');
+      } catch (err) {
+        // Fallback static showcase
+        container.innerHTML = `
+          <div class="bg-white p-4 rounded-lg shadow-sm">
+            <div class="w-full h-40 bg-gray-100 rounded mb-3"><img src="images/preview1.jpg" class="w-full h-full object-cover" alt="Product 1"></div>
+            <h4 class="font-semibold">Fundamental Jersey</h4>
+            <p class="text-sm text-gray-600">Custom team jersey, breathable, moisture-wicking.</p>
+            <a href="products.html" class="text-indigo-600 mt-2 inline-block">View product</a>
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow-sm">
+            <div class="w-full h-40 bg-gray-100 rounded mb-3"><img src="images/preview2.jpg" class="w-full h-full object-cover" alt="Product 2"></div>
+            <h4 class="font-semibold">Signature Shorts</h4>
+            <p class="text-sm text-gray-600">Lightweight performance shorts for training and matches.</p>
+            <a href="products.html" class="text-indigo-600 mt-2 inline-block">View product</a>
+          </div>
+        `;
+      }
+    })();
+  </script>
+
+</body>
+</html>
