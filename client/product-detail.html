@@ -382,6 +382,12 @@
                             </section>
                         </div>
                     </div>
+
+                    <!-- You May Also Like: related products shown under product details and reviews -->
+                    <div class="mt-12">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4">You May Also Like</h3>
+                        <div id="related-products" class=""></div>
+                    </div>
                 </div>
             `;
 
@@ -591,12 +597,7 @@
                 container.innerHTML = `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">${cards}</div>`;
             }
 
-            // kick off related rendering
-            const relatedPlaceholder = document.createElement('div');
-            relatedPlaceholder.className = 'mt-12';
-            relatedPlaceholder.id = 'related-products';
-            const parent = document.querySelector('.container');
-            if (parent) parent.appendChild(relatedPlaceholder);
+            // kick off related rendering (container exists in-page under tabs)
             renderRelated();
 
             // Review submission is handled via the Profile > Completed Orders flow.
