@@ -1601,7 +1601,7 @@
         const svcLabelMap = {
           'customize-jersey': 'Customize Jersey',
           'layout-creation': 'Layout Creation',
-          'printing-only': 'Printing Only',
+          'printing-only': 'Upload Custom Design',
           'predesign-product': 'Pre-Design Product'
         };
         els.customModalType.textContent = svcLabelMap[svc] || svc;
@@ -1619,7 +1619,7 @@
           serviceBadge.textContent = '🎨 Layout Creation';
           serviceBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-800';
         } else if (serviceType === 'printing-only') {
-          serviceBadge.textContent = '🖨️ Printing Only';
+          serviceBadge.textContent = '🖨️ Upload Custom Design';
           serviceBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800';
         }
 
