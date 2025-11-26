@@ -468,7 +468,11 @@
           const text = await res.text().catch(()=>null);
           throw new Error(`Server responded with ${res.status}: ${text || res.statusText}`);
         }
-        if(!data.success) throw new Error(data.msg || 'Failed to submit order');
+        if(!data.success) {
+          console.error('Server responded with error payload:', data);
+          const errMsg = (data.msg || 'Failed to submit order') + (data.error ? ` — ${data.error}` : '');
+          throw new Error(errMsg);
+        }
         showMessage('Printing order submitted! We will contact you with a quote.', 'success');
         setTimeout(()=> window.location.href = 'profile.html', 900);
       }catch(err){
