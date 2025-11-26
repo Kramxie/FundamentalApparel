@@ -11,7 +11,7 @@ const {
     getProductById,
     updateProduct,
     deleteProduct,
-    addReview 
+    addReview
 } = require('../controllers/productController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -67,7 +67,23 @@ router.route('/:id')
     .delete(protect, authorize('admin','employee'), deleteProduct);
 
 // Reviews
-router.post('/:id/reviews', protect, addReview);
+// Configure a separate upload handler for review images (stored under uploads/reviews)
+const reviewsDir = path.join(__dirname, '..', 'uploads', 'reviews');
+fs.mkdirSync(reviewsDir, { recursive: true });
+const reviewStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, reviewsDir),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const base = path.basename(file.originalname, ext).replace(/\s+/g, '-').toLowerCase();
+        cb(null, `${Date.now()}-${base}${ext}`);
+    }
+});
+const reviewUpload = multer({ storage: reviewStorage, fileFilter, limits: { fileSize: 4 * 1024 * 1024 } });
+
+const reviewRateLimiter = require('../middleware/reviewRateLimiter');
+
+// User review submission (rate limited)
+router.post('/:id/reviews', protect, reviewRateLimiter, reviewUpload.array('reviewImages', 4), addReview);
 
 module.exports = router;
 

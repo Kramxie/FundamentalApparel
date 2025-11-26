@@ -24,6 +24,7 @@ const messageRoutes = require('./routes/messageRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 const returnRoutes = require('./routes/returnRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const notifyUtil = require('./utils/notify');
@@ -121,6 +122,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/admin/inventory', inventoryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/admin/reports', reportRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/admin/notifications', notificationRoutes);
 

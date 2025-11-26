@@ -271,7 +271,8 @@
                    </div>` 
                 : `<div class="flex items-center gap-2 mb-6 text-gray-400 text-sm"><i class="far fa-star"></i> No reviews yet</div>`;
 
-            const reviewsHtml = (product.reviews && product.reviews.length > 0) ? product.reviews.map(r => `
+            const visibleReviews = (product.reviews || []).filter(r => r.moderationStatus !== 'rejected');
+            const reviewsHtml = (visibleReviews && visibleReviews.length > 0) ? visibleReviews.map(r => `
                 <div class="bg-gray-50 p-6 rounded-xl mb-4">
                     <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center gap-3">
@@ -287,7 +288,12 @@
                             ${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}
                         </div>
                     </div>
-                    ${r.comment ? `<p class="text-gray-600 text-sm leading-relaxed ml-13">${r.comment}</p>` : ''}
+                                        ${r.comment ? `<p class="text-gray-600 text-sm leading-relaxed ml-13">${r.comment}</p>` : ''}
+                                        ${(r.images && r.images.length) ? `
+                                            <div class="ml-13 mt-3 flex gap-3 flex-wrap">
+                                                ${r.images.map(img => `<a href="${img}" target="_blank" class="block w-20 h-20 overflow-hidden rounded-md border"><img src="${img}" class="w-full h-full object-cover"></a>`).join('')}
+                                            </div>
+                                        ` : ''}
                 </div>
             `).join('') : '<div class="text-center py-10 text-gray-500 bg-gray-50 rounded-xl">No reviews yet. Be the first to review!</div>';
 
@@ -366,9 +372,13 @@
                                 ${product.productDetails || product.description || 'No additional details available for this product.'}
                             </section>
                             <section id="tab-reviews" class="hidden">
-                                <div class="space-y-4">
-                                    ${reviewsHtml}
-                                </div>
+                                        <div class="space-y-4">
+                                            ${reviewsHtml}
+                                        </div>
+
+                                        <div class="mt-8 text-sm text-gray-600">
+                                            Reviews can be submitted from your profile's Completed Orders page once your purchase is marked as Delivered. Click your profile → Completed Orders → Write a review for the delivered item.
+                                        </div>
                             </section>
                         </div>
                     </div>
@@ -551,6 +561,45 @@
                     document.getElementById('tab-reviews').classList.toggle('hidden', key !== 'reviews');
                 });
             });
+
+            // --- Related products (You May Also Like) ---
+            async function fetchRelated(cat, excludeId) {
+                try {
+                    const res = await fetch(`${API}/api/products?category=${encodeURIComponent(cat)}&exclude=${excludeId}&type=regular&limit=6`);
+                    if (!res.ok) return [];
+                    const json = await res.json();
+                    return json && json.success ? json.data : [];
+                } catch (e) { return []; }
+            }
+
+            async function renderRelated() {
+                const container = document.getElementById('related-products');
+                if (!container) return;
+                container.innerHTML = `<div class="text-center py-8">Loading recommendations...</div>`;
+                const items = await fetchRelated(product.category || '', product._id);
+                if (!items || items.length === 0) {
+                    container.innerHTML = `<div class="text-center py-8 text-gray-500">No related products found.</div>`;
+                    return;
+                }
+                const cards = items.slice(0,6).map(p => `
+                    <a href="product-detail.html?id=${p._id}" class="block bg-white p-3 rounded-lg border hover:shadow-md transition">
+                        <div class="w-full h-36 mb-2 overflow-hidden rounded-md"><img src="${p.imageUrl || (p.gallery&&p.gallery[0]) || ''}" class="w-full h-full object-cover"></div>
+                        <div class="text-sm font-medium text-gray-900 truncate">${p.name}</div>
+                        <div class="text-sm text-gray-500">₱${Number(p.price||0).toLocaleString()}</div>
+                    </a>
+                `).join('');
+                container.innerHTML = `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">${cards}</div>`;
+            }
+
+            // kick off related rendering
+            const relatedPlaceholder = document.createElement('div');
+            relatedPlaceholder.className = 'mt-12';
+            relatedPlaceholder.id = 'related-products';
+            const parent = document.querySelector('.container');
+            if (parent) parent.appendChild(relatedPlaceholder);
+            renderRelated();
+
+            // Review submission is handled via the Profile > Completed Orders flow.
         }
 
         initProduct();

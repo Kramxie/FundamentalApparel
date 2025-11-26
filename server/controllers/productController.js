@@ -3,7 +3,10 @@ const Inventory = require("../models/Inventory");
 const Category = require("../models/Category");
 const mongoose = require('mongoose');
 const path = require("path");
+const fs = require('fs');
 const Order = require('../models/Order');
+let sharp = null;
+try { sharp = require('sharp'); } catch (e) { sharp = null; }
 // @desc    Add a new product
 // @route   POST /api/products/add
 // @access  Private/Admin
@@ -404,18 +407,52 @@ exports.addReview = async (req, res) => {
     if (!hasPurchased) {
       return res.status(403).json({ success: false, msg: 'You can only review products you have received.' });
     }
+    // Handle uploaded review images (if any) - files provided by multer under req.files (array)
+    const uploadedImageUrls = [];
+    try {
+      if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+        for (const f of req.files) {
+          try {
+            // Optionally resize/compress if sharp is available
+            if (sharp) {
+              const tmpPath = f.path + '.tmp';
+              await sharp(f.path)
+                .resize({ width: 1600, withoutEnlargement: true })
+                .jpeg({ quality: 80 })
+                .toFile(tmpPath);
+              // replace original file with resized
+              try { fs.renameSync(tmpPath, f.path); } catch (renameErr) { /* ignore */ }
+            }
+            const url = `${BASE_URL}/uploads/reviews/${path.basename(f.path)}`;
+            uploadedImageUrls.push(url);
+          } catch (imgErr) {
+            console.warn('[Add Review] Failed to process uploaded image:', imgErr && imgErr.message);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Add Review] Error processing review images:', e && e.message);
+    }
+
     // Check existing review by same user
     const existing = product.reviews.find(r => r.user.toString() === req.user._id.toString());
+    // Show reviews immediately: set moderationStatus to 'approved' on create/update
     if (existing) {
       existing.rating = Number(rating);
       existing.comment = comment || existing.comment;
       existing.createdAt = new Date();
+      if (uploadedImageUrls.length) {
+        existing.images = Array.isArray(existing.images) ? existing.images.concat(uploadedImageUrls) : uploadedImageUrls;
+      }
+      existing.moderationStatus = 'approved';
     } else {
       product.reviews.push({
         user: req.user._id,
         userName: req.user.name || req.user.username || 'User',
         rating: Number(rating),
-        comment: comment || ''
+        comment: comment || '',
+        images: uploadedImageUrls,
+        moderationStatus: 'approved'
       });
     }
     product.numReviews = product.reviews.length;
@@ -427,5 +464,7 @@ exports.addReview = async (req, res) => {
     res.status(500).json({ success: false, msg: 'Server Error' });
   }
 };
+
+// (Admin moderation endpoints removed - reviews are shown immediately)
 
 

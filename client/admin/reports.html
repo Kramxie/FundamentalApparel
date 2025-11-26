@@ -1,0 +1,476 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Reports - Fundamental Apparel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style> body { font-family: 'Inter', sans-serif; } </style>
+  <style>
+    /* Chart container constraints to prevent infinite vertical growth */
+    .chart-wrapper {
+      max-height: 520px; /* upper bound for large screens */
+      height: 320px;     /* default visible height */
+      overflow: hidden;  /* hide any overflow by default */
+      position: relative;
+    }
+    .chart-wrapper.scrollable {
+      overflow-y: auto; /* enable vertical scroll if needed */
+    }
+    .chart-wrapper canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+    @media (max-width: 640px) {
+      .chart-wrapper { height: 240px; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="flex h-screen bg-gray-100">
+    <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+      <div class="flex items-center justify-center h-16 bg-white shadow-md">
+        <span class="text-2xl font-bold text-indigo-600">Admin Panel</span>
+      </div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+          </a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
+          </a>
+          <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+          </a>
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
+          </a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
+          </a>
+          <a href="reports.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
+            <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
+          </a>
+          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
+          </a>
+          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
+          </a>
+          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/40 z-40 md:hidden"></div>
+    <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform -translate-x-full transition-transform z-50 md:hidden">
+      <div class="flex items-center justify-between h-16 bg-white shadow-md px-3">
+        <div class="flex items-center"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
+        <button id="mobile-sidebar-close" class="p-2 rounded-md hover:bg-gray-100 text-gray-700"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+          </a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
+          </a>
+          <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+          </a>
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
+          </a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
+          </a>
+          <a href="reports.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
+            <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <div class="flex flex-col flex-1 overflow-hidden">
+      <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
+        <div class="flex items-center">
+          <button id="mobile-menu-btn" class="block md:hidden mr-3 p-2 rounded-md hover:bg-gray-100 z-30" aria-label="Open menu">
+            <i class="fas fa-bars text-gray-700"></i>
+          </button>
+          <h1 class="text-xl font-semibold text-gray-800">Reports & Sales</h1>
+        </div>
+        <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+          <i class="fas fa-sign-out-alt mr-2"></i>Logout
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto">
+        <div class="p-6 space-y-6">
+          <!-- Filters and actions -->
+          <div class="bg-white p-4 rounded shadow mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label class="block text-sm text-gray-600">Start Date</label>
+                <input id="startDate" type="date" class="mt-1 block w-full border rounded p-2" />
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600">End Date</label>
+                <input id="endDate" type="date" class="mt-1 block w-full border rounded p-2" />
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600">Filter</label>
+                <select id="reportType" class="mt-1 block w-full border rounded p-2">
+                  <option value="sales">Sales Summary</option>
+                  <option value="orders">Order Export</option>
+                  <option value="inventory">Inventory</option>
+                  <option value="revenue-by-category">Revenue by Category</option>
+                  <option value="refunds">Refunds & Returns</option>
+                  <option value="sales-by-cohort">Sales by Customer Cohort</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600">Format</label>
+                <select id="format" class="mt-1 block w-full border rounded p-2">
+                  <option value="csv">CSV</option>
+                  <option value="json">JSON</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mt-4 flex gap-2 items-center">
+              <button id="generate" class="px-4 py-2 bg-indigo-600 text-white rounded">Generate Report</button>
+              <button id="preview" class="px-4 py-2 bg-gray-200 rounded">Preview (JSON)</button>
+              <button id="export-csv" class="px-4 py-2 bg-green-600 text-white rounded">Export as CSV</button>
+              <button id="export-pdf" class="px-4 py-2 bg-red-600 text-white rounded">Export as PDF</button>
+              <div id="report-status" class="ml-3 text-sm text-gray-500">&nbsp;</div>
+            </div>
+          </div>
+
+          <!-- Summary Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 border rounded bg-white">
+              <p class="text-sm text-gray-500">Total Sales (Selected)</p>
+              <p id="total-sales-display" class="text-2xl font-bold">₱0</p>
+            </div>
+            <div class="p-4 border rounded bg-white">
+              <p class="text-sm text-gray-500">Total Orders (Selected)</p>
+              <p id="total-orders-display" class="text-2xl font-bold">0</p>
+            </div>
+            <div class="p-4 border rounded bg-white">
+              <p class="text-sm text-gray-500">Top Product (Selected)</p>
+              <p id="top-product-display" class="text-md">—</p>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">Revenue Trend</h2>
+                <div class="flex gap-2">
+                  <button id="btn-7days" class="px-3 py-1 text-xs bg-indigo-600 text-white rounded">7 Days</button>
+                  <button id="btn-30days" class="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded">30 Days</button>
+                </div>
+              </div>
+              <div class="chart-wrapper" id="salesChartWrapper">
+                <canvas id="salesChart"></canvas>
+              </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md">
+              <h2 class="text-lg font-semibold text-gray-800 mb-4">Top Selling Products</h2>
+                <div class="chart-wrapper" id="topProductsChartWrapper">
+                  <canvas id="topProductsChart"></canvas>
+                </div>
+            </div>
+          </div>
+
+            <!-- Orders table -->
+            <div id="orders-section" class="bg-white p-4 rounded shadow">
+              <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-medium">Orders</h2>
+                <div class="text-sm text-gray-500">Showing up to 250 recent orders for selected range</div>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Order ID</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Date</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Customer</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Email</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Status</th>
+                      <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">Total</th>
+                      <th class="px-4 py-2 text-center text-xs font-medium text-gray-500">Paid</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ordersTbody" class="bg-white divide-y divide-gray-200 text-sm"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Preview/output -->
+            <div id="output" class="bg-white p-4 rounded shadow">
+              <h2 class="text-lg font-medium mb-2">Preview</h2>
+              <pre id="previewArea" class="text-sm text-gray-700 overflow-auto max-h-96"></pre>
+            </div>
+        </div>
+      </div>
+    </div>
+
+  <script>
+    // API base: prefer same-origin (works on Render or when served by backend).
+    // If opened via Live Server (port 5500) or static file host, fall back to localhost:5000.
+    const API_BASE = (function(){
+      try {
+        const origin = window.location.origin;
+        const port = window.location.port;
+        const host = window.location.hostname;
+        // If opened from Live Server (port 5500) or explicitly 127.0.0.1 static host, use local backend
+        if (port === '5500' || host === '127.0.0.1') return 'http://localhost:5000';
+        // Otherwise assume page is served from backend (Render or localhost:5000)
+        return origin;
+      } catch (e) {
+        return 'http://localhost:5000';
+      }
+    })();
+
+    // Helper to map report type to endpoint
+    function endpointFor(type) {
+      switch (type) {
+        case 'sales': return 'sales';
+        case 'orders': return 'orders';
+        case 'inventory': return 'inventory';
+        case 'revenue-by-category': return 'revenue-by-category';
+        case 'refunds': return 'refunds';
+        case 'sales-by-cohort': return 'sales-by-cohort';
+        default: return 'sales';
+      }
+    }
+
+    async function buildUrl(type, params = {}) {
+      const endpoint = endpointFor(type);
+      const qs = new URLSearchParams();
+      if (params.startDate) qs.set('startDate', params.startDate);
+      if (params.endDate) qs.set('endDate', params.endDate);
+      if (params.format) qs.set('download', params.format);
+      if (params.extra) Object.entries(params.extra).forEach(([k,v]) => { if (v!=null) qs.set(k,v); });
+      return API_BASE + '/api/admin/reports/' + endpoint + (qs.toString() ? `?${qs.toString()}` : '');
+    }
+
+    // Draw charts using Chart.js
+    let salesChart = null, topProductsChart = null;
+    function drawSalesChart(labels, data) {
+      const ctx = document.getElementById('salesChart').getContext('2d');
+      if (salesChart) salesChart.destroy();
+      salesChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Revenue', data, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true }] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function drawTopProductsChart(labels, data) {
+      const ctx = document.getElementById('topProductsChart').getContext('2d');
+      if (topProductsChart) topProductsChart.destroy();
+      topProductsChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'Units Sold', data, backgroundColor: '#10b981' }] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    async function fetchAndRenderReports(periodDays = 30) {
+      const token = localStorage.getItem('adminToken');
+      if (!token) { window.location.href = 'login.html'; return; }
+
+      // Determine date range
+      const end = new Date();
+      const start = new Date();
+      start.setDate(end.getDate() - (periodDays - 1));
+      const startDate = start.toISOString().slice(0,10);
+      const endDate = end.toISOString().slice(0,10);
+
+      try {
+        // Sales summary (includes salesByDay and topProducts)
+        const salesUrl = await buildUrl('sales', { startDate, endDate });
+        const salesRes = await fetch(salesUrl, { headers: { Authorization: 'Bearer ' + token } });
+        if (!salesRes.ok) throw new Error('Failed to fetch sales');
+        const salesJson = await salesRes.json();
+        const data = salesJson.data || {};
+
+        document.getElementById('total-sales-display').textContent = '₱' + ((data.totalRevenue||0).toLocaleString('en-PH', { minimumFractionDigits: 2 }));
+        document.getElementById('total-orders-display').textContent = (data.totalOrders||0);
+        const topName = (data.topProducts && data.topProducts[0] && (data.topProducts[0].productInfo && data.topProducts[0].productInfo.name)) || (data.topProducts && data.topProducts[0] && data.topProducts[0]._id) || '—';
+        document.getElementById('top-product-display').textContent = topName;
+
+        // Render sales by day
+        const labels = (data.salesByDay || []).map(s => s._id);
+        const values = (data.salesByDay || []).map(s => s.total || 0);
+        // If many labels, allow the chart wrapper to scroll vertically
+        try { document.getElementById('salesChartWrapper').classList.toggle('scrollable', (labels.length > 30)); } catch(e){}
+        drawSalesChart(labels, values);
+
+        // Top products chart
+        const topLabels = (data.topProducts || []).map(p => (p.productInfo && p.productInfo.name) || String(p._id));
+        const topValues = (data.topProducts || []).map(p => p.totalSold || 0);
+        try { document.getElementById('topProductsChartWrapper').classList.toggle('scrollable', (topLabels.length > 12)); } catch(e){}
+        drawTopProductsChart(topLabels, topValues);
+
+      } catch (err) {
+        console.error('Failed to load reports', err);
+        document.getElementById('previewArea').textContent = 'Failed to load reports: ' + err.message;
+      }
+    }
+
+    // Wire buttons and auto-load
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('adminToken'); window.location.href='login.html'; });
+      document.getElementById('generate').addEventListener('click', async () => {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const type = document.getElementById('reportType').value;
+        const format = document.getElementById('format').value;
+        const token = localStorage.getItem('adminToken');
+        if (!token) { alert('Not authenticated'); return; }
+        const url = await buildUrl(type, { startDate, endDate, format });
+        try {
+          const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+          if (!res.ok) throw new Error('Server error: ' + res.status);
+          if (format === 'csv') {
+            const blob = await res.blob();
+            const a = document.createElement('a');
+            const href = window.URL.createObjectURL(blob);
+            a.href = href; a.download = `${type}_report_${Date.now()}.csv`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(href);
+          } else {
+            const json = await res.json(); document.getElementById('previewArea').textContent = JSON.stringify(json, null, 2);
+          }
+        } catch (e) { alert('Failed to generate: ' + e.message); }
+      });
+
+      document.getElementById('preview').addEventListener('click', async () => {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const type = document.getElementById('reportType').value;
+        const token = localStorage.getItem('adminToken');
+        if (!token) { alert('Not authenticated'); return; }
+        const url = await buildUrl(type, { startDate, endDate });
+        try { const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } }); const json = await res.json(); document.getElementById('previewArea').textContent = JSON.stringify(json, null, 2); } catch (e){ alert('Preview failed: '+e.message); }
+      });
+
+      // Auto-load default period (30 days)
+      fetchAndRenderReports(30);
+
+      // Quick period buttons
+      document.getElementById('btn-7days').addEventListener('click', () => fetchAndRenderReports(7));
+      document.getElementById('btn-30days').addEventListener('click', () => fetchAndRenderReports(30));
+
+      // Export CSV / PDF handlers
+      document.getElementById('export-csv').addEventListener('click', async () => {
+        try {
+          const statusEl = document.getElementById('report-status');
+          statusEl.textContent = 'Preparing CSV...';
+          await exportCurrentViewCSV();
+          statusEl.textContent = 'CSV downloaded';
+          setTimeout(()=> statusEl.textContent=' ', 3000);
+        } catch (e) { alert('Export CSV failed: ' + e.message); }
+      });
+
+      document.getElementById('export-pdf').addEventListener('click', async () => {
+        try {
+          const statusEl = document.getElementById('report-status');
+          statusEl.textContent = 'Preparing PDF...';
+          await exportCurrentViewPDF();
+          statusEl.textContent = 'PDF downloaded';
+          setTimeout(()=> statusEl.textContent=' ', 3000);
+        } catch (e) { alert('Export PDF failed: ' + e.message); }
+      });
+    });
+
+    // --- Orders table and export implementations ---
+    let currentOrders = [];
+    async function fetchOrdersForTable(startDate, endDate) {
+      const token = localStorage.getItem('adminToken');
+      if (!token) return [];
+      const url = await buildUrl('orders', { startDate, endDate, extra: { limit: 250 } });
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+      if (!res.ok) throw new Error('Failed to fetch orders for table: ' + res.status);
+      const json = await res.json();
+      const rows = json.data || [];
+      currentOrders = rows;
+      return rows;
+    }
+
+    function renderOrdersTable(rows) {
+      const tbody = document.getElementById('ordersTbody');
+      tbody.innerHTML = '';
+      if (!rows || !rows.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-3 text-sm text-gray-500">No orders found for the selected range.</td></tr>';
+        return;
+      }
+      rows.forEach(o => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-4 py-2">${String(o._id).slice(-8)}</td>
+          <td class="px-4 py-2">${o.createdAt ? new Date(o.createdAt).toLocaleString() : ''}</td>
+          <td class="px-4 py-2">${o.user ? (o.user.name||'') : ''}</td>
+          <td class="px-4 py-2">${o.user ? (o.user.email||'') : ''}</td>
+          <td class="px-4 py-2">${o.status||''}</td>
+          <td class="px-4 py-2 text-right">₱${(o.totalPrice||0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+          <td class="px-4 py-2 text-center">${o.isPaid ? 'Yes' : 'No'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function exportCurrentViewCSV() {
+      // Use currentOrders if available, otherwise fetch for current date range
+      let rows = currentOrders;
+      if (!rows || !rows.length) {
+        const end = new Date();
+        const start = new Date(); start.setDate(end.getDate()-29);
+        rows = await fetchOrdersForTable(start.toISOString().slice(0,10), end.toISOString().slice(0,10));
+      }
+      // Flatten to CSV
+      const columns = ['orderId','date','customer','email','status','totalPrice','isPaid'];
+      const esc = v=>{ if(v===null||v===undefined) return ''; const s=String(v); return (s.includes(',')||s.includes('\n')||s.includes('"')) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+      const body = rows.map(o=> [String(o._id), o.createdAt?new Date(o.createdAt).toISOString():'', o.user?o.user.name:'', o.user?o.user.email:'', o.status||'', o.totalPrice||0, o.isPaid? 'yes':'no' ].map(esc).join(',')).join('\n');
+      const csv = columns.join(',') + '\n' + body;
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `orders_export_${Date.now()}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    async function exportCurrentViewPDF() {
+      // Capture the report area (charts + summary + table)
+      const reportArea = document.querySelector('.p-6.space-y-6'); // main content wrapper
+      if (!reportArea) throw new Error('Report content not found');
+      // Ensure charts are fully rendered
+      await new Promise(r=>setTimeout(r,250));
+      // Use html2canvas to capture
+      const canvas = await html2canvas(reportArea, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('landscape', 'pt', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      // fit image to page while preserving aspect
+      const imgProps = { width: canvas.width, height: canvas.height };
+      const ratio = Math.min(pageWidth / imgProps.width, pageHeight / imgProps.height);
+      const imgWidth = imgProps.width * ratio; const imgHeight = imgProps.height * ratio;
+      pdf.addImage(imgData, 'PNG', (pageWidth - imgWidth)/2, 20, imgWidth, imgHeight);
+      pdf.save(`reports_${Date.now()}.pdf`);
+    }
+  </script>
+</body>
+</html>

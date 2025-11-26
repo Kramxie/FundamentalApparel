@@ -45,6 +45,9 @@
                     <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
                         <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
                     </a>
+                    <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
+                    </a>
                     <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
                         <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
                     </a>
@@ -245,6 +248,31 @@
                     </div>
                 </div>
 
+                <!-- Reports Preview -->
+                <div class="bg-white p-6 rounded-lg shadow-md mt-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">Reports Preview</h2>
+                        <div class="flex items-center gap-2">
+                            <button id="reports-refresh" class="px-3 py-1 text-sm bg-gray-200 rounded">Refresh</button>
+                            <a href="reports.html" class="px-3 py-1 text-sm bg-indigo-600 text-white rounded">Open Reports</a>
+                        </div>
+                    </div>
+                    <div id="reports-preview" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 border rounded">
+                            <p class="text-sm text-gray-500">Total Sales (This Month)</p>
+                            <p id="preview-total-sales" class="text-2xl font-bold">₱0</p>
+                        </div>
+                        <div class="p-4 border rounded">
+                            <p class="text-sm text-gray-500">Total Orders (This Month)</p>
+                            <p id="preview-total-orders" class="text-2xl font-bold">0</p>
+                        </div>
+                        <div class="p-4 border rounded">
+                            <p class="text-sm text-gray-500">Top Product</p>
+                            <p id="preview-top-product" class="text-md">—</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Charts Row -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Revenue Trend Chart -->
@@ -340,8 +368,38 @@
             });
 
             fetchDashboardData();
+            // Auto-load reports preview
+            fetchReportsPreview();
             // Refresh data every 60 seconds
             setInterval(fetchDashboardData, 60000);
+        });
+
+        async function fetchReportsPreview() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) return;
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+            const endOfMonth = now.toISOString().slice(0,10);
+            try {
+                const res = await fetch('/api/admin/reports/sales?startDate=' + startOfMonth + '&endDate=' + endOfMonth, { headers: { Authorization: `Bearer ${token}` } });
+                if (!res.ok) throw new Error('Failed to fetch reports preview');
+                const json = await res.json();
+                if (!json.success) throw new Error('Failed to fetch reports preview');
+                const d = json.data;
+                document.getElementById('preview-total-sales').textContent = '₱' + (d.totalRevenue || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+                document.getElementById('preview-total-orders').textContent = (d.totalOrders || 0);
+                const top = (d.topProducts && d.topProducts[0] && (d.topProducts[0].productInfo && d.topProducts[0].productInfo.name)) || (d.topProducts && d.topProducts[0] && d.topProducts[0]._id) || '—';
+                document.getElementById('preview-top-product').textContent = top;
+            } catch (err) {
+                console.warn('Reports preview error', err);
+            }
+        }
+
+        document.getElementById('reports-refresh')?.addEventListener('click', () => {
+            document.getElementById('preview-total-sales').textContent = 'Loading...';
+            document.getElementById('preview-total-orders').textContent = 'Loading...';
+            document.getElementById('preview-top-product').textContent = 'Loading...';
+            fetchReportsPreview();
         });
 
         async function fetchDashboardData() {
