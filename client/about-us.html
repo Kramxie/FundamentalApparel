@@ -90,8 +90,10 @@
           <h2 class="text-3xl font-extrabold tracking-tight">ABOUT US</h2>
         </div>
         <div class="lg:col-span-2 text-gray-600">
-          <p class="mb-4">At Fundamental Apparel, we craft performance-driven sportswear with precision and pride. Our journey began in 2019 with a simple mission — provide teams and athletes with high-quality, customizable jerseys and apparel that reflect identity, passion, and teamwork.</p>
-          <p>We’re a small team focused on craftsmanship, fast turnaround times, and attention to detail. Based in Imus, Cavite, we have grown steadily while keeping the same values that shaped our start-up: pride in workmanship and customer-first service.</p>
+          <div id="about-body" class="mb-4">
+            <p class="mb-4">At Fundamental Apparel, we craft performance-driven sportswear with precision and pride. Our journey began in 2019 with a simple mission — provide teams and athletes with high-quality, customizable jerseys and apparel that reflect identity, passion, and teamwork.</p>
+            <p>We’re a small team focused on craftsmanship, fast turnaround times, and attention to detail. Based in Imus, Cavite, we have grown steadily while keeping the same values that shaped our start-up: pride in workmanship and customer-first service.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -123,13 +125,14 @@
       <div class="lg:col-span-1">
         <h3 class="text-xl font-semibold">OUR STORY</h3>
       </div>
-      <div class="lg:col-span-2 text-gray-600">
-        <p class="mb-4">At Fundamental Apparel, we believe that every athlete—whether amateur or pro—deserves access to quality, customized sportswear that reflects their passion, identity, and team pride. Since our humble beginnings in 2019, we've grown from a small local business into a trusted name in sports customization.</p>
+        <div class="lg:col-span-2 text-gray-600">
+        <div id="about-story" class="mb-4">
+          <p class="mb-4">At Fundamental Apparel, we believe that every athlete—whether amateur or pro—deserves access to quality, customized sportswear that reflects their passion, identity, and team pride. Since our humble beginnings in 2019, we've grown from a small local business into a trusted name in sports customization.</p>
+        </div>
         <div class="mt-6">
-          <!-- Two image tiles: stacked on mobile, side-by-side on md+; use object-contain so full product images are visible -->
-          <div class="flex flex-col md:flex-row gap-6 items-center md:justify-center">
+          <div id="about-images-container" class="flex flex-col md:flex-row gap-6 items-center md:justify-center">
             <div class="w-full md:w-1/2 flex items-center justify-center bg-gray-100 rounded overflow-hidden shadow-sm">
-              <img src="../images/aboutus/aboutus.png" alt="Our story image 1" class="w-full h-auto max-h-[420px] object-contain">
+              <img id="about-main-image" src="../images/aboutus/aboutus.png" alt="Our story image 1" class="w-full h-auto max-h-[420px] object-contain">
             </div>
           </div>
         </div>
@@ -201,6 +204,36 @@
           </a>
         `;
       }
+    })();
+    // Load About Us content from public content API
+    (async function loadAboutContent(){
+      try{
+        const res = await fetch('/api/content/about-us');
+        const j = await res.json();
+        if (!j.success || !j.data) return;
+        const data = j.data;
+        // If body contains HTML, render it; otherwise, set text
+        const aboutBody = document.getElementById('about-body');
+        if (aboutBody) {
+          // allow HTML from admin (if you plan to use rich editor), but sanitize in production
+          aboutBody.innerHTML = data.body || '';
+        }
+        const aboutMainImage = document.getElementById('about-main-image');
+        const imagesContainer = document.getElementById('about-images-container');
+        if (Array.isArray(data.images) && data.images.length) {
+          // set the first image as main
+          if (aboutMainImage) aboutMainImage.src = data.images[0].url;
+          // render other images
+          if (imagesContainer) {
+            imagesContainer.innerHTML = '';
+            data.images.forEach(img => {
+              const wrapper = document.createElement('div'); wrapper.className = 'w-full md:w-1/3 flex items-center justify-center bg-gray-100 rounded overflow-hidden shadow-sm';
+              wrapper.innerHTML = `<img src="${img.url}" class="w-full h-auto max-h-[420px] object-contain" alt="">`;
+              imagesContainer.appendChild(wrapper);
+            });
+          }
+        }
+      }catch(e){ console.warn('Failed to load about content', e); }
     })();
   </script>
     <div id="site-footer"></div>

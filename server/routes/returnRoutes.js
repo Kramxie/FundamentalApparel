@@ -11,6 +11,7 @@ const {
   rejectReturn,
   refundReturn
 } = require('../controllers/returnController');
+const { listMyReturns } = require('../controllers/returnController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -41,6 +42,8 @@ const upload = multer({ storage, fileFilter, limits: { fileSize: 50 * 1024 * 102
 router.use(protect);
 
 // Admin endpoints
+// User endpoint: list current user's returns
+router.get('/my', listMyReturns);
 router.get('/', authorize('admin','employee'), listReturns);
 router.get('/:id', authorize('admin','employee'), getReturn);
 router.put('/:id/approve', authorize('admin','employee'), approveReturn);

@@ -124,7 +124,7 @@
                 <a href="products.html" class="text-gray-500 hover:text-indigo-600 transition">Products</a>
                 <a href="services.html" class="text-gray-500 hover:text-indigo-600 transition">Services</a>
                 <a href="about-us.html" class="text-gray-500 hover:text-indigo-600 transition">About Us</a>
-                <a href="#" class="text-gray-500 hover:text-indigo-600 transition">FAQs</a>
+                <a href="faqs.html" class="text-gray-500 hover:text-indigo-600 transition">FAQs</a>
             </div>
 
             <div class="hidden md:flex items-center space-x-6">
@@ -191,6 +191,8 @@
                             </div>
                         </div>
 
+                        <!-- privacy-content moved to main tab area so it appears on the right side when selected -->
+
                         <nav id="sidebar-nav" class="mt-4 space-y-1">
                             <button id="sidebar-parent-account" data-tab-parent="account"
                                 class="sidebar-parent-link sidebar-active w-full">
@@ -199,6 +201,7 @@
                             <div class="sidebar-submenu">
                                 <button data-tab="profile" class="sidebar-link sidebar-active w-full">Profile</button>
                                 <button data-tab="addresses" class="sidebar-link w-full">Addresses</button>
+                                <button data-tab="privacy" class="sidebar-link w-full">Privacy Settings</button>
                             </div>
 
                             <button data-tab="purchases" class="sidebar-parent-link w-full">
@@ -309,6 +312,18 @@
                             </form>
                         </div>
 
+                        <div id="privacy-content" class="hidden bg-white p-6 md:p-8 rounded-lg shadow-md">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-3">Privacy Settings</h2>
+                            <p class="text-gray-600 mb-4">Manage your privacy settings and account controls.</p>
+                            <div class="border rounded p-4 bg-red-50">
+                                <h3 class="font-semibold text-red-700">Request Account Deletion</h3>
+                                <p class="text-sm text-red-600 mt-2">This will permanently close your account, delete order history, and remove vouchers. This action cannot be undone.</p>
+                                <div class="mt-4">
+                                    <button id="request-delete-btn" class="bg-red-600 text-white px-4 py-2 rounded">Request Account Deletion</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="purchases-content" class="hidden">
                             <div class="bg-white rounded-lg shadow-md">
                                 <nav id="purchases-tabs" class="flex items-center border-b overflow-x-auto">
@@ -327,6 +342,8 @@
                                         class="purchase-tab flex-shrink-0 px-4 py-3 text-center text-gray-600 border-b-2 border-transparent">Completed</button>
                                     <button data-tab-filter="Cancelled"
                                         class="purchase-tab flex-shrink-0 px-4 py-3 text-center text-gray-600 border-b-2 border-transparent">Cancelled</button>
+                                    <button data-tab-filter="Returns"
+                                        class="purchase-tab flex-shrink-0 px-4 py-3 text-center text-gray-600 border-b-2 border-transparent">Returns</button>
                                 </nav>
                                 <div id="purchases-list" class="space-y-4 p-4"></div>
                             </div>
@@ -363,6 +380,25 @@
             </div>
             <div class="p-4 bg-gray-50 flex justify-end gap-3">
                 <button id="cancel-modal-confirm" class="bg-indigo-600 text-white px-4 py-2 rounded">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Deletion Modal -->
+    <div id="delete-account-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-lg font-semibold text-red-700">Confirm Account Deletion</h3>
+                <button id="delete-modal-close" class="text-gray-500">&times;</button>
+            </div>
+            <div class="p-4 space-y-3">
+                <p class="text-sm text-gray-700">This will permanently close your account, delete order history, and remove vouchers. This action cannot be undone.</p>
+                <p class="text-sm text-gray-600">If you have active orders, please complete or cancel them before deleting your account. Contact support for assistance.</p>
+                <div id="delete-error" class="text-sm text-red-600 hidden"></div>
+            </div>
+            <div class="p-4 bg-gray-50 flex justify-end gap-3">
+                <button id="delete-cancel" class="px-4 py-2 rounded bg-gray-200">Cancel</button>
+                <button id="delete-confirm" class="px-4 py-2 rounded bg-red-600 text-white">Delete My Account</button>
             </div>
         </div>
     </div>
@@ -747,8 +783,16 @@
 
             // --- Purchases Logic ---
             async function fetchPurchases(tabFilter = 'All') {
-                purchasesList.innerHTML = '<p class="text-gray-500 text-center py-8">Loading orders...</p>';
+                purchasesList.innerHTML = '<p class="text-gray-500 text-center py-8">Loading...</p>';
                 try {
+                    if (tabFilter === 'Returns') {
+                        // Fetch current user's return/refund requests
+                        const json = await apiRequest('/api/returns/my');
+                        if (!json.success) throw new Error(json.msg || 'Could not load returns');
+                        renderReturns(json.data || []);
+                        return;
+                    }
+
                     const json = await apiRequest(`/api/orders/myorders?tab=${encodeURIComponent(tabFilter)}`);
                     if (!json.success) throw new Error(json.msg || 'Could not load purchases');
                     // Annotate orders with whether user already left a review for any product in the order
@@ -759,6 +803,37 @@
                 } catch (err) {
                     purchasesList.innerHTML = `<p class="text-red-500 text-center py-8">${err.message}</p>`;
                 }
+            }
+
+            function renderReturns(refunds) {
+                if (!Array.isArray(refunds) || refunds.length === 0) {
+                    purchasesList.innerHTML = `<p class="text-gray-500 text-center py-10">You have no return or refund requests.</p>`;
+                    return;
+                }
+                purchasesList.innerHTML = refunds.map(r => {
+                    const orderId = r.order ? (r.order._id ? r.order._id : r.order) : 'N/A';
+                    const status = r.status || 'Pending';
+                    const created = r.createdAt ? new Date(r.createdAt).toLocaleString() : '';
+                    const amount = typeof r.amount === 'number' ? `₱${r.amount.toLocaleString()}` : (r.amount || 'N/A');
+                    const adminNotes = r.adminNotes ? `<p class="text-sm text-gray-600"><strong>Admin notes:</strong> ${r.adminNotes}</p>` : '';
+                    return `
+                    <div class="bg-white rounded-lg shadow-sm border p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <div>
+                                <div class="text-sm text-gray-600">Refund ID: <span class="font-mono">${r._id.slice(0,10)}...</span></div>
+                                <div class="text-sm text-gray-600">Order: <a class="text-indigo-600" href="order-confirmation.html?id=${orderId}">${orderId.slice ? orderId.slice(0,10)+'...' : orderId}</a></div>
+                            </div>
+                            <div class="text-sm font-semibold ${status === 'Approved' ? 'text-green-600' : status === 'Rejected' ? 'text-red-600' : status === 'Refunded' ? 'text-green-700' : 'text-yellow-600'}">${status}</div>
+                        </div>
+                        <div class="mb-2 text-sm text-gray-700">Requested: ${created} • Amount: <span class="font-semibold text-indigo-700">${amount}</span></div>
+                        <div class="text-sm text-gray-700">Reason: ${r.reason || '—'}</div>
+                        ${r.details ? `<div class="text-sm text-gray-600 mt-2">${r.details}</div>` : ''}
+                        ${adminNotes}
+                        <div class="mt-3 text-right">
+                            <a href="order-confirmation.html?id=${orderId}" class="px-4 py-2 border rounded text-sm">View Order</a>
+                        </div>
+                    </div>`;
+                }).join('');
             }
 
             // For each order, check products for a review by current user. Attach first found review to order.userReview
@@ -1396,6 +1471,47 @@
             logoutBtn.addEventListener('click', () => {
                 localStorage.removeItem('token');
                 window.location.href = 'index.html';
+            });
+
+            // --- Privacy / Delete Account Button ---
+            const requestDeleteBtn = document.getElementById('request-delete-btn');
+            if (requestDeleteBtn) requestDeleteBtn.addEventListener('click', () => {
+                const modal = document.getElementById('delete-account-modal');
+                if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+            });
+
+            const deleteCancel = document.getElementById('delete-cancel');
+            const deleteClose = document.getElementById('delete-modal-close');
+            const deleteConfirm = document.getElementById('delete-confirm');
+            const deleteError = document.getElementById('delete-error');
+            if (deleteCancel) deleteCancel.addEventListener('click', () => {
+                const m = document.getElementById('delete-account-modal'); if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+            });
+            if (deleteClose) deleteClose.addEventListener('click', () => {
+                const m = document.getElementById('delete-account-modal'); if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+            });
+
+            if (deleteConfirm) deleteConfirm.addEventListener('click', async () => {
+                if (deleteError) { deleteError.classList.add('hidden'); deleteError.textContent = ''; }
+                deleteConfirm.disabled = true; deleteConfirm.textContent = 'Deleting...';
+                try {
+                    const res = await fetch(`${API}/api/auth/delete`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+                    const j = await res.json();
+                    if (!res.ok) {
+                        if (deleteError) { deleteError.textContent = j.msg || 'Failed to delete account'; deleteError.classList.remove('hidden'); }
+                        deleteConfirm.disabled = false; deleteConfirm.textContent = 'Delete My Account';
+                        return;
+                    }
+                    // Successful deletion: clear token and redirect to home
+                    localStorage.removeItem('token');
+                    alert('Your account has been deleted. Redirecting to home.');
+                    window.location.href = 'index.html';
+                } catch (e) {
+                    if (deleteError) { deleteError.textContent = 'Error deleting account. Try again later.'; deleteError.classList.remove('hidden'); }
+                    console.error('Delete account error', e);
+                } finally {
+                    deleteConfirm.disabled = false; deleteConfirm.textContent = 'Delete My Account';
+                }
             });
 
             // --- Initial Load ---

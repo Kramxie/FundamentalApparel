@@ -20,6 +20,8 @@ const {
     setDefaultAddress,
     forgotPassword,
     resetPassword
+    ,
+    deleteAccount
 } = require('../controllers/authController');
 
 const { protect } = require('../middleware/authMiddleware');
@@ -90,5 +92,8 @@ router.put('/updateavatar', protect, upload.single('avatar'), updateAvatar);
 router.post('/address', protect, addShippingAddress);
 router.delete('/address/:addressId', protect, deleteShippingAddress);
 router.put('/address/:addressId/setdefault', protect, setDefaultAddress);
+
+// Delete account (user-initiated)
+router.delete('/delete', protect, deleteAccount);
 
 module.exports = router;

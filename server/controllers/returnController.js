@@ -91,6 +91,19 @@ exports.listReturns = async (req, res) => {
   }
 };
 
+// User: list current user's return requests
+exports.listMyReturns = async (req, res) => {
+  try {
+    const userId = req.user && req.user._id;
+    if (!userId) return res.status(401).json({ success: false, msg: 'Unauthorized' });
+    const items = await RefundRequest.find({ user: userId }).populate('order').sort({ createdAt: -1 });
+    return res.json({ success: true, data: items });
+  } catch (error) {
+    console.error('[Returns] listMyReturns error:', error);
+    return res.status(500).json({ success: false, msg: 'Failed to list your return requests' });
+  }
+};
+
 // Get single return request
 exports.getReturn = async (req, res) => {
   try {

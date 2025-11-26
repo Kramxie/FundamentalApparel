@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Settings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style> body { font-family: 'Inter', sans-serif; } .thumb { width: 96px; height: 96px; object-fit: cover; }</style>
+</head>
+<body class="bg-gray-100">
+  <div class="flex min-h-screen bg-gray-100">
+    <div id="admin-sidebar" class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+      <div class="flex items-center justify-center h-16 bg-white shadow-md"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span></a>
+          <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span></a>
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span></a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span></a>
+          <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span></a>
+          <a href="settings.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
+        </nav>
+      </div>
+    </div>
+
+    <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform -translate-x-full transition-transform z-50 md:hidden">
+      <div class="flex items-center justify-between h-16 bg-white shadow-md px-3">
+        <div class="flex items-center"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
+        <button id="mobile-sidebar-close" class="p-2 rounded-md hover:bg-gray-100 text-gray-700"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="settings.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
+        </nav>
+      </div>
+    </div>
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <header class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
+        <div class="flex items-center gap-3">
+          <button id="sidebar-toggle" class="md:hidden p-2 rounded bg-gray-100"><i class="fas fa-bars"></i></button>
+          <h1 class="text-lg font-semibold">Settings</h1>
+        </div>
+        <div class="flex items-center gap-4">
+          <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"><i class="fas fa-sign-out-alt mr-2"></i>Logout</button>
+        </div>
+      </header>
+
+      <main class="p-6 bg-gray-50 min-h-screen">
+        <div class="max-w-5xl mx-auto space-y-6">
+          <div class="bg-white p-6 rounded shadow">
+            <h2 class="text-lg font-semibold mb-3">About Us</h2>
+            <div id="about-message" class="hidden p-3 rounded mb-3"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Title</label>
+                <input id="about-title" class="w-full border p-2 rounded mb-3" />
+                <label class="block text-sm font-medium text-gray-700">Content</label>
+                <textarea id="about-body" class="w-full border p-3 rounded h-40 mb-3"></textarea>
+                <label class="block text-sm font-medium text-gray-700">Images</label>
+                <div id="about-images" class="flex gap-3 items-center mb-3"></div>
+                <input id="about-images-input" type="file" accept="image/*" multiple class="mb-3" />
+                <div class="flex gap-3">
+                  <button id="about-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
+                  <button id="about-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+                  <button id="about-replace" class="px-4 py-2 bg-gray-200 rounded">Replace Images on Save</button>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Live Preview (customer About Us)</label>
+                <iframe id="about-preview" src="/about-us.html" class="w-full h-80 border rounded" sandbox="allow-scripts allow-same-origin"></iframe>
+                <p class="text-xs text-gray-500 mt-2">Preview pulls the customer About Us page. It refreshes after saving.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white p-6 rounded shadow">
+            <h2 class="text-lg font-semibold mb-3">Contact</h2>
+            <div id="contact-message" class="hidden p-3 rounded mb-3"></div>
+            <label class="block text-sm font-medium text-gray-700">Title</label>
+            <input id="contact-title" class="w-full border p-2 rounded mb-3" />
+            <label class="block text-sm font-medium text-gray-700">Content</label>
+            <textarea id="contact-body" class="w-full border p-3 rounded h-40 mb-3"></textarea>
+            <label class="block text-sm font-medium text-gray-700">Images</label>
+            <div id="contact-images" class="flex gap-3 items-center mb-3"></div>
+            <input id="contact-images-input" type="file" accept="image/*" multiple class="mb-3" />
+            <div class="flex gap-3">
+              <button id="contact-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save Contact</button>
+              <button id="contact-replace" class="px-4 py-2 bg-gray-200 rounded">Replace Images on Save</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const API = ''; // relative to same origin
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+      function showMsg(el, msg, ok=true){ el.className = `p-3 rounded mb-3 ${ok? 'bg-green-100 text-green-800':'bg-red-100 text-red-800'}`; el.textContent = msg; el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'),3500); }
+
+      async function loadContent(key, setters){
+        try{
+          const res = await fetch(`${API}/api/admin/content/${encodeURIComponent(key)}`, { headers });
+          const j = await res.json();
+          if (!j.success) throw new Error(j.msg || 'Failed');
+          const data = j.data || {};
+          setters.title.value = data.title || '';
+          setters.body.value = data.body || '';
+          const imagesDiv = setters.imagesDiv;
+          imagesDiv.innerHTML = '';
+          (data.images||[]).forEach(img => {
+            const imgEl = document.createElement('div'); imgEl.className='flex flex-col items-center';
+            imgEl.innerHTML = `<img src="${img.url}" class="thumb rounded border" /><div class="text-xs mt-1">${img.filename||''}</div>`;
+            imagesDiv.appendChild(imgEl);
+          });
+        }catch(e){ console.error('loadContent',e); }
+      }
+
+      async function saveContent(key, titleEl, bodyEl, filesInput, replaceImagesFlag, msgEl){
+        try{
+          const fd = new FormData();
+          fd.append('title', titleEl.value||'');
+          fd.append('body', bodyEl.value||'');
+          if (replaceImagesFlag) fd.append('replaceImages','true');
+          const files = filesInput.files || [];
+          for (let i=0;i<files.length;i++) fd.append('images', files[i]);
+          const res = await fetch(`${API}/api/admin/content/${encodeURIComponent(key)}`, { method: 'PUT', headers: { 'Authorization': headers['Authorization'] }, body: fd });
+          const j = await res.json();
+          if (!res.ok) { showMsg(msgEl, j.msg||'Failed to save', false); return; }
+          showMsg(msgEl, 'Saved successfully', true);
+          loadContent(key, { title: titleEl, body: bodyEl, imagesDiv: key==='about-us'? document.getElementById('about-images') : document.getElementById('contact-images') });
+        }catch(e){ console.error(e); showMsg(msgEl, 'Error saving content', false); }
+      }
+
+      document.addEventListener('DOMContentLoaded', ()=>{
+        // About
+        const aboutTitle = document.getElementById('about-title');
+        const aboutBody = document.getElementById('about-body');
+        const aboutImagesInput = document.getElementById('about-images-input');
+        const aboutImagesDiv = document.getElementById('about-images');
+        const aboutMsg = document.getElementById('about-message');
+        let loadedAbout = null;
+        async function loadAbout(){
+          try{
+            const res = await fetch(`${API}/api/admin/content/about-us`, { headers });
+            const j = await res.json();
+            if (!j.success) { loadedAbout = { title:'', body:'', images:[] }; return; }
+            loadedAbout = j.data || { title:'', body:'', images:[] };
+            aboutTitle.value = loadedAbout.title || '';
+            aboutBody.value = loadedAbout.body || '';
+            aboutImagesDiv.innerHTML = '';
+            (loadedAbout.images||[]).forEach(img => {
+              const imgEl = document.createElement('div'); imgEl.className='flex flex-col items-center';
+              imgEl.innerHTML = `<img src="${img.url}" class="thumb rounded border" /><div class="text-xs mt-1">${img.filename||''}</div>`;
+              aboutImagesDiv.appendChild(imgEl);
+            });
+            // refresh preview
+            const ifr = document.getElementById('about-preview'); if (ifr) ifr.src = '/about-us.html?preview=' + Date.now();
+          }catch(e){ console.error('loadAbout', e); }
+        }
+
+        loadAbout();
+        document.getElementById('about-save').addEventListener('click', async ()=>{
+          await saveContent('about-us', aboutTitle, aboutBody, aboutImagesInput, false, aboutMsg);
+          // after save, reload local copy and refresh preview
+          await loadAbout();
+          const ifr = document.getElementById('about-preview'); if (ifr) ifr.src = '/about-us.html?preview=' + Date.now();
+        });
+        document.getElementById('about-replace').addEventListener('click', async ()=>{
+          await saveContent('about-us', aboutTitle, aboutBody, aboutImagesInput, true, aboutMsg);
+          await loadAbout();
+          const ifr = document.getElementById('about-preview'); if (ifr) ifr.src = '/about-us.html?preview=' + Date.now();
+        });
+        document.getElementById('about-cancel').addEventListener('click', ()=>{
+          if (!loadedAbout) return; aboutTitle.value = loadedAbout.title || ''; aboutBody.value = loadedAbout.body || ''; aboutImagesInput.value = ''; aboutImagesDiv.querySelectorAll('*').forEach(n=>n.remove());
+          (loadedAbout.images||[]).forEach(img => {
+            const imgEl = document.createElement('div'); imgEl.className='flex flex-col items-center';
+            imgEl.innerHTML = `<img src="${img.url}" class="thumb rounded border" /><div class="text-xs mt-1">${img.filename||''}</div>`;
+            aboutImagesDiv.appendChild(imgEl);
+          });
+        });
+
+        // Contact
+        const contactTitle = document.getElementById('contact-title');
+        const contactBody = document.getElementById('contact-body');
+        const contactImagesInput = document.getElementById('contact-images-input');
+        const contactImagesDiv = document.getElementById('contact-images');
+        const contactMsg = document.getElementById('contact-message');
+        loadContent('contact', { title: contactTitle, body: contactBody, imagesDiv: contactImagesDiv });
+        document.getElementById('contact-save').addEventListener('click', ()=> saveContent('contact', contactTitle, contactBody, contactImagesInput, false, contactMsg));
+        document.getElementById('contact-replace').addEventListener('click', ()=> saveContent('contact', contactTitle, contactBody, contactImagesInput, true, contactMsg));
+
+        // Sidebar toggle for mobile
+        document.getElementById('sidebar-toggle')?.addEventListener('click', ()=> document.getElementById('admin-sidebar')?.classList.toggle('hidden'));
+        document.getElementById('mobile-sidebar-close')?.addEventListener('click', ()=> document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'));
+      });
+    })();
+  </script>
+</body>
+</html>

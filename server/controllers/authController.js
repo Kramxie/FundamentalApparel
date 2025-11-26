@@ -335,3 +335,55 @@ exports.resetPassword = async (req, res) => {
         res.status(500).json({ success: false, msg: 'Server Error' });
     }
 };
+
+// Delete user account and associated data
+exports.deleteAccount = async (req, res) => {
+    const userId = req.user && req.user.id;
+    if (!userId) return res.status(401).json({ success: false, msg: 'Not authorized' });
+
+    const mongoose = require('mongoose');
+    const Order = require('../models/Order');
+    const Message = require('../models/Message');
+    const Notification = require('../models/Notification');
+    const Cart = require('../models/Cart');
+    const CustomOrder = require('../models/CustomOrder');
+    const RefundRequest = require('../models/RefundRequest');
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        // Prevent deletion if user has active orders
+        const activeOrders = await Order.countDocuments({ user: userId, status: { $nin: ['Completed', 'Cancelled'] } }).session(session);
+        const activeCustom = await CustomOrder.countDocuments({ user: userId, status: { $nin: ['Completed', 'Cancelled'] } }).session(session);
+        if (activeOrders > 0 || activeCustom > 0) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({ success: false, msg: 'You have active orders or custom orders. Please complete or cancel them before deleting your account.' });
+        }
+
+        // Delete Orders, Custom Orders, Refund Requests, Messages, Notifications, Cart
+        await Order.deleteMany({ user: userId }).session(session);
+        await CustomOrder.deleteMany({ user: userId }).session(session);
+        await RefundRequest.deleteMany({ user: userId }).session(session);
+        await Message.deleteMany({ $or: [{ sender: userId }, { recipient: userId }] }).session(session);
+        await Notification.deleteMany({ targetUser: userId }).session(session);
+        await Cart.deleteOne({ user: userId }).session(session);
+
+        // Finally delete the user record
+        const User = require('../models/User');
+        await User.findByIdAndDelete(userId).session(session);
+
+        await session.commitTransaction();
+        session.endSession();
+
+        console.log('[Account Deletion] User deleted:', userId);
+        // Optionally: clear server-side sessions, revoke tokens, notify admins
+
+        return res.json({ success: true, msg: 'Your account and associated data have been permanently deleted.' });
+    } catch (e) {
+        console.error('[Account Deletion] Error:', e && e.message);
+        try { await session.abortTransaction(); } catch(_){}
+        session.endSession();
+        return res.status(500).json({ success: false, msg: 'Failed to delete account' });
+    }
+};

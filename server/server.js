@@ -28,6 +28,8 @@ const deliveryRatesRoutes = require('./routes/deliveryRatesRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const returnRoutes = require('./routes/returnRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const contentRoutes = require('./routes/contentRoutes');
+const publicContentRoutes = require('./routes/publicContentRoutes');
 const notifyUtil = require('./utils/notify');
 
 connectDB();
@@ -127,6 +129,9 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/admin/reports', reportRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/admin/notifications', notificationRoutes);
+app.use('/api/admin/content', contentRoutes);
+// Public content endpoints (no auth) used by customer-facing pages
+app.use('/api/content', publicContentRoutes);
 
 // Socket.io authentication middleware
 io.use((socket, next) => {
