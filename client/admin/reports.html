@@ -554,7 +554,7 @@
 
       // compute low-stock items (any size <= threshold)
       async function fetchLowStockItems(threshold = LOW_STOCK_THRESHOLD){
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
         const variants = await fetchVariants();
         const found = [];
         // limit to first 200 variants to avoid huge loads
@@ -612,11 +612,11 @@
 
       async function refreshLowStockUI(){
         try{
-          viewBtn.disabled = true; notifyBtn.disabled = true;
-          const items = await fetchLowStockItems();
-          lowstockCountEl.textContent = String(items.length || 0);
-          return items;
-        }finally{ viewBtn.disabled = false; notifyBtn.disabled = false; }
+            viewBtn.disabled = true; notifyBtn.disabled = true;
+            const items = await fetchLowStockItems();
+            lowstockCountEl.textContent = String(items.length || 0);
+            return items;
+          }finally{ viewBtn.disabled = false; notifyBtn.disabled = false; }
       }
 
       async function notifyLowStock(items){

@@ -41,7 +41,7 @@
 
     document.getElementById('admin-notif-markall').addEventListener('click', async ()=>{
       try{
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
         await fetch(`${API}/api/admin/notifications/mark-all-read`, { method: 'POST', headers: token?{ 'Authorization': `Bearer ${token}` }:{} });
         await refresh();
       }catch(e){ console.debug('mark all read failed', e); }

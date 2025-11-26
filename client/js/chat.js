@@ -40,6 +40,7 @@
                             <div>
                                 <h3 class="font-semibold">Admin Support</h3>
                                 <p class="text-xs text-indigo-100" id="admin-status">Online</p>
+                                <p class="text-xs text-indigo-100" id="chat-availability">Mon-Sat 8:00–18:00, Sun 9:00–16:00</p>
                             </div>
                         </div>
                         <button 
@@ -115,6 +116,26 @@
                     </div>
                 </div>
             </div>
+                        <!-- Terms Modal -->
+                        <div id="chat-terms-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden z-60">
+                            <div class="bg-white rounded-lg max-w-md w-full mx-4 shadow-lg overflow-hidden">
+                                <div class="px-4 py-3 border-b flex items-center justify-between">
+                                    <div class="text-sm font-semibold">Start Chat</div>
+                                    <button id="chat-terms-close" class="text-gray-500 hover:text-gray-700">✕</button>
+                                </div>
+                                <div class="p-4 text-sm text-gray-800 space-y-3">
+                                    <p>Welcome! Before starting a chat please accept our Terms & Conditions.</p>
+                                    <div class="text-xs text-gray-600">We are available to reply Monday - Saturday: 8:00am - 6:00pm, Sunday: 9am - 4pm.</div>
+                                    <label class="inline-flex items-center mt-3">
+                                        <input id="chat-accept-terms" type="checkbox" class="mr-2" />
+                                        <span>Accept Terms &amp; Conditions</span>
+                                    </label>
+                                </div>
+                                <div class="px-4 py-3 border-t text-right">
+                                    <button id="chat-get-started" class="px-4 py-2 rounded bg-indigo-600 text-white disabled:opacity-50" disabled>Get Started</button>
+                                </div>
+                            </div>
+                        </div>
         `;
 
         // Inject HTML into page
@@ -160,6 +181,9 @@
 
             // Setup event listeners
             setupEventListeners();
+
+            // Wire terms modal interactions
+            setupTermsModal();
 
             // Initialize Socket.io connection
             initSocket(token);
@@ -220,6 +244,37 @@
         messageInput.addEventListener('input', handleTyping);
     }
 
+    // Setup Terms & Conditions modal behavior
+    function setupTermsModal() {
+        const modal = document.getElementById('chat-terms-modal');
+        const checkbox = document.getElementById('chat-accept-terms');
+        const getStarted = document.getElementById('chat-get-started');
+        const close = document.getElementById('chat-terms-close');
+
+        if (!modal || !checkbox || !getStarted) return;
+
+        // Enable button only when checked
+        checkbox.addEventListener('change', (e) => {
+            getStarted.disabled = !checkbox.checked;
+        });
+
+        getStarted.addEventListener('click', () => {
+            // Persist acceptance so user won't see modal again
+            try { localStorage.setItem('chatAcceptedTerms', '1'); } catch (e) {}
+            modal.classList.add('hidden');
+            // open chat window
+            const chatWindow = document.getElementById('chat-window');
+            const toggleBtn = document.getElementById('chat-toggle-btn');
+            chatWindow.classList.remove('hidden');
+            toggleBtn.innerHTML = '<i class="fas fa-times text-2xl"></i>';
+            isOpen = true;
+            markMessagesAsRead();
+            scrollToBottom();
+        });
+
+        if (close) close.addEventListener('click', () => modal.classList.add('hidden'));
+    }
+
     // Toggle chat window
     function toggleChat() {
         const chatWindow = document.getElementById('chat-window');
@@ -227,6 +282,16 @@
         
         isOpen = !isOpen;
         
+        // If user hasn't accepted T&C, show modal instead of opening chat
+        const accepted = !!localStorage.getItem('chatAcceptedTerms');
+        if (!accepted && isOpen) {
+            const modal = document.getElementById('chat-terms-modal');
+            if (modal) { modal.classList.remove('hidden'); }
+            // reset state back to closed until accepted
+            isOpen = false;
+            return;
+        }
+
         if (isOpen) {
             chatWindow.classList.remove('hidden');
             toggleBtn.innerHTML = '<i class="fas fa-times text-2xl"></i>';
@@ -398,7 +463,15 @@
     // Send message
     async function sendMessage() {
         const messageInput = document.getElementById('message-input');
-        const message = messageInput.value.trim();
+        let message = messageInput.value.trim();
+
+        // Bad-word filtering: sanitize or mask offensive words
+        const sanitizeResult = sanitizeMessage(message);
+        if (sanitizeResult.blocked) {
+            alert('Your message contains words that are not allowed. Please edit and try again.');
+            return;
+        }
+        message = sanitizeResult.message;
 
         // Check if we have either message or image
         if (!message && !selectedImage) {
@@ -701,6 +774,34 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // Bad word filter and sanitizer
+    function sanitizeMessage(text) {
+        if (!text || !text.trim()) return { blocked: false, message: text };
+        const badWords = ['fuck','shit','bitch','asshole','motherfucker']; // extend as needed
+        let msg = String(text);
+        let blocked = false;
+
+        // Replace bad words with masked form preserving first/last char where possible
+        for (const w of badWords) {
+            const re = new RegExp('\\b' + w.replace(/[.*+?^${}()|[\\]\\]/g,'\\\\$&') + '\\b', 'ig');
+            if (re.test(msg)) {
+                // mask
+                msg = msg.replace(re, (m) => {
+                    if (m.length <= 2) return '*'.repeat(m.length);
+                    return m[0] + '*'.repeat(Math.max(1, m.length - 2)) + m[m.length-1];
+                });
+            }
+        }
+
+        // Optionally block messages that only contain offensive words or many masks
+        const maskCount = (msg.match(/\*/g) || []).length;
+        if (maskCount > 0 && msg.replace(/\*/g,'').trim().length === 0) {
+            blocked = true;
+        }
+
+        return { blocked, message: msg };
     }
 
     // Initialize on page load

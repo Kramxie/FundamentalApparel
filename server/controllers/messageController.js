@@ -142,10 +142,32 @@ exports.sendMessage = async (req, res) => {
 
         const isAdminMessage = req.user.role === 'admin' || req.user.role === 'employee';
 
+        // Server-side sanitize: mask offensive words and reject if only masked
+        function serverSanitize(input) {
+            if (!input) return { blocked: false, message: input };
+            const badWords = ['fuck','shit','bitch','asshole','motherfucker'];
+            let msg = String(input);
+            for (const w of badWords) {
+                const re = new RegExp('\\b' + w.replace(/[.*+?^${}()|[\\]\\]/g,'\\\\$&') + '\\b', 'ig');
+                msg = msg.replace(re, (m) => {
+                    if (m.length <= 2) return '*'.repeat(m.length);
+                    return m[0] + '*'.repeat(Math.max(1, m.length - 2)) + m[m.length-1];
+                });
+            }
+            const maskCount = (msg.match(/\*/g) || []).length;
+            const blocked = maskCount > 0 && msg.replace(/\*/g,'').trim().length === 0;
+            return { blocked, message: msg };
+        }
+
+        const sanitized = serverSanitize(message);
+        if (sanitized.blocked) {
+            return res.status(400).json({ success: false, message: 'Message content not allowed' });
+        }
+
         const newMessage = await Message.create({
             sender: senderId,
             recipient: recipientId,
-            message: message || '📷 Image',
+            message: sanitized.message || '📷 Image',
             imageUrl: imageUrl || null,
             isAdminMessage
         });

@@ -73,7 +73,7 @@
   </template>
 
     <script>
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
 
     // message helper (replaces alert())
     const messageEl = document.getElementById('message-container');
