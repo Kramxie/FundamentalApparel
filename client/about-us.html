@@ -138,7 +138,7 @@
         <a href="products.html" class="text-sm text-indigo-600 hover:underline">See all products</a>
       </div>
 
-      <div id="showcase-products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6"></div>
+      <div id="showcase-products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 justify-items-center items-start"></div>
 
     </section>
 
@@ -168,37 +168,35 @@
         const json = await res.json();
         const items = (json && json.success && Array.isArray(json.data) && json.data.length) ? json.data : [];
         if (!items.length) throw new Error('No products');
+        // Render image-only tiles (no text) - clickable to product
         container.innerHTML = items.map(p => `
-          <a href="product-detail.html?id=${p._id}" class="bg-white p-4 rounded-lg shadow-sm flex gap-4 items-center hover:shadow-md transition">
-            <div class="w-36 h-36 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
-              <img src="${p.imageUrl || (p.gallery && p.gallery[0]) || 'images/placeholder.png'}" alt="${p.name}" class="w-full h-full object-cover">
-            </div>
-            <div>
-              <h4 class="font-semibold text-gray-900">${p.name}</h4>
-              <p class="text-gray-600 mt-1 text-sm line-clamp-3">${(p.productDetails || p.description || '').substring(0,150)}</p>
-              <div class="mt-3 text-indigo-600 font-bold">₱${Number(p.price||0).toLocaleString()}</div>
+          <a href="product-detail.html?id=${p._id}" class="block rounded-lg overflow-hidden shadow-sm hover:shadow-md transition w-full max-w-[420px]">
+            <div class="w-full h-56 sm:h-64 md:h-72 lg:h-80 bg-gray-100 overflow-hidden">
+              <img src="${p.imageUrl || (p.gallery && p.gallery[0]) || 'images/placeholder.png'}" alt="${p.name || 'Product'}" class="w-full h-full object-cover">
             </div>
           </a>
         `).join('');
       } catch (err) {
-        // Fallback static showcase
+        // Fallback static image-only showcase
         container.innerHTML = `
-          <div class="bg-white p-4 rounded-lg shadow-sm">
-            <div class="w-full h-40 bg-gray-100 rounded mb-3"><img src="images/preview1.jpg" class="w-full h-full object-cover" alt="Product 1"></div>
-            <h4 class="font-semibold">Fundamental Jersey</h4>
-            <p class="text-sm text-gray-600">Custom team jersey, breathable, moisture-wicking.</p>
-            <a href="products.html" class="text-indigo-600 mt-2 inline-block">View product</a>
-          </div>
-          <div class="bg-white p-4 rounded-lg shadow-sm">
-            <div class="w-full h-40 bg-gray-100 rounded mb-3"><img src="images/preview2.jpg" class="w-full h-full object-cover" alt="Product 2"></div>
-            <h4 class="font-semibold">Signature Shorts</h4>
-            <p class="text-sm text-gray-600">Lightweight performance shorts for training and matches.</p>
-            <a href="products.html" class="text-indigo-600 mt-2 inline-block">View product</a>
-          </div>
+          <a href="products.html" class="block rounded-lg overflow-hidden shadow-sm hover:shadow-md transition w-full max-w-[420px]">
+            <div class="w-full h-56 sm:h-64 md:h-72 lg:h-80 bg-gray-100 overflow-hidden">
+              <img src="images/preview1.jpg" class="w-full h-full object-cover" alt="Product 1">
+            </div>
+          </a>
+          <a href="products.html" class="block rounded-lg overflow-hidden shadow-sm hover:shadow-md transition w-full max-w-[420px]">
+            <div class="w-full h-56 sm:h-64 md:h-72 lg:h-80 bg-gray-100 overflow-hidden">
+              <img src="images/preview2.jpg" class="w-full h-full object-cover" alt="Product 2">
+            </div>
+          </a>
         `;
       }
     })();
   </script>
+    <div id="site-footer"></div>
+    <script src="js/footer.js"></script>
 
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="js/chat.js"></script>
 </body>
 </html>
