@@ -70,7 +70,9 @@
         <div>
           <div class="text-xs text-gray-500">Quote #<span data-ref></span></div>
           <div class="font-semibold" data-product></div>
-          <div class="text-xs text-gray-500" data-item></div>
+            <div class="text-xs text-gray-500" data-item></div>
+              <div class="text-sm text-gray-600 mt-1" data-fg></div>
+              <div class="text-xs text-gray-500 mt-1" data-minprice></div>
         </div>
         <span class="px-2 py-1 text-xs rounded-full" data-badge></span>
       </div>
@@ -196,6 +198,25 @@
       tpl.querySelector('[data-ref]').textContent = code;
       tpl.querySelector('[data-product]').textContent = order.productName || 'Custom Garment';
       tpl.querySelector('[data-item]').textContent = `${order.itemType || ''} • ${order.selectedLocation || ''}`;
+      // Show selected Fabric & Garment when available
+      const fgEl = tpl.querySelector('[data-fg]');
+      const fgName = order.inventoryName || ((order.fabricType && order.garmentType) ? `${order.fabricType} - ${order.garmentType}` : '');
+      if(fgEl){ if(fgName) { fgEl.textContent = fgName; fgEl.classList.remove('hidden'); } else { fgEl.classList.add('hidden'); fgEl.textContent = ''; } }
+      // Fetch minimum price from inventory availability API and show it under the fg
+      (async ()=>{
+        try{
+          const minEl = tpl.querySelector('[data-minprice]');
+          if(!fgName || !minEl) return;
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${API_BASE}/api/admin/inventory/availability?name=${encodeURIComponent(fgName)}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+          if(!res.ok) return;
+          const json = await res.json().catch(()=>null);
+          if(!json || !json.success || !json.data) return;
+          const price = Number(json.data.price || 0);
+          if(price && price > 0){ minEl.textContent = `Minimum price: ₱${price.toFixed(2)}`; minEl.classList.remove('hidden'); }
+          else { minEl.classList.add('hidden'); minEl.textContent = ''; }
+        }catch(e){ /* ignore */ }
+      })();
       tpl.querySelector('[data-qty]').textContent = order.quantity || 0;
 
       const badge = tpl.querySelector('[data-badge]');
