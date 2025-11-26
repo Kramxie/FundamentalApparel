@@ -10,7 +10,7 @@
         <div>
           <h3 class="text-gray-900 font-semibold mb-3">Company Info</h3>
           <ul class="space-y-2">
-            <li><a href="#" class="hover:text-indigo-600">About Fundamentals</a></li>
+            <li><a href="about-us.html" class="hover:text-indigo-600">About Fundamentals</a></li>
           </ul>
         </div>
         <div>

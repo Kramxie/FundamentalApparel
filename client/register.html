@@ -159,6 +159,15 @@
                         </div>
                     </div>
 
+                    <div class="flex items-start gap-3">
+                        <input id="agreePolicyRegister" type="checkbox" required class="mt-1 h-4 w-4" />
+                        <label for="agreePolicyRegister" class="text-sm text-gray-600">By continuing, you agree to our
+                            <a href="#" class="text-blue-600 hover:underline policy-link" data-open="policyModal">Privacy Policy</a>
+                            and
+                            <a href="#" class="text-blue-600 hover:underline policy-link" data-open="policyModal">Terms &amp; Conditions</a>.
+                        </label>
+                    </div>
+
                     <div class="pt-4">
                         <button type="submit" id="submit-btn"
                             class="w-full bg-gray-900 text-white font-bold py-3.5 rounded-lg hover:bg-black transition transform active:scale-[0.98] duration-200 shadow-md">
@@ -284,6 +293,12 @@
         // --- Form Submission Logic ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            // Ensure agreement checkbox is checked
+            const agree = document.getElementById('agreePolicyRegister');
+            if(!agree || !agree.checked){
+                showMessage('Please agree to the Privacy Policy and Terms & Conditions to continue.', 'error');
+                return;
+            }
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
             const password = data.password;
@@ -326,7 +341,70 @@
                 submitBtn.textContent = 'Create Account';
             }
         });
+
+        // Policy modal handling (register page)
+            // Policy modal handling (register page)
+            function openPolicyModal(){
+                const modal = document.getElementById('policyModal');
+                if(modal){
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+            }
+            function closePolicyModal(){
+                const modal = document.getElementById('policyModal');
+                if(modal){
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+            }
+            document.querySelectorAll('.policy-link').forEach(a=>{
+                a.addEventListener('click', (ev)=>{ ev.preventDefault(); openPolicyModal(); });
+            });
+            document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closePolicyModal(); });
+            document.addEventListener('click', (e)=>{
+                const modal = document.getElementById('policyModal');
+                if(!modal) return;
+                if(e.target && (e.target.id === 'policyClose' || (e.target.closest && e.target.closest('#policyClose')))) {
+                    closePolicyModal();
+                    return;
+                }
+                if(e.target && e.target.id === 'policyModal') {
+                    closePolicyModal();
+                }
+            });
+            (function(){
+                const modal = document.getElementById('policyModal');
+                if(modal){
+                    modal.addEventListener('click', (ev)=>{ if(ev.target === modal) closePolicyModal(); });
+                }
+            })();
     </script>
+
+        <!-- Policy Modal (contains Privacy Policy and Terms & Conditions) -->
+        <div id="policyModal" class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center">
+            <div class="bg-white max-w-4xl w-[90%] max-h-[85vh] overflow-y-auto rounded-lg p-6 mx-auto">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                    <h2 class="text-xl font-bold">Privacy Policy &amp; Terms &amp; Conditions</h2>
+                    <button id="policyClose" class="text-gray-600 hover:text-gray-900">Close ✕</button>
+                </div>
+                <div class="prose text-sm text-gray-800">
+                    <h3>Privacy Policy</h3>
+                    <p>Fundamental Apparel collects and processes personal information necessary to provide our services, manage orders, and communicate with customers. We collect contact information (name, email, phone), shipping addresses, order history, and any files you upload when using our Custom Upload services. Images and files uploaded as part of reviews or custom orders are stored securely and are accessible to staff for fulfillment and moderation purposes.</p>
+                    <p>We use this information to fulfill orders, provide customer support, send transactional emails (order confirmations, shipping updates), and for fraud prevention. We do not sell personal data to third parties. For payment processing we share only necessary data with payment providers. You may request data access or deletion by contacting support.</p>
+
+                    <h3>Data and Image Usage</h3>
+                    <p>By uploading images (reviews or custom designs), you grant Fundamental Apparel a non-exclusive license to store and process those images for the purpose of order fulfillment, displaying reviews (if allowed), and customer service. If an uploaded image contains sensitive content, please contact support to request removal.</p>
+
+                    <h3>Terms &amp; Conditions</h3>
+                    <p>Orders are subject to stock availability and our inventory checks. Custom orders submitted via the Custom Upload flow are quotes and require confirmation. Payments, refunds, and returns are handled according to our Returns &amp; Refunds policy. Service orders may be excluded from loyalty rewards; admin controls apply.</p>
+                    <p>Customers must provide accurate contact and shipping information. We reserve the right to cancel or modify orders in case of inventory errors, pricing mistakes, or suspected fraud. By creating an account and placing orders you agree to pay applicable fees and follow our usage guidelines.</p>
+
+                    <h3>Contact</h3>
+                    <p>If you have questions about privacy or these terms, contact us at support@fundamental.example (replace with your operational support email) or through the admin contact channels.</p>
+                </div>
+            </div>
+        </div>
 </body>
 
 </html>

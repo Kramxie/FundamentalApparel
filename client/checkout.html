@@ -73,7 +73,25 @@
             </div>
             <div>
               <label class="block text-sm text-gray-700">State/Province</label>
-              <input id="ship-province" type="text" class="mt-1 w-full border rounded-md px-3 py-2" placeholder="Cavite">
+              <select id="ship-province" class="mt-1 w-full border rounded-md px-3 py-2">
+                <option value="">Select province</option>
+                <option>Metro Manila</option>
+                <option>Manila</option>
+                <option>Quezon City</option>
+                <option>Makati</option>
+                <option>Cavite</option>
+                <option>Laguna</option>
+                <option>Batangas</option>
+                <option>Bulacan</option>
+                <option>Pampanga</option>
+                <option>Rizal</option>
+                <option>Quezon</option>
+                <option>Nueva Ecija</option>
+                <option>Tarlac</option>
+                <option>Zambales</option>
+                <option>Bataan</option>
+                <option>Other</option>
+              </select>
             </div>
             <div>
               <label class="block text-sm text-gray-700">City</label>
@@ -257,8 +275,17 @@
       function populateAddressForm(address, phone) {
           document.getElementById('ship-street').value = address?.street || '';
           document.getElementById('ship-city').value = address?.city || '';
-          document.getElementById('ship-province').value = address?.province || '';
-          document.getElementById('ship-zip').value = address?.zipCode || ''; 
+          // ship-province is now a select
+          if (address && address.province) {
+            const sel = document.getElementById('ship-province');
+            // try to match option value containing the province
+            const matchOpt = Array.from(sel.options).find(o => o.text.toLowerCase().includes((address.province || '').toLowerCase()));
+            if (matchOpt) sel.value = matchOpt.text;
+            else sel.value = address.province || 'Other';
+          } else {
+            document.getElementById('ship-province').value = '';
+          }
+          document.getElementById('ship-zip').value = address?.zipCode || '';
           document.getElementById('ship-phone').value = phone || '';
           if (!address) { 
             document.getElementById('ship-block').value = '';
@@ -282,6 +309,7 @@
                   }
                   populateAddressForm(savedDefaultAddress, savedUserPhone);
                   toggleFormInputs(false); 
+                    if (typeof updateShippingFee === 'function') updateShippingFee();
               }
           } catch (err) {
               console.error('Failed to fetch user profile for address:', err);
@@ -547,17 +575,59 @@
       }
       const methodStandard = document.getElementById('method-standard');
       const methodPickup = document.getElementById('method-pickup');
-      const feeStandard = 80;
-      const feePickup = 0;
+
+      // Province-based delivery rates (example values for Luzon)
+      const PROVINCE_RATES = {
+        'metro manila': 120,
+        'manila': 120,
+        'quezon city': 120,
+        'makati': 120,
+        'cavite': 70,
+        'laguna': 80,
+        'batangas': 120,
+        'bulacan': 90,
+        'pampanga': 100,
+        'rizal': 85,
+        'quezon': 150,
+        'nueva ecija': 120,
+        'tarlac': 130,
+        'zambales': 140,
+        'bataan': 140,
+        'other': 120
+      };
+      const DEFAULT_PROVINCE_RATE = 120;
+
+      function getRateForProvince(prov) {
+        if (!prov) return DEFAULT_PROVINCE_RATE;
+        const key = (prov || '').toString().toLowerCase().trim();
+        // Normalize some labels (e.g., 'Calabarzon - Cavite' -> 'cavite')
+        if (key.includes('cavite')) return PROVINCE_RATES['cavite'];
+        if (key.includes('laguna')) return PROVINCE_RATES['laguna'];
+        if (key.includes('batangas')) return PROVINCE_RATES['batangas'];
+        if (key.includes('calabarzon')) return DEFAULT_PROVINCE_RATE;
+        if (key.includes('metro') || key.includes('manila') || key.includes('quezon city') || key.includes('makati')) return PROVINCE_RATES['metro manila'];
+        return PROVINCE_RATES[key] || DEFAULT_PROVINCE_RATE;
+      }
+
       function updateShippingFee() {
-          const fee = methodPickup.checked ? feePickup : feeStandard;
-          deliveryFeeEl.textContent = fee.toLocaleString();
           const subtotal = Number(subtotalEl.textContent.replace(/,/g, ''));
           const discount = Number(document.getElementById('discount').textContent.replace(/,/g, ''));
+          let fee = 0;
+          if (methodPickup.checked) {
+            fee = 0;
+          } else {
+            const selectedProvince = document.getElementById('ship-province')?.value || '';
+            fee = getRateForProvince(selectedProvince);
+          }
+          deliveryFeeEl.textContent = fee.toLocaleString();
+          // Update the shipping method card price (standard) so UI stays consistent
+          const feeStandardEl = document.getElementById('fee-standard');
+          if (feeStandardEl) feeStandardEl.textContent = fee.toLocaleString();
           grandTotalEl.textContent = (subtotal - discount + fee).toLocaleString();
       }
       methodStandard?.addEventListener('change', updateShippingFee);
       methodPickup?.addEventListener('change', updateShippingFee);
+      document.getElementById('ship-province')?.addEventListener('change', updateShippingFee);
       placeOrderBtn.addEventListener('click', (e) => {
         e.preventDefault();
         submitOrder();

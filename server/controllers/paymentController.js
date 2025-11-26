@@ -8,6 +8,7 @@ const WebhookEvent = require('../models/WebhookEvent');
 const crypto = require('crypto');
 const mongoose = require('mongoose');
 const { allocateInventoryBySizes, allocateInventory, findInventoryByName } = require('../utils/inventory');
+const deliveryRatesUtil = require('../utils/deliveryRates');
 
 // PayMongo API configuration
 // Use environment variables for production
@@ -290,9 +291,34 @@ exports.createOrderPaymentSession = async (req, res) => {
         }
       }
     }
-    // Compute subtotal and delivery fee number
+    // Compute subtotal
     const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0);
-    const deliveryFeeNumber = Number(deliveryFee) || 0;
+
+    // Load authoritative delivery rates from server config
+    const cfg = deliveryRatesUtil.getRates();
+    const DELIVERY_RATES = cfg.rates || {};
+    const DEFAULT_RATE = cfg.defaultRate || 120;
+    function getRateForProvince(prov) {
+      if (!prov) return DEFAULT_RATE;
+      const key = (prov || '').toString().toLowerCase().trim();
+      if (key.includes('cavite')) return DELIVERY_RATES['cavite'] || DEFAULT_RATE;
+      if (key.includes('laguna')) return DELIVERY_RATES['laguna'] || DEFAULT_RATE;
+      if (key.includes('batangas')) return DELIVERY_RATES['batangas'] || DEFAULT_RATE;
+      if (key.includes('metro') || key.includes('manila') || key.includes('quezon city') || key.includes('makati')) return DELIVERY_RATES['metro manila'] || DEFAULT_RATE;
+      return DELIVERY_RATES[key] || DEFAULT_RATE;
+    }
+
+    // Compute authoritative delivery fee based on shipping address and method
+    let deliveryFeeNumber = 0;
+    if ((shippingMethod || '').toString().toLowerCase() === 'pick-up') {
+      deliveryFeeNumber = 0;
+    } else {
+      deliveryFeeNumber = getRateForProvince((shippingAddress && (shippingAddress.province || shippingAddress.city)) || '');
+    }
+    // Honor voucher-based free shipping
+    if (appliedVoucher && appliedVoucher.type === 'free_shipping') {
+      deliveryFeeNumber = 0;
+    }
 
     // Cap discount so total is never less than 1 (₱1)
     let maxDiscount = subtotal + deliveryFeeNumber - 1; // keep at least ₱1

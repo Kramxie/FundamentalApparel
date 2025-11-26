@@ -1,0 +1,21 @@
+{
+  "defaultRate": 120,
+  "rates": {
+    "metro manila": 120,
+    "manila": 120,
+    "quezon city": 120,
+    "makati": 120,
+    "cavite": 70,
+    "laguna": 80,
+    "batangas": 120,
+    "bulacan": 90,
+    "pampanga": 100,
+    "rizal": 85,
+    "quezon": 150,
+    "nueva ecija": 120,
+    "tarlac": 130,
+    "zambales": 140,
+    "bataan": 140,
+    "other": 120
+  }
+}

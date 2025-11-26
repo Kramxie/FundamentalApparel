@@ -172,6 +172,21 @@
             </div>
           </div>
 
+          <!-- Low-stock widget -->
+          <div class="mt-4">
+            <div class="p-4 border rounded bg-white flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500">Low Stock Items</p>
+                <p id="low-stock-count" class="text-2xl font-bold text-red-600">0</p>
+                <p class="text-xs text-gray-500">Items with any size at or below threshold</p>
+              </div>
+              <div class="flex gap-2">
+                <button id="view-lowstock" class="px-4 py-2 bg-indigo-600 text-white rounded">View Low Stock</button>
+                <button id="notify-lowstock" class="px-4 py-2 bg-green-600 text-white rounded">Notify Admin</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Charts -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-white p-6 rounded-lg shadow-md">
@@ -472,5 +487,228 @@
       pdf.save(`reports_${Date.now()}.pdf`);
     }
   </script>
+
+  <!-- Low-stock modal -->
+  <div id="lowStockModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center">
+    <div class="bg-white rounded-lg max-w-4xl w-full mx-4 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-semibold">Low Stock Items</h3>
+        <div class="flex items-center gap-2">
+          <button id="lowstock-refresh" class="px-3 py-1 border rounded text-sm">Refresh</button>
+          <button id="lowstock-close" class="px-3 py-1 border rounded text-sm">Close</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-left text-xs text-gray-500 border-b">
+            <tr>
+              <th class="p-2">Product</th>
+              <th class="p-2">Size</th>
+              <th class="p-2">Available</th>
+              <th class="p-2">Reserved</th>
+            </tr>
+          </thead>
+          <tbody id="lowstock-table-body" class="align-top"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex justify-end gap-2">
+        <button id="notify-all-lowstock" class="px-4 py-2 bg-green-600 text-white rounded">Notify All</button>
+        <button id="notify-selected-lowstock" class="px-4 py-2 bg-indigo-600 text-white rounded">Notify Selected</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const LOW_STOCK_THRESHOLD = 5; // items at or below this per-size will be considered low
+      const API_BASE = (typeof API !== 'undefined') ? API : '';
+      const lowstockCountEl = document.getElementById('low-stock-count');
+      const viewBtn = document.getElementById('view-lowstock');
+      const notifyBtn = document.getElementById('notify-lowstock');
+      const modal = document.getElementById('lowStockModal');
+      const modalBody = document.getElementById('lowstock-table-body');
+      const closeBtn = document.getElementById('lowstock-close');
+      const refreshBtn = document.getElementById('lowstock-refresh');
+      const notifyAllBtn = document.getElementById('notify-all-lowstock');
+      const notifySelectedBtn = document.getElementById('notify-selected-lowstock');
+
+      async function fetchVariants(){
+        try{
+          const res = await fetch(`${API_BASE}/api/admin/inventory/public/variants`);
+          if(!res.ok) return [];
+          const json = await res.json();
+          return json.success ? (json.data || []) : [];
+        }catch(err){ console.debug('fetchVariants failed', err && err.message); return []; }
+      }
+
+      // fetch availability for a given variant name
+      async function fetchAvailabilityByName(name, token){
+        try{
+          const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+          const res = await fetch(`${API_BASE}/api/admin/inventory/availability?name=${encodeURIComponent(name)}`, { headers });
+          if(!res.ok) return null;
+          const json = await res.json();
+          return json.success ? json.data : null;
+        }catch(err){ console.debug('availability fetch failed', err && err.message); return null; }
+      }
+
+      // compute low-stock items (any size <= threshold)
+      async function fetchLowStockItems(threshold = LOW_STOCK_THRESHOLD){
+        const token = localStorage.getItem('token');
+        const variants = await fetchVariants();
+        const found = [];
+        // limit to first 200 variants to avoid huge loads
+        const slice = variants.slice(0, 200);
+        await Promise.all(slice.map(async v => {
+          const avail = await fetchAvailabilityByName(v.name, token);
+          if(!avail) return;
+          const sizes = avail.sizesInventory || {};
+          const reserved = avail.reservedSizes || {};
+          const perSize = [];
+          Object.keys(sizes).forEach(sz=>{
+            const total = Number(sizes[sz] || 0);
+            const resv = Number(reserved[sz] || 0);
+            const available = Math.max(0, total - resv);
+            if(available <= threshold){
+              perSize.push({ size: sz, available, reserved: resv });
+            }
+          });
+          if(perSize.length) {
+            found.push({ id: avail.id || avail._id || v._id || '', name: v.name, perSize, raw: avail });
+          }
+        }));
+        return found;
+      }
+
+      function renderLowStockList(items){
+        modalBody.innerHTML = '';
+        if(!items || !items.length){
+          modalBody.innerHTML = '<tr><td class="p-2" colspan="4">No low-stock items found.</td></tr>';
+          return;
+        }
+        items.forEach(it => {
+          it.perSize.forEach(ps => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="p-2">${escapeHtml(it.name)}</td>
+              <td class="p-2">${escapeHtml(ps.size)}</td>
+              <td class="p-2 text-red-600 font-semibold">${ps.available}</td>
+              <td class="p-2">${ps.reserved}</td>
+            `;
+            // attach dataset for notify
+            tr.dataset.itemId = it.id || '';
+            tr.dataset.itemName = it.name || '';
+            tr.dataset.size = ps.size;
+            tr.dataset.available = ps.available;
+            modalBody.appendChild(tr);
+          });
+        });
+      }
+
+      function escapeHtml(s){ return String(s||'').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
+
+      function openModal(){ modal.classList.remove('hidden'); modal.classList.add('flex'); }
+      function closeModal(){ modal.classList.remove('flex'); modal.classList.add('hidden'); }
+
+      async function refreshLowStockUI(){
+        try{
+          viewBtn.disabled = true; notifyBtn.disabled = true;
+          const items = await fetchLowStockItems();
+          lowstockCountEl.textContent = String(items.length || 0);
+          return items;
+        }finally{ viewBtn.disabled = false; notifyBtn.disabled = false; }
+      }
+
+      async function notifyLowStock(items){
+        if(!items || !items.length) { alert('No items to notify.'); return; }
+        const token = localStorage.getItem('token');
+        try{
+          const res = await fetch(`${API_BASE}/api/admin/notifications/low-stock`, {
+            method: 'POST',
+            headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { 'Authorization': `Bearer ${token}` } : {}),
+            body: JSON.stringify({ items })
+          });
+          const j = await res.json();
+          if(!j.success) throw new Error(j.message || 'Notify failed');
+          alert('Notification sent to admin.');
+        }catch(err){ alert('Failed to send notification: ' + (err.message||err)); }
+      }
+
+      // wire buttons
+      viewBtn.addEventListener('click', async ()=>{
+        viewBtn.disabled = true; viewBtn.textContent = 'Loading...';
+        try{
+          const items = await fetchLowStockItems();
+          renderLowStockList(items);
+          openModal();
+        }catch(err){ alert('Error loading low-stock items'); }
+        finally{ viewBtn.disabled = false; viewBtn.textContent = 'View Low Stock'; }
+      });
+
+      notifyBtn.addEventListener('click', async ()=>{
+        notifyBtn.disabled = true; notifyBtn.textContent = 'Notifying...';
+        try{
+          const items = await fetchLowStockItems();
+          await notifyLowStock(items);
+        }catch(err){ alert('Error notifying admin'); }
+        finally{ notifyBtn.disabled = false; notifyBtn.textContent = 'Notify Admin'; }
+      });
+
+      closeBtn.addEventListener('click', closeModal);
+      refreshBtn.addEventListener('click', async ()=>{
+        refreshBtn.disabled = true; refreshBtn.textContent = 'Refreshing...';
+        try{ const items = await refreshLowStockUI(); renderLowStockList(items); }catch(e){} finally{ refreshBtn.disabled = false; refreshBtn.textContent = 'Refresh'; }
+      });
+
+      notifyAllBtn.addEventListener('click', async ()=>{
+        notifyAllBtn.disabled = true; notifyAllBtn.textContent = 'Notifying...';
+        try{
+          // collect all rows in modal
+          const rows = Array.from(modalBody.querySelectorAll('tr'));
+          const items = rows.map(r => ({
+            id: r.dataset.itemId,
+            name: r.dataset.itemName,
+            size: r.dataset.size,
+            available: Number(r.dataset.available || 0)
+          }));
+          await notifyLowStock(items);
+        }catch(err){ console.debug(err); }
+        finally{ notifyAllBtn.disabled = false; notifyAllBtn.textContent = 'Notify All'; }
+      });
+
+      notifySelectedBtn.addEventListener('click', async ()=>{
+        // notify only the currently visible rows
+        notifySelectedBtn.disabled = true; notifySelectedBtn.textContent = 'Notifying...';
+        try{
+          const rows = Array.from(modalBody.querySelectorAll('tr'));
+          const items = rows.map(r => ({
+            id: r.dataset.itemId,
+            name: r.dataset.itemName,
+            size: r.dataset.size,
+            available: Number(r.dataset.available || 0)
+          }));
+          await notifyLowStock(items);
+        }catch(err){ console.debug(err); }
+        finally{ notifySelectedBtn.disabled = false; notifySelectedBtn.textContent = 'Notify Selected'; }
+      });
+
+      // initial check on page load
+      (async function initLowStock(){
+        try{
+          const items = await refreshLowStockUI();
+          // if any low-stock items exist, optionally auto-open modal or auto-notify
+          if(items && items.length){
+            // highlight visually by adding small pulse to the card (simple)
+            const card = document.getElementById('low-stock-count');
+            if(card) card.classList.add('animate-pulse');
+            // auto-send a notification once per page load (comment/uncomment as desired)
+            // await notifyLowStock(items);
+          }
+        }catch(err){ console.debug('low-stock init failed', err); }
+      })();
+    })();
+  </script>
+</script>
+<script src="admin-notifications.js"></script>
 </body>
 </html>

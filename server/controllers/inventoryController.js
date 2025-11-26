@@ -1,5 +1,6 @@
 const Inventory = require('../models/Inventory');
 const Product = require('../models/Product');
+const { notifyLowStock } = require('./notificationController');
 
 // Helper function to sync inventory to product
 async function syncToProduct(inventoryItem) {
@@ -388,6 +389,7 @@ exports.updateInventoryItem = async (req, res) => {
         } = req.body;
 
         let item = await Inventory.findById(req.params.id);
+        const prevStatus = item ? item.status : null;
 
         if (!item) {
             return res.status(404).json({
@@ -492,7 +494,30 @@ exports.updateInventoryItem = async (req, res) => {
             item.lastRestocked = Date.now();
         }
 
-        await item.save();
+                await item.save();
+
+                // After save: if status transitioned to low_stock or out_of_stock, notify admins
+                try{
+                    if(prevStatus !== item.status && (item.status === 'low_stock' || item.status === 'out_of_stock')){
+                        // build items payload: include per-size low ones if available
+                        const itemsToNotify = [];
+                        const sizes = item.sizesInventory ? Object.fromEntries(item.sizesInventory) : {};
+                        const reserved = item.reservedSizes ? Object.fromEntries(item.reservedSizes) : {};
+                        if(Object.keys(sizes).length){
+                            Object.keys(sizes).forEach(sz => {
+                                const total = Number(sizes[sz] || 0);
+                                const resv = Number(reserved[sz] || 0);
+                                const avail = Math.max(0, total - resv);
+                                if(avail <= (item.lowStockThreshold || 5)){
+                                    itemsToNotify.push({ id: item._id, name: item.name, size: sz, available: avail });
+                                }
+                            });
+                        } else {
+                            itemsToNotify.push({ id: item._id, name: item.name, available: Number(item.quantity || 0) });
+                        }
+                        if(itemsToNotify.length) await notifyLowStock(itemsToNotify);
+                    }
+                }catch(e){ console.error('Notify low stock (update) failed', e && e.message); }
 
         // Sync to Product collection if this is a product
         let syncedProduct = null;
@@ -678,13 +703,34 @@ exports.decrementStock = async (req, res) => {
         const updated = await Inventory.findByIdAndUpdate(req.params.id, { $inc: inc }, { new: true });
 
         // Re-evaluate status via save hook: ensure map values non-negative (we pre-validated)
-        if (updated) {
-            // If now a product, sync to Product collection
-            if (updated.isProduct) {
-                try { await syncToProduct(updated); } catch (e) { console.error('Sync after decrement failed', e); }
-            }
-            return res.status(200).json({ success: true, data: updated, message: 'Stock decremented' });
-        }
+                if (updated) {
+                        // If now a product, sync to Product collection
+                        if (updated.isProduct) {
+                                try { await syncToProduct(updated); } catch (e) { console.error('Sync after decrement failed', e); }
+                        }
+                        // After decrement: check previous item.status -> updated.status and notify if transitioned
+                        try{
+                            const prev = item; // earlier fetched
+                            if(prev && prev.status !== updated.status && (updated.status === 'low_stock' || updated.status === 'out_of_stock')){
+                                const sizes = updated.sizesInventory ? Object.fromEntries(updated.sizesInventory) : {};
+                                const reserved = updated.reservedSizes ? Object.fromEntries(updated.reservedSizes) : {};
+                                const itemsToNotify = [];
+                                if(Object.keys(sizes).length){
+                                    Object.keys(sizes).forEach(sz => {
+                                        const total = Number(sizes[sz] || 0);
+                                        const resv = Number(reserved[sz] || 0);
+                                        const avail = Math.max(0, total - resv);
+                                        if(avail <= (updated.lowStockThreshold || 5)) itemsToNotify.push({ id: updated._id, name: updated.name, size: sz, available: avail });
+                                    });
+                                } else {
+                                    itemsToNotify.push({ id: updated._id, name: updated.name, available: Number(updated.quantity || 0) });
+                                }
+                                if(itemsToNotify.length) await notifyLowStock(itemsToNotify);
+                            }
+                        }catch(e){ console.error('Notify low stock (decrement) failed', e && e.message); }
+
+                        return res.status(200).json({ success: true, data: updated, message: 'Stock decremented' });
+                }
 
         res.status(500).json({ success: false, message: 'Failed to decrement stock' });
     } catch (error) {

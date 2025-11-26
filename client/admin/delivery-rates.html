@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin — Delivery Rates</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+  <main class="max-w-4xl mx-auto p-6">
+    <h1 class="text-2xl font-bold mb-4">Delivery Rates (Server-side)</h1>
+    <p class="text-sm text-gray-600 mb-4">Edit the JSON object and click Save. Only admins may access this page.</p>
+    <textarea id="rates-json" class="w-full h-64 p-3 border rounded bg-white font-mono text-sm"></textarea>
+    <div class="flex gap-2 mt-3">
+      <button id="save-btn" class="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
+      <button id="reload-btn" class="px-4 py-2 border rounded">Reload</button>
+      <span id="status" class="ml-3 text-sm"></span>
+    </div>
+  </main>
+
+  <script>
+    const API = '/api/admin/delivery-rates';
+    async function loadRates(){
+      const token = localStorage.getItem('token');
+      try{
+        const res = await fetch(API, { headers: { 'Authorization': `Bearer ${token}` } });
+        const json = await res.json();
+        if(!res.ok) throw new Error(json.msg || 'Failed to fetch rates');
+        document.getElementById('rates-json').value = JSON.stringify(json.data, null, 2);
+      }catch(e){
+        document.getElementById('rates-json').value = '{\n  "defaultRate":120,\n  "rates":{}\n}';
+        document.getElementById('status').textContent = e.message || 'Error';
+      }
+    }
+    document.getElementById('save-btn').addEventListener('click', async ()=>{
+      const token = localStorage.getItem('token');
+      const txt = document.getElementById('rates-json').value;
+      try{
+        const obj = JSON.parse(txt);
+        const res = await fetch(API, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify(obj) });
+        const json = await res.json();
+        if(!res.ok) throw new Error(json.msg || 'Failed to save');
+        document.getElementById('status').textContent = 'Saved.';
+      }catch(e){
+        document.getElementById('status').textContent = e.message || 'Invalid JSON';
+      }
+    });
+    document.getElementById('reload-btn').addEventListener('click', loadRates);
+    loadRates();
+  </script>
+</body>
+</html>

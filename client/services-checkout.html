@@ -94,7 +94,25 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">State/Province <span class="text-red-500">*</span></label>
-                <input id="ship-province" type="text" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Cavite" required>
+                <select id="ship-province" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" required>
+                  <option value="">Select province</option>
+                  <option>Metro Manila</option>
+                  <option>Manila</option>
+                  <option>Quezon City</option>
+                  <option>Makati</option>
+                  <option>Cavite</option>
+                  <option>Laguna</option>
+                  <option>Batangas</option>
+                  <option>Bulacan</option>
+                  <option>Pampanga</option>
+                  <option>Rizal</option>
+                  <option>Quezon</option>
+                  <option>Nueva Ecija</option>
+                  <option>Tarlac</option>
+                  <option>Zambales</option>
+                  <option>Bataan</option>
+                  <option>Other</option>
+                </select>
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">City <span class="text-red-500">*</span></label>
@@ -125,7 +143,7 @@
                     <p class="text-xs text-gray-500">3-5 days via J&T / Lalamove</p>
                   </div>
                 </div>
-                <div class="font-semibold text-indigo-600">₱80</div>
+                <div class="font-semibold text-indigo-600">₱<span id="fee-standard-services">80</span></div>
               </label>
               <label class="flex items-center justify-between border-2 rounded-lg p-3 cursor-pointer hover:border-green-400 transition-colors" id="delivery-pickup-option">
                 <div class="flex items-center gap-3">
@@ -413,6 +431,9 @@
       standardRadio.addEventListener('change', updateDeliveryUI);
       pickupRadio.addEventListener('change', updateDeliveryUI);
       updateDeliveryUI(); // Initial state
+      // Recompute when province changes so the standard delivery card updates
+      const provSel = document.getElementById('ship-province');
+      if (provSel) provSel.addEventListener('change', ()=> updatePaymentAmounts(serviceData || {}));
     }
 
     /**
@@ -757,10 +778,39 @@
       const serviceFee = 0; // No additional service fee for now
       const paymentOption = data.paymentOption || 'full';
       
-      // Get delivery fee based on selected method
+      // Get delivery fee based on selected method and selected province
       const deliveryMethod = document.querySelector('input[name="delivery-method"]:checked');
+      // Province-based delivery rates (client-side mirror of server rates)
+      const PROVINCE_RATES = {
+        'metro manila': 120,
+        'manila': 120,
+        'quezon city': 120,
+        'makati': 120,
+        'cavite': 70,
+        'laguna': 80,
+        'batangas': 120,
+        'bulacan': 90,
+        'pampanga': 100,
+        'rizal': 85,
+        'quezon': 150,
+        'nueva ecija': 120,
+        'tarlac': 130,
+        'zambales': 140,
+        'bataan': 140,
+        'other': 120
+      };
+      function clientRateForProvince(prov){
+        if(!prov) return 120;
+        const key = (prov||'').toString().toLowerCase();
+        if(key.includes('cavite')) return PROVINCE_RATES['cavite'];
+        if(key.includes('laguna')) return PROVINCE_RATES['laguna'];
+        if(key.includes('batangas')) return PROVINCE_RATES['batangas'];
+        if(key.includes('metro')||key.includes('manila')||key.includes('quezon city')||key.includes('makati')) return PROVINCE_RATES['metro manila'];
+        return PROVINCE_RATES[key] || 120;
+      }
       // For remaining-balance payment, do not add a new delivery fee; use the original fee for computation only
-      const selectedDeliveryFee = deliveryMethod && deliveryMethod.value === 'pickup' ? 0 : 80;
+      const selectedProvince = document.getElementById('ship-province')?.value || '';
+      const selectedDeliveryFee = deliveryMethod && deliveryMethod.value === 'pickup' ? 0 : clientRateForProvince(selectedProvince);
       const previousDeliveryFee = Number(data.previousDeliveryFee || 0);
       
       // Determine subtotal semantics:
@@ -800,6 +850,9 @@
       // For balance payments, surface 0 and note that fee was already included before
       const effectiveDelivery = paymentOption === 'balance' ? 0 : selectedDeliveryFee;
       document.getElementById('delivery-fee-amount').textContent = `₱${effectiveDelivery.toLocaleString()}`;
+      // Update the delivery price on the Standard Delivery card
+      const feeCard = document.getElementById('fee-standard-services');
+      if (feeCard) feeCard.textContent = effectiveDelivery.toLocaleString();
       document.getElementById('total-amount').textContent = displayAmount.toLocaleString();
       
       // Remove existing payment option badge if any
@@ -856,12 +909,20 @@
           document.getElementById('contact-phone').value = user.contactNumber || '';
           
           // Fill shipping address if available
-          if (user.address) {
+            if (user.address) {
             document.getElementById('ship-block').value = user.address.block || '';
             document.getElementById('ship-lot').value = user.address.lot || '';
             document.getElementById('ship-street').value = user.address.street || '';
             document.getElementById('ship-building').value = user.address.building || '';
-            document.getElementById('ship-province').value = user.address.province || '';
+            // ship-province is now a select; try to match an existing option
+            const provSel = document.getElementById('ship-province');
+            if (provSel) {
+              const prov = (user.address.province || '').toString();
+              const match = Array.from(provSel.options).find(o => o.text.toLowerCase().includes(prov.toLowerCase()));
+              if (match) provSel.value = match.text; else provSel.value = prov || '';
+              // Recompute displayed fees when we populate the province
+              try { updatePaymentAmounts(serviceData || {}); } catch (e) { /* ignore */ }
+            }
             document.getElementById('ship-city').value = user.address.city || '';
             document.getElementById('ship-zip').value = user.address.zip || '';
             document.getElementById('ship-phone').value = user.address.phone || user.contactNumber || '';
@@ -903,7 +964,24 @@
           ? (serviceData.shippingMethod || 'Standard')
           : (deliveryMethodElem?.value === 'pickup' ? 'Pick-Up' : 'Standard');
         // Do not pass a new delivery fee for remaining-balance payments
-        const deliveryFee = paymentOption === 'balance' ? 0 : (deliveryMethod === 'Pick-Up' ? 0 : 80);
+        let deliveryFee = 0;
+        if (paymentOption === 'balance') {
+          deliveryFee = 0;
+        } else if (deliveryMethod === 'Pick-Up') {
+          deliveryFee = 0;
+        } else {
+          // compute from selected province (client-side estimate)
+          const selProv = document.getElementById('ship-province')?.value || '';
+          function clientRateForProvinceSimple(prov){
+            const key = (prov||'').toString().toLowerCase();
+            if(key.includes('cavite')) return 70;
+            if(key.includes('laguna')) return 80;
+            if(key.includes('batangas')) return 120;
+            if(key.includes('metro')||key.includes('manila')||key.includes('quezon city')||key.includes('makati')) return 120;
+            return 120;
+          }
+          deliveryFee = clientRateForProvinceSimple(selProv);
+        }
         
         // Get shipping address (only if not pick-up)
         let shippingAddress = null;

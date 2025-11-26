@@ -126,7 +126,12 @@
       <div class="lg:col-span-2 text-gray-600">
         <p class="mb-4">At Fundamental Apparel, we believe that every athlete—whether amateur or pro—deserves access to quality, customized sportswear that reflects their passion, identity, and team pride. Since our humble beginnings in 2019, we've grown from a small local business into a trusted name in sports customization.</p>
         <div class="mt-6">
-          <img src="images/hero-about.jpg" alt="Showcase" class="w-full rounded shadow-md object-cover h-56">
+          <!-- Two image tiles: stacked on mobile, side-by-side on md+; use object-contain so full product images are visible -->
+          <div class="flex flex-col md:flex-row gap-6 items-center md:justify-center">
+            <div class="w-full md:w-1/2 flex items-center justify-center bg-gray-100 rounded overflow-hidden shadow-sm">
+              <img src="../images/aboutus/aboutus.png" alt="Our story image 1" class="w-full h-auto max-h-[420px] object-contain">
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -136,8 +141,18 @@
       <div class="flex items-center justify-between mb-6">
         <h3 class="text-2xl font-semibold">Designed for Athletes, Built for Champions</h3>
       </div>
-
-      <div id="showcase-products" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 justify-items-center items-start"></div>
+<div class="flex flex-col md:flex-row gap-6">
+            <div class="w-full md:w-1/2 flex items-center justify-center bg-gray-100 rounded overflow-hidden shadow-sm">
+              <img src="../images/aboutus/example3.jfif" alt="Our story image 1" class="w-full h-auto max-h-[420px] object-contain">
+            </div>
+            <div class="w-full md:w-1/2 flex items-center justify-center bg-gray-100 rounded overflow-hidden shadow-sm">
+              <img src="../images/aboutus/example4.jfif" alt="Our story image 2" class="w-full h-auto max-h-[420px] object-contain">
+            </div>
+            <div class="w-full md:w-1/2 flex items-center justify-center bg-gray-100 rounded overflow-hidden shadow-sm">
+              <img src="../images/aboutus/example5.jfif" alt="Our story image 2" class="w-full h-auto max-h-[420px] object-contain">
+            </div>
+      <!-- Wrapper: stack on mobile, side-by-side on md+ -->
+      <div id="showcase-products" class="flex flex-col md:flex-row gap-6 items-stretch justify-center"></div>
 
     </section>
 
@@ -163,25 +178,25 @@
         const json = await res.json();
         const items = (json && json.success && Array.isArray(json.data) && json.data.length) ? json.data : [];
         if (!items.length) throw new Error('No products');
-        // Render image-only tiles (no text) - clickable to product
+        // Render two images side-by-side on md+ and stacked on mobile. Use object-contain so full image is visible.
         container.innerHTML = items.map(p => `
-          <a href="product-detail.html?id=${p._id}" class="block rounded-lg overflow-hidden shadow-sm hover:shadow-md transition w-full max-w-[420px]">
-            <div class="w-full h-56 sm:h-64 md:h-72 lg:h-80 bg-gray-100 overflow-hidden">
-              <img src="${p.imageUrl || (p.gallery && p.gallery[0]) || 'images/placeholder.png'}" alt="${p.name || 'Product'}" class="w-full h-full object-cover">
+          <a href="product-detail.html?id=${p._id}" class="block rounded-lg overflow-hidden shadow-sm hover:shadow-md transition w-full md:w-1/2">
+            <div class="w-full flex items-center justify-center bg-gray-100">
+              <img src="${p.imageUrl || (p.gallery && p.gallery[0]) || 'images/placeholder.png'}" alt="${p.name || 'Product'}" class="w-full h-auto max-h-[420px] object-contain">
             </div>
           </a>
         `).join('');
       } catch (err) {
         // Fallback static image-only showcase
         container.innerHTML = `
-          <a href="products.html" class="block rounded-lg overflow-hidden shadow-sm hover:shadow-md transition w-full max-w-[420px]">
-            <div class="w-full h-56 sm:h-64 md:h-72 lg:h-80 bg-gray-100 overflow-hidden">
-              <img src="images/preview1.jpg" class="w-full h-full object-cover" alt="Product 1">
+          <a href="products.html" class="block rounded-lg overflow-hidden shadow-sm hover:shadow-md transition w-full md:w-1/2">
+            <div class="w-full flex items-center justify-center bg-gray-100">
+              <img src="images/preview1.jpg" class="w-full h-auto max-h-[420px] object-contain" alt="Product 1">
             </div>
           </a>
-          <a href="products.html" class="block rounded-lg overflow-hidden shadow-sm hover:shadow-md transition w-full max-w-[420px]">
-            <div class="w-full h-56 sm:h-64 md:h-72 lg:h-80 bg-gray-100 overflow-hidden">
-              <img src="images/preview2.jpg" class="w-full h-full object-cover" alt="Product 2">
+          <a href="products.html" class="block rounded-lg overflow-hidden shadow-sm hover:shadow-md transition w-full md:w-1/2">
+            <div class="w-full flex items-center justify-center bg-gray-100">
+              <img src="images/preview2.jpg" class="w-full h-auto max-h-[420px] object-contain" alt="Product 2">
             </div>
           </a>
         `;
