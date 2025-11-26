@@ -1091,15 +1091,55 @@ exports.verifyFinalPayment = async (req, res) => {
 
             const sizesMap = extractSizesMap(order);
             if (sizesMap) {
-              const invName = order.inventoryName || order.productName || order.garmentType || order.fabricType || null;
-              if (!invName) throw new Error('Cannot determine inventory name for per-size allocation');
-              const invDoc = await findInventoryByName(invName, session);
+              // Build candidate inventory names to try (prefer explicit inventoryName, then fabric+garment combos)
+              const candidates = [];
+              if (order.inventoryName) candidates.push(String(order.inventoryName).trim());
+              if (order.fabricType && order.garmentType) candidates.push(`${String(order.fabricType).trim()} - ${String(order.garmentType).trim()}`);
+              if (order.fabricType && order.itemType) candidates.push(`${String(order.fabricType).trim()} - ${String(order.itemType).trim()}`);
+              if (order.productName) candidates.push(String(order.productName).trim());
+              if (order.garmentType) candidates.push(String(order.garmentType).trim());
+              if (order.fabricType) candidates.push(String(order.fabricType).trim());
+
+              // Deduplicate while preserving order
+              const seen = new Set();
+              const uniq = candidates.filter(c => { if(!c) return false; const k = c.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; });
+
+              let invDoc = null;
+              for (const cand of uniq) {
+                try {
+                  invDoc = await findInventoryByName(cand, session);
+                  if (invDoc) { break; }
+                } catch (e) {
+                  // continue trying other candidates
+                  console.warn('[verifyFinalPayment] inventory lookup candidate failed:', cand, e.message);
+                }
+              }
+
+              if (!invDoc) {
+                // Looser fallback: try searching inventories that contain fabricType or garmentType
+                const looseTerms = [];
+                if (order.fabricType) looseTerms.push(String(order.fabricType).trim());
+                if (order.garmentType) looseTerms.push(String(order.garmentType).trim());
+                if (looseTerms.length) {
+                  const orQs = looseTerms.map(t => ({ name: new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i') }));
+                  const candidatesDocs = await Inventory.find({ $or: orQs }).sort({ quantity: -1 }).session(session);
+                  if (candidatesDocs && candidatesDocs.length) {
+                    invDoc = candidatesDocs[0];
+                    console.warn('[verifyFinalPayment] used loose inventory match:', invDoc.name, 'for terms', looseTerms);
+                  }
+                }
+              }
+
+              if (!invDoc) {
+                throw new Error('Inventory item not found (tried: ' + (uniq.join(', ') || 'none') + ')');
+              }
+
               const inventoryId = invDoc ? invDoc._id : null;
-              const allocRes = await allocateInventoryBySizes({ name: invName, inventoryId, sizesMap, orderId: order._id, adminId: req.user._id, session, note: 'Allocate by sizes on final verification' });
+              const allocRes = await allocateInventoryBySizes({ name: invDoc.name, inventoryId, sizesMap, orderId: order._id, adminId: req.user._id, session, note: 'Allocate by sizes on final verification' });
               // sync linked Product.countInStock if needed
               try {
                 let invAfter = allocRes;
-                if (!invAfter) invAfter = invDoc ? await Inventory.findById(invDoc._id).session(session) : await findInventoryByName(invName, session);
+                if (!invAfter && invDoc) invAfter = await Inventory.findById(invDoc._id).session(session);
                 if (invAfter && invAfter.productId) {
                   const Product = require('../models/Product');
                   const prod = await Product.findById(invAfter.productId).session(session);
@@ -1108,10 +1148,50 @@ exports.verifyFinalPayment = async (req, res) => {
               } catch (syncErr) { console.warn('Failed to sync product after sizes allocation (final verify):', syncErr && syncErr.message); }
 
               order.inventoryAllocated = true;
-              order.allocatedItems = [{ inventoryId: invDoc ? invDoc._id : null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
+              order.allocatedItems = [{ inventoryId: invDoc ? invDoc._id : null, name: invDoc ? invDoc.name : null, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
             } else {
-              const allocName = order.inventoryName || order.fabricType;
-              const invDoc = await allocateInventory({ name: allocName, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+              // Try to find an inventory document using several candidate names before allocating
+              const candidates = [];
+              if (order.inventoryName) candidates.push(String(order.inventoryName).trim());
+              if (order.fabricType && order.garmentType) candidates.push(`${String(order.fabricType).trim()} - ${String(order.garmentType).trim()}`);
+              if (order.fabricType && order.itemType) candidates.push(`${String(order.fabricType).trim()} - ${String(order.itemType).trim()}`);
+              if (order.productName) candidates.push(String(order.productName).trim());
+              if (order.garmentType) candidates.push(String(order.garmentType).trim());
+              if (order.fabricType) candidates.push(String(order.fabricType).trim());
+
+              const seen = new Set();
+              const uniq = candidates.filter(c => { if(!c) return false; const k = c.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; });
+
+              let foundInv = null;
+              for (const cand of uniq) {
+                try {
+                  foundInv = await findInventoryByName(cand, session);
+                  if (foundInv) { break; }
+                } catch (e) {
+                  console.warn('[verifyFinalPayment] inventory lookup candidate failed:', cand, e.message);
+                }
+              }
+
+              if (!foundInv) {
+                // Looser fallback for non-size allocation as well
+                const looseTerms = [];
+                if (order.fabricType) looseTerms.push(String(order.fabricType).trim());
+                if (order.garmentType) looseTerms.push(String(order.garmentType).trim());
+                if (looseTerms.length) {
+                  const orQs = looseTerms.map(t => ({ name: new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i') }));
+                  const candidatesDocs = await Inventory.find({ $or: orQs }).sort({ quantity: -1 }).session(session);
+                  if (candidatesDocs && candidatesDocs.length) {
+                    foundInv = candidatesDocs[0];
+                    console.warn('[verifyFinalPayment] used loose inventory match (non-size):', foundInv.name, 'for terms', looseTerms);
+                  }
+                }
+              }
+
+              if (!foundInv) {
+                throw new Error('Inventory item not found (tried: ' + (uniq.join(', ') || 'none') + ')');
+              }
+
+              const invDoc = await allocateInventory({ name: foundInv.name, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
               order.inventoryAllocated = true;
               order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
             }

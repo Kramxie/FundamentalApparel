@@ -394,12 +394,9 @@
       const teamNames = document.getElementById('teamNamesFile').files[0];
       if(teamNames) fd.append('teamNamesFile', teamNames);
 
-      if(teamMode){
-        fd.append('includeTeamMembers', 'true');
-        fd.append('teamMembers', JSON.stringify(collectTeamMembers()));
-      }else{
-        fd.append('garmentSize', document.getElementById('garmentSize').value);
-      }
+      // NOTE: do not append size/team to FormData here — we append after
+      // availability checks and any auto-selection so the posted value
+      // reflects the final selected/auto-selected size(s).
 
       // Validate inventory availability before sending the quote
       // Ensure currentInventory is populated (try preloaded or fetch), then check requested sizes
@@ -454,6 +451,15 @@
       } else {
         // No inventory info available — proceed but warn in console
         console.debug('No inventory data available to validate before submit for', fg);
+      }
+
+      // Append size/team info after availability checks (ensures auto-select applied)
+      if (teamMode) {
+        fd.append('includeTeamMembers', 'true');
+        fd.append('teamMembers', JSON.stringify(collectTeamMembers()));
+      } else {
+        const selSizeVal = (document.getElementById('garmentSize') && document.getElementById('garmentSize').value) || '';
+        if (selSizeVal) fd.append('garmentSize', selSizeVal);
       }
 
       const btn = document.getElementById('submitBtn');
