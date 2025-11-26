@@ -63,8 +63,30 @@
           <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
             <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
           </a>
+          
           <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
             <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
+          </a>
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
+          </a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
+          </a>
+          <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
+          </a>
+          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
+          </a>
+          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
+          </a>
+          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
+          </a>
+          <a href="settings.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span>
           </a>
         </nav>
       </div>
@@ -469,6 +491,39 @@
       window.addEventListener('popstate', ()=> document.querySelectorAll('.add-product-submenu').forEach(s=>s.classList.add('hidden')));
     });
   })();
+  </script>
+
+  <script>
+    // Mobile sidebar handlers: open/close sidebar when the hamburger is clicked
+    (function(){
+      document.addEventListener('DOMContentLoaded', function(){
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const mobileSidebar = document.getElementById('mobile-sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const mobileSidebarClose = document.getElementById('mobile-sidebar-close');
+
+        function openSidebar(){
+          if(!mobileSidebar) return;
+          mobileSidebar.classList.remove('-translate-x-full');
+          mobileSidebar.classList.add('translate-x-0');
+          if(sidebarOverlay) sidebarOverlay.classList.remove('hidden');
+          document.body.classList.add('overflow-hidden');
+        }
+        function closeSidebar(){
+          if(!mobileSidebar) return;
+          mobileSidebar.classList.remove('translate-x-0');
+          mobileSidebar.classList.add('-translate-x-full');
+          if(sidebarOverlay) sidebarOverlay.classList.add('hidden');
+          document.body.classList.remove('overflow-hidden');
+        }
+
+        sidebarToggle?.addEventListener('click', openSidebar);
+        mobileSidebarClose?.addEventListener('click', closeSidebar);
+        sidebarOverlay?.addEventListener('click', closeSidebar);
+        if(mobileSidebar) Array.from(mobileSidebar.querySelectorAll('a')).forEach(a=>a.addEventListener('click', closeSidebar));
+        document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeSidebar(); });
+      });
+    })();
   </script>
 </body>
 <script src="admin-notifications.js"></script>

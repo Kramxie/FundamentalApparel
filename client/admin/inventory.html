@@ -16,7 +16,7 @@
 </head>
 <body class="bg-gray-100">
 
-    <div class="flex h-screen bg-gray-100">
+    <div class="flex min-h-screen bg-gray-100">
         <!-- Sidebar -->
         <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
             <div class="flex items-center justify-center h-16 bg-white shadow-md">
@@ -1846,6 +1846,9 @@
                 document.getElementById('item-sku').value = data.sku || '';
                 document.getElementById('item-description').value = data.description || '';
 
+                // detect fabric type early to decide which UI to show
+                const isFabricItem = String(data.type || '').toLowerCase().indexOf('fabric') !== -1 || String(data.type || '').toLowerCase().indexOf('fabric_garment') !== -1;
+
                 // Populate product fields
                 const isProductCheckbox = document.getElementById('is-product-checkbox');
                 const productFields = document.getElementById('product-fields');
@@ -1911,7 +1914,12 @@
                         if (sr) sr.innerHTML = '';
                     }
                 } else {
-                    productFields.classList.add('hidden');
+                    // If the item is a fabric, keep productFields visible so the inline Fabric section (which lives inside it) can be shown.
+                    if (isFabricItem) {
+                        productFields.classList.remove('hidden');
+                    } else {
+                        productFields.classList.add('hidden');
+                    }
                     // For non-products (like fabrics), still show per-size if they have sizes
                     if (data.sizesInventory && Object.keys(data.sizesInventory).length > 0) {
                         const perSizeSection = document.getElementById('per-size-section');
@@ -1927,6 +1935,66 @@
                             renderSizeRows(data.sizesInventory);
                         } catch (e) { /* ignore */ }
                     }
+                    // If this item is a fabric/fabric_garment type, reveal the inline Fabric edit section
+                    try {
+                        const fabricSection = document.getElementById('variant-fabric-section');
+                        const variantProductEl = document.getElementById('variant-product');
+                        const variantFabricEl = document.getElementById('variant-fabric');
+                        const itemTypeHiddenEl = document.getElementById('item-type');
+
+                        const isFabric = String(data.type || '').toLowerCase().indexOf('fabric') !== -1 || String(data.type || '').toLowerCase().indexOf('fabric_garment') !== -1;
+
+                        if (isFabric) {
+                            // show inline fabric UI
+                            if (fabricSection) {
+                                fabricSection.classList.remove('hidden');
+                                try { fabricSection.style.display = 'block'; } catch(e){}
+                            }
+                            console.log('[inventory] openEditModal: detected fabric item', data._id, 'type=', data.type, 'sizesInventory=', data.sizesInventory);
+                            // set variant radios and hidden type
+                            if (variantProductEl) variantProductEl.checked = false;
+                            if (variantFabricEl) variantFabricEl.checked = true;
+                            if (itemTypeHiddenEl) itemTypeHiddenEl.value = 'fabric';
+
+                            // populate inline fabric fields where available
+                            const fg = document.getElementById('fabricGarmentSelect'); if (fg) fg.value = data.name || '';
+
+                            // sizes: try to normalize sizesInventory that may be a JSON string
+                            let sizesInv = data.sizesInventory || {};
+                            if (typeof sizesInv === 'string') {
+                                try { sizesInv = JSON.parse(sizesInv); } catch (e) { sizesInv = {}; }
+                            }
+                            const sizesInline = document.getElementById('fabric-sizes-inline');
+                            if (sizesInline) sizesInline.value = Object.keys(sizesInv || {}).join(', ');
+
+                            // stock: populate with total quantity if available or sum of sizes
+                            const stockInline = document.getElementById('fabric-stock-inline');
+                            try {
+                                let total = 0;
+                                if (sizesInv && typeof sizesInv === 'object' && Object.keys(sizesInv).length > 0) {
+                                    total = Object.values(sizesInv).reduce((a,b)=>a+Number(b||0), 0);
+                                } else if (data.quantity) {
+                                    total = Number(data.quantity) || 0;
+                                }
+                                if (stockInline) stockInline.value = total;
+                            } catch (e) { if (stockInline) stockInline.value = data.quantity || ''; }
+
+                            const thresholdInline = document.getElementById('fabric-threshold-inline'); if (thresholdInline) thresholdInline.value = data.lowStockThreshold || '';
+                            const supplierInline = document.getElementById('fabric-supplier-inline'); if (supplierInline) supplierInline.value = data.supplier || '';
+                            const skuInline = document.getElementById('fabric-sku-inline'); if (skuInline) skuInline.value = data.sku || '';
+
+                            // ensure per-size editor and preview are visible and populated
+                            const perSizeSectionEl = document.getElementById('per-size-section');
+                            if (perSizeSectionEl) perSizeSectionEl.classList.remove('hidden');
+                            try {
+                                sizesPriceMap = data.sizesPrice || {};
+                            } catch (e) { sizesPriceMap = {}; }
+                            try { renderSizeRows(sizesInv || {}); renderPreviewSizes(sizesInv || {}, sizesPriceMap); } catch (e) {}
+                        } else {
+                            console.log('[inventory] openEditModal: not fabric, type=', data.type);
+                            if (fabricSection) fabricSection.classList.add('hidden');
+                        }
+                    } catch (e) { /* ignore populate errors */ }
                     // Clear product fields
                         const prodCatEl2 = document.getElementById('product-category'); if (prodCatEl2) prodCatEl2.value = '';
                         const prodMaterialEl2 = document.getElementById('product-material'); if (prodMaterialEl2) prodMaterialEl2.value = '';

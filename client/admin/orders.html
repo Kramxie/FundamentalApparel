@@ -48,7 +48,7 @@
 
 <body class="bg-gray-100">
   <div id="dev-error-banner" class="hidden fixed top-16 left-1/2 transform -translate-x-1/2 z-50 bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded-md text-sm"></div>
-  <div class="flex h-screen bg-gray-100">
+  <div class="flex min-h-screen bg-gray-100">
     <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
       <div class="flex items-center justify-center h-16 bg-white shadow-md">
         <span class="text-2xl font-bold text-indigo-600">Admin Panel</span>
@@ -89,7 +89,12 @@
     <div class="flex flex-col flex-1 overflow-hidden">
       <!-- Header with proper spacing -->
       <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
-        <h1 class="text-xl font-semibold text-gray-800">Orders</h1>
+        <div class="flex items-center">
+          <button id="mobile-menu-btn" class="block md:hidden mr-3 p-2 rounded-md hover:bg-gray-100 z-30" aria-label="Open menu">
+            <i class="fas fa-bars text-gray-700"></i>
+          </button>
+          <h1 class="text-xl font-semibold text-gray-800">Orders</h1>
+        </div>
         <div class="flex items-center gap-3">
           <div class="relative">
             <button id="notif-btn" class="px-3 py-2 bg-white border rounded-md hover:bg-gray-50" title="Notifications">
@@ -142,7 +147,7 @@
                   <option value="Standard">Standard</option>
                   <option value="Pick-Up">Pick-Up</option>
                 </select>
-                <input id="search" type="text" placeholder="Search (order id, customer, tracking)..." class="border rounded-md px-3 py-2 text-sm w-56">
+                <input id="search" type="text" placeholder="Search (order id, customer, tracking)..." class="border rounded-md px-3 py-2 text-sm w-full sm:w-56">
                 <input id="date-from" type="date" class="border rounded-md px-3 py-2 text-sm">
                 <input id="date-to" type="date" class="border rounded-md px-3 py-2 text-sm">
                 <button id="filter-reset" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Reset</button>
@@ -175,7 +180,7 @@
           <div class="bg-white rounded-lg shadow">
             <div class="p-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
               <div class="flex flex-wrap gap-2 items-center">
-                <input id="custom-search" type="text" placeholder="Search name, ref, courier..." class="border rounded-md px-3 py-2 text-sm w-56">
+                <input id="custom-search" type="text" placeholder="Search name, ref, courier..." class="border rounded-md px-3 py-2 text-sm w-full sm:w-56">
                 <select id="custom-filter-status" class="border rounded-md px-3 py-2 text-sm">
                   <option value="">Status</option>
                   <option>Pending Quote</option>
@@ -420,6 +425,35 @@
       </div>
     </div>
   </div>
+  <script>
+    // Mobile sidebar handlers (enable on pages that include mobile sidebar markup)
+    (function(){
+      document.addEventListener('DOMContentLoaded', function(){
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileSidebar = document.getElementById('mobile-sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        function openSidebar() {
+          if (!mobileSidebar) return;
+          mobileSidebar.classList.remove('-translate-x-full');
+          mobileSidebar.classList.add('translate-x-0');
+          if (sidebarOverlay) sidebarOverlay.classList.remove('hidden');
+          document.body.classList.add('overflow-hidden');
+        }
+        function closeSidebar() {
+          if (!mobileSidebar) return;
+          mobileSidebar.classList.remove('translate-x-0');
+          mobileSidebar.classList.add('-translate-x-full');
+          if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
+          document.body.classList.remove('overflow-hidden');
+        }
+        mobileMenuBtn?.addEventListener('click', openSidebar);
+        document.getElementById('mobile-sidebar-close')?.addEventListener('click', closeSidebar);
+        sidebarOverlay?.addEventListener('click', closeSidebar);
+        if (mobileSidebar) Array.from(mobileSidebar.querySelectorAll('a')).forEach(a => a.addEventListener('click', closeSidebar));
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+      });
+    })();
+  </script>
 
   <div id="custom-order-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-lg shadow max-w-6xl w-full overflow-hidden">
