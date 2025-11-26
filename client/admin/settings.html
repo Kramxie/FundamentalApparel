@@ -51,7 +51,15 @@
 
       <main class="p-6 bg-gray-50 min-h-screen">
         <div class="max-w-5xl mx-auto space-y-6">
-          <div class="bg-white p-6 rounded shadow">
+          <!-- Settings submenu -->
+          <div class="bg-white p-4 rounded shadow mb-4">
+            <nav class="flex gap-3">
+              <button id="settings-about-tab" class="px-4 py-2 bg-indigo-600 text-white rounded">About Us</button>
+              <button id="settings-contact-tab" class="px-4 py-2 bg-gray-100 text-gray-700 rounded">Contact</button>
+            </nav>
+          </div>
+
+          <div id="about-panel" class="bg-white p-6 rounded shadow">
             <h2 class="text-lg font-semibold mb-3">About Us</h2>
             <div id="about-message" class="hidden p-3 rounded mb-3"></div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -77,7 +85,7 @@
             </div>
           </div>
 
-          <div class="bg-white p-6 rounded shadow">
+          <div id="contact-panel" class="hidden bg-white p-6 rounded shadow">
             <h2 class="text-lg font-semibold mb-3">Contact</h2>
             <div id="contact-message" class="hidden p-3 rounded mb-3"></div>
             <label class="block text-sm font-medium text-gray-700">Title</label>
@@ -140,7 +148,26 @@
       }
 
       document.addEventListener('DOMContentLoaded', ()=>{
-        // About
+        // Settings tab switching
+        const aboutTabBtn = document.getElementById('settings-about-tab');
+        const contactTabBtn = document.getElementById('settings-contact-tab');
+        const aboutPanel = document.getElementById('about-panel');
+        const contactPanel = document.getElementById('contact-panel');
+        function showAbout() {
+          aboutPanel.classList.remove('hidden'); contactPanel.classList.add('hidden');
+          aboutTabBtn.classList.add('bg-indigo-600','text-white'); aboutTabBtn.classList.remove('bg-gray-100','text-gray-700');
+          contactTabBtn.classList.remove('bg-indigo-600','text-white'); contactTabBtn.classList.add('bg-gray-100','text-gray-700');
+        }
+        function showContact() {
+          contactPanel.classList.remove('hidden'); aboutPanel.classList.add('hidden');
+          contactTabBtn.classList.add('bg-indigo-600','text-white'); contactTabBtn.classList.remove('bg-gray-100','text-gray-700');
+          aboutTabBtn.classList.remove('bg-indigo-600','text-white'); aboutTabBtn.classList.add('bg-gray-100','text-gray-700');
+        }
+        aboutTabBtn.addEventListener('click', ()=> { showAbout(); loadAbout(); });
+        contactTabBtn.addEventListener('click', ()=> { showContact(); loadContact(); });
+        // default: show About
+        showAbout();
+        // About (lazy load handled by showAbout/loadAbout)
         const aboutTitle = document.getElementById('about-title');
         const aboutBody = document.getElementById('about-body');
         const aboutImagesInput = document.getElementById('about-images-input');
@@ -151,7 +178,7 @@
           try{
             const res = await fetch(`${API}/api/admin/content/about-us`, { headers });
             const j = await res.json();
-            if (!j.success) { loadedAbout = { title:'', body:'', images:[] }; return; }
+            if (!j.success) { loadedAbout = { title:'', body:'', images:[] }; aboutTitle.value=''; aboutBody.value=''; aboutImagesDiv.innerHTML=''; return; }
             loadedAbout = j.data || { title:'', body:'', images:[] };
             aboutTitle.value = loadedAbout.title || '';
             aboutBody.value = loadedAbout.body || '';
@@ -166,7 +193,6 @@
           }catch(e){ console.error('loadAbout', e); }
         }
 
-        loadAbout();
         document.getElementById('about-save').addEventListener('click', async ()=>{
           await saveContent('about-us', aboutTitle, aboutBody, aboutImagesInput, false, aboutMsg);
           // after save, reload local copy and refresh preview
