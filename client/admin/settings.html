@@ -60,27 +60,23 @@
           </div>
 
           <div id="about-panel" class="bg-white p-6 rounded shadow">
-            <h2 class="text-lg font-semibold mb-3">About Us</h2>
+            <h2 class="text-lg font-semibold mb-3">About Us (Customer Page Preview)</h2>
             <div id="about-message" class="hidden p-3 rounded mb-3"></div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700">Title</label>
-                <input id="about-title" class="w-full border p-2 rounded mb-3" />
-                <label class="block text-sm font-medium text-gray-700">Content</label>
-                <textarea id="about-body" class="w-full border p-3 rounded h-40 mb-3"></textarea>
-                <label class="block text-sm font-medium text-gray-700">Images</label>
-                <div id="about-images" class="flex gap-3 items-center mb-3"></div>
+                <iframe id="about-preview" src="/client/about-us.html" class="w-full h-96 border rounded"></iframe>
+                <p class="text-xs text-gray-500 mt-2">This shows the full customer About Us page. Only images below can be managed from here.</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Manage Images</label>
+                <div id="about-images" class="flex gap-3 items-start flex-wrap mb-3"></div>
                 <input id="about-images-input" type="file" accept="image/*" multiple class="mb-3" />
                 <div class="flex gap-3">
-                  <button id="about-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
-                  <button id="about-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-                  <button id="about-replace" class="px-4 py-2 bg-gray-200 rounded">Replace Images on Save</button>
+                  <button id="about-upload" class="px-4 py-2 bg-indigo-600 text-white rounded">Upload Images</button>
+                  <button id="about-refresh" class="px-4 py-2 bg-gray-200 rounded">Refresh Preview</button>
                 </div>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Live Preview (customer About Us)</label>
-                <iframe id="about-preview" src="/about-us.html" class="w-full h-80 border rounded" sandbox="allow-scripts allow-same-origin"></iframe>
-                <p class="text-xs text-gray-500 mt-2">Preview pulls the customer About Us page. It refreshes after saving.</p>
+                <p class="text-xs text-gray-500 mt-2">You can add new images or delete existing ones. The page preview will refresh after changes.</p>
               </div>
             </div>
           </div>
@@ -167,9 +163,9 @@
         contactTabBtn.addEventListener('click', ()=> { showContact(); loadContact(); });
         // default: show About
         showAbout();
-        // About (lazy load handled by showAbout/loadAbout)
-        const aboutTitle = document.getElementById('about-title');
-        const aboutBody = document.getElementById('about-body');
+        // load about images for the default view
+        loadAbout();
+        // About: manage images only (preview shows full page)
         const aboutImagesInput = document.getElementById('about-images-input');
         const aboutImagesDiv = document.getElementById('about-images');
         const aboutMsg = document.getElementById('about-message');
@@ -178,40 +174,55 @@
           try{
             const res = await fetch(`${API}/api/admin/content/about-us`, { headers });
             const j = await res.json();
-            if (!j.success) { loadedAbout = { title:'', body:'', images:[] }; aboutTitle.value=''; aboutBody.value=''; aboutImagesDiv.innerHTML=''; return; }
-            loadedAbout = j.data || { title:'', body:'', images:[] };
-            aboutTitle.value = loadedAbout.title || '';
-            aboutBody.value = loadedAbout.body || '';
+            if (!j.success) { loadedAbout = { images:[] }; aboutImagesDiv.innerHTML = ''; return; }
+            loadedAbout = j.data || { images: [] };
             aboutImagesDiv.innerHTML = '';
             (loadedAbout.images||[]).forEach(img => {
-              const imgEl = document.createElement('div'); imgEl.className='flex flex-col items-center';
-              imgEl.innerHTML = `<img src="${img.url}" class="thumb rounded border" /><div class="text-xs mt-1">${img.filename||''}</div>`;
-              aboutImagesDiv.appendChild(imgEl);
+              const wrap = document.createElement('div'); wrap.className = 'relative flex flex-col items-center';
+              wrap.style.width = '120px'; wrap.style.marginBottom = '8px'; wrap.style.marginRight = '8px';
+              const imgEl = document.createElement('img'); imgEl.src = img.url; imgEl.className = 'thumb rounded border';
+              imgEl.style.display = 'block';
+              const name = document.createElement('div'); name.className = 'text-xs mt-1'; name.textContent = img.filename || '';
+              const delBtn = document.createElement('button'); delBtn.className = 'absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center'; delBtn.innerHTML = '&times;';
+              delBtn.title = 'Delete image';
+              delBtn.addEventListener('click', async ()=>{
+                if (!confirm('Delete this image?')) return;
+                try{
+                  const dres = await fetch(`${API}/api/admin/content/about-us/image`, { method: 'DELETE', headers: Object.assign({ 'Content-Type':'application/json' }, headers), body: JSON.stringify({ filename: img.filename }) });
+                  const dj = await dres.json();
+                  if (!dres.ok) { alert(dj.msg || 'Failed to delete'); return; }
+                  // reload images and refresh preview
+                  await loadAbout();
+                  const ifr = document.getElementById('about-preview'); if (ifr) ifr.src = '/client/about-us.html?preview=' + Date.now();
+                }catch(e){ console.error('delete image', e); alert('Error deleting image'); }
+              });
+              wrap.appendChild(imgEl);
+              wrap.appendChild(delBtn);
+              wrap.appendChild(name);
+              aboutImagesDiv.appendChild(wrap);
             });
-            // refresh preview
-            const ifr = document.getElementById('about-preview'); if (ifr) ifr.src = '/about-us.html?preview=' + Date.now();
           }catch(e){ console.error('loadAbout', e); }
         }
 
-        document.getElementById('about-save').addEventListener('click', async ()=>{
-          await saveContent('about-us', aboutTitle, aboutBody, aboutImagesInput, false, aboutMsg);
-          // after save, reload local copy and refresh preview
-          await loadAbout();
-          const ifr = document.getElementById('about-preview'); if (ifr) ifr.src = '/about-us.html?preview=' + Date.now();
+        // Upload handler: append new images to content.images
+        document.getElementById('about-upload').addEventListener('click', async ()=>{
+          const files = aboutImagesInput.files || [];
+          if (!files.length) { alert('Select images to upload'); return; }
+          try{
+            // reuse saveContent; pass empty title/body objects that have .value properties
+            await saveContent('about-us', { value: '' }, { value: '' }, aboutImagesInput, false, aboutMsg);
+            aboutImagesInput.value = '';
+            await loadAbout();
+            const ifr = document.getElementById('about-preview'); if (ifr) ifr.src = '/client/about-us.html?preview=' + Date.now();
+          }catch(e){ console.error(e); alert('Failed to upload'); }
         });
-        document.getElementById('about-replace').addEventListener('click', async ()=>{
-          await saveContent('about-us', aboutTitle, aboutBody, aboutImagesInput, true, aboutMsg);
-          await loadAbout();
-          const ifr = document.getElementById('about-preview'); if (ifr) ifr.src = '/about-us.html?preview=' + Date.now();
+
+        document.getElementById('about-refresh').addEventListener('click', ()=>{
+          const ifr = document.getElementById('about-preview'); if (ifr) ifr.src = '/client/about-us.html?preview=' + Date.now();
         });
-        document.getElementById('about-cancel').addEventListener('click', ()=>{
-          if (!loadedAbout) return; aboutTitle.value = loadedAbout.title || ''; aboutBody.value = loadedAbout.body || ''; aboutImagesInput.value = ''; aboutImagesDiv.querySelectorAll('*').forEach(n=>n.remove());
-          (loadedAbout.images||[]).forEach(img => {
-            const imgEl = document.createElement('div'); imgEl.className='flex flex-col items-center';
-            imgEl.innerHTML = `<img src="${img.url}" class="thumb rounded border" /><div class="text-xs mt-1">${img.filename||''}</div>`;
-            aboutImagesDiv.appendChild(imgEl);
-          });
-        });
+
+        // initial load when showing tab
+        // loadAbout() will be called when About tab is shown (see tab click handler)
 
         // Contact
         const contactTitle = document.getElementById('contact-title');
