@@ -370,7 +370,7 @@
       }
 
       const fd = new FormData();
-      fd.append('serviceType', 'Upload Design ');
+      fd.append('serviceType', 'printing-only');
       fd.append('printingMethod', (document.querySelector('input[name="printingMethod"]:checked')?.value)||'dye-sublimation');
       // split combined "Fabric - Garment" into separate fields for backend compatibility
       const fg = (els.fabricGarment && els.fabricGarment.value) ? els.fabricGarment.value : '';
@@ -593,24 +593,33 @@
     }
 
     async function showVariantAvailability(name){
-      if(!name){ renderStockPanel(null); return; }
+      // Do not render the inline stock panel automatically; just set currentInventory and update size selects.
+      if(!name){ currentInventory = null; updateSizeDropdowns(); return; }
       // try preloaded list
       const found = availableVariants.find(v => (v.name||'').toLowerCase() === name.toLowerCase());
       if(found){
-        renderStockPanel(found);
+        currentInventory = found;
+        updateSizeDropdowns();
         return;
       }
-      // fallback to API call
+      // fallback to API call (do not open UI modal here)
       try{
         const token = localStorage.getItem('token');
         const res = await fetch(`${API}/api/admin/inventory/availability?name=${encodeURIComponent(name)}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
-        const data = await res.json();
-        if(data && data.success && data.data){
-          renderStockPanel(data.data);
-        } else {
-          renderStockPanel(null);
+        if(!res.ok){
+          console.debug('Availability API returned', res.status);
+          currentInventory = null;
+          updateSizeDropdowns();
+          return;
         }
-      }catch(err){ console.debug('availability fetch failed', err && err.message); renderStockPanel(null); }
+        const data = await res.json().catch(()=>null);
+        if(data && data.success && data.data){
+          currentInventory = data.data;
+        } else {
+          currentInventory = null;
+        }
+        updateSizeDropdowns();
+      }catch(err){ console.debug('availability fetch failed', err && err.message); currentInventory = null; updateSizeDropdowns(); }
     }
 
     // wire dropdown change to show availability
