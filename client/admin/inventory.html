@@ -483,11 +483,7 @@
                             </select>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Price (₱)</label>
-                            <input id="fabric-min-price" type="number" step="0.01" min="0" class="w-full px-3 py-2 border rounded" placeholder="e.g. 150.00" />
-                            <p class="text-xs text-gray-400 mt-1">Set a minimum starting price for this Fabric & Garment variant. Final price will be determined during quoting.</p>
-                        </div>
+                        <!-- Minimum Price removed; price will be derived from per-size prices when provided -->
 
                         <div class="mb-3">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
@@ -978,7 +974,10 @@
 
             document.getElementById('fabric-save')?.addEventListener('click', async () => {
                 const variant = String(document.getElementById('fabric-variant')?.value || '').trim();
-                const minPrice = Number(document.getElementById('fabric-min-price')?.value || 0);
+                // derive min price from current per-size prices if any
+                const sizesPriceObj = (typeof getSizesPriceObject === 'function') ? getSizesPriceObject() : (sizesPriceMap || {});
+                const priceVals = Object.values(sizesPriceObj || {}).map(v=>Number(v||0)).filter(v=>v>0);
+                const minPrice = priceVals.length ? Math.min(...priceVals) : 0;
                 const threshold = Math.max(0, Math.floor(Number(document.getElementById('fabric-threshold')?.value || 5)));
                 const supplier = String(document.getElementById('fabric-supplier')?.value || '').trim();
                 const sku = String(document.getElementById('fabric-sku')?.value || '').trim();
@@ -1035,7 +1034,6 @@
 
             document.getElementById('fabric-standalone-save')?.addEventListener('click', async () => {
                 const variant = String(document.getElementById('fabric-variant-standalone')?.value || '').trim();
-                const minPrice = Number(document.getElementById('fabric-min-price-standalone')?.value || 0);
                 const threshold = Math.max(0, Math.floor(Number(document.getElementById('fabric-threshold-standalone')?.value || 5)));
                 const supplier = String(document.getElementById('fabric-supplier-standalone')?.value || '').trim();
                 const sku = String(document.getElementById('fabric-sku-standalone')?.value || '').trim();
@@ -1045,6 +1043,9 @@
                 // collect per-size inventory & prices from the standalone modal
                 const sizesInventory = getFabricStandaloneSizesInventory();
                 const sizesPrice = getFabricStandaloneSizesPrice();
+                // compute minimum non-zero per-size price to use as item price
+                const priceVals = Object.values(sizesPrice || {}).map(v=>Number(v||0)).filter(v=>v>0);
+                const minPrice = priceVals.length ? Math.min(...priceVals) : 0;
 
                 const payload = {
                     name: `${variant}`,
@@ -1094,9 +1095,9 @@
                 row.className = 'flex items-center gap-2 p-2 bg-white border rounded-md mb-2';
                 row.innerHTML = `
                     <input type="checkbox" class="row-checkbox w-4 h-4" />
-                    <input data-size-input type="text" value="${escapeHtml(size)}" class="px-3 py-2 border rounded w-32" placeholder="Size" />
-                    <input data-qty-input type="number" min="0" value="${Number(qty)||0}" class="px-3 py-2 border rounded w-24" placeholder="Qty" />
-                    <input data-price-input type="number" step="0.01" min="0" value="${Number(price)||0}" class="px-3 py-2 border rounded w-36" placeholder="Price (₱)" />
+                    <input data-size-input type="text" value="${escapeHtml(size)}" class="px-3 py-2 border rounded w-20 sm:w-32" placeholder="Size" />
+                    <input data-qty-input type="number" min="0" value="${Number(qty)||0}" class="px-3 py-2 border rounded w-16 sm:w-24" placeholder="Qty" />
+                    <input data-price-input type="number" step="0.01" min="0" value="${Number(price)||0}" class="px-3 py-2 border rounded w-24 sm:w-36" placeholder="Price (₱)" />
                     <button type="button" class="remove-row-btn text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
                 `;
                 row.querySelector('.remove-row-btn').addEventListener('click', () => row.remove());
@@ -1248,28 +1249,7 @@
                 });
             });
 
-            document.getElementById('fabric-generate-price-sizes-btn')?.addEventListener('click', () => {
-                // This generator will add sizes to the combined rows. If rows exist, append missing sizes; otherwise render all.
-                const txt = String(document.getElementById('fabric-price-sizes-generate')?.value||'');
-                const arr = txt.split(',').map(s=>s.trim()).filter(Boolean);
-                if (!arr.length) return;
-                const existing = Array.from(document.querySelectorAll('#fabric-sizes-rows [data-size-input]')).map(i=>String(i.value||'').trim());
-                const rowsContainer = document.getElementById('fabric-sizes-rows');
-                if (!rowsContainer) return;
-                if (existing.length === 0) {
-                    renderFabricStandaloneRows(arr);
-                } else {
-                    // append only missing sizes
-                    arr.forEach(s => {
-                        if (!existing.includes(s)) rowsContainer.appendChild(createFabricRow(s, 0, 0));
-                    });
-                }
-            });
-            document.getElementById('fabric-clear-price-sizes')?.addEventListener('click', () => {
-                // clear prices by zeroing price inputs in combined rows
-                const priceEls = Array.from(document.querySelectorAll('#fabric-sizes-rows [data-price-input]'));
-                priceEls.forEach(p => p.value = '0');
-            });
+            // Note: per-size price generator/clear inputs removed from HTML; handlers intentionally omitted
             document.getElementById('fabric-apply-price-btn')?.addEventListener('click', () => {
                 const v = Number(document.getElementById('fabric-apply-price-input')?.value||0) || 0;
                 const rows = Array.from(document.querySelectorAll('#fabric-sizes-rows div'));
@@ -2464,10 +2444,6 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Price (₱)</label>
-                    <input id="fabric-min-price-standalone" type="number" step="0.01" min="0" class="w-full px-3 py-2 border rounded" placeholder="e.g. 150.00" />
-                </div>
-                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
                     <input id="fabric-threshold-standalone" type="number" min="0" class="w-full px-3 py-2 border rounded" value="10" />
                 </div>
@@ -2491,22 +2467,26 @@
                     <button id="fabric-add-size-row" type="button" class="px-3 py-2 border rounded">Add Size Row</button>
                     <button id="fabric-clear-sizes" type="button" class="px-3 py-2 border rounded">Clear</button>
                 </div>
-                <div class="flex items-center gap-2 mb-3">
-                    <input id="fabric-apply-qty-input" type="number" min="0" class="px-3 py-2 border rounded w-40" placeholder="Qty" />
-                    <button id="fabric-apply-qty-btn" type="button" class="px-3 py-2 bg-green-600 text-white rounded">Apply To Selected</button>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                    <div class="flex items-center gap-2 flex-1">
+                        <input id="fabric-apply-qty-input" type="number" min="0" class="px-3 py-2 border rounded w-40" placeholder="Qty" />
+                        <button id="fabric-apply-qty-btn" type="button" class="px-3 py-2 bg-green-600 text-white rounded">Apply To Selected</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input id="fabric-apply-price-input" type="number" step="0.01" min="0" class="px-3 py-2 border rounded w-40" placeholder="Price (₱)" />
+                        <button id="fabric-apply-price-btn" type="button" class="px-3 py-2 bg-blue-600 text-white rounded">Apply Price</button>
+                    </div>
                 </div>
-                <div id="fabric-sizes-rows" class="space-y-2 mb-4"></div>
 
-                <h4 class="font-semibold mb-2">Per-size price (optional)</h4>
-                <div class="flex items-center gap-2 mb-3">
-                    <input id="fabric-price-sizes-generate" type="text" class="flex-1 px-3 py-2 border rounded" placeholder="e.g. S, M, L" />
-                    <button id="fabric-clear-price-sizes" type="button" class="px-3 py-2 border rounded">Clear</button>
+                <div class="flex items-center gap-2 text-xs text-gray-600 font-semibold mb-2">
+                    <div class="w-6"></div>
+                    <div class="w-20 sm:w-32">Size</div>
+                    <div class="w-16 sm:w-24">Qty</div>
+                    <div class="w-24 sm:w-36">Price (₱)</div>
+                    <div class="w-8"></div>
                 </div>
-                <div class="flex items-center gap-2 mb-3">
-                    <input id="fabric-apply-price-input" type="number" step="0.01" min="0" class="px-3 py-2 border rounded w-40" placeholder="Price (₱)" />
-                    <button id="fabric-apply-price-btn" type="button" class="px-3 py-2 bg-blue-600 text-white rounded">Apply To Selected</button>
-                </div>
-                <div id="fabric-price-rows" class="space-y-2"></div>
+
+                <div id="fabric-sizes-rows" class="space-y-2 mb-4"></div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

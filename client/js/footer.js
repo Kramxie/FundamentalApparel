@@ -19,7 +19,7 @@
             <li><a href="#" class="hover:text-indigo-600">Shipping Info</a></li>
             <li><a href="returns.html" class="hover:text-indigo-600">Returns</a></li>
             <li><a href="returns.html" class="hover:text-indigo-600">Refund</a></li>
-            <li><a href="#" class="hover:text-indigo-600">Size Guide</a></li>
+            <li><a href="size-guide.html" class="hover:text-indigo-600">Size Guide</a></li>
           </ul>
         </div>
         <div>
