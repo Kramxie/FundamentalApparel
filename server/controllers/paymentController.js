@@ -131,7 +131,6 @@ exports.createPaymentSession = async (req, res) => {
     const amountInCents = Math.round(finalCharge * 100);
     
     // Determine payment description based on payment option
-    const normalizedOption = (paymentOption === 'balance') ? 'full' : (paymentOption || 'full');
     const paymentDesc = paymentOption === 'downpayment' 
       ? '50% Downpayment' 
       : (paymentOption === 'balance' ? 'Remaining Balance' : '100% Full Payment');
