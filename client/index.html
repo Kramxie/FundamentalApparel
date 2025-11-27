@@ -397,6 +397,16 @@
                     const imageUrl = product.imageUrl || 'https://placehold.co/400x400/e2e8f0/cccccc?text=N/A';
 
                     const productCard = document.createElement('div');
+                    // Determine display price (prefer min per-size price when available)
+                    let displayPrice = Number(product.price || 0);
+                    try {
+                        let spo = product.sizesPrice || {};
+                        if (typeof spo === 'string') {
+                            try { spo = JSON.parse(spo); } catch(e) { spo = {}; }
+                        }
+                        const vals = Object.values(spo || {}).map(v => Number(v||0)).filter(v=>v>0);
+                        if (vals.length > 0) displayPrice = Math.min(...vals);
+                    } catch (e) { /* ignore */ }
                     
                     // Fixed Card Widths (Responsive)
                     productCard.className = 'snap-start flex-shrink-0 w-[45%] md:w-[23%] group bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow duration-300 flex flex-col';
@@ -416,7 +426,7 @@
                             
                             <div>
                                 <div class="flex justify-between items-center mb-3">
-                                    <p class="text-base md:text-xl font-bold text-indigo-600">₱${Number(product.price || 0).toLocaleString()}</p>
+                                    <p class="text-base md:text-xl font-bold text-indigo-600">₱${Number(displayPrice || 0).toLocaleString()}</p>
                                 </div>
 
                                 <div class="flex gap-2">

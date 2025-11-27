@@ -297,6 +297,17 @@
                 </div>
             `).join('') : '<div class="text-center py-10 text-gray-500 bg-gray-50 rounded-xl">No reviews yet. Be the first to review!</div>';
 
+            // Determine displayed price: prefer minimum per-size price when available
+            let displayPrice = Number(product.price || 0);
+            try {
+                let sizesPriceObj = product.sizesPrice || {};
+                if (typeof sizesPriceObj === 'string') {
+                    try { sizesPriceObj = JSON.parse(sizesPriceObj); } catch(e) { sizesPriceObj = {}; }
+                }
+                const priceVals = Object.values(sizesPriceObj || {}).map(v => Number(v || 0)).filter(v => v > 0);
+                if (priceVals.length > 0) displayPrice = Math.min(...priceVals);
+            } catch (e) { /* ignore */ }
+
             // --- RENDER HTML ---
             const productHtml = `
                 <div class="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -324,7 +335,7 @@
                             
                             ${avgRatingDisplay}
 
-                            <div id="product-price" class="text-3xl font-bold text-gray-900 mb-6">₱${Number(product.price||0).toLocaleString()}</div>
+                            <div id="product-price" class="text-3xl font-bold text-gray-900 mb-6">₱${Number(displayPrice||0).toLocaleString()}</div>
 
                             <div class="space-y-6 border-t border-b border-gray-100 py-6 mb-6">
                                 
@@ -417,7 +428,16 @@
             const sizeSelector = document.getElementById('size-selector');
             // Track current displayed stock/price so quantity controls can use them
             let currentStock = Number(product.countInStock || 0);
+            // compute initial currentPrice: prefer minimum per-size price when available
             let currentPrice = Number(product.price || 0);
+            try {
+                let sizesPriceObj = product.sizesPrice || {};
+                if (typeof sizesPriceObj === 'string') {
+                    try { sizesPriceObj = JSON.parse(sizesPriceObj); } catch(e) { sizesPriceObj = {}; }
+                }
+                const priceVals = Object.values(sizesPriceObj || {}).map(v => Number(v || 0)).filter(v => v > 0);
+                if (priceVals.length > 0) currentPrice = Math.min(...priceVals);
+            } catch (e) { /* ignore */ }
 
             sizeSelector?.addEventListener('click', (e) => {
                 const btn = e.target.closest('button');
@@ -437,7 +457,7 @@
                     const inv = (invSource instanceof Map) ? Object.fromEntries(invSource) : invSource;
                     const sp = (spSource instanceof Map) ? Object.fromEntries(spSource) : spSource;
                     const avail = Number((inv && inv[selectedSize]) || 0);
-                    const priceForSize = (sp && (selectedSize in sp)) ? Number(sp[selectedSize]) : Number(product.price || 0);
+                    const priceForSize = (sp && (selectedSize in sp)) ? Number(sp[selectedSize]) : Number(currentPrice || 0);
 
                     // Update current trackers
                     currentStock = Number.isFinite(avail) ? avail : Number(product.countInStock || 0);
@@ -587,7 +607,18 @@
                     container.innerHTML = `<div class="text-center py-8 text-gray-500">No related products found.</div>`;
                     return;
                 }
-                const cards = items.slice(0,6).map(p => `
+                const cards = items.slice(0,6).map(p => {
+                    // compute display price (min per-size price if available)
+                    let dp = Number(p.price || 0);
+                    try {
+                        let spo = p.sizesPrice || {};
+                        if (typeof spo === 'string') {
+                            try { spo = JSON.parse(spo); } catch(e) { spo = {}; }
+                        }
+                        const vals = Object.values(spo || {}).map(v=>Number(v||0)).filter(v=>v>0);
+                        if (vals.length>0) dp = Math.min(...vals);
+                    } catch (e) {}
+                    return `
                     <a href="product-detail.html?id=${p._id}" class="block bg-white p-3 rounded-lg border hover:shadow-md transition flex flex-col justify-between w-full max-w-[220px]">
                         <div class="w-full overflow-hidden rounded-md mb-3">
                             <div class="w-full h-40 sm:h-44 md:h-48 lg:h-52 overflow-hidden rounded-md bg-gray-50 flex items-center justify-center">
@@ -596,10 +627,10 @@
                         </div>
                         <div class="mt-2">
                             <div class="text-sm font-medium text-gray-900 truncate">${p.name}</div>
-                            <div class="text-sm text-gray-500 mt-1">₱${Number(p.price||0).toLocaleString()}</div>
+                            <div class="text-sm text-gray-500 mt-1">₱${Number(dp||0).toLocaleString()}</div>
                         </div>
                     </a>
-                `).join('');
+                `; }).join('');
                 // Responsive grid: 2 cols mobile, 3 small, 4 medium+, center and constrain width
                 container.innerHTML = `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6 mx-auto max-w-6xl justify-items-center">${cards}</div>`;
             }
