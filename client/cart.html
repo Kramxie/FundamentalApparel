@@ -222,15 +222,54 @@
                 }
 
                 const itemsHtml = cartData.items.map(item => {
-                    const product = item.product;
-                    if (!product) return '';
+                    const product = item.product || null;
                     // Prefer a valid positive item.price if present; if item.price is 0 or not provided,
-                    // fall back to the product price stored on the Product document.
+                    // fall back to the product price stored on the Product document (if any).
                     const rawItemPrice = item.price;
-                    const prodPrice = Number(product.price || 0);
+                    const prodPrice = Number(product?.price || 0);
                     const price = (rawItemPrice != null && Number(rawItemPrice) > 0) ? Number(rawItemPrice) : prodPrice;
                     const quantity = Number(item.quantity ?? 0);
-                    
+
+                    // If the referenced Product document was removed, still render a placeholder row
+                    // so the user can see the cart item and remove it. Disable the checkbox so it
+                    // won't be included in checkout unless user replaces it.
+                    if (!product) {
+                        return `
+                        <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 transition hover:shadow-md">
+                            <div class="flex items-center gap-4 w-full sm:w-auto">
+                                <input type="checkbox" class="cart-item-checkbox w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-not-allowed" data-item-id="${item._id}" disabled>
+                                <div class="w-20 h-20 sm:w-24 sm:h-24 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0 border border-gray-100 flex items-center justify-center text-gray-400">
+                                    <i class="fas fa-image text-2xl"></i>
+                                </div>
+                            </div>
+
+                            <div class="flex-1 w-full">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h3 class="font-bold text-gray-900 text-lg leading-tight">Item no longer available</h3>
+                                    <button data-item-id="${item._id}" class="remove-item-btn text-gray-400 hover:text-red-500 transition p-1">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                                <p class="text-sm text-gray-500 mb-2">This product has been removed from the catalog. You can remove it from your cart.</p>
+                                <p class="text-indigo-600 font-bold mb-2">₱${Number(price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+
+                                <div class="flex justify-between items-center sm:justify-start sm:gap-6">
+                                    <div class="flex items-center border border-gray-300 rounded-lg">
+                                        <button class="qty-btn qty-decrease w-8 h-8 flex items-center justify-center text-gray-600 bg-gray-100 rounded-l-lg" disabled>-</button>
+                                        <span class="w-10 text-center font-medium text-sm">${quantity}</span>
+                                        <button class="qty-btn qty-increase w-8 h-8 flex items-center justify-center text-gray-600 bg-gray-100 rounded-r-lg" disabled>+</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="hidden sm:block text-right min-w-[100px]">
+                                <p class="text-sm text-gray-500 mb-1">Total</p>
+                                <p class="font-bold text-gray-900 text-lg">₱${Number(price * quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            </div>
+                        </div>
+                        `;
+                    }
+
                     return `
                         <div class="bg-white p-4 sm:p-6 rounded-xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 transition hover:shadow-md">
                             <div class="flex items-center gap-4 w-full sm:w-auto">
