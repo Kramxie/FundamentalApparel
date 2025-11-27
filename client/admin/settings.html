@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style> body { font-family: 'Inter', sans-serif; } .thumb { width: 96px; height: 96px; object-fit: cover; }</style>
+  <!-- Quill WYSIWYG editor -->
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100">
   <div class="flex min-h-screen bg-gray-100">
@@ -17,11 +19,14 @@
         <nav class="flex-grow space-y-2">
           <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
           <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span></a>
-          <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span></a>
+          <!-- Manage Products removed from sidebar -->
           <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span></a>
           <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span></a>
           <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span></a>
+          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span></a>
+          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span></a>
           <a href="settings.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
+        <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span></a>
         </nav>
       </div>
     </div>
@@ -33,7 +38,16 @@
       </div>
       <div class="flex flex-col flex-grow p-4">
         <nav class="flex-grow space-y-2">
+            <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span></a>
+          <!-- Manage Products removed from sidebar -->
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span></a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span></a>
+          <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span></a>
+          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span></a>
+          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span></a>
           <a href="settings.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
+          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span></a>
         </nav>
       </div>
     </div>
@@ -60,23 +74,21 @@
           </div>
 
           <div id="about-panel" class="bg-white p-6 rounded shadow">
-            <h2 class="text-lg font-semibold mb-3">About Us (Customer Page Preview)</h2>
+            <h2 class="text-lg font-semibold mb-3">About Us (Mirror & Edit)</h2>
             <div id="about-message" class="hidden p-3 rounded mb-3"></div>
-            <div class="space-y-4">
-              <div>
-                <iframe id="about-preview" src="/client/about-us.html" class="w-full h-96 border rounded"></iframe>
-                <p class="text-xs text-gray-500 mt-2">This shows the full customer About Us page. Only images below can be managed from here.</p>
-              </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Manage Images</label>
-                <div id="about-images" class="flex gap-3 items-start flex-wrap mb-3"></div>
-                <input id="about-images-input" type="file" accept="image/*" multiple class="mb-3" />
-                <div class="flex gap-3">
-                  <button id="about-upload" class="px-4 py-2 bg-indigo-600 text-white rounded">Upload Images</button>
-                  <button id="about-refresh" class="px-4 py-2 bg-gray-200 rounded">Refresh Preview</button>
-                </div>
-                <p class="text-xs text-gray-500 mt-2">You can add new images or delete existing ones. The page preview will refresh after changes.</p>
+            <!-- Mirrored About Us layout (full page content inserted here). -->
+            <div id="about-mirror-wrapper" class="mb-4">
+              <div id="about-mirror" class="bg-white border p-3 rounded min-h-[320px]"></div>
+            </div>
+
+            <!-- Save/Cancel -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div class="flex-1">
+                <button id="about-cancel" class="w-full sm:w-auto px-4 py-2 bg-gray-200 rounded">Cancel</button>
+              </div>
+              <div class="flex-1 sm:flex sm:justify-end">
+                <button id="about-save" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
               </div>
             </div>
           </div>
@@ -161,68 +173,185 @@
         }
         aboutTabBtn.addEventListener('click', ()=> { showAbout(); loadAbout(); });
         contactTabBtn.addEventListener('click', ()=> { showContact(); loadContact(); });
-        // default: show About
+        // default: show About and initialize editor + image management
         showAbout();
-        // load about images for the default view
-        loadAbout();
-        // About: manage images only (preview shows full page)
-        const aboutImagesInput = document.getElementById('about-images-input');
-        const aboutImagesDiv = document.getElementById('about-images');
+
+        // Mirror-based editor: inject the full About Us HTML into `#about-mirror`,
+        // make text nodes editable and provide per-image delete/replace controls.
         const aboutMsg = document.getElementById('about-message');
+        const mirror = document.getElementById('about-mirror');
         let loadedAbout = null;
+        // imageState: { id: { originalSrc, deleted, replaceFile } }
+        const imageState = {};
+
+        // make textual elements editable inside the mirror
+        function makeEditable(root){
+          const selectors = 'h1,h2,h3,h4,p,li,blockquote,figcaption,span';
+          const nodes = root.querySelectorAll(selectors);
+          let idCounter = 0;
+          nodes.forEach(n => {
+            // skip elements that are likely decorative or code
+            if (n.closest('nav') || n.closest('button') || n.closest('form')) return;
+            if (!n.dataset.editId){
+              n.dataset.editId = 'edit-' + (++idCounter);
+              n.contentEditable = 'true';
+              n.classList.add('outline-none','focus:ring','focus:ring-indigo-200');
+            }
+          });
+        }
+
+        // add inline image controls for every image in the mirror
+        function setupImageControls(root){
+          const imgs = Array.from(root.querySelectorAll('img'));
+          imgs.forEach((img, idx) => {
+            // assign stable id
+            const id = img.dataset.adminId || ('img-' + idx + '-' + Date.now());
+            img.dataset.adminId = id;
+            if (!imageState[id]) imageState[id] = { originalSrc: img.src, deleted: false, replaceFile: null };
+
+            // create wrapper if not already wrapped
+            if (!img.parentElement.classList.contains('admin-img-wrap')){
+              const wrap = document.createElement('div'); wrap.className = 'admin-img-wrap relative inline-block';
+              img.parentElement.insertBefore(wrap, img);
+              wrap.appendChild(img);
+              // controls overlay
+              const ctrl = document.createElement('div'); ctrl.className = 'absolute top-1 right-1 flex gap-1 z-20';
+              // delete
+              const del = document.createElement('button'); del.className='px-2 py-1 bg-red-600 text-white text-xs rounded'; del.textContent='Delete';
+              del.addEventListener('click', ()=>{
+                if (!confirm('Delete this image from About Us?')) return;
+                imageState[id].deleted = true;
+                img.style.opacity = '0.4';
+              });
+              // replace
+              const replLabel = document.createElement('label'); replLabel.className='px-2 py-1 bg-gray-200 text-xs rounded cursor-pointer'; replLabel.textContent='Replace';
+              const replInput = document.createElement('input'); replInput.type='file'; replInput.accept='image/*'; replInput.className='hidden';
+              replInput.addEventListener('change', ()=>{
+                const f = replInput.files && replInput.files[0]; if (!f) return;
+                imageState[id].replaceFile = f; imageState[id].deleted = false; // undo delete if replaced
+                const reader = new FileReader(); reader.onload = (e)=>{ img.src = e.target.result; img.style.opacity='1'; };
+                reader.readAsDataURL(f);
+              });
+              replLabel.appendChild(replInput);
+              replLabel.addEventListener('click', ()=> replInput.click());
+
+              ctrl.appendChild(del); ctrl.appendChild(replLabel);
+              wrap.appendChild(ctrl);
+            }
+          });
+        }
+
         async function loadAbout(){
           try{
             const res = await fetch(`${API}/api/admin/content/about-us`, { headers });
+            if (!res.ok){
+              // fallback to static page
+              const htmlRes = await fetch('/client/about-us.html');
+              if (!htmlRes.ok){ loadedAbout = { body:'', images:[] }; mirror.innerHTML = '<div class="p-4 text-sm text-gray-600">No About content found.</div>'; return; }
+              const text = await htmlRes.text();
+              const parser = new DOMParser(); const doc = parser.parseFromString(text, 'text/html');
+              // try to locate the main about container by heading
+              let aboutEl = null; const headings = doc.querySelectorAll('h1,h2,h3');
+              for (let h of headings) if (/about\s*us/i.test(h.textContent||'')){ aboutEl = h; break; }
+              const container = aboutEl ? (aboutEl.closest('section') || aboutEl.parentElement) : doc.body;
+              loadedAbout = { title:'', body: container.innerHTML, images: Array.from(container.querySelectorAll('img')).map(im=>({ filename: im.getAttribute('data-filename')||'', url: im.src })) };
+              mirror.innerHTML = loadedAbout.body || '';
+              makeEditable(mirror); setupImageControls(mirror);
+              return;
+            }
+            // parse JSON
             const j = await res.json();
-            if (!j.success) { loadedAbout = { images:[] }; aboutImagesDiv.innerHTML = ''; return; }
-            loadedAbout = j.data || { images: [] };
-            aboutImagesDiv.innerHTML = '';
-            (loadedAbout.images||[]).forEach(img => {
-              const wrap = document.createElement('div'); wrap.className = 'relative flex flex-col items-center';
-              wrap.style.width = '120px'; wrap.style.marginBottom = '8px'; wrap.style.marginRight = '8px';
-              const imgEl = document.createElement('img'); imgEl.src = img.url; imgEl.className = 'thumb rounded border';
-              imgEl.style.display = 'block';
-              const name = document.createElement('div'); name.className = 'text-xs mt-1'; name.textContent = img.filename || '';
-              const delBtn = document.createElement('button'); delBtn.className = 'absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center'; delBtn.innerHTML = '&times;';
-              delBtn.title = 'Delete image';
-              delBtn.addEventListener('click', async ()=>{
-                if (!confirm('Delete this image?')) return;
-                try{
-                  const dres = await fetch(`${API}/api/admin/content/about-us/image`, { method: 'DELETE', headers: Object.assign({ 'Content-Type':'application/json' }, headers), body: JSON.stringify({ filename: img.filename }) });
-                  const dj = await dres.json();
-                  if (!dres.ok) { alert(dj.msg || 'Failed to delete'); return; }
-                  // reload images and refresh preview
-                  await loadAbout();
-                  const ifr = document.getElementById('about-preview'); if (ifr) ifr.src = '/client/about-us.html?preview=' + Date.now();
-                }catch(e){ console.error('delete image', e); alert('Error deleting image'); }
-              });
-              wrap.appendChild(imgEl);
-              wrap.appendChild(delBtn);
-              wrap.appendChild(name);
-              aboutImagesDiv.appendChild(wrap);
-            });
-          }catch(e){ console.error('loadAbout', e); }
+            if (!j.success){ loadedAbout = { body:'', images:[] }; mirror.innerHTML = '<div class="p-4 text-sm text-gray-600">No About content available.</div>'; return; }
+            loadedAbout = j.data || { body:'', images:[] };
+            // inject full body HTML into the mirror. However, prefer the static client page
+            // if it contains more images (covers cases where About is hard-coded on user page).
+            try{
+              const staticRes = await fetch('/client/about-us.html');
+              if (staticRes.ok){
+                const staticText = await staticRes.text();
+                const parser = new DOMParser(); const staticDoc = parser.parseFromString(staticText, 'text/html');
+                const staticImgCount = (staticDoc.querySelectorAll('img')||[]).length;
+                const jsonImgCount = ((loadedAbout.body||'').match(/<img\b/gi)||[]).length;
+                if (staticImgCount > jsonImgCount){
+                  // use full static body to ensure all images/sections appear
+                  mirror.innerHTML = staticDoc.body.innerHTML || (loadedAbout.body || '');
+                  loadedAbout.body = mirror.innerHTML;
+                  makeEditable(mirror); setupImageControls(mirror);
+                  return;
+                }
+              }
+            }catch(e){ /* ignore - fall back to API body */ }
+
+            mirror.innerHTML = loadedAbout.body || '';
+            // ensure images and text are editable
+            makeEditable(mirror);
+            // fetch images from images/aboutus folder (or images/<key>) and append any missing images
+            try{
+              const imgsRes = await fetch(`${API}/api/admin/content/about-us/images`, { headers });
+              if (imgsRes.ok){
+                const imgsJson = await imgsRes.json();
+                const files = imgsJson && imgsJson.data ? imgsJson.data : [];
+                if (files.length){
+                  // ensure there's a container for extra images
+                  let panel = mirror.querySelector('.admin-images-panel');
+                  if (!panel){ panel = document.createElement('div'); panel.className = 'admin-images-panel grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6'; mirror.appendChild(panel); }
+                  files.forEach(f => {
+                    // if not already present in DOM, add it
+                    if (!mirror.querySelector(`img[src="${f.url}"]`)){
+                      const wrap = document.createElement('div'); wrap.className = 'border p-2 rounded';
+                      const im = document.createElement('img'); im.src = f.url; im.className = 'w-full h-auto'; im.setAttribute('data-filename', f.filename);
+                      wrap.appendChild(im);
+                      panel.appendChild(wrap);
+                    }
+                  });
+                }
+              }
+            }catch(e){ /* ignore image-list errors */ }
+            setupImageControls(mirror);
+          }catch(e){ console.error('loadAbout', e); showMsg(aboutMsg, 'Failed to load About content', false); }
         }
 
-        // Upload handler: append new images to content.images
-        document.getElementById('about-upload').addEventListener('click', async ()=>{
-          const files = aboutImagesInput.files || [];
-          if (!files.length) { alert('Select images to upload'); return; }
+        // initial load
+        loadAbout();
+
+        // Save: collect mirrored HTML and image replacements/deletions
+        document.getElementById('about-save').addEventListener('click', async ()=>{
+          const saveBtn = document.getElementById('about-save');
+          const cancelBtn = document.getElementById('about-cancel');
+          saveBtn.disabled = true; cancelBtn.disabled = true; saveBtn.classList.add('opacity-50');
           try{
-            // reuse saveContent; pass empty title/body objects that have .value properties
-            await saveContent('about-us', { value: '' }, { value: '' }, aboutImagesInput, false, aboutMsg);
-            aboutImagesInput.value = '';
+            // gather deletions
+            const deletions = Object.keys(imageState).filter(k=>imageState[k].deleted).map(k=>imageState[k].originalSrc);
+            // gather replacement files
+            const fd = new FormData();
+            const bodyHtml = mirror.innerHTML || '';
+            fd.append('body', bodyHtml);
+            // append deletions as JSON
+            if (deletions.length) fd.append('deleted', JSON.stringify(deletions));
+            Object.keys(imageState).forEach(key => {
+              const s = imageState[key]; if (s.replaceFile) fd.append('images', s.replaceFile);
+            });
+
+            const res = await fetch(`${API}/api/admin/content/about-us`, { method: 'PUT', headers: { 'Authorization': headers['Authorization'] }, body: fd });
+            const j = await res.json();
+            if (!res.ok){ showMsg(aboutMsg, j.msg||'Failed to save', false); return; }
+            showMsg(aboutMsg, 'Saved successfully', true);
+            // reload latest from server
+            for (let k of Object.keys(imageState)) delete imageState[k];
             await loadAbout();
-            const ifr = document.getElementById('about-preview'); if (ifr) ifr.src = '/client/about-us.html?preview=' + Date.now();
-          }catch(e){ console.error(e); alert('Failed to upload'); }
+            fetch('/client/about-us.html?preview=' + Date.now()).catch(()=>{});
+          }catch(e){ console.error('saveAbout', e); showMsg(aboutMsg, 'Error saving content', false); }
+          finally{ saveBtn.disabled = false; cancelBtn.disabled = false; saveBtn.classList.remove('opacity-50'); }
         });
 
-        document.getElementById('about-refresh').addEventListener('click', ()=>{
-          const ifr = document.getElementById('about-preview'); if (ifr) ifr.src = '/client/about-us.html?preview=' + Date.now();
+        // Cancel: restore mirror to last loaded state
+        document.getElementById('about-cancel').addEventListener('click', ()=>{
+          if (!loadedAbout) return;
+          mirror.innerHTML = loadedAbout.body || '';
+          for (let k of Object.keys(imageState)) delete imageState[k];
+          makeEditable(mirror); setupImageControls(mirror);
+          showMsg(aboutMsg, 'Reverted changes', true);
         });
-
-        // initial load when showing tab
-        // loadAbout() will be called when About tab is shown (see tab click handler)
 
         // Contact
         const contactTitle = document.getElementById('contact-title');

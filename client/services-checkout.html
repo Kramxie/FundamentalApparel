@@ -235,7 +235,11 @@
                 <span class="text-gray-600">Delivery Fee</span>
                 <span id="delivery-fee-amount" class="font-medium">₱80</span>
               </div>
-              <hr class="border-gray-200">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">VAT (12%)</span>
+                  <span class="font-medium">₱<span id="vat-services">0.00</span></span>
+                </div>
+                <hr class="border-gray-200">
               <div class="flex justify-between items-center pt-2">
                 <span class="text-base font-semibold text-gray-900">Total</span>
                 <span class="text-xl font-bold text-indigo-600">₱<span id="total-amount">0</span></span>
@@ -846,6 +850,7 @@
       }
 
       // Update displays
+      function round2(v){ return Math.round((v + Number.EPSILON) * 100) / 100; }
       document.getElementById('base-price').textContent = (subtotal).toLocaleString();
       // For balance payments, surface 0 and note that fee was already included before
       const effectiveDelivery = paymentOption === 'balance' ? 0 : selectedDeliveryFee;
@@ -853,7 +858,27 @@
       // Update the delivery price on the Standard Delivery card
       const feeCard = document.getElementById('fee-standard-services');
       if (feeCard) feeCard.textContent = effectiveDelivery.toLocaleString();
-      document.getElementById('total-amount').textContent = displayAmount.toLocaleString();
+
+      // VAT computation: applies to subtotal only (after discounts). For services, discounts rarely present.
+      const totalVat = round2(subtotal * 0.12);
+      let vatForDisplay = totalVat;
+      if (paymentOption === 'downpayment') {
+        vatForDisplay = round2(totalVat * 0.5);
+      } else if (paymentOption === 'balance') {
+        let alreadyPaid = Number(data.alreadyPaidAmount || 0);
+        if (!alreadyPaid || alreadyPaid <= 0) {
+          alreadyPaid = (subtotal + previousDeliveryFee) * 0.5;
+        }
+        const denom = (subtotal + previousDeliveryFee) || 1;
+        const proportionPaid = Math.min(Math.max(alreadyPaid / denom, 0), 1);
+        const vatPaid = round2(totalVat * proportionPaid);
+        vatForDisplay = Math.max(round2(totalVat - vatPaid), 0);
+      }
+
+      // Final displayed total includes VAT (VAT not applied to delivery fee)
+      const finalDisplayedTotal = round2(displayAmount + vatForDisplay);
+      document.getElementById('vat-services').textContent = vatForDisplay.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('total-amount').textContent = finalDisplayedTotal.toLocaleString();
       
       // Remove existing payment option badge if any
       const existingBadge = document.querySelector('.payment-option-badge');
@@ -1016,15 +1041,37 @@
         } else {
           finalAmount = totalAmountWithDelivery;
         }
-        
+
+        // VAT on subtotal only (not on delivery). Handle downpayment/balance proportionally.
+        function round2(v){ return Math.round((v + Number.EPSILON) * 100) / 100; }
+        const totalVat = round2(baseAmount * 0.12);
+        let vatForCharge = totalVat;
+        if (paymentOption === 'downpayment') vatForCharge = round2(totalVat * 0.5);
+        else if (paymentOption === 'balance') {
+          let alreadyPaid = Number(serviceData.alreadyPaidAmount || 0);
+          if (!alreadyPaid || alreadyPaid <= 0) alreadyPaid = (baseAmount + previousDeliveryFee) * 0.5;
+          const denom = (baseAmount + previousDeliveryFee) || 1;
+          const proportionPaid = Math.min(Math.max(alreadyPaid / denom, 0), 1);
+          const vatPaid = round2(totalVat * proportionPaid);
+          vatForCharge = Math.max(round2(totalVat - vatPaid), 0);
+        }
+
+        const finalCharge = round2(finalAmount + vatForCharge);
+
         // Prepare payment payload
         const payload = {
           orderId: serviceData.orderId || null,
           orderReference: orderReference,
           serviceType: serviceData.serviceType || 'customize-jersey',
-          amount: finalAmount,
+          // Amount for server/PayMongo: integer cents
+          amount: Math.round(finalCharge * 100),
+          // Human-readable amount
+          amountDisplay: finalCharge,
+          vatAmount: vatForCharge,
+          vatCents: Math.round(vatForCharge * 100),
           baseAmount: baseAmount,
           deliveryFee: deliveryFee,
+          deliveryFeeCents: Math.round(deliveryFee * 100),
           paymentMethod: paymentMethod,
           paymentOption: paymentOption, // 'downpayment' | 'full' | 'balance'
           shippingMethod: deliveryMethod,

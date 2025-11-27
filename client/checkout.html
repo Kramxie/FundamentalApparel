@@ -202,6 +202,10 @@
               <span>Delivery Fee</span>
               <span>₱<span id="delivery-fee">80</span></span>
             </div>
+            <div class="flex justify-between text-gray-600">
+              <span>VAT (12%)</span>
+              <span>₱<span id="vat">0.00</span></span>
+            </div>
             <hr>
             <div class="flex justify-between text-lg font-semibold">
               <span>Total</span>
@@ -400,6 +404,9 @@
       }
       let appliedVoucher = null;
       function updateTotals(subtotal) {
+        // Helpers
+        function round2(v){ return Math.round((v + Number.EPSILON) * 100) / 100; }
+
         subtotalEl.textContent = subtotal.toLocaleString();
         let discount = 0;
         if (appliedVoucher) {
@@ -413,8 +420,19 @@
           }
         }
         document.getElementById('discount').textContent = discount.toLocaleString();
+
         const deliveryFee = Number(deliveryFeeEl.textContent.replace(/,/g, '') || 0);
-        grandTotalEl.textContent = (subtotal - discount + deliveryFee).toLocaleString();
+
+        // VAT applies to subtotal after discounts only (not to delivery)
+        const taxable = Math.max(subtotal - discount, 0);
+        const vatRate = 0.12; // 12%
+        const vatAmount = round2(taxable * vatRate);
+        // Update VAT display (ensure two decimals)
+        const vatEl = document.getElementById('vat');
+        if (vatEl) vatEl.textContent = vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        const grand = round2(taxable + deliveryFee + vatAmount);
+        grandTotalEl.textContent = grand.toLocaleString();
       }
             // Voucher logic
             const voucherInput = document.getElementById('voucher-code');
@@ -489,7 +507,11 @@
         const deliveryFee = Number(document.getElementById('delivery-fee')?.textContent.replace(/,/g, '') || 0);
         const subtotal = Number(subtotalEl.textContent.replace(/,/g, '') || 0);
         const discount = Number(document.getElementById('discount')?.textContent.replace(/,/g, '') || 0);
-        const totalAmount = subtotal - discount + deliveryFee;
+        // VAT is applied to subtotal after discount only
+        function round2(v){ return Math.round((v + Number.EPSILON) * 100) / 100; }
+        const taxable = Math.max(subtotal - discount, 0);
+        const vatAmount = round2(taxable * 0.12);
+        const totalAmount = round2(taxable + deliveryFee + vatAmount);
         const comment = orderComment.value || '';
         
         try {
@@ -508,7 +530,12 @@
           // Prepare PayMongo checkout payload
           const payload = {
             orderType: 'product',
-            amount: totalAmount,
+            // Amount used by server/PayMongo: integer in cents
+            amount: Math.round(totalAmount * 100),
+            // Human-readable amount in pesos (for logging/debug)
+            amountDisplay: totalAmount,
+            vatAmount: vatAmount,
+            vatCents: Math.round(vatAmount * 100),
             items: cartItems,
             shippingAddress: {
               fullName: savedUserName || 'Customer',
@@ -521,6 +548,7 @@
             shippingMethod: shippingMethod,
             paymentMethod: paymentMethod,
             deliveryFee: deliveryFee,
+            deliveryFeeCents: Math.round(deliveryFee * 100),
             comment: comment,
             customerInfo: {
               name: savedUserName || 'Customer',

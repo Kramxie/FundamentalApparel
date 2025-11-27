@@ -30,9 +30,7 @@
                     <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
                         <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
                     </a>
-                    <a href="manage-products.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-box-open w-6"></i><span class="ml-3">Manage Products</span>
-                    </a>
+                    <!-- Manage Products removed: inventory page now handles product edits -->
                     <a href="inventory.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
                         <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
                     </a>
@@ -48,9 +46,13 @@
                     <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
                         <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
                     </a>
+                    <a href="settings.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+                        <i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span>
+                    </a>
                     <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
                         <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
                     </a>
+                    
                 </nav>
             </div>
         </div>
@@ -226,7 +228,7 @@
 
     <!-- Add/Edit Modal -->
     <div id="inventory-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
             <div class="px-6 py-4 border-b border-gray-200">
                 <div class="flex items-center justify-between">
                     <h3 id="modal-title" class="text-lg font-semibold text-gray-900">Add New Inventory Item</h3>
@@ -236,7 +238,7 @@
                 </div>
             </div>
 
-            <form id="inventory-form" class="px-6 py-4">
+            <form id="inventory-form" class="px-6 py-4 overflow-y-auto flex-1">
                 <!-- Modal variant selector (Product / Fabric / Garment) -->
                 <div id="variant-selector" class="mb-4">
                     <div class="flex items-center gap-6">
@@ -283,21 +285,7 @@
 
                             <!-- Total quantity/unit/base price are not shown in this modal layout per design. Values will be derived from per-size entries when provided. -->
 
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2"></label>
-                                <div class="flex items-center gap-2">
-                                    <input id="price-per-size-preview" type="text" readonly class="flex-1 px-3 py-2 border rounded bg-gray-50" placeholder="Prices will show here" />
-                                    <button type="button" id="open-assign-price-btn" class="px-3 py-2 bg-yellow-500 text-white rounded">Assign</button>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2"></label>
-                                <div class="flex items-center gap-2">
-                                    <input id="qty-per-size-preview" type="number" min="0" class="flex-1 px-3 py-2 border rounded" placeholder="Enter quantity per size (e.g. 10)" />
-                                    <button type="button" id="open-assign-stock-btn" class="px-3 py-2 bg-green-600 text-white rounded">Assign</button>
-                                </div>
-                            </div>
+                            <!-- Top per-size preview controls removed; use per-size Apply controls below -->
 
                             <!-- Per-size editor (hidden unless sizes are present) -->
                             <div id="per-size-section" class="col-span-2 mt-4 hidden">
@@ -309,6 +297,8 @@
                                     <button id="clear-sizes" type="button" class="px-3 py-2 border rounded">Clear</button>
                                 </div>
                                 <div class="flex items-center gap-2 mb-3">
+                                    <input id="apply-price-input" type="number" step="0.01" min="0" class="px-3 py-2 border rounded w-40" placeholder="Apply price (₱)" />
+                                    <button id="apply-price-btn" type="button" class="px-3 py-2 bg-yellow-500 text-white rounded">Apply Price To Selected</button>
                                     <input id="apply-qty-input" type="number" min="0" class="px-3 py-2 border rounded w-40" placeholder="Apply qty" />
                                     <button id="apply-qty-btn" type="button" class="px-3 py-2 bg-green-600 text-white rounded">Apply To Selected</button>
                                 </div>
@@ -325,13 +315,24 @@
                                 <input id="item-supplier" type="text" class="w-full px-3 py-2 border rounded" />
                             </div>
 
-                            <!-- Short Description and Additional Details removed per Fabric modal simplification -->
+                            <!-- Short Description and Additional Details (restored) -->
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Short Description</label>
+                                <textarea id="item-description" class="w-full px-3 py-2 border rounded" rows="2" placeholder="Short product description (required)"></textarea>
+                            </div>
 
-                            <!-- product material/sizes/colors/faqs removed to keep modal matching requested layout -->
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Additional Details</label>
+                                <textarea id="product-details" class="w-full px-3 py-2 border rounded" rows="4" placeholder="More detailed product information (optional)"></textarea>
+                            </div>
+
+                            <!-- FAQs / Extra Notes removed as requested -->
+
+                            <!-- product material/sizes/colors/faqs (kept) -->
 
                             <div class="col-span-2 md:col-span-1">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
-                                <div class="flex gap-3">
+                                    <div class="flex gap-3">
                                     <div class="w-32">
                                         <label class="block text-xs text-gray-600 mb-1">Main Image</label>
                                         <input id="product-image" type="file" accept="image/*" class="w-full" />
@@ -343,6 +344,38 @@
                                         <label class="block text-xs text-gray-600 mb-1">Image Gallery</label>
                                         <input id="product-gallery" type="file" accept="image/*" multiple class="w-full" />
                                         <div id="gallery-preview" class="hidden mt-2 grid grid-cols-4 gap-2"></div>
+                                    </div>
+                                </div>
+                                    <!-- Pre-Design specific images (Front/Back) -->
+                                    </div>
+
+                                    <!-- Buttons: placed directly under Product Images (inside form) -->
+                                    <div class="mt-4">
+                                        <div class="flex flex-col sm:flex-row sm:justify-end sm:space-x-3 gap-3">
+                                            <div class="flex-1 sm:flex-none">
+                                                <button type="button" id="cancel-btn" class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">Cancel</button>
+                                            </div>
+                                            <div class="flex-1 sm:flex-none flex justify-end">
+                                                <button type="submit" id="submit-btn" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"><i class="fas fa-save mr-2"></i>Save Changes</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pre-Design specific images moved to dedicated section (hidden by default) -->
+                                </div>
+
+                                <div id="predesign-images-section" class="col-span-2 hidden mt-3">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs text-gray-600 mb-1">Front Image (Pre-Design)</label>
+                                            <input id="front-input" type="file" accept="image/*" class="w-full" />
+                                            <div id="front-preview" class="hidden mt-2 w-full h-24 border rounded overflow-hidden bg-gray-50 flex items-center justify-center"><img src="" alt="Front" class="object-cover w-full h-full"/></div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-600 mb-1">Back Image (Pre-Design)</label>
+                                            <input id="back-input" type="file" accept="image/*" class="w-full" />
+                                            <div id="back-preview" class="hidden mt-2 w-full h-24 border rounded overflow-hidden bg-gray-50 flex items-center justify-center"><img src="" alt="Back" class="object-cover w-full h-full"/></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -376,20 +409,10 @@
                         <!-- Inline Fabric&Garment editor removed (use standalone Fabric modal) -->
                             </div>
                         </div>
-
-                        <div class="mt-6 border-t border-gray-200 pt-4">
-                            <div class="flex flex-col sm:flex-row sm:justify-end sm:space-x-3 gap-3">
-                                <div class="flex-1 sm:flex-none">
-                                    <button type="button" id="cancel-btn" class="w-full sm:w-auto px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">Cancel</button>
-                                </div>
-                                <div class="flex-1 sm:flex-none flex justify-end">
-                                    <button type="submit" id="submit-btn" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"><i class="fas fa-save mr-2"></i>Save</button>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </form>
+
         </div>
     </div>
 
@@ -481,6 +504,7 @@
                                 <option value="Polyester - Jersey">Polyester - Jersey</option>
                                 <option value="Polyester - Hoodie">Polyester - Hoodie</option>
                             </select>
+                            <div class="mt-2 text-xs text-gray-600">Need per-size inventory/pricing? <button type="button" id="open-fabric-standalone-btn" class="text-indigo-600 hover:underline ml-1">Open Fabric Per-Size Editor</button></div>
                         </div>
 
                         <!-- Minimum Price removed; price will be derived from per-size prices when provided -->
@@ -495,10 +519,7 @@
                             <input id="fabric-supplier" type="text" class="w-full px-3 py-2 border rounded" placeholder="Supplier name" />
                         </div>
 
-                        <div class="mb-3">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
-                            <input id="fabric-sku" type="text" class="w-full px-3 py-2 border rounded" placeholder="e.g. COT-J-S" />
-                        </div>
+                        <!-- SKU removed (redundant with supplier field) -->
 
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Item Name (optional)</label>
@@ -579,10 +600,30 @@
                 document.getElementById('inventory-modal')?.classList.add('hidden');
                 document.getElementById('fabric-modal-standalone')?.classList.remove('hidden');
                 document.getElementById('fabric-modal-standalone')?.classList.add('flex');
+                // show footer inside standalone modal
+                document.getElementById('fabric-standalone-footer')?.classList.remove('hidden');
+            });
+            document.getElementById('open-fabric-standalone-btn')?.addEventListener('click', () => {
+                document.getElementById('fabric-modal')?.classList.add('hidden');
+                document.getElementById('fabric-modal-standalone')?.classList.remove('hidden');
+                document.getElementById('fabric-modal-standalone')?.classList.add('flex');
+                // show footer inside standalone modal
+                document.getElementById('fabric-standalone-footer')?.classList.remove('hidden');
             });
             document.getElementById('close-modal-btn').addEventListener('click', closeModal);
             document.getElementById('cancel-btn').addEventListener('click', closeModal);
             document.getElementById('inventory-form').addEventListener('submit', handleSubmit);
+
+            // Close modal on ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    // close only if modal is open
+                    const inv = document.getElementById('inventory-modal');
+                    if (inv && !inv.classList.contains('hidden')) closeModal();
+                    const fm = document.getElementById('fabric-modal');
+                    if (fm && !fm.classList.contains('hidden')) fm.classList.add('hidden');
+                }
+            });
 
             // Delete modal
             document.getElementById('cancel-delete-btn').addEventListener('click', closeDeleteModal);
@@ -606,6 +647,8 @@
             // Image preview listeners
             document.getElementById('product-image')?.addEventListener('change', handleMainImagePreview);
             document.getElementById('product-gallery')?.addEventListener('change', handleGalleryPreview);
+            document.getElementById('front-input')?.addEventListener('change', handleFrontPreview);
+            document.getElementById('back-input')?.addEventListener('change', handleBackPreview);
 
             // Per-size controls
             const sizesRowsContainer = document.getElementById('sizes-rows');
@@ -613,6 +656,8 @@
             const generateSizesBtn = document.getElementById('generate-sizes-btn');
             const addSizeRowBtn = document.getElementById('add-size-row');
             const clearSizesBtn = document.getElementById('clear-sizes');
+            const applyPriceInput = document.getElementById('apply-price-input');
+            const applyPriceBtn = document.getElementById('apply-price-btn');
             const applyQtyInput = document.getElementById('apply-qty-input');
             const applyQtyBtn = document.getElementById('apply-qty-btn');
 
@@ -718,6 +763,23 @@
                     }
                 });
                 // re-render preview to reflect changes
+                try { renderPreviewSizes(getSizesInventoryObject(), sizesPriceMap); } catch (e) {}
+            });
+
+            // Apply price to selected rows
+            applyPriceBtn?.addEventListener('click', () => {
+                const v = Number(applyPriceInput?.value || 0) || 0;
+                if (v <= 0) return;
+                const rows = sizesRowsContainer?.querySelectorAll('div') || [];
+                rows.forEach(r => {
+                    const chk = r.querySelector('[data-select]');
+                    const priceInput = r.querySelector('[data-price-input]');
+                    if (chk && chk.checked && priceInput) {
+                        priceInput.value = Number(v).toFixed(2);
+                        // trigger input event to update map & preview
+                        priceInput.dispatchEvent(new Event('input'));
+                    }
+                });
                 try { renderPreviewSizes(getSizesInventoryObject(), sizesPriceMap); } catch (e) {}
             });
 
@@ -831,12 +893,16 @@
                 if (itemTypeHidden) itemTypeHidden.value = 'product';
                 productFieldsEl?.classList.remove('hidden');
                 fabricSectionEl?.classList.add('hidden');
+                // update submit button label for product variant
+                const sb = document.getElementById('submit-btn'); if (sb) sb.innerHTML = '<i class="fas fa-save mr-2"></i>Save';
             }
 
             function showFabricVariant(){
                 if (itemTypeHidden) itemTypeHidden.value = 'fabric';
                 productFieldsEl?.classList.add('hidden');
                 fabricSectionEl?.classList.remove('hidden');
+                // update submit button label for fabric variant
+                const sb = document.getElementById('submit-btn'); if (sb) sb.innerHTML = '<i class="fas fa-save mr-2"></i>Save';
             }
 
             variantProduct?.addEventListener('change', () => {
@@ -1030,6 +1096,8 @@
                 // Close the standalone Fabric modal and keep the main inventory list visible.
                 document.getElementById('fabric-modal-standalone')?.classList.add('hidden');
                 document.getElementById('fabric-modal-standalone')?.classList.remove('flex');
+                // hide footer again
+                document.getElementById('fabric-standalone-footer')?.classList.add('hidden');
             });
 
             document.getElementById('fabric-standalone-save')?.addEventListener('click', async () => {
@@ -1081,6 +1149,8 @@
                     showSuccess('Inventory item added');
                     document.getElementById('fabric-modal-standalone')?.classList.add('hidden');
                     document.getElementById('fabric-modal-standalone')?.classList.remove('flex');
+                    // hide footer as well
+                    document.getElementById('fabric-standalone-footer')?.classList.add('hidden');
                     // Keep main inventory modal hidden — admin stays on the inventory list.
                     loadInventory();
                 } catch (e) {
@@ -1316,6 +1386,42 @@
                     return;
                 }
                 
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    previewContainer.querySelector('img').src = event.target.result;
+                    previewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewContainer.classList.add('hidden');
+            }
+        }
+
+        // Handle pre-design front image preview
+        function handleFrontPreview(e) {
+            const file = e.target.files[0];
+            const previewContainer = document.getElementById('front-preview');
+            if (file) {
+                if (!file.type.startsWith('image/')) { showError('Please select a valid image file'); e.target.value = ''; return; }
+                if (file.size > 5 * 1024 * 1024) { showError('Image size must be less than 5MB'); e.target.value = ''; return; }
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    previewContainer.querySelector('img').src = event.target.result;
+                    previewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewContainer.classList.add('hidden');
+            }
+        }
+
+        // Handle pre-design back image preview
+        function handleBackPreview(e) {
+            const file = e.target.files[0];
+            const previewContainer = document.getElementById('back-preview');
+            if (file) {
+                if (!file.type.startsWith('image/')) { showError('Please select a valid image file'); e.target.value = ''; return; }
+                if (file.size > 5 * 1024 * 1024) { showError('Image size must be less than 5MB'); e.target.value = ''; return; }
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     previewContainer.querySelector('img').src = event.target.result;
@@ -1799,6 +1905,13 @@
             const variantSelectorEl = document.getElementById('variant-selector'); if (variantSelectorEl) variantSelectorEl.classList.add('hidden');
             document.getElementById('inventory-modal').classList.remove('hidden');
             document.getElementById('inventory-modal').classList.add('flex');
+            // set submit button label for add flow
+            const sbAdd = document.getElementById('submit-btn');
+            if (sbAdd) {
+                const vf = document.getElementById('variant-fabric');
+                if (vf && vf.checked) sbAdd.innerHTML = '<i class="fas fa-save mr-2"></i>Add Fabric';
+                else sbAdd.innerHTML = '<i class="fas fa-save mr-2"></i>Save';
+            }
         }
 
         // Open edit modal
@@ -1861,6 +1974,25 @@
                     } else {
                         mainImagePreview.classList.add('hidden');
                     }
+                    // If item has explicit front/back images (pre-design), populate those previews
+                    try {
+                        const frontPreviewEl = document.getElementById('front-preview');
+                        const backPreviewEl = document.getElementById('back-preview');
+                        const imgs = data.images || {};
+                        if (imgs && (imgs.front || imgs.back)) {
+                            if (imgs.front && frontPreviewEl) {
+                                frontPreviewEl.querySelector('img').src = imgs.front;
+                                frontPreviewEl.classList.remove('hidden');
+                            } else if (frontPreviewEl) frontPreviewEl.classList.add('hidden');
+                            if (imgs.back && backPreviewEl) {
+                                backPreviewEl.querySelector('img').src = imgs.back;
+                                backPreviewEl.classList.remove('hidden');
+                            } else if (backPreviewEl) backPreviewEl.classList.add('hidden');
+                        } else {
+                            if (frontPreviewEl) frontPreviewEl.classList.add('hidden');
+                            if (backPreviewEl) backPreviewEl.classList.add('hidden');
+                        }
+                    } catch (e) {}
                     // populate per-size prices map
                     try {
                         sizesPriceMap = data.sizesPrice || {};
@@ -1897,6 +2029,13 @@
                     } else {
                         const sr = document.getElementById('sizes-rows');
                         if (sr) sr.innerHTML = '';
+                    }
+                    // Update submit label for edit mode
+                    const sb = document.getElementById('submit-btn');
+                    if (sb) {
+                        if (isPreDesignItem) sb.innerHTML = '<i class="fas fa-save mr-2"></i>Apply Design';
+                        else if (isFabricItem) sb.innerHTML = '<i class="fas fa-save mr-2"></i>Update Fabric';
+                        else sb.innerHTML = '<i class="fas fa-save mr-2"></i>Save Changes';
                     }
                 } else {
                     // If the item is a fabric, keep productFields visible so the inline Fabric section (which lives inside it) can be shown.
@@ -2078,23 +2217,27 @@
                     if (previewCompact) previewCompact.classList.add('hidden');
                 } else if (isPreDesignItem) {
                     document.getElementById('modal-title').textContent = 'Edit Pre-Design Item';
-                    // Pre-Design: hide assign controls and placement, show product fields for editing
-                    if (priceAssignGroup) priceAssignGroup.classList.add('hidden');
-                    if (qtyAssignGroup) qtyAssignGroup.classList.add('hidden');
-                    if (assignPriceBtn) assignPriceBtn.classList.add('hidden');
-                    if (assignStockBtn) assignStockBtn.classList.add('hidden');
+                    // Pre-Design: show assign controls (allow per-size prices/qty) and hide placement
+                    if (priceAssignGroup) priceAssignGroup.classList.remove('hidden');
+                    if (qtyAssignGroup) qtyAssignGroup.classList.remove('hidden');
+                    if (assignPriceBtn) assignPriceBtn.classList.remove('hidden');
+                    if (assignStockBtn) assignStockBtn.classList.remove('hidden');
                     if (placementBox) placementBox.classList.add('hidden');
                     if (previewCompact) previewCompact.classList.add('hidden');
+                    // show Pre-Design front/back image inputs
+                    const preImgSection = document.getElementById('predesign-images-section'); if (preImgSection) preImgSection.classList.remove('hidden');
                 } else {
                     // default -> Product type
                     document.getElementById('modal-title').textContent = 'Edit Product Item';
-                    // hide assign price/qty controls and placement and compact preview for Product when editing via Actions
-                    if (priceAssignGroup) priceAssignGroup.classList.add('hidden');
-                    if (qtyAssignGroup) qtyAssignGroup.classList.add('hidden');
-                    if (assignPriceBtn) assignPriceBtn.classList.add('hidden');
-                    if (assignStockBtn) assignStockBtn.classList.add('hidden');
+                    // show assign price/qty controls so admin can set per-size prices/qty while editing
+                    if (priceAssignGroup) priceAssignGroup.classList.remove('hidden');
+                    if (qtyAssignGroup) qtyAssignGroup.classList.remove('hidden');
+                    if (assignPriceBtn) assignPriceBtn.classList.remove('hidden');
+                    if (assignStockBtn) assignStockBtn.classList.remove('hidden');
                     if (placementBox) placementBox.classList.add('hidden');
                     if (previewCompact) previewCompact.classList.add('hidden');
+                    // hide Pre-Design front/back image inputs for non-PreDesign items
+                    const preImgSection2 = document.getElementById('predesign-images-section'); if (preImgSection2) preImgSection2.classList.add('hidden');
                 }
 
                 document.getElementById('inventory-modal').classList.remove('hidden');
@@ -2123,6 +2266,8 @@
             document.getElementById('main-image-preview').classList.add('hidden');
             document.getElementById('gallery-preview').classList.add('hidden');
             document.getElementById('gallery-preview').innerHTML = '';
+            const frontPrev = document.getElementById('front-preview'); if (frontPrev) { frontPrev.classList.add('hidden'); try { frontPrev.querySelector('img').src = ''; } catch(e){} }
+            const backPrev = document.getElementById('back-preview'); if (backPrev) { backPrev.classList.add('hidden'); try { backPrev.querySelector('img').src = ''; } catch(e){} }
             
             // Reset modal title
             document.getElementById('modal-title').textContent = 'Add New Item';
@@ -2171,8 +2316,10 @@
             const descEl = document.getElementById('item-description');
             formData.append('description', descEl ? descEl.value.trim() : '');
             
-            // Product fields: sellable checkbox removed — default to false
-            const isProduct = false;
+            // Product fields: determine whether this item should be treated as a sellable product
+            // Preserve product state when editing by checking if product-fields are visible (openEditModal shows them for products)
+            const productFieldsElSubmit = document.getElementById('product-fields');
+            const isProduct = productFieldsElSubmit ? !productFieldsElSubmit.classList.contains('hidden') : false;
             formData.append('isProduct', isProduct);
             const prodCatElSubmit = document.getElementById('product-category');
             formData.append('category', prodCatElSubmit ? prodCatElSubmit.value.trim() : '');
@@ -2180,13 +2327,19 @@
             if (prodMaterialElSubmit) formData.append('material', prodMaterialElSubmit.value.trim());
             
             // Handle main image file
-            const mainImageFile = document.getElementById('product-image').files[0];
+            const mainImageFile = (document.getElementById('product-image') && document.getElementById('product-image').files) ? document.getElementById('product-image').files[0] : null;
             if (mainImageFile) {
                 formData.append('mainImage', mainImageFile);
             }
-            
+
+            // Pre-Design front/back images (if present)
+            const frontFile = (document.getElementById('front-input') && document.getElementById('front-input').files) ? document.getElementById('front-input').files[0] : null;
+            const backFile = (document.getElementById('back-input') && document.getElementById('back-input').files) ? document.getElementById('back-input').files[0] : null;
+            if (frontFile) formData.append('front', frontFile);
+            if (backFile) formData.append('back', backFile);
+
             // Handle gallery image files
-            const galleryFiles = document.getElementById('product-gallery').files;
+            const galleryFiles = (document.getElementById('product-gallery') && document.getElementById('product-gallery').files) ? document.getElementById('product-gallery').files : [];
             for (let i = 0; i < galleryFiles.length; i++) {
                 formData.append('galleryImages', galleryFiles[i]);
             }
@@ -2494,10 +2647,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Name</label>
                     <input id="fabric-supplier-standalone" type="text" class="w-full px-3 py-2 border rounded" />
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
-                    <input id="fabric-sku-standalone" type="text" class="w-full px-3 py-2 border rounded" />
-                </div>
+
             </div>
 
             <div class="mb-4">
@@ -2505,14 +2655,13 @@
                 <input id="fabric-sku-standalone" type="text" class="w-full px-3 py-2 border rounded" />
             </div>
 
-            <div class="flex justify-end gap-3">
+            <div id="fabric-standalone-footer" class="flex justify-end gap-3 hidden">
                 <button id="fabric-standalone-cancel" type="button" class="px-4 py-2 border rounded">Cancel</button>
                 <button id="fabric-standalone-save" type="button" class="px-4 py-2 bg-black text-white rounded">Save</button>
             </div>
-        </div>
-    </div>
-(span)
-</body>
+                </div>
+                </div>
+            </body>
 <script src="admin-notifications.js"></script>
 <script>
 (function(){

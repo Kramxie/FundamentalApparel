@@ -70,8 +70,65 @@ exports.createPaymentSession = async (req, res) => {
       });
     }
 
+    // Recompute authoritative amounts server-side for services
+    // baseAmount is the service/item subtotal (without delivery or VAT)
+    const base = Number(baseAmount || amount || 0);
+    // Determine delivery fee from server config
+    const cfg = deliveryRatesUtil.getRates();
+    const DELIVERY_RATES = cfg.rates || {};
+    const DEFAULT_RATE = cfg.defaultRate || 120;
+    function getRateForProvince(prov) {
+      if (!prov) return DEFAULT_RATE;
+      const key = (prov || '').toString().toLowerCase().trim();
+      if (key.includes('cavite')) return DELIVERY_RATES['cavite'] || DEFAULT_RATE;
+      if (key.includes('laguna')) return DELIVERY_RATES['laguna'] || DEFAULT_RATE;
+      if (key.includes('batangas')) return DELIVERY_RATES['batangas'] || DEFAULT_RATE;
+      if (key.includes('metro') || key.includes('manila') || key.includes('quezon city') || key.includes('makati')) return DELIVERY_RATES['metro manila'] || DEFAULT_RATE;
+      return DELIVERY_RATES[key] || DEFAULT_RATE;
+    }
+
+    let deliveryFeeNumber = 0;
+    if ((shippingMethod || '').toString().toLowerCase() === 'pick-up') {
+      deliveryFeeNumber = 0;
+    } else {
+      // Try to find province from shippingAddress
+      const prov = (shippingAddress && (shippingAddress.province || shippingAddress.city)) || '';
+      deliveryFeeNumber = getRateForProvince(prov);
+    }
+
+    // VAT applies to subtotal (base) only, not to delivery
+    const taxable = Math.max(base, 0);
+    const VAT_RATE = 0.12;
+    const totalVat = Math.round((taxable * VAT_RATE + Number.EPSILON) * 100) / 100;
+
+    // Adjust VAT for downpayment/balance options
+    let vatForCharge = totalVat;
+    let finalCharge = 0;
+    const normalizedOption = (paymentOption === 'balance') ? 'full' : (paymentOption || 'full');
+    if (normalizedOption === 'downpayment') {
+      finalCharge = Math.round(((taxable + deliveryFeeNumber + totalVat) * 0.5 + Number.EPSILON) * 100) / 100;
+      vatForCharge = Math.round((totalVat * 0.5 + Number.EPSILON) * 100) / 100;
+    } else if (normalizedOption === 'balance') {
+      // For remaining balance, infer alreadyPaid from serviceData or provided fields
+      let alreadyPaid = Number(serviceData?.alreadyPaidAmount || 0);
+      if (!alreadyPaid || alreadyPaid <= 0) {
+        alreadyPaid = (taxable + (serviceData?.previousDeliveryFee || 0)) * 0.5;
+      }
+      const totalWithDelivery = taxable + (serviceData?.previousDeliveryFee || 0);
+      const remaining = Math.max(totalWithDelivery - alreadyPaid, 0);
+      // Proportionally compute remaining VAT
+      const denom = (totalWithDelivery) || 1;
+      const proportionPaid = Math.min(Math.max(alreadyPaid / denom, 0), 1);
+      const vatPaid = Math.round((totalVat * proportionPaid + Number.EPSILON) * 100) / 100;
+      vatForCharge = Math.max(Math.round((totalVat - vatPaid + Number.EPSILON) * 100) / 100, 0);
+      finalCharge = Math.round((remaining + vatForCharge + Number.EPSILON) * 100) / 100;
+    } else {
+      finalCharge = Math.round((taxable + deliveryFeeNumber + totalVat + Number.EPSILON) * 100) / 100;
+      vatForCharge = totalVat;
+    }
+
     // Convert amount to centavos (PayMongo expects integer in cents)
-    const amountInCents = Math.round(amount * 100);
+    const amountInCents = Math.round(finalCharge * 100);
     
     // Determine payment description based on payment option
     const normalizedOption = (paymentOption === 'balance') ? 'full' : (paymentOption || 'full');
@@ -115,11 +172,12 @@ exports.createPaymentSession = async (req, res) => {
       // Update order with payment intent and shipping info
       // IMPORTANT: Don't change status here - preserve current status (e.g., 'Pending Balance' for final payments)
       order.paymentStatus = 'pending';
-      order.totalPrice = baseAmount || amount;
+      // Store full order total (including VAT and delivery) as authoritative totalPrice
+      order.totalPrice = (base || 0) + (deliveryFeeNumber || 0) + (totalVat || 0);
       order.paymentOption = normalizedOption;
       order.shippingMethod = shippingMethod || 'Standard';
       order.shippingAddress = shippingAddress || null;
-      order.deliveryFee = deliveryFee || 0;
+      order.deliveryFee = deliveryFeeNumber || 0;
       // Preserve existing status - don't overwrite (especially for 'Pending Balance')
       // order.status stays as-is
       order.quotePayload = {
@@ -137,7 +195,8 @@ exports.createPaymentSession = async (req, res) => {
         garmentType: serviceData?.garmentType || 't-shirt',
         selectedLocation: serviceData?.selectedLocation || 'Front',
         quantity: serviceData?.quantity || 1,
-        totalPrice: baseAmount || amount,
+        // Store full order total (including VAT + delivery)
+        totalPrice: (base || 0) + (deliveryFeeNumber || 0) + (totalVat || 0),
         paymentOption: normalizedOption,
         shippingMethod: shippingMethod || 'Standard',
         shippingAddress: shippingAddress || null,
@@ -326,8 +385,11 @@ exports.createOrderPaymentSession = async (req, res) => {
       discount = maxDiscount;
     }
 
-    // Authoritative server-side amount: subtotal + delivery - discount
-    amount = Math.max(1, subtotal + deliveryFeeNumber - discount);
+    // Authoritative server-side amount: apply discount, compute VAT on taxable (subtotal - discount), then add delivery
+    const taxable = Math.max(subtotal - discount, 0);
+    const VAT_RATE = 0.12;
+    const vatAmount = Math.round((taxable * VAT_RATE + Number.EPSILON) * 100) / 100;
+    amount = Math.max(1, Math.round((taxable + deliveryFeeNumber + vatAmount + Number.EPSILON) * 100) / 100);
 
     // Convert amount to centavos (PayMongo expects integer in cents)
     const amountInCents = Math.round(amount * 100);
