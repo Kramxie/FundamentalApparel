@@ -34,12 +34,19 @@
       // create a right-side wrapper so adding the bell doesn't become a middle child.
       if (parent === header) {
         const wrapper = document.createElement('div');
-        wrapper.className = 'flex items-center gap-4';
+        // ensure wrapper stays on the right side of a flex header
+        wrapper.className = 'flex items-center gap-4 ml-auto';
+        // fallback for non-tailwind environments: enforce margin-left auto
+        wrapper.style.marginLeft = 'auto';
         // move logoutBtn into wrapper
         header.appendChild(wrapper);
         wrapper.appendChild(logoutBtn);
         // insert container before logout inside wrapper
         wrapper.insertBefore(container, logoutBtn);
+        // in case other scripts inject elements later, ensure wrapper stays to the right
+        setTimeout(()=>{ try{ if(header.lastElementChild !== wrapper) header.appendChild(wrapper); }catch(e){} }, 50);
+        const hdrObserver = new MutationObserver(()=>{ try{ wrapper.style.marginLeft = 'auto'; if(header.lastElementChild !== wrapper) header.appendChild(wrapper); }catch(e){} });
+        hdrObserver.observe(header, { childList:true });
       } else {
         // insert before logout in its existing container
         parent.insertBefore(container, logoutBtn);
@@ -57,10 +64,14 @@
           const p = laterLogout.parentNode;
           if (p === header) {
             const wrapper = document.createElement('div');
-            wrapper.className = 'flex items-center gap-4';
+            wrapper.className = 'flex items-center gap-4 ml-auto';
+            wrapper.style.marginLeft = 'auto';
             header.appendChild(wrapper);
             wrapper.appendChild(laterLogout);
             wrapper.insertBefore(container, laterLogout);
+            setTimeout(()=>{ try{ if(header.lastElementChild !== wrapper) header.appendChild(wrapper); }catch(e){} }, 50);
+            const hdrObserver2 = new MutationObserver(()=>{ try{ wrapper.style.marginLeft = 'auto'; if(header.lastElementChild !== wrapper) header.appendChild(wrapper); }catch(e){} });
+            hdrObserver2.observe(header, { childList:true });
           } else {
             p.insertBefore(container, laterLogout);
           }
@@ -108,6 +119,42 @@
     document.addEventListener('click', (e)=>{
       if(!container.contains(e.target)) dropdown.classList.add('hidden');
     });
+
+    // If the bell visually ends up near the header center on certain pages
+    // (Dashboard / Reports), force it to the right with absolute positioning.
+    function enforceRightIfCentered(){
+      try{
+        const hdr = header;
+        if(!hdr) return;
+        const hdrRect = hdr.getBoundingClientRect();
+        const btnRect = btn.getBoundingClientRect();
+        const centerX = hdrRect.left + hdrRect.width/2;
+        const btnCenter = btnRect.left + btnRect.width/2;
+        // If button's center is within 10% of header center, consider it "centered"
+        if(Math.abs(btnCenter - centerX) < hdrRect.width * 0.1){
+          // apply absolute positioning anchored to the right
+          hdr.style.position = hdr.style.position || 'relative';
+          container.style.position = 'absolute';
+          container.style.right = '16px';
+          container.style.top = '50%';
+          container.style.transform = 'translateY(-50%)';
+          container.style.zIndex = 9999;
+        } else {
+          // restore if it was previously forced
+          if(container.style.position === 'absolute'){
+            container.style.position = '';
+            container.style.right = '';
+            container.style.top = '';
+            container.style.transform = '';
+            container.style.zIndex = '';
+          }
+        }
+      }catch(e){ console.debug('enforceRightIfCentered failed', e); }
+    }
+    // run shortly after insertion and on resize/scroll
+    setTimeout(enforceRightIfCentered, 80);
+    window.addEventListener('resize', enforceRightIfCentered);
+    window.addEventListener('scroll', enforceRightIfCentered, true);
 
     document.getElementById('admin-notif-markall').addEventListener('click', async ()=>{
       try{
