@@ -46,6 +46,7 @@
 
     /* --- END FIX --- */
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 
 <body class="bg-gray-100">
@@ -1106,6 +1107,143 @@
         if (status === 'Rejected') return badge('Rejected', 'red');
         return badge('Pending', 'yellow');
       }
+      // Helper: load image as data URL for jsPDF
+      async function loadImageAsDataURL(src){
+        return new Promise((resolve, reject) => {
+          try {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = () => {
+              const c = document.createElement('canvas');
+              c.width = img.width; c.height = img.height;
+              const ctx = c.getContext('2d');
+              ctx.drawImage(img,0,0);
+              resolve(c.toDataURL('image/png'));
+            };
+            img.onerror = (e)=> reject(new Error('Failed to load logo'));
+            img.src = src;
+          } catch (e) { reject(e); }
+        });
+      }
+
+      // Render receipt PDF (adapted from user-side generator)
+      async function renderReceiptPDF(r, openInline = false){
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        let logoData = null;
+        try { logoData = await loadImageAsDataURL(r.logoUrl || '/images/logo.png'); } catch (e) { logoData = null; }
+
+        const margin = 36;
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        let y = margin;
+
+        // Dark header band
+        doc.setFillColor(17,24,39);
+        doc.rect(0, 0, pageW, 88, 'F');
+        if (logoData) doc.addImage(logoData, 'PNG', margin, 16, 56, 56);
+        doc.setTextColor(255,255,255);
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text('Fundamental Apparel', margin + 72, 34);
+        doc.setFontSize(9); doc.setFont(undefined, 'normal');
+        doc.text('Unit 4B, Creative Building • Makati City', margin + 72, 50);
+        doc.text('hello@fundamental.ph • www.fundamental.ph', margin + 72, 64);
+        doc.setTextColor(0,0,0);
+
+        // Info box (OR/TIN/Date)
+        const infoW = 220, infoX = pageW - margin - infoW, infoY = 18;
+        doc.setFillColor(255,255,255);
+        doc.roundedRect(infoX, infoY, infoW, 60, 6, 6, 'F');
+        doc.setTextColor(0,0,0); doc.setFontSize(9);
+        const displayTin = (r.tin && String(r.tin).trim()) ? r.tin : `AUTOGEN-${(r._id||'').toString().slice(-8).toUpperCase()}`;
+        doc.text(`OR No.: ${r._id ? r._id.toString().slice(-10).toUpperCase() : displayTin}`, infoX + 12, infoY + 18);
+        doc.text(`Date: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}`, infoX + 12, infoY + 34);
+        doc.text(`TIN: ${displayTin}`, infoX + 12, infoY + 50);
+
+        // Billed To
+        y = 110;
+        doc.setFontSize(10); doc.setFont(undefined, 'bold');
+        doc.text('Billed To:', margin, y);
+        doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+        if (r.customerName) doc.text(r.customerName, margin, y + 14);
+        if (r.customerAddress) doc.text(String(r.customerAddress), margin, y + 28);
+
+        // Items table
+        y += 60;
+        const tableX = margin; const tableW = pageW - margin*2 - 200;
+        const totalsAreaX = pageW - margin - 180;
+
+        doc.setFillColor(243,244,246); doc.rect(tableX, y, tableW, 22, 'F');
+        doc.setFontSize(9); doc.setFont(undefined, 'bold');
+        doc.text('Item', tableX + 6, y + 14);
+        doc.text('Size', tableX + 220, y + 14);
+        doc.text('Qty', tableX + 320, y + 14);
+        doc.text('Unit', tableX + 370, y + 14);
+        doc.text('Amount', tableX + tableW - 6, y + 14, { align: 'right' });
+        doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+        y += 28;
+
+        const items = r.items || [];
+        let computedSubtotal = Number(r.subtotal || 0);
+        if (!computedSubtotal) computedSubtotal = items.reduce((s,it)=>s+((Number(it.price)||0)*(Number(it.quantity)||1)),0);
+
+        const descX = tableX + 6;
+        const descWidth = 220;
+        const sizeX = tableX + 240;
+        const qtyX = tableX + 320;
+        const unitX = tableX + 370;
+        const amountX = tableX + tableW - 6;
+        const lineHeight = 12;
+        for (const it of items) {
+          const name = (it.name || it.description || '').toString().replace(/\s+/g,' ');
+          const size = it.size || '-';
+          const qty = Number(it.quantity || 1);
+          const unit = Number(it.price || 0);
+          const lineTotal = qty * unit;
+
+          const descLines = doc.splitTextToSize(name, descWidth);
+          for (let i = 0; i < descLines.length; i++) {
+            doc.text(descLines[i], descX, y + (i * lineHeight));
+          }
+          doc.text(size.toString(), sizeX, y);
+          doc.text(String(qty), qtyX, y);
+          doc.text('₱' + unit.toLocaleString(undefined,{minimumFractionDigits:2}), unitX, y);
+          doc.text('₱' + lineTotal.toLocaleString(undefined,{minimumFractionDigits:2}), amountX, y, { align: 'right' });
+
+          y += Math.max(lineHeight, descLines.length * lineHeight) + 6;
+          if (y > pageH - 160) { doc.addPage(); y = margin + 40; }
+        }
+
+        // Totals box
+        const totalsY = Math.max(y + 10, 380);
+        doc.setFillColor(249,250,251); doc.roundedRect(totalsAreaX, totalsY, 180, 120, 6, 6, 'F');
+        doc.setFontSize(9); doc.setTextColor(99,102,106);
+        const tx = totalsAreaX + 12; let ty = totalsY + 18;
+        const deliveryFee = Number(r.deliveryFee || 0);
+        const voucherAmt = Math.round((Number(r.voucherDiscount || 0) || 0) * 100) / 100;
+        const taxable = Math.max(computedSubtotal - voucherAmt, 0);
+        const vat = Math.round(taxable * 0.12 * 100) / 100;
+
+        doc.text('Subtotal', tx, ty); doc.text('₱' + Number(computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
+        doc.text('Delivery', tx, ty); doc.text('₱' + Number(deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
+        if (voucherAmt > 0) { doc.text('Voucher', tx, ty); doc.text('-₱' + Number(voucherAmt).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16; }
+        else { doc.text('Voucher', tx, ty); doc.text('N/A', totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16; }
+        doc.text('VAT (12%)', tx, ty); doc.text('₱' + Number(vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 18;
+
+        doc.setFont(undefined, 'bold'); doc.setFontSize(11);
+        const totalComputed = Math.round((computedSubtotal - voucherAmt + deliveryFee + vat) * 100) / 100;
+        doc.text('TOTAL', tx, ty); doc.text('₱' + Number(totalComputed||computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' });
+        doc.setFont(undefined, 'normal'); doc.setTextColor(0,0,0);
+
+        const prepared = r.preparedBy || r.preparedByName || '';
+        if (prepared) doc.setFontSize(9).text('Prepared by: ' + prepared, margin, totalsY + 120);
+
+        const safeName = `Invoice-${(r._id||displayTin||'receipt').toString().slice(-12)}.pdf`;
+        if (openInline) { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); window.open(url, '_blank'); return; }
+        try { doc.save(safeName); }
+        catch (e) { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); const a = document.createElement('a'); a.href = url; a.download = safeName; document.body.appendChild(a); a.click(); a.remove(); }
+      }
 
       function renderRegularOrders() {
         const q = els.search.value.trim().toLowerCase();
@@ -1463,6 +1601,31 @@
         els.receiptShortId.textContent = shortId(order._id);
         els.receiptCustomer.textContent = order.user?.name || '-';
         els.receiptStatus.textContent = (order.paymentStatus === 'Received') ? 'Payment received' : (order.paymentStatus || 'Pending');
+        // Build a synthesized receipt object from order data so admin can print/download
+        try {
+          const addr = order.shippingAddress || {};
+          const addrLines = [];
+          if (addr.block) addrLines.push(addr.block);
+          if (addr.lot) addrLines.push(addr.lot);
+          if (addr.street) addrLines.push(addr.street);
+          const addrLine2 = [addr.building, addr.city, addr.province, addr.zip].filter(Boolean).join(', ');
+          const addrStr = addrLines.join(' ') + (addrLine2 ? ('\n' + addrLine2) : '');
+          const itemsArr = (order.orderItems || []).map(it => ({ name: it.name || it.productName || '', size: it.size || '', quantity: Number(it.quantity||1), price: Number(it.price||it.unitPrice||0) }));
+          const subtotalCalc = itemsArr.reduce((s,i)=>s + (Number(i.price||0) * Number(i.quantity||0)), 0);
+          window.currentAdminReceipt = {
+            _id: order._id,
+            createdAt: order.paidAt || order.updatedAt || order.createdAt,
+            tin: order.paymentIntentId || order.receiptId || order._id,
+            customerName: order.user?.name || '',
+            customerAddress: addrStr,
+            items: itemsArr,
+            subtotal: subtotalCalc,
+            deliveryFee: Number(order.deliveryFee || 0),
+            voucherDiscount: Number(order.voucherDiscount || order.voucherAmount || 0) || 0,
+            preparedByName: order.acceptedByName || order.acceptedBy || '-',
+            total: Number(order.totalPrice || 0)
+          };
+        } catch(e) { window.currentAdminReceipt = null; }
         // Items table
         els.receiptItems.innerHTML = (order.orderItems || []).map(it => `
           <tr>
@@ -1541,6 +1704,8 @@
             if (els.receiptVat) els.receiptVat.textContent = peso(recVatComputed);
             els.receiptPreparedby && (els.receiptPreparedby.textContent = rec.preparedByName || rec.preparedBy || '-');
             els.receiptTotal.textContent = peso(rec.total || recTotal || 0);
+            // Keep authoritative receipt object for PDF generation
+            window.currentAdminReceipt = rec;
             // Reveal the receipt section
             els.receiptWrap.classList.remove('hidden');
             // If receipt meta contains external receipt URL, show Open link
@@ -2760,7 +2925,13 @@
         });
       }
       if (els.receiptPrint) {
-        els.receiptPrint.addEventListener('click', () => window.print());
+        els.receiptPrint.addEventListener('click', async () => {
+          try {
+            const r = window.currentAdminReceipt || null;
+            if (!r) return alert('No receipt data available to print.');
+            await renderReceiptPDF(r, /*openInline=*/false);
+          } catch (e) { console.error('Admin print failed', e); alert('Failed to generate PDF.'); }
+        });
       }
       // --- MODIFIED: Custom Modal Events ---
       els.customModalClose.addEventListener('click', () => els.customModal.classList.add('hidden'));
