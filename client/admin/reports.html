@@ -130,14 +130,24 @@
           <!-- Filters and actions -->
           <div class="bg-white p-4 rounded shadow mb-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label class="block text-sm text-gray-600">Start Date</label>
-                <input id="startDate" type="date" class="mt-1 block w-full border rounded p-2" />
-              </div>
-              <div>
-                <label class="block text-sm text-gray-600">End Date</label>
-                <input id="endDate" type="date" class="mt-1 block w-full border rounded p-2" />
-              </div>
+                <div>
+                  <label class="block text-sm text-gray-600">Period</label>
+                  <select id="periodSelect" class="mt-1 block w-full border rounded p-2">
+                    <option value="30">Last 30 days</option>
+                    <option value="7">Last 7 days</option>
+                    <option value="90">Last 90 days</option>
+                    <option value="365">Last 1 year</option>
+                    <option value="custom">Custom range</option>
+                  </select>
+                </div>
+                <div id="date-start-wrap" class="hidden">
+                  <label class="block text-sm text-gray-600">Start Date</label>
+                  <input id="startDate" type="date" class="mt-1 block w-full border rounded p-2" />
+                </div>
+                <div id="date-end-wrap" class="hidden">
+                  <label class="block text-sm text-gray-600">End Date</label>
+                  <input id="endDate" type="date" class="mt-1 block w-full border rounded p-2" />
+                </div>
               <div>
                 <label class="block text-sm text-gray-600">Filter</label>
                 <select id="reportType" class="mt-1 block w-full border rounded p-2">
@@ -212,12 +222,34 @@
                 <canvas id="salesChart"></canvas>
               </div>
             </div>
-
             <div class="bg-white p-6 rounded-lg shadow-md">
               <h2 class="text-lg font-semibold text-gray-800 mb-4">Top Selling Products</h2>
                 <div class="chart-wrapper" id="topProductsChartWrapper">
                   <canvas id="topProductsChart"></canvas>
                 </div>
+                <div class="mt-4">
+                  <h3 class="text-sm font-medium mb-2">Top Products (table)</h3>
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                      <thead class="bg-gray-50 text-xs text-gray-500"><tr><th class="p-2 text-left">Product</th><th class="p-2 text-right">Units</th><th class="p-2 text-right">Revenue</th></tr></thead>
+                      <tbody id="topProductsTbody" class="bg-white divide-y divide-gray-100"></tbody>
+                    </table>
+                  </div>
+                </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+              <h2 class="text-lg font-semibold text-gray-800 mb-4">Category Revenue Breakdown</h2>
+              <div class="chart-wrapper" id="categoryChartWrapper"><canvas id="categoryChart"></canvas></div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+              <h2 class="text-lg font-semibold text-gray-800 mb-4">KPIs</h2>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-4 border rounded"><p class="text-sm text-gray-500">Average Order Value</p><p id="aov" class="text-xl font-bold">₱0</p></div>
+                <div class="p-4 border rounded"><p class="text-sm text-gray-500">Conversion Rate</p><p id="conversion-rate" class="text-xl font-bold">0%</p></div>
+              </div>
             </div>
           </div>
 
@@ -271,6 +303,8 @@
       }
     })();
 
+    function escapeHtmlGlobal(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
     // Helper to map report type to endpoint
     function endpointFor(type) {
       switch (type) {
@@ -316,6 +350,14 @@
       });
     }
 
+    let categoryChart = null;
+    function drawCategoryChart(labels, data) {
+      const ctx = document.getElementById('categoryChart').getContext('2d');
+      if (categoryChart) categoryChart.destroy();
+      const colors = labels.map((_,i)=>['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899'][i%6]);
+      categoryChart = new Chart(ctx, { type: 'pie', data: { labels, datasets:[{ data, backgroundColor: colors }] }, options: { responsive:true, maintainAspectRatio:false } });
+    }
+
     async function fetchAndRenderReports(periodDays = 30) {
       const token = localStorage.getItem('adminToken');
       if (!token) { window.location.href = 'login.html'; return; }
@@ -327,6 +369,8 @@
       const startDate = start.toISOString().slice(0,10);
       const endDate = end.toISOString().slice(0,10);
 
+      // show loading indicator
+      document.getElementById('report-status').textContent = 'Loading...';
       try {
         // Sales summary (includes salesByDay and topProducts)
         const salesUrl = await buildUrl('sales', { startDate, endDate });
@@ -343,19 +387,49 @@
         // Render sales by day
         const labels = (data.salesByDay || []).map(s => s._id);
         const values = (data.salesByDay || []).map(s => s.total || 0);
-        // If many labels, allow the chart wrapper to scroll vertically
         try { document.getElementById('salesChartWrapper').classList.toggle('scrollable', (labels.length > 30)); } catch(e){}
         drawSalesChart(labels, values);
 
-        // Top products chart
+        // Top products chart and table
         const topLabels = (data.topProducts || []).map(p => (p.productInfo && p.productInfo.name) || String(p._id));
-        const topValues = (data.topProducts || []).map(p => p.totalSold || 0);
+        const topValues = (data.topProducts || []).map(p => p.totalSold || p.unitsSold || 0);
         try { document.getElementById('topProductsChartWrapper').classList.toggle('scrollable', (topLabels.length > 12)); } catch(e){}
         drawTopProductsChart(topLabels, topValues);
 
+        // render top products table
+        const tbody = document.getElementById('topProductsTbody'); tbody.innerHTML = '';
+        (data.topProducts || []).forEach(p => {
+          const tr = document.createElement('tr');
+          const name = (p.productInfo && p.productInfo.name) || String(p._id || '');
+          const units = Number(p.totalSold || p.unitsSold || 0);
+          const revenue = Number(p.revenue || p.totalRevenue || (p.unitPrice ? p.unitPrice * units : 0));
+          tr.innerHTML = `<td class="p-2">${escapeHtmlGlobal(name)}</td><td class="p-2 text-right">${units}</td><td class="p-2 text-right">₱${revenue.toLocaleString(undefined,{minimumFractionDigits:2})}</td>`;
+          tbody.appendChild(tr);
+        });
+
+        // Category breakdown
+        if (data.byCategory) {
+          const catLabels = Object.keys(data.byCategory);
+          const catValues = catLabels.map(k=> Number(data.byCategory[k]||0));
+          drawCategoryChart(catLabels, catValues);
+        } else if (data.salesByCategory) {
+          const catLabels = (data.salesByCategory||[]).map(x=>x._id);
+          const catValues = (data.salesByCategory||[]).map(x=>x.total || 0);
+          drawCategoryChart(catLabels, catValues);
+        } else {
+          try{ if (categoryChart) { categoryChart.destroy(); categoryChart = null; } }catch(e){}
+        }
+
+        // KPIs
+        const aov = data.averageOrderValue || (data.totalRevenue && data.totalOrders ? (data.totalRevenue / Math.max(1, data.totalOrders)) : 0);
+        document.getElementById('aov').textContent = '₱' + Number(aov||0).toLocaleString(undefined,{minimumFractionDigits:2});
+        document.getElementById('conversion-rate').textContent = (Number(data.conversionRate||0)*100).toFixed(2) + '%';
+
+        document.getElementById('report-status').textContent = '';
       } catch (err) {
         console.error('Failed to load reports', err);
         document.getElementById('previewArea').textContent = 'Failed to load reports: ' + err.message;
+        document.getElementById('report-status').textContent = 'Failed to load';
       }
     }
 
@@ -363,8 +437,17 @@
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('adminToken'); window.location.href='login.html'; });
       document.getElementById('generate').addEventListener('click', async () => {
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
+        const period = (document.getElementById('periodSelect')||{}).value || '30';
+        let startDate = document.getElementById('startDate').value;
+        let endDate = document.getElementById('endDate').value;
+        if (period !== 'custom') {
+          // compute dates from period days
+          const days = Number(period) || 30;
+          const e = new Date();
+          const s = new Date(); s.setDate(e.getDate() - (days - 1));
+          startDate = s.toISOString().slice(0,10);
+          endDate = e.toISOString().slice(0,10);
+        }
         const type = document.getElementById('reportType').value;
         const format = document.getElementById('format').value;
         const token = localStorage.getItem('adminToken');
@@ -394,8 +477,26 @@
         try { const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } }); const json = await res.json(); document.getElementById('previewArea').textContent = JSON.stringify(json, null, 2); } catch (e){ alert('Preview failed: '+e.message); }
       });
 
-      // Auto-load default period (30 days)
-      fetchAndRenderReports(30);
+      // Period select behavior (show/hide custom date inputs)
+      const periodSelect = document.getElementById('periodSelect');
+      const startWrap = document.getElementById('date-start-wrap');
+      const endWrap = document.getElementById('date-end-wrap');
+      function updateDateInputsVisibility(){
+        if (!periodSelect) return;
+        if (periodSelect.value === 'custom') { startWrap.classList.remove('hidden'); endWrap.classList.remove('hidden'); }
+        else { startWrap.classList.add('hidden'); endWrap.classList.add('hidden'); }
+      }
+      periodSelect?.addEventListener('change', updateDateInputsVisibility);
+      updateDateInputsVisibility();
+
+      // Auto-load default period (based on periodSelect)
+      const defaultDays = (document.getElementById('periodSelect')||{value:'30'}).value;
+      if (defaultDays === 'custom') {
+        // if custom and dates provided, use them; otherwise use 30 days
+        const s = document.getElementById('startDate').value; const e = document.getElementById('endDate').value;
+        if (s && e) { fetchAndRenderReports( Math.max(1, Math.ceil((new Date(e)-new Date(s))/(1000*60*60*24))+1) ); }
+        else fetchAndRenderReports(30);
+      } else fetchAndRenderReports(Number(defaultDays || 30));
 
       // Quick period buttons
       document.getElementById('btn-7days').addEventListener('click', () => fetchAndRenderReports(7));
