@@ -26,8 +26,9 @@ const cartSchema = new mongoose.Schema({
                 default: null,
                 trim: true
             },
-            // You can add price here as well to store the price at the time of adding to cart
-            // price: { type: Number, required: true }
+            // Store the price at the time the item was added to cart so the UI
+            // and checkout calculations remain stable even if product prices change.
+            price: { type: Number, required: false, default: 0 }
         }
     ]
 }, { 
