@@ -78,12 +78,80 @@ exports.salesReport = async (req, res) => {
 
     const topProducts = await Order.aggregate(prodAgg);
 
+    // --- CustomOrder aggregates (include custom orders such as pre-design, printing-only, etc.) ---
+    const customMatch = Object.assign({}, match);
+    // exclude cancelled custom orders
+    customMatch.status = { $ne: 'Cancelled' };
+
+    // totals for custom orders
+    const customTotals = await CustomOrder.aggregate([
+      { $match: customMatch },
+      { $group: { _id: null, totalRevenue: { $sum: '$totalPrice' }, totalOrders: { $sum: 1 }, avgOrderValue: { $avg: '$totalPrice' } } }
+    ]);
+
+    // sales by day for custom orders
+    const salesByDayCustom = await CustomOrder.aggregate([
+      { $match: customMatch },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, total: { $sum: '$totalPrice' }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // top products from custom orders (by productName)
+    const topCustomProducts = await CustomOrder.aggregate([
+      { $match: customMatch },
+      { $group: { _id: '$productName', totalSold: { $sum: '$quantity' }, revenue: { $sum: '$totalPrice' } } },
+      { $sort: { totalSold: -1 } },
+      { $limit: 20 }
+    ]);
+
+    // top pre-designs (explicit serviceType == 'predesign-product')
+    const topPreDesigns = await CustomOrder.aggregate([
+      { $match: Object.assign({}, customMatch, { serviceType: 'predesign-product' }) },
+      { $group: { _id: '$productName', totalSold: { $sum: '$quantity' }, revenue: { $sum: '$totalPrice' } } },
+      { $sort: { totalSold: -1 } },
+      { $limit: 20 }
+    ]);
+
+    // top fabrics/garments from custom orders (by fabricType / garmentType)
+    const topFabricsCustom = await CustomOrder.aggregate([
+      { $match: customMatch },
+      { $group: { _id: '$fabricType', totalSold: { $sum: '$quantity' }, revenue: { $sum: '$totalPrice' } } },
+      { $sort: { totalSold: -1 } },
+      { $limit: 20 }
+    ]);
+
+    // merge totals with custom orders
+    const ordersTotalRevenue = totals.length ? totals[0].totalRevenue : 0;
+    const ordersTotalCount = totals.length ? totals[0].totalOrders : 0;
+    const customTotalRevenue = customTotals.length ? customTotals[0].totalRevenue : 0;
+    const customTotalCount = customTotals.length ? customTotals[0].totalOrders : 0;
+
+    // merge salesByDay arrays (sum totals and counts by date)
+    const byDateMap = {};
+    (salesByDay || []).forEach(d => { byDateMap[d._id] = { total: (byDateMap[d._id]?.total||0) + (d.total||0), count: (byDateMap[d._id]?.count||0) + (d.count||0) }; });
+    (salesByDayCustom || []).forEach(d => { byDateMap[d._id] = { total: (byDateMap[d._id]?.total||0) + (d.total||0), count: (byDateMap[d._id]?.count||0) + (d.count||0) }; });
+    const mergedSalesByDay = Object.keys(byDateMap).sort().map(k => ({ _id: k, total: byDateMap[k].total, count: byDateMap[k].count }));
+
+    // merge topProducts (orders) with custom top products (by name)
+    const productMap = {};
+    (topProducts || []).forEach(p => {
+      const key = (p.productInfo && p.productInfo.name) ? p.productInfo.name : String(p._id);
+      productMap[key] = { name: key, totalSold: (productMap[key]?.totalSold||0) + (p.totalSold||0), revenue: (productMap[key]?.revenue||0) + (p.revenue||0) };
+    });
+    (topCustomProducts || []).forEach(p => {
+      const key = p._id || 'Custom:' + String(p._id);
+      productMap[key] = { name: key, totalSold: (productMap[key]?.totalSold||0) + (p.totalSold||0), revenue: (productMap[key]?.revenue||0) + (p.revenue||0) };
+    });
+    const mergedTopProducts = Object.values(productMap).sort((a,b) => (b.totalSold||0) - (a.totalSold||0)).slice(0,20).map(x=>({ _id: x.name, totalSold: x.totalSold, revenue: x.revenue }));
+
     const result = {
-      totalRevenue: totals.length ? totals[0].totalRevenue : 0,
-      totalOrders: totals.length ? totals[0].totalOrders : 0,
-      avgOrderValue: totals.length ? totals[0].avgOrderValue : 0,
-      salesByDay,
-      topProducts
+      totalRevenue: ordersTotalRevenue + customTotalRevenue,
+      totalOrders: ordersTotalCount + customTotalCount,
+      avgOrderValue: ((ordersTotalRevenue + customTotalRevenue) / Math.max(1, (ordersTotalCount + customTotalCount))) || 0,
+      salesByDay: mergedSalesByDay,
+      topProducts: mergedTopProducts,
+      topPreDesigns: topPreDesigns,
+      topFabrics: topFabricsCustom
     };
 
     // If download CSV requested
