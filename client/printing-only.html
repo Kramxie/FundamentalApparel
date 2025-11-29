@@ -197,7 +197,18 @@
     }
 
     els.teamToggle.addEventListener('click', ()=> setTeamMode(!teamMode));
-    els.quantity.addEventListener('change', ()=>{ if(teamMode) genTeamRows(); });
+    els.quantity.addEventListener('change', async ()=>{
+      if(teamMode) {
+        genTeamRows();
+        // ensure size selects are populated after regenerating rows
+        updateSizeDropdowns();
+        // if no currentInventory yet, try to fetch availability for selected fabricGarment
+        if(!currentInventory && els.fabricGarment && els.fabricGarment.value) {
+          await showVariantAvailability(els.fabricGarment.value);
+          updateSizeDropdowns();
+        }
+      }
+    });
 
     // Optional: parse uploaded .txt/.csv into rows
     els.teamNamesFileInput.addEventListener('change', async (e)=>{
@@ -209,6 +220,12 @@
         els.quantity.value = lines.length;
         setTeamMode(true);
         genTeamRows();
+        // populate sizes for the newly generated rows
+        updateSizeDropdowns();
+        if(!currentInventory && els.fabricGarment && els.fabricGarment.value) {
+          await showVariantAvailability(els.fabricGarment.value);
+          updateSizeDropdowns();
+        }
         const rows = els.teamContainer.querySelectorAll('.grid');
         lines.forEach((ln, idx)=>{
           const parts = ln.split(/[,|\t]/);
