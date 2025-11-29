@@ -350,21 +350,56 @@ exports.submitCustomOrder = async (req, res) => {
           const invDoc = await findInventoryByName(invName);
           const sizesInv = invDoc ? (invDoc.sizesInventory && (typeof invDoc.sizesInventory === 'object' ? (invDoc.sizesInventory.get ? Object.fromEntries(invDoc.sizesInventory) : invDoc.sizesInventory) : {}) ) : {};
 
+          // Helper: resolve requested size label to an inventory size key (available to both team and single-size validation)
+          function resolveSizeKey(sizesObj, requested) {
+            if (!requested) return null;
+            const req = String(requested).trim();
+            const lower = req.toLowerCase();
+            // 1) exact case-insensitive match
+            for (const k of Object.keys(sizesObj || {})) {
+              if (k && k.toString().trim().toLowerCase() === lower) return k;
+            }
+            // 2) common alias map (short codes -> common words)
+            const alias = {
+              'xs':'XS','s':'S','m':'M','l':'L','xl':'XL','xxl':'XXL','3xl':'3XL',
+              'extra small':'XS','small':'S','medium':'M','large':'L','extra large':'XL'
+            };
+            if (alias[lower] && (sizesObj && (typeof sizesObj[alias[lower]] !== 'undefined'))) return alias[lower];
+            // 3) fuzzy match: startsWith or contains
+            for (const k of Object.keys(sizesObj || {})) {
+              const kl = k.toString().trim().toLowerCase();
+              if (kl.startsWith(lower) || kl.includes(lower) || lower.includes(kl)) return k;
+            }
+            return null;
+          }
+
           // For printing-only: support validation using orderData.garmentSize or teamMembers
           if (orderData.serviceType === 'printing-only' || serviceType === 'printing-only') {
             if (orderData.includeTeamMembers && Array.isArray(orderData.teamMembers) && orderData.teamMembers.length) {
               const counts = {};
+              const notFound = [];
               for (const m of orderData.teamMembers) {
-                const s = (m.size || m.sizeLabel || '').toString().trim();
-                if (s) counts[s] = (counts[s] || 0) + 1;
+                const raw = (m.size || m.sizeLabel || '').toString().trim();
+                const resolved = resolveSizeKey(sizesInv, raw);
+                if (!resolved) {
+                  if (raw) notFound.push(raw);
+                  else notFound.push('(empty)');
+                  continue;
+                }
+                counts[resolved] = (counts[resolved] || 0) + 1;
               }
+              if (notFound.length) return res.status(400).json({ success: false, msg: `Requested sizes not found in inventory: ${[...new Set(notFound)].join(', ')}` });
               const invalid = Object.keys(counts).filter(s => Number(sizesInv[s] || 0) < counts[s]);
               if (invalid.length) return res.status(400).json({ success: false, msg: `Insufficient stock for sizes: ${invalid.join(', ')}` });
             } else if (orderData.garmentSize || size) {
-              const sel = (orderData.garmentSize || size).toString().trim();
+              const rawSel = (orderData.garmentSize || size).toString().trim();
+              const selResolved = resolveSizeKey(sizesInv, rawSel);
               const qty = Number(orderData.quantity || 1);
-              if (typeof sizesInv[sel] === 'undefined' || Number(sizesInv[sel] || 0) < qty) {
-                return res.status(400).json({ success: false, msg: `Selected size ${sel} is unavailable or does not have enough stock` });
+              if (!selResolved) {
+                return res.status(400).json({ success: false, msg: `Selected size ${rawSel || '(empty)'} not found in inventory` });
+              }
+              if (Number(sizesInv[selResolved] || 0) < qty) {
+                return res.status(400).json({ success: false, msg: `Selected size ${selResolved} is unavailable or does not have enough stock` });
               }
             }
             // finished printing-only validation branch
