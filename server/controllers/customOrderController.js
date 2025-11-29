@@ -1,6 +1,7 @@
 const CustomOrder = require("../models/CustomOrder");
 const User = require("../models/User");
 const sendEmail = require("../utils/sendEmail");
+const notify = require('../utils/notify');
 const path = require("path");
 const mongoose = require("mongoose"); // <-- Siguraduhin na na-import ito
 const { allocateInventory, releaseInventory, findInventoryByName } = require('../utils/inventory');
@@ -376,6 +377,27 @@ exports.submitCustomOrder = async (req, res) => {
     }
 
     const customOrder = await CustomOrder.create(orderData);
+
+    // Notify admins about the new custom order (creates DB notification + emits socket + emails admins)
+    try {
+      const title = 'New Custom Order Request';
+      const body = `
+        <div style="font-family:Inter,Segoe UI,Arial,sans-serif;font-size:14px;color:#111">
+          <p>A new custom order has been submitted by ${req.user?.name || req.user?.email || 'a customer'}.</p>
+          <p>Reference: <strong>${customOrder._id.toString().slice(-8).toUpperCase()}</strong></p>
+          <p><a href="${BASE_URL}/admin/fulfillment.html" style="color:#4f46e5">View in Admin</a></p>
+        </div>
+      `;
+      await notify.createNotification({
+        type: 'quote_request',
+        title,
+        body,
+        targetRole: 'admin',
+        meta: { orderId: customOrder._id, userId: req.user._id }
+      });
+    } catch (e) {
+      console.warn('[submitCustomOrder] notify failed:', e && e.message);
+    }
 
     // NOTE: Do NOT reserve/decrement inventory on quote submission.
     // Inventory allocations for pre-design products must only occur when payment

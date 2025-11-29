@@ -100,16 +100,7 @@
           <h1 class="text-xl font-semibold text-gray-800">Orders</h1>
         </div>
         <div class="flex items-center gap-3">
-          <div class="relative">
-            <button id="notif-btn" class="px-3 py-2 bg-white border rounded-md hover:bg-gray-50" title="Notifications">
-              <i class="fas fa-bell text-gray-700"></i>
-              <span id="notif-count" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-xs px-1 rounded-full">0</span>
-            </button>
-            <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white border rounded shadow-lg z-50 overflow-auto max-h-80">
-              <div id="notif-list" class="p-2"></div>
-              <div class="p-2 text-center border-t"><button id="notif-markall" class="text-sm text-indigo-600">Mark all read</button></div>
-            </div>
-          </div>
+          <!-- Notification UI is injected by shared admin-notifications.js so it remains consistent across admin pages -->
           <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
             <i class="fas fa-sign-out-alt mr-2"></i>Logout
           </button>
