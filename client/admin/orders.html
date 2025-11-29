@@ -856,12 +856,12 @@
       const token = localStorage.getItem('adminToken');
       if (!token) { window.location.href = 'login.html'; return; }
 
-      // Notifications setup
-      const notifBtn = document.getElementById('notif-btn');
-      const notifCountEl = document.getElementById('notif-count');
-      const notifDropdown = document.getElementById('notif-dropdown');
-      const notifList = document.getElementById('notif-list');
-      const notifMarkAll = document.getElementById('notif-markall');
+      // Notifications setup (support legacy IDs and centralized admin-notifications.js)
+      const notifBtn = document.getElementById('notif-btn') || document.getElementById('admin-notif-btn');
+      const notifCountEl = document.getElementById('notif-count') || document.getElementById('admin-notif-badge');
+      const notifDropdown = document.getElementById('notif-dropdown') || document.getElementById('admin-notif-dropdown');
+      const notifList = document.getElementById('notif-list') || document.getElementById('admin-notif-list');
+      const notifMarkAll = document.getElementById('notif-markall') || document.getElementById('admin-notif-markall');
 
       // Connect socket.io with auth token
       let socket = null;
@@ -887,6 +887,7 @@
       }
 
       async function renderNotifs(arr) {
+        if (!notifList) return; // nothing to render to
         notifList.innerHTML = '';
         let unread = 0;
         (arr || []).forEach(n => {
@@ -930,6 +931,7 @@
       }
 
       function prependNotif(n) {
+        if (!notifList || !notifCountEl) return;
         // simple prepend and update count
         const el = document.createElement('div');
         el.className = 'p-2 border-b bg-gray-50 text-sm';
@@ -950,21 +952,39 @@
         notifCountEl.textContent = current + 1; notifCountEl.classList.remove('hidden');
       }
 
-      notifBtn.addEventListener('click', async () => {
-        notifDropdown.classList.toggle('hidden');
-        if (!notifDropdown.classList.contains('hidden')) {
-          await loadNotifications();
+      // Attach notification handlers if elements are present, or wait for them to appear
+      (function attachNotifIfReady(){
+        function bind(){
+          if (!notifBtn) return false;
+          if (notifDropdown) {
+            notifBtn.addEventListener('click', async () => {
+              notifDropdown.classList.toggle('hidden');
+              if (!notifDropdown.classList.contains('hidden')) {
+                await loadNotifications();
+              }
+            });
+          }
+          if (notifMarkAll) {
+            notifMarkAll.addEventListener('click', async () => {
+              try {
+                const r = await fetch(`${API}/api/admin/notifications/mark-all-read`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+                const j = await r.json();
+                if (!r.ok || !j.success) throw new Error(j.msg || 'Failed');
+                await loadNotifications();
+              } catch (e) { console.warn(e.message); }
+            });
+          }
+          return true;
         }
-      });
 
-      notifMarkAll.addEventListener('click', async () => {
-        try {
-          const r = await fetch(`${API}/api/admin/notifications/mark-all-read`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
-          const j = await r.json();
-          if (!r.ok || !j.success) throw new Error(j.msg || 'Failed');
-          await loadNotifications();
-        } catch (e) { console.warn(e.message); }
-      });
+        if (!bind()) {
+          // observe briefly for presence
+          const target = document.body;
+          const mo = new MutationObserver((mutations, obs) => { if (bind()) { obs.disconnect(); } });
+          mo.observe(target, { childList: true, subtree: true });
+          setTimeout(()=>mo.disconnect(), 8000);
+        }
+      })();
 
       // Global error handler to surface JS errors on page for debugging
       window.addEventListener('error', function (evt) {
@@ -1585,13 +1605,13 @@
           t = setTimeout(() => fn.apply(this, args), wait);
         };
       }
-      els.filterStatus.addEventListener('change', () => loadRegularOrders());
-      els.filterPayment.addEventListener('change', () => loadRegularOrders());
-      els.filterShipping.addEventListener('change', () => loadRegularOrders());
-      els.dateFrom.addEventListener('change', () => loadRegularOrders());
-      els.dateTo.addEventListener('change', () => loadRegularOrders());
-      els.search.addEventListener('input', debounce(() => loadRegularOrders(), 350));
-      els.filterReset.addEventListener('click', () => {
+      els.filterStatus?.addEventListener('change', () => loadRegularOrders());
+      els.filterPayment?.addEventListener('change', () => loadRegularOrders());
+      els.filterShipping?.addEventListener('change', () => loadRegularOrders());
+      els.dateFrom?.addEventListener('change', () => loadRegularOrders());
+      els.dateTo?.addEventListener('change', () => loadRegularOrders());
+      els.search?.addEventListener('input', debounce(() => loadRegularOrders(), 350));
+      els.filterReset?.addEventListener('click', () => {
         els.filterStatus.value = '';
         els.filterPayment.value = '';
         els.search.value = '';
@@ -1614,17 +1634,17 @@
           renderCustomOrders();
           // Bind filter events once after initial load
           const reb = renderCustomOrders;
-          els.customSearch?.addEventListener('input', reb);
-          els.customFilterStatus?.addEventListener('change', reb);
-          els.customFilterType?.addEventListener('change', reb);
-          els.customFilterShipMethod?.addEventListener('change', reb);
-          els.customFilterFulfillment?.addEventListener('change', reb);
-          els.customFilterPayment?.addEventListener('change', reb);
-          els.customFilterCourier?.addEventListener('change', reb);
-          els.customFilterTracking?.addEventListener('change', reb);
-          els.customDateFrom?.addEventListener('change', reb);
-          els.customDateTo?.addEventListener('change', reb);
-          els.customFilterReset?.addEventListener('click', () => {
+            els.customSearch?.addEventListener('input', reb);
+              els.customFilterStatus?.addEventListener('change', reb);
+              els.customFilterType?.addEventListener('change', reb);
+              els.customFilterShipMethod?.addEventListener('change', reb);
+              els.customFilterFulfillment?.addEventListener('change', reb);
+              els.customFilterPayment?.addEventListener('change', reb);
+              els.customFilterCourier?.addEventListener('change', reb);
+              els.customFilterTracking?.addEventListener('change', reb);
+              els.customDateFrom?.addEventListener('change', reb);
+              els.customDateTo?.addEventListener('change', reb);
+              els.customFilterReset?.addEventListener('click', () => {
             els.customSearch.value = '';
             els.customFilterStatus.value = '';
             els.customFilterType.value = '';
@@ -2705,7 +2725,7 @@
         setTimeout(() => {
           const openBtn = document.getElementById('custom-modal-open-fulfillment');
           if (openBtn) {
-            openBtn.addEventListener('click', () => {
+            openBtn?.addEventListener('click', () => {
               // show the form and default to delivery if shippingMethod indicates so
               fulfillmentForm.classList.remove('hidden');
               document.getElementById('custom-modal-fulfillment-form').classList.remove('hidden');
@@ -2898,7 +2918,7 @@
       els.filterPayment.addEventListener('change', renderRegularOrders);
 
       // Regular order edit
-      els.tbody.addEventListener('click', (e) => {
+      els.tbody?.addEventListener('click', (e) => {
         const editBtn = e.target.closest('.edit-btn');
         if (editBtn) {
           const id = editBtn.dataset.id;
@@ -2909,7 +2929,7 @@
 
       // Mobile card view edit (same action as table View)
       if (els.ordersCards) {
-        els.ordersCards.addEventListener('click', (e) => {
+        els.ordersCards?.addEventListener('click', (e) => {
           const editBtn = e.target.closest('.edit-btn');
           if (editBtn) {
             const id = editBtn.dataset.id;
@@ -2920,7 +2940,7 @@
       }
 
       // MODIFIED: Custom order edit
-      els.customOrdersBody.addEventListener('click', (e) => {
+      els.customOrdersBody?.addEventListener('click', (e) => {
         const editBtn = e.target.closest('.edit-custom-btn');
         if (editBtn) {
           const id = editBtn.dataset.id;
@@ -2930,7 +2950,7 @@
       });
 
       // Tab Switching
-      els.tabsContainer.addEventListener('click', (e) => {
+      els.tabsContainer?.addEventListener('click', (e) => {
         const btn = e.target.closest('button.admin-tab');
         if (!btn) return;
 
@@ -2951,15 +2971,15 @@
       });
 
       // Regular Modal Events
-      els.formStatus.addEventListener('change', () => {
+      els.formStatus?.addEventListener('change', () => {
         els.modalAdminCancelReasonBox.classList.toggle('hidden', els.formStatus.value !== 'Cancelled');
       });
-      els.modalClose.addEventListener('click', () => els.modal.classList.add('hidden'));
-      els.modal.addEventListener('click', (e) => { if (e.target === els.modal) els.modal.classList.add('hidden'); });
-      els.modalSave.addEventListener('click', saveModal);
+      els.modalClose?.addEventListener('click', () => els.modal.classList.add('hidden'));
+      els.modal?.addEventListener('click', (e) => { if (e.target === els.modal) els.modal.classList.add('hidden'); });
+      els.modalSave?.addEventListener('click', saveModal);
       // Receipt controls
       if (els.modalReceiptBtn) {
-        els.modalReceiptBtn.addEventListener('click', () => {
+        els.modalReceiptBtn?.addEventListener('click', () => {
           els.receiptWrap.classList.toggle('hidden');
           if (!els.receiptWrap.classList.contains('hidden')) {
             els.receiptWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -2967,13 +2987,13 @@
         });
       }
       if (els.receiptCopyRef) {
-        els.receiptCopyRef.addEventListener('click', async () => {
+        els.receiptCopyRef?.addEventListener('click', async () => {
           const txt = (els.receiptReference.textContent || '').trim();
           try { await navigator.clipboard.writeText(txt); } catch (_) {}
         });
       }
       if (els.receiptPrint) {
-        els.receiptPrint.addEventListener('click', async () => {
+        els.receiptPrint?.addEventListener('click', async () => {
           try {
             const el = document.querySelector('#receipt-wrap #receipt-content') || els.receiptWrap || document.getElementById('receipt-wrap');
             if (!el) return alert('No receipt content available to print.');
@@ -2987,7 +3007,7 @@
         });
       }
       if (els.modalDownloadReceipt) {
-        els.modalDownloadReceipt.addEventListener('click', async () => {
+        els.modalDownloadReceipt?.addEventListener('click', async () => {
           try {
             const el = document.querySelector('#receipt-wrap #receipt-content') || els.receiptWrap || document.getElementById('receipt-wrap');
             if (!el) return alert('No receipt content available to download.');
@@ -3003,12 +3023,12 @@
         });
       }
       // --- MODIFIED: Custom Modal Events ---
-      els.customModalClose.addEventListener('click', () => els.customModal.classList.add('hidden'));
-      els.customModal.addEventListener('click', (e) => { if (e.target === els.customModal) els.customModal.classList.add('hidden'); });
-      els.customModalSaveQuote.addEventListener('click', saveCustomQuote); // Para sa Phase 2
-      els.customModalVerifyDp.addEventListener('click', verifyDownPayment); // Para sa Phase 4
-      els.customModalRequestFinal.addEventListener('click', requestFinalPayment); // Para sa Phase 5.1
-      els.customModalVerifyFinal.addEventListener('click', verifyFinalPayment);
+      els.customModalClose?.addEventListener('click', () => els.customModal.classList.add('hidden'));
+      els.customModal?.addEventListener('click', (e) => { if (e.target === els.customModal) els.customModal.classList.add('hidden'); });
+      els.customModalSaveQuote?.addEventListener('click', saveCustomQuote); // Para sa Phase 2
+      els.customModalVerifyDp?.addEventListener('click', verifyDownPayment); // Para sa Phase 4
+      els.customModalRequestFinal?.addEventListener('click', requestFinalPayment); // Para sa Phase 5.1
+      els.customModalVerifyFinal?.addEventListener('click', verifyFinalPayment);
 
       // --- NEW: Save Fulfillment Details ---
       async function saveFulfillmentDetails() {
@@ -3094,12 +3114,12 @@
         }
       }
 
-      document.getElementById('custom-modal-save-fulfillment').addEventListener('click', saveFulfillmentDetails);
+      document.getElementById('custom-modal-save-fulfillment')?.addEventListener('click', saveFulfillmentDetails);
 
       // Toggle fulfillment form fields based on selected method
       const methodSelect = document.getElementById('fulfillment-method-select');
       if (methodSelect) {
-        methodSelect.addEventListener('change', (e) => {
+        methodSelect?.addEventListener('change', (e) => {
           const v = e.target.value;
           const deliveryFields = document.getElementById('fulfillment-delivery-fields');
           const pickupFields = document.getElementById('fulfillment-pickup-fields');
