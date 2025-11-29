@@ -1471,6 +1471,40 @@
         } else {
           els.receiptOpenUrl.classList.add('hidden');
         }
+        // Try to fetch server-generated Receipt (prefer authoritative stored receipt)
+        (async function tryLoadStoredReceipt(){
+          try {
+            const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('token');
+            // If order has direct receiptId reference, prefer that
+            const rid = order.receiptId || null;
+            if (!rid) return; // nothing to fetch
+            const rres = await fetch(`${API}/api/receipts/${rid}`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
+            if (!rres.ok) return;
+            const rjson = await rres.json();
+            if (!rjson.success || !rjson.data) return;
+            const rec = rjson.data;
+            // Overwrite receipt display with stored receipt data
+            els.receiptReference.textContent = rec.tin || (order.paymentIntentId || '-');
+            els.receiptAmount.textContent = peso(rec.total || 0);
+            els.receiptDate.textContent = rec.createdAt ? new Date(rec.createdAt).toLocaleString() : (paidAt ? new Date(paidAt).toLocaleString() : '-');
+            els.receiptMethod.textContent = order.paymentMethod || rec.meta?.paymentMethod || '-';
+            els.receiptShortId.textContent = shortId(order._id);
+            els.receiptCustomer.textContent = order.user?.name || '-';
+            els.receiptStatus.textContent = 'Payment received';
+            els.receiptItems.innerHTML = (rec.items || []).map(it => `\n          <tr>\n            <td class="px-2 py-1">${it.name || 'Item'}</td>\n            <td class="px-2 py-1">${it.quantity || 0}</td>\n            <td class="px-2 py-1 text-right">${peso((it.price || 0))}</td>\n          </tr>\n        `).join('');
+            els.receiptDelivery.textContent = peso(rec.deliveryFee || 0);
+            els.receiptTotal.textContent = peso(rec.total || 0);
+            // Reveal the receipt section
+            els.receiptWrap.classList.remove('hidden');
+            // If receipt meta contains external receipt URL, show Open link
+            if (rec.meta && rec.meta.gatewayReceiptUrl) {
+              els.receiptOpenUrl.href = rec.meta.gatewayReceiptUrl;
+              els.receiptOpenUrl.classList.remove('hidden');
+            }
+          } catch (e) {
+            console.warn('Failed to load stored receipt for admin view', e);
+          }
+        })();
         els.modal.classList.remove('hidden'); els.modal.classList.add('flex');
         els.modalItems.innerHTML = (order.orderItems || []).map(it => `<div class="flex items-center justify-between"><div class="flex items-center gap-3"><img src="${it.imageUrl || ''}" class="w-10 h-10 rounded object-cover bg-gray-100" /><div><div class="font-medium">${it.name || 'Item'}</div><div class="text-gray-500 text-xs">₱${Number(it.price || 0).toLocaleString()} x ${it.quantity || 0}</div></div></div><div class="font-medium">${peso((it.price || 0) * (it.quantity || 0))}</div></div>`).join('');
         const subtotal = (order.orderItems || []).reduce((s, i) => s + (i.price || 0) * (i.quantity || 0), 0);

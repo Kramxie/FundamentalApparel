@@ -52,6 +52,7 @@
               </div>
               <div class="flex items-center gap-2">
                 <button data-id="${r._id}" class="request-refund px-3 py-2 bg-yellow-500 text-white rounded">Request A Refund</button>
+                <button data-id="${r._id}" class="view-receipt px-3 py-2 bg-white border text-indigo-600 rounded">View Receipt</button>
                 <button data-id="${r._id}" class="download-receipt px-3 py-2 bg-indigo-600 text-white rounded">Download Receipt</button>
               </div>
             </div>
@@ -61,7 +62,14 @@
         container.innerHTML = html;
         document.querySelectorAll('.download-receipt').forEach(b => b.addEventListener('click', async (e)=>{
           const id = e.currentTarget.dataset.id;
-          await downloadReceipt(id);
+          try {
+            window._DOWNLOAD_DIRECT = true;
+            await downloadReceipt(id);
+          } finally { window._DOWNLOAD_DIRECT = undefined; }
+        }));
+        document.querySelectorAll('.view-receipt').forEach(b => b.addEventListener('click', async (e)=>{
+          const id = e.currentTarget.dataset.id;
+          await viewReceiptInline(id);
         }));
         document.querySelectorAll('.request-refund').forEach(b => b.addEventListener('click', (e)=>{
           const id = e.currentTarget.dataset.id;
@@ -165,13 +173,35 @@
         doc.text('This is a generated official receipt. Thank you for your purchase.', margin, 795);
 
         // Save PDF
-        doc.save(`receipt-${r.tin}.pdf`);
+        // Return blob so caller can choose to save or open
+        const pdfBlob = doc.output('blob');
+        const url = URL.createObjectURL(pdfBlob);
+        // If caller expects to save, save; default behavior is to open in new tab
+        if (typeof window._DOWNLOAD_DIRECT !== 'undefined' && window._DOWNLOAD_DIRECT === true) {
+          doc.save(`receipt-${r.tin}.pdf`);
+        } else {
+          window.open(url, '_blank');
+        }
 
       } catch (err) {
         console.error('Download receipt failed', err);
         alert(err.message || 'Failed to generate receipt');
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+      }
+    }
+
+    async function viewReceiptInline(receiptId){
+      // open receipt in a new tab as PDF viewer
+      try {
+        // Signal downloadReceipt to open rather than force save
+        window._DOWNLOAD_DIRECT = false;
+        await downloadReceipt(receiptId);
+      } catch (e) {
+        console.error('View receipt failed', e);
+        alert(e.message || 'Failed to view receipt');
+      } finally {
+        window._DOWNLOAD_DIRECT = undefined;
       }
     }
 
