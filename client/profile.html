@@ -1173,6 +1173,7 @@
                 if (viewReceiptBtn) {
                     const orderId = viewReceiptBtn.dataset.orderId;
                     try {
+<<<<<<< HEAD
                                 const receipt = await fetchReceiptForOrder(orderId).catch(async (err) => {
                                     console.warn('fetchReceiptForOrder failed, attempting to fetch order fallback', err);
                                     // Try to fetch order and synthesize minimal receipt to avoid failure
@@ -1198,6 +1199,39 @@
                                 if (!receipt) return showReceiptModal(null);
                                 showReceiptModal(receipt);
                     } catch (e) { alert('Failed to load receipt'); }
+=======
+                        const receipt = await fetchReceiptForOrder(orderId).catch(async (err) => {
+                            console.warn('fetchReceiptForOrder failed, attempting order fallback', err);
+                            try {
+                                const ordRes = await apiRequest(`/api/orders/${encodeURIComponent(orderId)}`);
+                                if (ordRes && ordRes.success && ordRes.data) {
+                                    const order = ordRes.data;
+                                    const items = (order.orderItems || []).map(it => ({ name: it.name || it.productName || 'Item', size: it.size || '', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0 }));
+                                    return {
+                                        _id: `synth-${order._id}`,
+                                        createdAt: order.createdAt,
+                                        items,
+                                        subtotal: order.subtotal || items.reduce((s,i)=>s+((Number(i.price)||0)*(Number(i.quantity)||1)),0),
+                                        deliveryFee: order.deliveryFee || 0,
+                                        voucherDiscount: order.voucherDiscount || order.voucherAmount || 0,
+                                        preparedByName: order.acceptedByName || '',
+                                        customerName: (order.user && order.user.name) ? order.user.name : (order.shippingAddress ? (order.shippingAddress.contact || '') : '')
+                                    };
+                                }
+                            } catch (e) { console.error('order fallback failed', e); }
+                            return null;
+                        });
+                        if (!receipt) {
+                            console.warn('No receipt data available for order', orderId);
+                            showReceiptModal(null);
+                        } else {
+                            showReceiptModal(receipt);
+                        }
+                    } catch (e) {
+                        console.error('Unexpected error while loading receipt', e);
+                        showReceiptModal(null);
+                    }
+>>>>>>> restore-S
                 }
                 const downloadReceiptBtn = e.target.closest('.btn-download-receipt');
                 if (downloadReceiptBtn) {
