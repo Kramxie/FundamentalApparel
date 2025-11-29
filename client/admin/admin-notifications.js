@@ -7,7 +7,8 @@
     if (!header) header = document.body;
     const container = document.createElement('div');
     container.id = 'admin-notification-container';
-    container.className = 'relative ml-4 flex items-center';
+    // add a small right margin so the bell visually aligns with Logout
+    container.className = 'relative ml-4 mr-3 flex items-center';
     container.innerHTML = `
       <button id="admin-notif-btn" class="relative p-2 rounded hover:bg-gray-100">
         <i class="fas fa-bell"></i>
@@ -27,21 +28,83 @@
     `;
     // Prefer inserting before a global logout button so the bell is always next to Logout.
     const logoutBtn = document.querySelector('#logout-btn') || header.querySelector('#logout-btn');
-    if (logoutBtn && logoutBtn.parentNode) {
-      logoutBtn.parentNode.insertBefore(container, logoutBtn);
+    if (logoutBtn) {
+      const parent = logoutBtn.parentNode;
+      // If logout button is a direct child of header (common with justify-between),
+      // create a right-side wrapper so adding the bell doesn't become a middle child.
+      if (parent === header) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center gap-4';
+        // move logoutBtn into wrapper
+        header.appendChild(wrapper);
+        wrapper.appendChild(logoutBtn);
+        // insert container before logout inside wrapper
+        wrapper.insertBefore(container, logoutBtn);
+      } else {
+        // insert before logout in its existing container
+        parent.insertBefore(container, logoutBtn);
+      }
     } else {
       // Try to find a right-side container in the header (common patterns)
       const rightSide = header.querySelector('.flex.items-center') || header.querySelector('.ml-4') || header.querySelector('.justify-end');
       if (rightSide) rightSide.appendChild(container);
       else header.appendChild(container);
+
+      // If logout button is created later (some pages build header via JS), observe and move the container when it appears
+      const observer = new MutationObserver(() => {
+        const laterLogout = document.querySelector('#logout-btn') || header.querySelector('#logout-btn');
+        if (laterLogout && laterLogout.parentNode) {
+          const p = laterLogout.parentNode;
+          if (p === header) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex items-center gap-4';
+            header.appendChild(wrapper);
+            wrapper.appendChild(laterLogout);
+            wrapper.insertBefore(container, laterLogout);
+          } else {
+            p.insertBefore(container, laterLogout);
+          }
+          observer.disconnect();
+        }
+      });
+      observer.observe(header, { childList: true, subtree: true });
     }
 
     // event handlers
     const btn = document.getElementById('admin-notif-btn');
     const dropdown = document.getElementById('admin-notif-dropdown');
     btn.addEventListener('click', ()=>{
-      dropdown.classList.toggle('hidden');
+      // toggle visibility then adjust positioning so it never overflows the viewport
+      const isHidden = dropdown.classList.contains('hidden');
+      if (isHidden) {
+        dropdown.classList.remove('hidden');
+        adjustDropdownPosition();
+      } else {
+        dropdown.classList.add('hidden');
+      }
     });
+    // reposition on window resize or scroll while open
+    window.addEventListener('resize', ()=>{ if(!dropdown.classList.contains('hidden')) adjustDropdownPosition(); });
+    window.addEventListener('scroll', ()=>{ if(!dropdown.classList.contains('hidden')) adjustDropdownPosition(); }, true);
+
+    // compute a fixed-position placement for the dropdown to avoid header/overflow issues
+    function adjustDropdownPosition(){
+      try{
+        const btnRect = btn.getBoundingClientRect();
+        const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+        // set width constrained to viewport
+        const maxWidth = Math.min(360, vw - 32);
+        dropdown.style.position = 'fixed';
+        dropdown.style.width = maxWidth + 'px';
+        // prefer aligning the dropdown's right edge with button's right edge
+        const preferredLeft = Math.min(Math.max(8, btnRect.right - maxWidth), vw - maxWidth - 8);
+        dropdown.style.left = preferredLeft + 'px';
+        dropdown.style.top = (btnRect.bottom + 8) + 'px';
+        dropdown.style.right = 'auto';
+        dropdown.style.zIndex = 9999;
+        dropdown.style.maxHeight = Math.max(160, window.innerHeight - (btnRect.bottom + 32)) + 'px';
+      }catch(e){ console.debug('adjustDropdownPosition failed', e); }
+    }
     document.addEventListener('click', (e)=>{
       if(!container.contains(e.target)) dropdown.classList.add('hidden');
     });
