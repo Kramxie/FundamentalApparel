@@ -3,6 +3,24 @@
   function escapeHtml(s){ if (s === null || typeof s === 'undefined') return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function formatCurrency(n){ return '₱' + Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2}); }
 
+  function generateTIN(source){
+    // If a TIN-like value exists, prefer it; otherwise synthesize a short TIN based on id
+    if (!source) return '';
+    if (typeof source === 'string' && source.trim()) return source.trim();
+    try { return `TIN-${String(source).slice(-4).toUpperCase()}${String(source).slice(0,4).toUpperCase()}`; } catch (e) { return `TIN-${String(source).slice(-8)}`; }
+  }
+
+  function calculateSummary(r){
+    const items = Array.isArray(r.items) ? r.items : [];
+    const subtotal = items.reduce((s,it)=> s + ((Number(it.price)||0) * (Number(it.quantity)||Number(it.qty)||1)), 0);
+    const delivery = Number(r.deliveryFee || r.shipping || 0);
+    const voucher = Number(r.voucherDiscount || r.voucher || 0);
+    const taxable = Math.max(subtotal - voucher, 0);
+    const vat = Math.round(((taxable) * 0.12) * 100) / 100; // 12% VAT on taxable base
+    const total = Math.round((subtotal + delivery + vat - voucher) * 100) / 100;
+    return { subtotal, delivery, voucher, vat, total };
+  }
+
   function buildReceiptHtml(r){
     // Defensive: if no meaningful data present, return a simple placeholder
     const hasItems = Array.isArray(r && r.items) && r.items.length > 0;
@@ -16,24 +34,26 @@
       </div>`;
     }
     const itemsRows = (r.items||[]).map(it => `\n        <tr class="border-t">\n          <td class="py-2">${escapeHtml(it.name)}</td>\n          <td class="py-2 text-center">${escapeHtml(it.size||'-')}</td>\n          <td class="py-2 text-center">${Number(it.quantity||1)}</td>\n          <td class="py-2 text-right">${formatCurrency((Number(it.price)||0))}</td>\n          <td class="py-2 text-right">${formatCurrency((Number(it.price)||0)*(Number(it.quantity)||1))}</td>\n        </tr>\n      `).join('');
-    const subtotal = Number(r.subtotal || 0) || (r.items||[]).reduce((s,it)=>s+((Number(it.price)||0)*(Number(it.quantity)||1)),0);
-    const delivery = Number(r.deliveryFee||0);
-    const voucherAmt = Math.round((Number(r.voucherDiscount || 0) || 0) * 100) / 100;
-    const taxable = Math.max(subtotal - voucherAmt, 0);
-    const vat = Math.round(taxable * 0.12 * 100) / 100;
-    const total = Math.round((subtotal - voucherAmt + delivery + vat) * 100) / 100;
+    // Use centralized calculation so user/admin receipts match
+    const summary = calculateSummary(r);
+    const subtotal = summary.subtotal;
+    const delivery = summary.delivery;
+    const voucherAmt = summary.voucher;
+    const vat = summary.vat;
+    const total = summary.total;
+    const tinDisplay = (r.tin && String(r.tin).trim()) ? r.tin : generateTIN(r._id || r.paymentIntentId || r.receiptId || r.orderId);
 
     return `
-      <div class="max-w-full">
+      <div id="receipt-content" class="receipt-document max-w-full">
         <div class="text-center mb-2">
           <h1 class="text-xl font-bold">FUNDAMENTAL APPAREL</h1>
           <div class="text-sm text-gray-600">Unit 4B, Creative Building • Makati City</div>
         </div>
         <div class="flex justify-center mb-4">
           <div class="text-sm text-left border rounded px-3 py-2 bg-gray-50" style="min-width:260px;">
-            <div><strong>OR No.:</strong> ${escapeHtml(String(r._id || ''))}</div>
+            <div><strong>Order #:</strong> ${escapeHtml(String(r._id || r.orderId || ''))}</div>
             <div><strong>Date:</strong> ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</div>
-            <div><strong>TIN:</strong> ${escapeHtml((r.tin && String(r.tin).trim()) ? r.tin : `AUTOGEN-${(r._id||'').toString().slice(-8).toUpperCase()}`)}</div>
+            <div><strong>TIN:</strong> ${escapeHtml(tinDisplay)}</div>
           </div>
         </div>
 
