@@ -491,6 +491,7 @@
         </div>
     </div>
     
+            <script src="/js/receipt-builder.js"></script>
             <script>
                 const API = 'https://fundamental-apparel-backend.onrender.com';
 
@@ -1172,15 +1173,38 @@
                 if (viewReceiptBtn) {
                     const orderId = viewReceiptBtn.dataset.orderId;
                     try {
-                        const receipt = await fetchReceiptForOrder(orderId);
-                        showReceiptModal(receipt);
+                                const receipt = await fetchReceiptForOrder(orderId).catch(async (err) => {
+                                    console.warn('fetchReceiptForOrder failed, attempting to fetch order fallback', err);
+                                    // Try to fetch order and synthesize minimal receipt to avoid failure
+                                    try {
+                                        const ordRes = await apiRequest(`/api/orders/${encodeURIComponent(orderId)}`);
+                                        if (ordRes && ordRes.success && ordRes.data) {
+                                            const order = ordRes.data;
+                                            const items = (order.orderItems || []).map(it => ({ name: it.name || it.productName || 'Item', size: it.size || '', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0 }));
+                                            return {
+                                                _id: `synth-${order._id}`,
+                                                createdAt: order.createdAt,
+                                                items,
+                                                subtotal: order.subtotal || items.reduce((s,i)=>s+((Number(i.price)||0)*(Number(i.quantity)||1)),0),
+                                                deliveryFee: order.deliveryFee || 0,
+                                                voucherDiscount: order.voucherDiscount || order.voucherAmount || 0,
+                                                preparedByName: order.acceptedByName || '',
+                                                customerName: (order.user && order.user.name) ? order.user.name : (order.shippingAddress ? (order.shippingAddress.contact || '') : '')
+                                            };
+                                        }
+                                    } catch (e) { console.error('fallback order fetch failed', e); }
+                                    return null;
+                                });
+                                if (!receipt) return showReceiptModal(null);
+                                showReceiptModal(receipt);
                     } catch (e) { alert('Failed to load receipt'); }
                 }
                 const downloadReceiptBtn = e.target.closest('.btn-download-receipt');
                 if (downloadReceiptBtn) {
                     const orderId = downloadReceiptBtn.dataset.orderId;
                     try {
-                        const receipt = await fetchReceiptForOrder(orderId);
+                        const receipt = await fetchReceiptForOrder(orderId).catch(() => null);
+                        if (!receipt) return alert('Receipt not available for download');
                         window._DOWNLOAD_DIRECT = true;
                         await renderReceiptPDF(receipt);
                     } finally { window._DOWNLOAD_DIRECT = undefined; }
@@ -1530,7 +1554,14 @@
                             const el = document.getElementById('receipt-modal-body');
                             const safeId = (r && (r._id || r.tin)) ? String(r._id || r.tin).slice(-12) : 'receipt';
                             const fileName = `Invoice-${safeId}.pdf`;
-                            const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' } };
+                            const opt = {
+                                margin: 8,
+                                filename: fileName,
+                                image: { type: 'jpeg', quality: 0.98 },
+                                html2canvas: { scale: Math.min(2, (window.devicePixelRatio || 1) * 1.5), useCORS: true, allowTaint: true },
+                                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                                pagebreak: { mode: ['css', 'legacy'] }
+                            };
                             html2pdf().set(opt).from(el).save().then(() => {
                                 dl.disabled = false; dl.textContent = 'Download PDF';
                             }).catch((err) => { console.error('html2pdf error', err); dl.disabled = false; dl.textContent = 'Download PDF'; alert('Failed to generate PDF'); });

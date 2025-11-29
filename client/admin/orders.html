@@ -1614,7 +1614,8 @@
         els.receiptCustomer.textContent = order.user?.name || '-';
         els.receiptStatus.textContent = (order.paymentStatus === 'Received') ? 'Payment received' : (order.paymentStatus || 'Pending');
         // Build a synthesized receipt object from order data so admin can print/download
-        try {
+        // Build a resilient adminReceipt object (avoid throwing; always provide a usable object)
+        (function(){
           const addr = order.shippingAddress || {};
           const addrLines = [];
           if (addr.block) addrLines.push(addr.block);
@@ -1635,9 +1636,9 @@
             deliveryFee: Number(order.deliveryFee || 0),
             voucherDiscount: Number(order.voucherDiscount || order.voucherAmount || 0) || 0,
             preparedByName: order.acceptedByName || order.acceptedBy || '-',
-            total: Number(order.totalPrice || 0)
+            total: Number(order.totalPrice || subtotalCalc + Number(order.deliveryFee || 0) - (Number(order.voucherDiscount||order.voucherAmount||0) || 0))
           };
-        } catch(e) { window.currentAdminReceipt = null; }
+        })();
         // Render full WYSIWYG receipt HTML so admin view/download matches user receipt
         try {
           els.receiptWrap.innerHTML = buildReceiptHtml(window.currentAdminReceipt || {});

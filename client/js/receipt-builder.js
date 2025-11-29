@@ -4,6 +4,17 @@
   function formatCurrency(n){ return '₱' + Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2}); }
 
   function buildReceiptHtml(r){
+    // Defensive: if no meaningful data present, return a simple placeholder
+    const hasItems = Array.isArray(r && r.items) && r.items.length > 0;
+    const hasAmounts = (typeof r.subtotal === 'number' && r.subtotal > 0) || (typeof r.total === 'number' && r.total > 0);
+    if (!r || (!hasItems && !hasAmounts && !r._id && !r.createdAt)) {
+      return `
+      <div class="p-6 text-center text-sm text-gray-600">
+        <h2 class="font-semibold mb-2">FUNDAMENTAL APPAREL</h2>
+        <div class="mb-4">Receipt data is not available for this order.</div>
+        <div>If you believe this is an error, please contact support.</div>
+      </div>`;
+    }
     const itemsRows = (r.items||[]).map(it => `\n        <tr class="border-t">\n          <td class="py-2">${escapeHtml(it.name)}</td>\n          <td class="py-2 text-center">${escapeHtml(it.size||'-')}</td>\n          <td class="py-2 text-center">${Number(it.quantity||1)}</td>\n          <td class="py-2 text-right">${formatCurrency((Number(it.price)||0))}</td>\n          <td class="py-2 text-right">${formatCurrency((Number(it.price)||0)*(Number(it.quantity)||1))}</td>\n        </tr>\n      `).join('');
     const subtotal = Number(r.subtotal || 0) || (r.items||[]).reduce((s,it)=>s+((Number(it.price)||0)*(Number(it.quantity)||1)),0);
     const delivery = Number(r.deliveryFee||0);
