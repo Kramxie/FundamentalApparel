@@ -1476,13 +1476,26 @@
           try {
             const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('token');
             // If order has direct receiptId reference, prefer that
+            let rec = null;
             const rid = order.receiptId || null;
-            if (!rid) return; // nothing to fetch
-            const rres = await fetch(`${API}/api/receipts/${rid}`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
-            if (!rres.ok) return;
-            const rjson = await rres.json();
-            if (!rjson.success || !rjson.data) return;
-            const rec = rjson.data;
+            if (rid) {
+              const rres = await fetch(`${API}/api/receipts/${rid}`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
+              if (rres && rres.ok) {
+                const rjson = await rres.json();
+                if (rjson.success && rjson.data) rec = rjson.data;
+              }
+            }
+            // If not found by receiptId, try to fetch by orderId (helpful for older orders)
+            if (!rec) {
+              try {
+                const byRes = await fetch(`${API}/api/receipts/by-order/${order._id}`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
+                if (byRes && byRes.ok) {
+                  const byJson = await byRes.json();
+                  if (byJson.success && byJson.data) rec = byJson.data;
+                }
+              } catch (ee) { /* ignore */ }
+            }
+            if (!rec) return;
             // Overwrite receipt display with stored receipt data
             els.receiptReference.textContent = rec.tin || (order.paymentIntentId || '-');
             els.receiptAmount.textContent = peso(rec.total || 0);

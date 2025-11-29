@@ -14,6 +14,24 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+// Get receipt by order id (owner or admin)
+router.get('/by-order/:orderId', protect, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    if (!orderId) return res.status(400).json({ success: false, msg: 'orderId is required' });
+    const r = await Receipt.findOne({ orderId }).lean();
+    if (!r) return res.status(404).json({ success: false, msg: 'Receipt not found for this order' });
+    // Authorization: owner or admin
+    if (r.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, msg: 'Not authorized' });
+    }
+    return res.status(200).json({ success: true, data: r });
+  } catch (err) {
+    console.error('[Receipts] Failed to fetch receipt by order:', err && err.message);
+    return res.status(500).json({ success: false, msg: 'Failed to fetch receipt' });
+  }
+});
+
 // Get single receipt by id (only owner or admin)
 router.get('/:id', protect, async (req, res) => {
   try {

@@ -94,6 +94,8 @@ const orderSchema = new mongoose.Schema({
     trackingCode: { type: String },
 
     totalPrice: { type: Number, required: true, default: 0.0 },
+    // Link to generated receipt (if any)
+    receiptId: { type: mongoose.Schema.ObjectId, ref: 'Receipt' }
 }, {
     timestamps: true
 });

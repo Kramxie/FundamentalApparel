@@ -285,6 +285,8 @@ const CustomOrderSchema = new mongoose.Schema({
         default: null
     }
     ,
+    // Link to generated receipt (if any)
+    receiptId: { type: mongoose.Schema.Types.ObjectId, ref: 'Receipt' },
     // Inventory allocation tracking (for printing-only orders)
     inventoryAllocated: {
         type: Boolean,
