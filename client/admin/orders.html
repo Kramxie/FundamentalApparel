@@ -1522,31 +1522,33 @@
           }
           // --- END BADGE LOGIC ---
 
-          // If this order contains team members, render one row per member so admins can quickly
-          // see individual entries in the table. The View/Edit button still opens the parent order modal.
+          // If this order contains team members, render a single row with Qty = order.quantity
+          // and include a concise team summary in the Details column. The View/Edit button
+          // still opens the parent order modal for full details.
           if (o.includeTeamMembers && Array.isArray(o.teamMembers) && o.teamMembers.length) {
-            o.teamMembers.forEach(member => {
-              const memberName = member.name || '';
-              const memberNumber = member.jerseyNumber || member.number || '';
-              const memberSize = member.size || '';
-              const memberDetails = `${details} ${memberName ? `· ${memberName}` : ''} ${memberNumber ? `#${memberNumber}` : ''} ${memberSize ? `(${memberSize})` : ''}`;
-              rowsArr.push(`
-                <tr>
+            const memberSummaries = o.teamMembers.map(m => {
+              const nm = m.name ? `${m.name}` : '';
+              const num = m.jerseyNumber ? `#${m.jerseyNumber}` : '';
+              const sz = m.size ? `(${m.size})` : '';
+              return `${nm} ${num} ${sz}`.trim();
+            }).filter(Boolean);
+            const summaryText = memberSummaries.length ? memberSummaries.join(' • ') : details;
+            rowsArr.push(`
+              <tr>
                   <td class="px-4 py-3">${new Date(o.createdAt).toLocaleDateString()}</td>
-                  <td class="px-4 py-3">${o.user?.name || 'N/A'} ${memberName ? `<div class=\"text-xs text-gray-500\">${memberName}</div>` : ''}</td>
+                  <td class="px-4 py-3">${o.user?.name || 'N/A'}</td>
                   <td class="px-4 py-3">${typeLabel(o.customType)(o)}</td>
-                  <td class="px-4 py-3">1</td>
+                  <td class="px-4 py-3">${o.quantity}</td>
                   <td class="px-4 py-3">${statusBadge}</td>
                   <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
-                  <td class="px-4 py-3 text-xs max-w-xs truncate">${memberDetails}</td>
-                  <td class="px-4 py-3 text-right">
-                    <div class="inline-flex gap-3 items-center justify-end">
-                      <button data-id="${o._id}" class="edit-custom-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
-                    </div>
-                  </td>
-                </tr>
-              `);
-            });
+                  <td class="px-4 py-3 text-xs max-w-xs truncate">${summaryText || details}</td>
+                    <td class="px-4 py-3 text-right">
+                      <div class="inline-flex gap-3 items-center justify-end">
+                        <button data-id="${o._id}" class="edit-custom-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
+                      </div>
+                    </td>
+              </tr>
+            `);
           } else {
             rowsArr.push(`
               <tr>

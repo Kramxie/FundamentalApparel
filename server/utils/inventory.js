@@ -6,7 +6,29 @@ async function findInventoryByName(name, session = null) {
   if (!name) return null;
   // Case-insensitive match
   // Search by name across inventory types (product/fabric/pre-design)
-  return await Inventory.findOne({ name: new RegExp('^' + name + '$', 'i') }).session(session);
+  // Try exact (case-insensitive) first
+  const exact = await Inventory.findOne({ name: new RegExp('^' + name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '$', 'i') }).session(session);
+  if (exact) return exact;
+
+  // If exact fails, try contains match (name appears anywhere)
+  try {
+    const contains = await Inventory.findOne({ name: new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i') }).session(session);
+    if (contains) return contains;
+  } catch (e) {
+    // ignore and continue to normalization fallback
+    console.warn('findInventoryByName: contains lookup failed', e && e.message);
+  }
+
+  // Normalized fallback: strip punctuation/whitespace and compare normalized strings
+  const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const targetNorm = norm(name);
+  if (targetNorm) {
+    const all = await Inventory.find({}).session(session);
+    for (const inv of all) {
+      if (norm(inv.name) === targetNorm) return inv;
+    }
+  }
+  return null;
 }
 
 async function allocateInventory({ name, qty, orderId = null, adminId = null, session = null, note = '' }) {
