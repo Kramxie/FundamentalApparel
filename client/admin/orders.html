@@ -282,6 +282,7 @@
           </div>
           <div class="mt-3">
             <button id="modal-receipt-btn" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm border rounded hover:bg-gray-50"><i class="fas fa-receipt text-green-600"></i>View Receipt</button>
+            <button id="modal-download-receipt" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm border rounded hover:bg-gray-50 ml-2"><i class="fas fa-download text-blue-600"></i>Download</button>
           </div>
           <!-- Receipt-like section (toggle within modal) moved under Order Summary -->
           <div id="receipt-wrap" class="hidden mt-4 border rounded-lg overflow-hidden">
@@ -1012,6 +1013,7 @@
         modalPaymentStatus: document.getElementById('modal-paymentStatus'),
         modalPaymentRef: document.getElementById('modal-paymentRef'),
         modalReceiptBtn: document.getElementById('modal-receipt-btn'),
+        modalDownloadReceipt: document.getElementById('modal-download-receipt'),
         receiptWrap: document.getElementById('receipt-wrap'),
         receiptReference: document.getElementById('receipt-reference'),
         receiptAmount: document.getElementById('receipt-amount'),
@@ -2974,6 +2976,22 @@
             await generatePdfFromElement(el, fileName);
           } catch (err) {
             console.error('PDF generation failed', err);
+            alert('Download failed. Please try Print from your browser or open the receipt in a new tab to save as PDF.');
+          }
+        });
+      }
+      if (els.modalDownloadReceipt) {
+        els.modalDownloadReceipt.addEventListener('click', async () => {
+          try {
+            const el = document.querySelector('#receipt-wrap #receipt-content') || els.receiptWrap || document.getElementById('receipt-wrap');
+            if (!el) return alert('No receipt content available to download.');
+            const safeId = (window.currentAdminReceipt && (window.currentAdminReceipt._id || window.currentAdminReceipt.tin)) ? String(window.currentAdminReceipt._id || window.currentAdminReceipt.tin).slice(-12) : 'receipt';
+            const fileName = `Invoice-${safeId}.pdf`;
+            // Ensure receipt area is visible for accurate rendering
+            if (els.receiptWrap && els.receiptWrap.classList.contains('hidden')) els.receiptWrap.classList.remove('hidden');
+            await generatePdfFromElement(el, fileName);
+          } catch (err) {
+            console.error('Download failed', err);
             alert('Download failed. Please try Print from your browser or open the receipt in a new tab to save as PDF.');
           }
         });
