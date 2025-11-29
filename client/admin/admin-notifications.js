@@ -49,7 +49,8 @@
     document.getElementById('admin-notif-markall').addEventListener('click', async ()=>{
       try{
         const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
-        await fetch(`${API}/api/admin/notifications/mark-all-read`, { method: 'POST', headers: token?{ 'Authorization': `Bearer ${token}` }:{} });
+        if (!token) { console.debug('mark all read skipped: no auth token'); return; }
+        await fetch(`${API}/api/admin/notifications/mark-all-read`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
         await refresh();
       }catch(e){ console.debug('mark all read failed', e); }
     });
@@ -58,8 +59,12 @@
 
   async function fetchNotifications(){
     try{
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API}/api/admin/notifications`, { headers: token?{ 'Authorization': `Bearer ${token}` }:{} });
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+      if (!token) {
+        // Not authenticated as admin — avoid unauthenticated request that causes 403 in console
+        return [];
+      }
+      const res = await fetch(`${API}/api/admin/notifications`, { headers: { 'Authorization': `Bearer ${token}` } });
       if(!res.ok) return [];
       const j = await res.json();
       return j.success ? (j.data || []) : [];
@@ -99,8 +104,9 @@
       btn.addEventListener('click', async (e)=>{
         const id = e.target.dataset.id;
         try{
-          const token = localStorage.getItem('token');
-          await fetch(`${API}/api/admin/notifications/${id}/read`, { method: 'PUT', headers: token?{ 'Authorization': `Bearer ${token}` }:{} });
+          const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+          if (!token) { console.debug('mark read skipped: no auth token'); return; }
+          await fetch(`${API}/api/admin/notifications/${id}/read`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
           await refresh();
         }catch(err){ console.debug('mark read failed', err); }
       });
