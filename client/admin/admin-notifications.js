@@ -115,6 +115,18 @@
     renderNotifications(list);
   }
 
-  // init
-  try{ createNotificationUi(); refresh(); setInterval(refresh, 60000); }catch(e){ console.debug('admin-notif init failed', e); }
+  // init: ensure DOM is ready and retry insertion if logout button appears later
+  function initNotifications(){
+    try{
+      createNotificationUi();
+      refresh();
+      setInterval(refresh, 60000);
+    }catch(e){ console.debug('admin-notif init failed', e); }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNotifications);
+  } else {
+    initNotifications();
+  }
 })();
