@@ -2,11 +2,12 @@
   const API = window.API || '';
   // create UI
   function createNotificationUi(){
-    const header = document.querySelector('div.flex.items-center.justify-between.h-16') || document.querySelector('header') || document.body;
-    if(!header) return;
+    // Find a sensible header container. Try several selectors to support varying page layouts.
+    let header = document.querySelector('header') || document.querySelector('div.flex.items-center.justify-between.h-16') || document.querySelector('div[class*="header"]') || document.querySelector('div[class*="top"]') || document.body;
+    if (!header) header = document.body;
     const container = document.createElement('div');
     container.id = 'admin-notification-container';
-    container.className = 'relative ml-4';
+    container.className = 'relative ml-4 flex items-center';
     container.innerHTML = `
       <button id="admin-notif-btn" class="relative p-2 rounded hover:bg-gray-100">
         <i class="fas fa-bell"></i>
@@ -24,10 +25,16 @@
         <div class="p-2 text-center text-xs text-gray-500 border-t">Notifications show system alerts and inventory warnings.</div>
       </div>
     `;
-    // insert before logout button if exists
-    const logoutBtn = header.querySelector('#logout-btn');
-    if(logoutBtn && logoutBtn.parentNode) logoutBtn.parentNode.insertBefore(container, logoutBtn);
-    else header.appendChild(container);
+    // Prefer inserting before a global logout button so the bell is always next to Logout.
+    const logoutBtn = document.querySelector('#logout-btn') || header.querySelector('#logout-btn');
+    if (logoutBtn && logoutBtn.parentNode) {
+      logoutBtn.parentNode.insertBefore(container, logoutBtn);
+    } else {
+      // Try to find a right-side container in the header (common patterns)
+      const rightSide = header.querySelector('.flex.items-center') || header.querySelector('.ml-4') || header.querySelector('.justify-end');
+      if (rightSide) rightSide.appendChild(container);
+      else header.appendChild(container);
+    }
 
     // event handlers
     const btn = document.getElementById('admin-notif-btn');

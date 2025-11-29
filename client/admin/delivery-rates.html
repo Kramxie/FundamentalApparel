@@ -7,6 +7,15 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
+  <header class="flex items-center justify-between h-16 bg-white border-b px-6">
+    <div class="flex items-center gap-3">
+      <a href="index.html" class="text-lg font-semibold text-indigo-600">Admin Panel</a>
+    </div>
+    <div class="flex items-center gap-4">
+      <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"><i class="fas fa-sign-out-alt mr-2"></i>Logout</button>
+    </div>
+  </header>
+
   <main class="max-w-4xl mx-auto p-6">
     <h1 class="text-2xl font-bold mb-4">Delivery Rates (Server-side)</h1>
     <p class="text-sm text-gray-600 mb-4">Edit the JSON object and click Save. Only admins may access this page.</p>
@@ -48,5 +57,6 @@
     document.getElementById('reload-btn').addEventListener('click', loadRates);
     loadRates();
   </script>
+  <script src="admin-notifications.js"></script>
 </body>
 </html>
