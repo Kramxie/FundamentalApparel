@@ -160,6 +160,15 @@
                 </select>
               </div>
               <div>
+                <label class="block text-sm text-gray-600">Per Type</label>
+                <select id="perTypeSelect" class="mt-1 block w-full border rounded p-2">
+                  <option value="all">All (combined)</option>
+                  <option value="product">Product</option>
+                  <option value="predesign">Pre-Design Apparel</option>
+                  <option value="fabric">Fabric & Garment</option>
+                </select>
+              </div>
+              <div>
                 <label class="block text-sm text-gray-600">Format</label>
                 <select id="format" class="mt-1 block w-full border rounded p-2">
                   <option value="csv">CSV</option>
@@ -443,11 +452,15 @@
         endDate = end.toISOString().slice(0,10);
       }
 
+      // read selected per-type filter (product / predesign / fabric / all)
+      const perTypeEl = document.getElementById('perTypeSelect');
+      const selectedPerType = perTypeEl ? perTypeEl.value : 'all';
+
       // show loading indicator
       document.getElementById('report-status').textContent = 'Loading...';
       try {
         // Sales summary (includes salesByDay and topProducts)
-        const salesUrl = await buildUrl('sales', { startDate, endDate });
+        const salesUrl = await buildUrl('sales', { startDate, endDate, extra: { type: selectedPerType } });
         const salesRes = await fetch(salesUrl, { headers: { Authorization: 'Bearer ' + token } });
         if (!salesRes.ok) throw new Error('Failed to fetch sales');
         const salesJson = await salesRes.json();
@@ -573,7 +586,7 @@
 
         // Fetch and render Orders table for the selected range
         try {
-          const orders = await fetchOrdersForTable(startDate, endDate);
+          const orders = await fetchOrdersForTable(startDate, endDate, selectedPerType);
           renderOrdersTable(orders);
         } catch (e) { console.debug('Failed to fetch orders for table', e); }
 
@@ -591,6 +604,7 @@
       document.getElementById('generate').addEventListener('click', async () => {
         const period = (document.getElementById('periodSelect')||{}).value || '30';
         const type = document.getElementById('reportType').value;
+        const perType = document.getElementById('perTypeSelect') ? document.getElementById('perTypeSelect').value : 'all';
         const format = document.getElementById('format').value;
         const token = localStorage.getItem('adminToken');
         if (!token) { alert('Not authenticated'); return; }
@@ -606,6 +620,7 @@
           }
           // numeric period (days)
           const days = Number(period) || 30;
+          // pass per-type selection via DOM inside fetchAndRenderReports
           await fetchAndRenderReports(days);
           return;
         }
@@ -617,7 +632,8 @@
           const days = Number(period) || 30; const e = new Date(); const s = new Date(); s.setDate(e.getDate() - (days - 1)); startDate = s.toISOString().slice(0,10); endDate = e.toISOString().slice(0,10);
         }
         try {
-          const url = await buildUrl(type, { startDate, endDate }); // no format -> return JSON preview
+          // include perType filter when previewing non-sales types as well
+          const url = await buildUrl(type, { startDate, endDate, extra: { type: perType } }); // no format -> return JSON preview
           const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
           if (!res.ok) throw new Error('Server error: ' + res.status);
           const json = await res.json();
@@ -635,9 +651,10 @@
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         const type = document.getElementById('reportType').value;
+        const perType = document.getElementById('perTypeSelect') ? document.getElementById('perTypeSelect').value : 'all';
         const token = localStorage.getItem('adminToken');
         if (!token) { alert('Not authenticated'); return; }
-        const url = await buildUrl(type, { startDate, endDate });
+        const url = await buildUrl(type, { startDate, endDate, extra: { type: perType } });
         try { const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } }); const json = await res.json(); document.getElementById('previewArea').textContent = JSON.stringify(json, null, 2); } catch (e){ alert('Preview failed: '+e.message); }
       });
 
@@ -690,16 +707,38 @@
 
     // --- Orders table and export implementations ---
     let currentOrders = [];
-    async function fetchOrdersForTable(startDate, endDate) {
+    async function fetchOrdersForTable(startDate, endDate, perType = 'product') {
       const token = localStorage.getItem('adminToken');
       if (!token) return [];
-      const url = await buildUrl('orders', { startDate, endDate, extra: { limit: 250 } });
-      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
-      if (!res.ok) throw new Error('Failed to fetch orders for table: ' + res.status);
-      const json = await res.json();
-      const rows = json.data || [];
-      currentOrders = rows;
-      return rows;
+      if (perType === 'product' || perType === 'all') {
+        const url = await buildUrl('orders', { startDate, endDate, extra: { limit: 250 } });
+        const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+        if (!res.ok) throw new Error('Failed to fetch orders for table: ' + res.status);
+        const json = await res.json();
+        const rows = json.data || [];
+        currentOrders = rows;
+        return rows;
+      } else {
+        // For predesign / fabric types, fetch custom orders admin list
+        const qs = new URLSearchParams();
+        if (startDate) qs.set('startDate', startDate);
+        if (endDate) qs.set('endDate', endDate);
+        if (perType === 'predesign') qs.set('serviceType', 'predesign-product');
+        const url = API_BASE + '/api/custom-orders/admin' + (qs.toString() ? `?${qs.toString()}` : '');
+        const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+        if (!res.ok) throw new Error('Failed to fetch custom orders for table: ' + res.status);
+        const json = await res.json();
+        const rows = (json.data || []).map(r => ({
+          _id: r._id,
+          createdAt: r.createdAt,
+          user: r.user || {},
+          status: r.status,
+          totalPrice: r.totalPrice || r.price || 0,
+          isPaid: r.paymentStatus === 'paid' || r.downPaymentPaid || r.balancePaid
+        }));
+        currentOrders = rows;
+        return rows;
+      }
     }
 
     function renderOrdersTable(rows) {
@@ -725,21 +764,38 @@
     }
 
     async function exportCurrentViewCSV() {
-      // Use currentOrders if available, otherwise fetch for current date range
-      let rows = currentOrders;
-      if (!rows || !rows.length) {
-        const end = new Date();
-        const start = new Date(); start.setDate(end.getDate()-29);
-        rows = await fetchOrdersForTable(start.toISOString().slice(0,10), end.toISOString().slice(0,10));
+      // Prefer server-generated CSV that respects the Per-Type filter
+      const perType = document.getElementById('perTypeSelect') ? document.getElementById('perTypeSelect').value : 'all';
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      const token = localStorage.getItem('adminToken');
+      try {
+        const url = await buildUrl('sales', { startDate, endDate, extra: { type: perType, download: 'csv' } });
+        const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+        if (!res.ok) throw new Error('Failed to get CSV: ' + res.status);
+        const blob = await res.blob();
+        // derive filename from header if present
+        const cd = res.headers.get('content-disposition') || '';
+        let filename = `reports_${Date.now()}.csv`;
+        const m = cd.match(/filename\*=UTF-8''(.+)$|filename="?([^";]+)"?/);
+        if (m) filename = decodeURIComponent(m[1] || m[2] || filename);
+        const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = filename; document.body.appendChild(link); link.click(); link.remove();
+      } catch (e) {
+        // fallback to client-side CSV from currentOrders
+        let rows = currentOrders;
+        if (!rows || !rows.length) {
+          const end = new Date();
+          const start = new Date(); start.setDate(end.getDate()-29);
+          rows = await fetchOrdersForTable(start.toISOString().slice(0,10), end.toISOString().slice(0,10));
+        }
+        const columns = ['orderId','date','customer','email','status','totalPrice','isPaid'];
+        const esc = v=>{ if(v===null||v===undefined) return ''; const s=String(v); return (s.includes(',')||s.includes('\n')||s.includes('"')) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+        const body = rows.map(o=> [String(o._id), o.createdAt?new Date(o.createdAt).toISOString():'', o.user?o.user.name:'', o.user?o.user.email:'', o.status||'', o.totalPrice||0, o.isPaid? 'yes':'no' ].map(esc).join(',')).join('\n');
+        const csv = columns.join(',') + '\n' + body;
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `orders_export_${Date.now()}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
       }
-      // Flatten to CSV
-      const columns = ['orderId','date','customer','email','status','totalPrice','isPaid'];
-      const esc = v=>{ if(v===null||v===undefined) return ''; const s=String(v); return (s.includes(',')||s.includes('\n')||s.includes('"')) ? '"'+s.replace(/"/g,'""')+'"' : s; };
-      const body = rows.map(o=> [String(o._id), o.createdAt?new Date(o.createdAt).toISOString():'', o.user?o.user.name:'', o.user?o.user.email:'', o.status||'', o.totalPrice||0, o.isPaid? 'yes':'no' ].map(esc).join(',')).join('\n');
-      const csv = columns.join(',') + '\n' + body;
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `orders_export_${Date.now()}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
 
     async function exportCurrentViewPDF() {

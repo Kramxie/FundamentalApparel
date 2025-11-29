@@ -120,7 +120,10 @@ exports.salesReport = async (req, res) => {
       { $limit: 20 }
     ]);
 
-    // merge totals with custom orders
+    // Determine requested report type (per-type filter from frontend)
+    const reportType = (q.type || 'all').toString().toLowerCase();
+
+    // merge totals with custom orders (used for 'all')
     const ordersTotalRevenue = totals.length ? totals[0].totalRevenue : 0;
     const ordersTotalCount = totals.length ? totals[0].totalOrders : 0;
     const customTotalRevenue = customTotals.length ? customTotals[0].totalRevenue : 0;
@@ -144,33 +147,109 @@ exports.salesReport = async (req, res) => {
     });
     const mergedTopProducts = Object.values(productMap).sort((a,b) => (b.totalSold||0) - (a.totalSold||0)).slice(0,20).map(x=>({ _id: x.name, totalSold: x.totalSold, revenue: x.revenue }));
 
-    const result = {
-      totalRevenue: ordersTotalRevenue + customTotalRevenue,
-      totalOrders: ordersTotalCount + customTotalCount,
-      avgOrderValue: ((ordersTotalRevenue + customTotalRevenue) / Math.max(1, (ordersTotalCount + customTotalCount))) || 0,
-      salesByDay: mergedSalesByDay,
-      topProducts: mergedTopProducts,
-      topPreDesigns: topPreDesigns,
-      topFabrics: topFabricsCustom
-    };
+    let result = {};
+
+    if (reportType === 'product') {
+      // product-only: use Order aggregates only
+      result = {
+        totalRevenue: ordersTotalRevenue,
+        totalOrders: ordersTotalCount,
+        avgOrderValue: (ordersTotalCount ? (ordersTotalRevenue / ordersTotalCount) : 0),
+        salesByDay,
+        topProducts
+      };
+    } else if (reportType === 'predesign') {
+      // pre-design apparel only: use CustomOrder pre-design aggregates
+      const customRev = customTotals.length ? customTotals[0].totalRevenue : 0;
+      const customCount = customTotals.length ? customTotals[0].totalOrders : 0;
+      result = {
+        totalRevenue: customRev,
+        totalOrders: customCount,
+        avgOrderValue: (customCount ? (customRev / customCount) : 0),
+        salesByDay: salesByDayCustom,
+        // use topPreDesigns as topProducts for UI compatibility
+        topProducts: (topPreDesigns || []).map(x => ({ _id: x._id, totalSold: x.totalSold, revenue: x.revenue })),
+        topPreDesigns: topPreDesigns,
+        topFabrics: []
+      };
+    } else if (reportType === 'fabric') {
+      // fabric & garment only: use CustomOrder fabricType aggregates
+      const customRev = customTotals.length ? customTotals[0].totalRevenue : 0;
+      const customCount = customTotals.length ? customTotals[0].totalOrders : 0;
+      result = {
+        totalRevenue: customRev,
+        totalOrders: customCount,
+        avgOrderValue: (customCount ? (customRev / customCount) : 0),
+        salesByDay: salesByDayCustom,
+        topProducts: (topFabricsCustom || []).map(x => ({ _id: x._id, totalSold: x.totalSold, revenue: x.revenue })),
+        topPreDesigns: [],
+        topFabrics: topFabricsCustom
+      };
+    } else {
+      // default/all: merged Orders + CustomOrders (previous behavior)
+      result = {
+        totalRevenue: ordersTotalRevenue + customTotalRevenue,
+        totalOrders: ordersTotalCount + customTotalCount,
+        avgOrderValue: ((ordersTotalRevenue + customTotalRevenue) / Math.max(1, (ordersTotalCount + customTotalCount))) || 0,
+        salesByDay: mergedSalesByDay,
+        topProducts: mergedTopProducts,
+        topPreDesigns: topPreDesigns,
+        topFabrics: topFabricsCustom
+      };
+    }
 
     // If download CSV requested
     if (req.query.download === 'csv' || req.query.format === 'csv' || q.download === 'csv') {
-      // Flatten orders list to CSV rows (fetch matching orders)
-      const orderDocs = await Order.find(baseMatch).populate('user', 'name email').lean().limit(10000);
-      const rows = orderDocs.map(o => ({
-        orderId: String(o._id),
-        date: o.createdAt ? o.createdAt.toISOString() : '',
-        customer: o.user ? o.user.name : '',
-        email: o.user ? o.user.email : '',
-        status: o.status,
-        totalPrice: o.totalPrice || 0,
-        isPaid: o.isPaid ? 'yes' : 'no'
-      }));
-      const csv = toCSV(rows, ['orderId','date','customer','email','status','totalPrice','isPaid']);
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="sales_report_${Date.now()}.csv"`);
-      return res.send(csv);
+      if (reportType === 'product') {
+        const orderDocs = await Order.find(baseMatch).populate('user', 'name email').lean().limit(10000);
+        const rows = orderDocs.map(o => ({
+          orderId: String(o._id),
+          date: o.createdAt ? o.createdAt.toISOString() : '',
+          customer: o.user ? o.user.name : '',
+          email: o.user ? o.user.email : '',
+          status: o.status,
+          totalPrice: o.totalPrice || 0,
+          isPaid: o.isPaid ? 'yes' : 'no'
+        }));
+        const csv = toCSV(rows, ['orderId','date','customer','email','status','totalPrice','isPaid']);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="sales_report_${Date.now()}.csv"`);
+        return res.send(csv);
+      } else if (reportType === 'predesign' || reportType === 'fabric') {
+        // Export CustomOrder rows
+        const customDocs = await CustomOrder.find(Object.assign({}, (reportType === 'predesign' ? { serviceType: 'predesign-product' } : {}), customMatch)).lean().limit(10000);
+        const rows = customDocs.map(o => ({
+          orderId: String(o._id),
+          date: o.createdAt ? o.createdAt.toISOString() : '',
+          customer: o.user ? String(o.user) : '',
+          productName: o.productName || '',
+          serviceType: o.serviceType || '',
+          fabricType: o.fabricType || '',
+          quantity: o.quantity || 0,
+          totalPrice: o.totalPrice || 0,
+          status: o.status || ''
+        }));
+        const csv = toCSV(rows, ['orderId','date','customer','productName','serviceType','fabricType','quantity','totalPrice','status']);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="custom_orders_report_${Date.now()}.csv"`);
+        return res.send(csv);
+      } else {
+        // merged: export combined orders (Orders collection)
+        const orderDocs = await Order.find(baseMatch).populate('user', 'name email').lean().limit(10000);
+        const rows = orderDocs.map(o => ({
+          orderId: String(o._id),
+          date: o.createdAt ? o.createdAt.toISOString() : '',
+          customer: o.user ? o.user.name : '',
+          email: o.user ? o.user.email : '',
+          status: o.status,
+          totalPrice: o.totalPrice || 0,
+          isPaid: o.isPaid ? 'yes' : 'no'
+        }));
+        const csv = toCSV(rows, ['orderId','date','customer','email','status','totalPrice','isPaid']);
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="sales_report_${Date.now()}.csv"`);
+        return res.send(csv);
+      }
     }
 
     return res.json({ success: true, data: result });
