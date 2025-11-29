@@ -977,10 +977,25 @@
         } catch (e) { /* ignore */ }
       });
 
-      document.getElementById('logout-btn').addEventListener('click', () => {
-        localStorage.removeItem('adminToken');
-        window.location.href = 'login.html';
-      });
+      (function attachLogoutHandler(){
+        function bind(el){
+          el.addEventListener('click', ()=>{
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+          });
+        }
+        const el = document.getElementById('logout-btn');
+        if (el) { bind(el); return; }
+        // If logout not present yet, observe the header for it (short-lived)
+        const hdr = document.querySelector('header') || document.body;
+        const mo = new MutationObserver((mutations, obs)=>{
+          const later = document.getElementById('logout-btn');
+          if (later) { bind(later); obs.disconnect(); }
+        });
+        mo.observe(hdr, { childList: true, subtree: true });
+        // safety: stop observing after 8s
+        setTimeout(()=>mo.disconnect(), 8000);
+      })();
 
       const els = {
         // Regular Order selectors
