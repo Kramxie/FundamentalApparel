@@ -103,4 +103,37 @@
   window.escapeHtml = escapeHtml;
   window.formatCurrency = formatCurrency;
   window.buildReceiptHtml = buildReceiptHtml;
+  // Generate a clean PDF from an element by cloning and stripping UI controls.
+  window.generatePdfFromElement = async function(element, filename) {
+    if (!element) throw new Error('No element provided for PDF generation');
+    const ensure = () => new Promise((resolve, reject) => {
+      if (window.html2pdf) return resolve(window.html2pdf);
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js';
+      s.onload = () => resolve(window.html2pdf);
+      s.onerror = () => reject(new Error('Failed to load html2pdf'));
+      document.body.appendChild(s);
+    });
+
+    const clone = element.cloneNode(true);
+    clone.querySelectorAll && clone.querySelectorAll('.no-print').forEach(n => n.remove());
+    const container = document.createElement('div');
+    container.style.position = 'fixed'; container.style.left = '-9999px'; container.style.top = '0';
+    container.style.width = '800px'; container.appendChild(clone);
+    document.body.appendChild(container);
+    try {
+      await ensure();
+      const opt = {
+        margin: 8,
+        filename: filename || 'receipt.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: Math.min(2, (window.devicePixelRatio || 1) * 1.2) },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      };
+      await window.html2pdf().set(opt).from(clone).save();
+    } finally {
+      container.remove();
+    }
+  };
 })();
