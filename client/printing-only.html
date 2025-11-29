@@ -442,21 +442,41 @@
         const sizes = inv.sizesInventory || {};
         const reserved = inv.reservedSizes || {};
         if (teamMode) {
+          // Ensure every team member has a size selected. If some are missing,
+          // try to auto-assign the most-available size when it's unambiguous.
           const team = collectTeamMembers();
+          const missingIndexes = team.map((m,i)=>({i, size: (m.size||'').trim()})).filter(x=>!x.size).map(x=>x.i);
+          if (missingIndexes.length) {
+            const availSizes = getAvailableSizes();
+            if (availSizes.length === 1) {
+              // auto apply the only available size to missing entries
+              const only = availSizes[0];
+              const rows = els.teamContainer.querySelectorAll('.grid');
+              rows.forEach(r=>{ const s = r.querySelector('.size'); if(s && !s.value) s.value = only; });
+              showMessage(`Auto-applied size ${only} to ${missingIndexes.length} team member(s)`, 'success');
+            } else {
+              showMessage('Please select sizes for all team members before submitting (some are empty). Use "Check Available Sizes" to help.', 'error');
+              return;
+            }
+          }
+
+          // Now compute counts per size and validate availability
           const counts = {};
-          team.forEach(m => { counts[m.size] = (counts[m.size]||0) + 1; });
+          team.forEach(m => { const key = (m.size||'').trim(); counts[key] = (counts[key]||0) + 1; });
           for (const sz in counts) {
             const needed = counts[sz] || 0;
             const total = Number(sizes[sz] || 0);
             const resv = Number(reserved[sz] || 0);
             const avail = Math.max(0, total - resv);
             if (avail < needed) {
-              showMessage(`Not enough stock for size ${sz}. Available: ${avail}, required: ${needed}`, 'error');
+              const label = sz || 'unspecified size';
+              showMessage(`Not enough stock for ${label}. Available: ${avail}, required: ${needed}`, 'error');
               return;
             }
           }
         } else {
-          const size = document.getElementById('garmentSize').value;
+          const size = (document.getElementById('garmentSize').value || '').trim();
+          if (!size) { showMessage('Please select a size before submitting.', 'error'); return; }
           const total = Number(sizes[size] || 0);
           const resv = Number(reserved[size] || 0);
           const avail = Math.max(0, total - resv);
