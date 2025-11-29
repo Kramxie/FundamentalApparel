@@ -1138,31 +1138,37 @@
         const pageH = doc.internal.pageSize.getHeight();
         let y = margin;
 
-        // Dark header band
+        // Dark header band (centered title)
         doc.setFillColor(17,24,39);
         doc.rect(0, 0, pageW, 88, 'F');
-        if (logoData) doc.addImage(logoData, 'PNG', margin, 16, 56, 56);
         doc.setTextColor(255,255,255);
+        // center logo if present
+        if (logoData) {
+          const logoW = 56; const logoH = 56;
+          const logoX = (pageW - logoW) / 2;
+          doc.addImage(logoData, 'PNG', logoX, 8, logoW, logoH);
+        }
         doc.setFontSize(16);
         doc.setFont(undefined, 'bold');
-        doc.text('Fundamental Apparel', margin + 72, 34);
+        const headerY = 34;
+        doc.text('FUNDAMENTAL APPAREL', pageW / 2, headerY, { align: 'center' });
         doc.setFontSize(9); doc.setFont(undefined, 'normal');
-        doc.text('Unit 4B, Creative Building • Makati City', margin + 72, 50);
-        doc.text('hello@fundamental.ph • www.fundamental.ph', margin + 72, 64);
+        doc.text('Unit 4B, Creative Building • Makati City', pageW / 2, headerY + 16, { align: 'center' });
+        doc.text('hello@fundamental.ph • www.fundamental.ph', pageW / 2, headerY + 30, { align: 'center' });
         doc.setTextColor(0,0,0);
 
-        // Info box (OR/TIN/Date)
-        const infoW = 220, infoX = pageW - margin - infoW, infoY = 18;
+        // Centered info box (OR/TIN/Date)
+        const infoW = 260; const infoX = (pageW - infoW) / 2; const infoY = 68;
         doc.setFillColor(255,255,255);
-        doc.roundedRect(infoX, infoY, infoW, 60, 6, 6, 'F');
+        doc.roundedRect(infoX, infoY, infoW, 56, 6, 6, 'F');
         doc.setTextColor(0,0,0); doc.setFontSize(9);
         const displayTin = (r.tin && String(r.tin).trim()) ? r.tin : `AUTOGEN-${(r._id||'').toString().slice(-8).toUpperCase()}`;
         doc.text(`OR No.: ${r._id ? r._id.toString().slice(-10).toUpperCase() : displayTin}`, infoX + 12, infoY + 18);
         doc.text(`Date: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}`, infoX + 12, infoY + 34);
         doc.text(`TIN: ${displayTin}`, infoX + 12, infoY + 50);
 
-        // Billed To
-        y = 110;
+        // Billed To (start below centered header/info)
+        y = 140;
         doc.setFontSize(10); doc.setFont(undefined, 'bold');
         doc.text('Billed To:', margin, y);
         doc.setFont(undefined, 'normal'); doc.setFontSize(9);
@@ -1237,7 +1243,7 @@
         doc.setFont(undefined, 'normal'); doc.setTextColor(0,0,0);
 
         const prepared = r.preparedBy || r.preparedByName || '';
-        if (prepared) doc.setFontSize(9).text('Prepared by: ' + prepared, margin, totalsY + 120);
+        if (prepared) doc.setFontSize(9).text('Prepared by: ' + prepared, pageW / 2, totalsY + 120, { align: 'center' });
 
         const safeName = `Invoice-${(r._id||displayTin||'receipt').toString().slice(-12)}.pdf`;
         if (openInline) { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); window.open(url, '_blank'); return; }
@@ -2926,11 +2932,21 @@
       }
       if (els.receiptPrint) {
         els.receiptPrint.addEventListener('click', async () => {
-          try {
-            const r = window.currentAdminReceipt || null;
-            if (!r) return alert('No receipt data available to print.');
-            await renderReceiptPDF(r, /*openInline=*/false);
-          } catch (e) { console.error('Admin print failed', e); alert('Failed to generate PDF.'); }
+          const run = () => {
+            try {
+              const el = els.receiptWrap || document.getElementById('receipt-wrap');
+              if (!el) return alert('No receipt content available to print.');
+              const safeId = (window.currentAdminReceipt && (window.currentAdminReceipt._id || window.currentAdminReceipt.tin)) ? String(window.currentAdminReceipt._id || window.currentAdminReceipt.tin).slice(-12) : 'receipt';
+              const fileName = `Invoice-${safeId}.pdf`;
+              const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' } };
+              html2pdf().set(opt).from(el).save();
+            } catch (err) { console.error('PDF generation failed', err); alert('Download failed. Please try Print from your browser or open the receipt in a new tab to save as PDF.'); }
+          };
+          if (window.html2pdf) return run();
+          const s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js';
+          s.onload = run; s.onerror = () => alert('Could not load PDF generator. Use Print/Save as PDF from your browser.');
+          document.body.appendChild(s);
         });
       }
       // --- MODIFIED: Custom Modal Events ---
@@ -3102,6 +3118,11 @@
         
         let receiptHtml = `
           <div class="space-y-4">
+            <div class="text-center">
+              <h2 class="text-lg font-bold">FUNDAMENTAL APPAREL</h2>
+              <div class="text-sm text-gray-600">Unit 4B, Creative Building • Makati City</div>
+              <div class="text-xs text-gray-500">OR No: ${order._id || code}</div>
+            </div>
             <div class="text-center pb-4 border-b">
               <div class="text-xs text-gray-500 mb-1">Reference Number</div>
               <div class="font-mono font-bold text-lg">${code}</div>

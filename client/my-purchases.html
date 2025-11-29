@@ -134,31 +134,37 @@
       const pageH = doc.internal.pageSize.getHeight();
       let y = margin;
 
-      // Dark header band
+      // Dark header band (centered title)
       doc.setFillColor(17,24,39);
       doc.rect(0, 0, pageW, 88, 'F');
-      if (logoData) doc.addImage(logoData, 'PNG', margin, 16, 56, 56);
       doc.setTextColor(255,255,255);
+      // If logo available, center it above the title (small)
+      if (logoData) {
+        const logoW = 56; const logoH = 56;
+        const logoX = (pageW - logoW) / 2;
+        doc.addImage(logoData, 'PNG', logoX, 8, logoW, logoH);
+      }
       doc.setFontSize(16);
       doc.setFont(undefined, 'bold');
-      doc.text('Fundamental Apparel', margin + 72, 34);
+      const headerY = 34;
+      doc.text('FUNDAMENTAL APPAREL', pageW / 2, headerY, { align: 'center' });
       doc.setFontSize(9); doc.setFont(undefined, 'normal');
-      doc.text('Unit 4B, Creative Building • Makati City', margin + 72, 50);
-      doc.text('hello@fundamental.ph • www.fundamental.ph', margin + 72, 64);
+      doc.text('Unit 4B, Creative Building • Makati City', pageW / 2, headerY + 16, { align: 'center' });
+      doc.text('hello@fundamental.ph • www.fundamental.ph', pageW / 2, headerY + 30, { align: 'center' });
       doc.setTextColor(0,0,0);
 
-      // Info box (OR/TIN/Date)
-      const infoW = 220, infoX = pageW - margin - infoW, infoY = 18;
+      // Centered info box (OR/TIN/Date) beneath header
+      const infoW = 260; const infoX = (pageW - infoW) / 2; const infoY = 68;
       doc.setFillColor(255,255,255);
-      doc.roundedRect(infoX, infoY, infoW, 60, 6, 6, 'F');
+      doc.roundedRect(infoX, infoY, infoW, 56, 6, 6, 'F');
       doc.setTextColor(0,0,0); doc.setFontSize(9);
       const displayTin = (r.tin && String(r.tin).trim()) ? r.tin : `AUTOGEN-${(r._id||'').toString().slice(-8).toUpperCase()}`;
       doc.text(`OR No.: ${r._id ? r._id.toString().slice(-10).toUpperCase() : displayTin}`, infoX + 12, infoY + 18);
       doc.text(`Date: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}`, infoX + 12, infoY + 34);
       doc.text(`TIN: ${displayTin}`, infoX + 12, infoY + 50);
 
-      // Billed To
-      y = 110;
+      // Billed To (start below centered header/info)
+      y = 140;
       doc.setFontSize(10); doc.setFont(undefined, 'bold');
       doc.text('Billed To:', margin, y);
       doc.setFont(undefined, 'normal'); doc.setFontSize(9);
@@ -234,9 +240,9 @@
       doc.text('TOTAL', tx, ty); doc.text('₱' + Number(totalComputed||computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' });
       doc.setFont(undefined, 'normal'); doc.setTextColor(0,0,0);
 
-      // Prepared by
+      // Prepared by (centered)
       const prepared = r.preparedBy || r.preparedByName || '';
-      if (prepared) doc.setFontSize(9).text('Prepared by: ' + prepared, margin, totalsY + 120);
+      if (prepared) doc.setFontSize(9).text('Prepared by: ' + prepared, pageW / 2, totalsY + 120, { align: 'center' });
 
       // Save/open
       const safeName = `Invoice-${(r._id||displayTin||'receipt').toString().slice(-12)}.pdf`;
