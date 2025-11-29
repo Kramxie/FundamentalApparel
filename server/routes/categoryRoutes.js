@@ -12,6 +12,12 @@ router
   .get(getCategories)
   .post(protect, authorize("admin"), addCategory);
 
+// Check pending orders for a category
+router.get('/:id/pending', protect, authorize('admin'), require('../controllers/categoryController').checkPending);
+
+// Delete category (with validation)
+router.delete('/:id', protect, authorize('admin'), require('../controllers/categoryController').deleteCategory);
+
 router
   .route('/:id')
   .put(protect, authorize('admin'), updateCategory);

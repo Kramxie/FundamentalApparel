@@ -245,4 +245,59 @@
   } else {
     initNotifications();
   }
+  
+  // Extra enforcement: ensure container sits in a right-side wrapper next to #logout-btn
+  (function ensureRightWrapperPersistent(){
+    function tryEnsure(){
+      try{
+        const container = document.getElementById('admin-notification-container');
+        if(!container) return;
+        const logoutBtn = document.querySelector('#logout-btn');
+        // Prefer header-like containers
+        const hdr = document.querySelector('header') || document.querySelector('div.flex.items-center.justify-between.h-16') || document.querySelector('.flex.items-center.justify-between');
+        if(!hdr || !logoutBtn) return;
+        // If container already correctly placed (same parent as logout), ensure wrapper has ml-auto
+        if (logoutBtn.parentNode && logoutBtn.parentNode.contains(container) && logoutBtn.parentNode !== hdr) {
+          const wr = logoutBtn.parentNode;
+          wr.classList.add('flex','items-center','gap-4');
+          wr.style.marginLeft = wr.style.marginLeft || 'auto';
+          return;
+        }
+        // Otherwise create/ensure wrapper is last child of header and contains both
+        let wrapper = null;
+        // if logout's parent is header, create wrapper
+        if(logoutBtn.parentNode === hdr){
+          wrapper = hdr.querySelector('.admin-right-wrapper');
+          if(!wrapper){
+            wrapper = document.createElement('div');
+            wrapper.className = 'admin-right-wrapper flex items-center gap-4 ml-auto';
+            wrapper.style.marginLeft = 'auto';
+            hdr.appendChild(wrapper);
+          }
+          // move logout and container into wrapper (container before logout)
+          if(container.parentNode !== wrapper) wrapper.insertBefore(container, logoutBtn);
+          if(logoutBtn.parentNode !== wrapper) wrapper.appendChild(logoutBtn);
+        } else {
+          // logout is in a different container; ensure we insert container right before logout
+          const p = logoutBtn.parentNode;
+          if(p && p !== wrapper){
+            if(container.parentNode !== p) p.insertBefore(container, logoutBtn);
+          }
+        }
+      }catch(e){ /* ignore */ }
+    }
+    // run a few times and observe
+    tryEnsure();
+    const t1 = setTimeout(tryEnsure, 80);
+    const t2 = setTimeout(tryEnsure, 300);
+    const obsTarget = document.querySelector('header') || document.body;
+    if(obsTarget){
+      const mo = new MutationObserver(()=>{ tryEnsure(); });
+      mo.observe(obsTarget, { childList:true, subtree:true });
+      // disconnect after 10s to avoid long-running observers
+      setTimeout(()=>mo.disconnect(), 10000);
+    }
+    // small cleanup timers
+    setTimeout(()=>{ clearTimeout(t1); clearTimeout(t2); }, 5000);
+  })();
 })();

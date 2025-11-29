@@ -1,5 +1,6 @@
 const Category = require('../models/Category');
 const Product = require('../models/Product');
+const Order = require('../models/Order');
 
 exports.getCategories = async (req, res) => {
   try {
@@ -102,6 +103,59 @@ exports.updateCategory = async (req, res) => {
     return res.status(200).json({ success: true, data: { category: updatedCategory, updatedProducts: updatedProductsCount } });
   } catch (error) {
     console.error('Category update error', error);
+    return res.status(500).json({ success: false, msg: 'Server Error' });
+  }
+};
+
+// @desc    Check if any product in the category has pending orders
+// @route   GET /api/categories/:id/pending
+// @access  Private/Admin
+exports.checkPending = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const category = await Category.findById(id);
+    if (!category) return res.status(404).json({ success: false, msg: 'Category not found' });
+    // find products that belong to this category (category stored as name)
+    const products = await Product.find({ category: category.name }, '_id').lean();
+    if (!products || products.length === 0) return res.status(200).json({ success: true, hasPending: false, pendingCount: 0 });
+    const pids = products.map(p => p._id);
+    // Consider orders with statuses that indicate not yet delivered
+    const pendingStatuses = ['Processing','Accepted','Shipped'];
+    const pendingCount = await Order.countDocuments({ 'orderItems.product': { $in: pids }, status: { $in: pendingStatuses } });
+    return res.status(200).json({ success: true, hasPending: pendingCount > 0, pendingCount });
+  } catch (error) {
+    console.error('[Category checkPending] Error', error);
+    return res.status(500).json({ success: false, msg: 'Server Error' });
+  }
+};
+
+// @desc    Delete category after validation
+// @route   DELETE /api/categories/:id
+// @access  Private/Admin
+exports.deleteCategory = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const category = await Category.findById(id);
+    if (!category) return res.status(404).json({ success: false, msg: 'Category not found' });
+    const products = await Product.find({ category: category.name }, '_id').lean();
+    const pids = products.map(p => p._id);
+    const pendingStatuses = ['Processing','Accepted','Shipped'];
+    if (pids.length > 0) {
+      const pending = await Order.countDocuments({ 'orderItems.product': { $in: pids }, status: { $in: pendingStatuses } });
+      if (pending > 0) {
+        return res.status(400).json({ success: false, msg: 'Cannot delete category: one or more products have pending orders' });
+      }
+    }
+
+    // No pending orders found: proceed to delete category and unassign products
+    // Unassign products' category to avoid dangling references
+    if (pids.length > 0) {
+      await Product.updateMany({ _id: { $in: pids } }, { $set: { category: '' } });
+    }
+    await Category.findByIdAndDelete(id);
+    return res.status(200).json({ success: true, msg: 'Category deleted' });
+  } catch (error) {
+    console.error('[Category delete] Error', error);
     return res.status(500).json({ success: false, msg: 'Server Error' });
   }
 };
