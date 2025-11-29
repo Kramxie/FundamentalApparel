@@ -340,6 +340,25 @@
       });
     }
 
+    // show/hide a friendly empty message over a chart wrapper when its data is empty
+    function showEmptyForCanvas(wrapperId, canvasId, msg) {
+      const wrap = document.getElementById(wrapperId);
+      const canvas = document.getElementById(canvasId);
+      if (!wrap) return;
+      // hide canvas
+      if (canvas) canvas.style.display = 'none';
+      let note = wrap.querySelector('.empty-note');
+      if (!note) { note = document.createElement('div'); note.className = 'empty-note p-6 text-sm text-gray-500'; wrap.appendChild(note); }
+      note.textContent = msg || 'No data available for the selected range.';
+    }
+    function clearEmptyForCanvas(wrapperId, canvasId) {
+      const wrap = document.getElementById(wrapperId);
+      const canvas = document.getElementById(canvasId);
+      if (!wrap) return;
+      if (canvas) canvas.style.display = '';
+      const note = wrap.querySelector('.empty-note'); if (note) note.remove();
+    }
+
     function drawTopProductsChart(labels, data) {
       const ctx = document.getElementById('topProductsChart').getContext('2d');
       if (topProductsChart) topProductsChart.destroy();
@@ -358,16 +377,23 @@
       categoryChart = new Chart(ctx, { type: 'pie', data: { labels, datasets:[{ data, backgroundColor: colors }] }, options: { responsive:true, maintainAspectRatio:false } });
     }
 
-    async function fetchAndRenderReports(periodDays = 30) {
+    // periodDays OR (startDateParam & endDateParam) may be provided. If both date params provided, they take precedence.
+    async function fetchAndRenderReports(periodDays = 30, startDateParam = null, endDateParam = null) {
       const token = localStorage.getItem('adminToken');
       if (!token) { window.location.href = 'login.html'; return; }
 
-      // Determine date range
-      const end = new Date();
-      const start = new Date();
-      start.setDate(end.getDate() - (periodDays - 1));
-      const startDate = start.toISOString().slice(0,10);
-      const endDate = end.toISOString().slice(0,10);
+      // Determine date range: prefer explicit params (custom range), otherwise compute from periodDays
+      let startDate, endDate;
+      if (startDateParam && endDateParam) {
+        startDate = startDateParam;
+        endDate = endDateParam;
+      } else {
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - (periodDays - 1));
+        startDate = start.toISOString().slice(0,10);
+        endDate = end.toISOString().slice(0,10);
+      }
 
       // show loading indicator
       document.getElementById('report-status').textContent = 'Loading...';
@@ -388,13 +414,23 @@
         const labels = (data.salesByDay || []).map(s => s._id);
         const values = (data.salesByDay || []).map(s => s.total || 0);
         try { document.getElementById('salesChartWrapper').classList.toggle('scrollable', (labels.length > 30)); } catch(e){}
-        drawSalesChart(labels, values);
+        if (!labels || labels.length === 0) {
+          showEmptyForCanvas('salesChartWrapper','salesChart','No sales data for the selected range.');
+        } else {
+          clearEmptyForCanvas('salesChartWrapper','salesChart');
+          drawSalesChart(labels, values);
+        }
 
         // Top products chart and table
         const topLabels = (data.topProducts || []).map(p => (p.productInfo && p.productInfo.name) || String(p._id));
         const topValues = (data.topProducts || []).map(p => p.totalSold || p.unitsSold || 0);
         try { document.getElementById('topProductsChartWrapper').classList.toggle('scrollable', (topLabels.length > 12)); } catch(e){}
-        drawTopProductsChart(topLabels, topValues);
+        if (!topLabels || topLabels.length === 0) {
+          showEmptyForCanvas('topProductsChartWrapper','topProductsChart','No top-products data for the selected range.');
+        } else {
+          clearEmptyForCanvas('topProductsChartWrapper','topProductsChart');
+          drawTopProductsChart(topLabels, topValues);
+        }
 
         // render top products table
         const tbody = document.getElementById('topProductsTbody'); tbody.innerHTML = '';
@@ -408,6 +444,11 @@
         });
 
         // Category breakdown
+        if (!data.byCategory && !(data.salesByCategory && data.salesByCategory.length)) {
+          showEmptyForCanvas('categoryChartWrapper','categoryChart','No category data for the selected range.');
+        } else {
+          clearEmptyForCanvas('categoryChartWrapper','categoryChart');
+        }
         if (data.byCategory) {
           const catLabels = Object.keys(data.byCategory);
           const catValues = catLabels.map(k=> Number(data.byCategory[k]||0));
@@ -425,6 +466,12 @@
         document.getElementById('aov').textContent = '₱' + Number(aov||0).toLocaleString(undefined,{minimumFractionDigits:2});
         document.getElementById('conversion-rate').textContent = (Number(data.conversionRate||0)*100).toFixed(2) + '%';
 
+        // Fetch and render Orders table for the selected range
+        try {
+          const orders = await fetchOrdersForTable(startDate, endDate);
+          renderOrdersTable(orders);
+        } catch (e) { console.debug('Failed to fetch orders for table', e); }
+
         document.getElementById('report-status').textContent = '';
       } catch (err) {
         console.error('Failed to load reports', err);
@@ -438,20 +485,32 @@
       document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('adminToken'); window.location.href='login.html'; });
       document.getElementById('generate').addEventListener('click', async () => {
         const period = (document.getElementById('periodSelect')||{}).value || '30';
-        let startDate = document.getElementById('startDate').value;
-        let endDate = document.getElementById('endDate').value;
-        if (period !== 'custom') {
-          // compute dates from period days
-          const days = Number(period) || 30;
-          const e = new Date();
-          const s = new Date(); s.setDate(e.getDate() - (days - 1));
-          startDate = s.toISOString().slice(0,10);
-          endDate = e.toISOString().slice(0,10);
-        }
         const type = document.getElementById('reportType').value;
         const format = document.getElementById('format').value;
         const token = localStorage.getItem('adminToken');
         if (!token) { alert('Not authenticated'); return; }
+
+        // If report type is 'sales', use the charting flow. For other report types, fall back to download/preview.
+        if (type === 'sales') {
+          if (period === 'custom') {
+            const s = document.getElementById('startDate').value;
+            const e = document.getElementById('endDate').value;
+            if (!s || !e) { alert('Please select both start and end dates for a custom range.'); return; }
+            await fetchAndRenderReports(null, s, e);
+            return;
+          }
+          // numeric period (days)
+          const days = Number(period) || 30;
+          await fetchAndRenderReports(days);
+          return;
+        }
+
+        // Non-sales reports: generate via backend endpoint and export/preview
+        let startDate = document.getElementById('startDate').value;
+        let endDate = document.getElementById('endDate').value;
+        if (period !== 'custom') {
+          const days = Number(period) || 30; const e = new Date(); const s = new Date(); s.setDate(e.getDate() - (days - 1)); startDate = s.toISOString().slice(0,10); endDate = e.toISOString().slice(0,10);
+        }
         const url = await buildUrl(type, { startDate, endDate, format });
         try {
           const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
