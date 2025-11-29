@@ -161,6 +161,7 @@
     let teamMode = false;
     let availableVariants = [];
     let currentInventory = null; // latest availability object for selected variant
+    const DEFAULT_SIZE_ORDER = ['XS','S','M','L','XL','XXL','3XL'];
 
     function genTeamRows() {
       const qty = Math.max(1, parseInt(els.quantity.value || '1', 10));
@@ -274,8 +275,10 @@
     }
 
     function buildSizeOptionsHTML(sizes){
+      // If inventory sizes are not available, fall back to a sensible default list
+      const useSizes = (sizes && sizes.length) ? sizes : DEFAULT_SIZE_ORDER;
       let html = '<option value="">Select size</option>';
-      (sizes || []).forEach(sz => { html += `<option value="${sz}">${sz}</option>`; });
+      (useSizes || []).forEach(sz => { html += `<option value="${sz}">${sz}</option>`; });
       return html;
     }
 
@@ -505,11 +508,19 @@
       // Append size/team info after availability checks (ensures auto-select applied)
       if (teamMode) {
         fd.append('includeTeamMembers', 'true');
-        fd.append('teamMembers', JSON.stringify(collectTeamMembers()));
+        const teamMembers = collectTeamMembers();
+        // Temporary debug: log the teamMembers and the FormData contents before sending
+        try{ console.log('DEBUG: teamMembers payload', teamMembers); }catch(e){}
+        fd.append('teamMembers', JSON.stringify(teamMembers));
       } else {
         const selSizeVal = (document.getElementById('garmentSize') && document.getElementById('garmentSize').value) || '';
         if (selSizeVal) fd.append('garmentSize', selSizeVal);
       }
+
+      // Temporary debug: log FormData entries (for troubleshooting what is sent)
+      try{
+        for (const pair of fd.entries()) { console.log('DEBUG FormData:', pair[0], pair[1]); }
+      }catch(e){ console.debug('Failed to enumerate FormData for debug', e && e.message); }
 
       const btn = document.getElementById('submitBtn');
       const original = btn ? btn.innerHTML : 'Submit';
