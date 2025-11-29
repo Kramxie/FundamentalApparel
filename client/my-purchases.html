@@ -33,52 +33,134 @@
     async function loadPurchases(){
       const container = document.getElementById('purchases-list');
       try {
-        const receipts = await api('/api/receipts');
-        if (!receipts || receipts.length === 0) {
-          container.innerHTML = '<p class="text-gray-500">No purchases found.</p>';
-          return;
-        }
+        // Fetch user's orders so every order appears even if there's no stored receipt yet
+        const res = await fetch(API_BASE + '/api/orders/myorders', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (res.status === 401) { localStorage.removeItem('token'); window.location.href='login.html'; return; }
+        const j = await res.json();
+        if (!j.success) { container.innerHTML = `<p class="text-red-500">${j.msg || 'Failed to load orders'}</p>`; return; }
+        const orders = j.data || [];
+        if (!orders || orders.length === 0) { container.innerHTML = '<p class="text-gray-500">No purchases found.</p>'; return; }
 
-        const html = receipts.map(r => {
-          const dt = new Date(r.createdAt).toLocaleString();
+        const html = orders.map(o => {
+          const dt = new Date(o.createdAt).toLocaleString();
+          const total = Number(o.totalPrice || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+          const paid = o.paymentStatus && (o.paymentStatus === 'Received' || o.paymentStatus === 'paid');
           return `
             <div class="bg-white p-4 rounded-lg shadow-sm flex items-start justify-between">
               <div>
-                <div class="font-semibold">Receipt • ${r.tin}</div>
+                <div class="font-semibold">Order • ${o._id.slice(-8).toUpperCase()}</div>
                 <div class="text-sm text-gray-500">${dt}</div>
                 <div class="mt-2 text-sm">
-                  <strong>Total:</strong> ₱${Number(r.total||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+                  <strong>Total:</strong> ₱${total}
+                  <span class="ml-3 text-xs text-gray-500">${paid ? 'Paid' : 'Unpaid'}</span>
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <button data-id="${r._id}" class="request-refund px-3 py-2 bg-yellow-500 text-white rounded">Request A Refund</button>
-                <button data-id="${r._id}" class="view-receipt px-3 py-2 bg-white border text-indigo-600 rounded">View Receipt</button>
-                <button data-id="${r._id}" class="download-receipt px-3 py-2 bg-indigo-600 text-white rounded">Download Receipt</button>
+                <button data-id="${o._id}" class="request-refund px-3 py-2 bg-yellow-500 text-white rounded">Request A Refund</button>
+                <button data-id="${o._id}" class="view-receipt px-3 py-2 bg-white border text-indigo-600 rounded" ${paid ? '' : 'disabled'}>View Receipt</button>
+                <button data-id="${o._id}" class="download-receipt px-3 py-2 bg-indigo-600 text-white rounded" ${paid ? '' : 'disabled'}>Download Receipt</button>
               </div>
             </div>
           `;
         }).join('');
 
         container.innerHTML = html;
+
         document.querySelectorAll('.download-receipt').forEach(b => b.addEventListener('click', async (e)=>{
-          const id = e.currentTarget.dataset.id;
-          try {
-            window._DOWNLOAD_DIRECT = true;
-            await downloadReceipt(id);
-          } finally { window._DOWNLOAD_DIRECT = undefined; }
+          const oid = e.currentTarget.dataset.id;
+          try { window._DOWNLOAD_DIRECT = true; await fetchAndRenderReceiptForOrder(oid); } finally { window._DOWNLOAD_DIRECT = undefined; }
         }));
         document.querySelectorAll('.view-receipt').forEach(b => b.addEventListener('click', async (e)=>{
-          const id = e.currentTarget.dataset.id;
-          await viewReceiptInline(id);
+          const oid = e.currentTarget.dataset.id;
+          await fetchAndRenderReceiptForOrder(oid, /*openInline=*/true);
         }));
         document.querySelectorAll('.request-refund').forEach(b => b.addEventListener('click', (e)=>{
           const id = e.currentTarget.dataset.id;
-          alert('Refund request for receipt: ' + id + ' — please use Requests page.');
+          alert('Refund request for order: ' + id + ' — please use Requests page.');
         }));
 
       } catch (err) {
+        console.error('loadPurchases error', err);
         container.innerHTML = `<p class="text-red-500">${err.message}</p>`;
       }
+    }
+
+    // Try to fetch server-stored receipt for an order, fallback to generating from order data
+    async function fetchAndRenderReceiptForOrder(orderId, openInline = false){
+      try {
+        // Try lookup by order id
+        try {
+          const r = await api(`/api/receipts/by-order/${orderId}`);
+          if (r) { await renderReceiptPDF(r, openInline); return; }
+        } catch (e) {
+          // ignore and fallback
+        }
+
+        // If no stored receipt, fetch order and synthesize receipt-like object
+        const order = await api(`/api/orders/${orderId}`);
+        if (!order) throw new Error('Order not found');
+
+        // Build receipt-like object
+        const receipt = {
+          _id: `synth-${order._id}`,
+          tin: 'SYNTH-' + order._id.slice(-8).toUpperCase(),
+          createdAt: order.createdAt,
+          logoUrl: '/images/logo.png',
+          items: (order.items || []).map(it => ({ name: it.name || it.productName || 'Item', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0 })),
+          subtotal: order.subtotal || order.totalPrice || 0,
+          vat: order.vat || 0,
+          deliveryFee: order.deliveryFee || 0,
+          total: order.totalPrice || (order.subtotal || 0) + (order.vat || 0) + (order.deliveryFee || 0),
+        };
+
+        await renderReceiptPDF(receipt, openInline);
+
+      } catch (err) {
+        console.error('fetchAndRenderReceiptForOrder', err);
+        alert(err.message || 'Failed to fetch or render receipt');
+      }
+    }
+
+    // Generate PDF from a receipt object (used by downloadReceipt and view inline flows)
+    async function renderReceiptPDF(r, openInline = false){
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      let logoData = null;
+      try { logoData = await loadImageAsDataURL(r.logoUrl || '/images/logo.png'); } catch (e) { logoData = null; }
+      const margin = 40; let y = 40;
+      if (logoData) { doc.addImage(logoData, 'PNG', margin, y, 80, 80); }
+      doc.setFontSize(18); doc.text('Fundamental Apparel', margin + 100, y + 30);
+      doc.setFontSize(10); doc.text(`TIN: ${r.tin}`, margin + 100, y + 48);
+      y += 100;
+      doc.setFontSize(12); doc.text('Billing / Shipping', margin, y);
+      doc.setFontSize(10); doc.text(`Date: ${new Date(r.createdAt).toLocaleString()}`, 450, y);
+      y += 18;
+      doc.setFontSize(11);
+      doc.text('Item', margin, y); doc.text('Qty', 350, y); doc.text('Price', 420, y); doc.text('Total', 500, y);
+      y += 12; doc.line(margin, y, 560, y); y += 8;
+
+      for (const it of (r.items || [])){
+        doc.setFontSize(10);
+        doc.text(String(it.name || ''), margin, y);
+        doc.text(String(it.quantity || 0), 350, y);
+        doc.text('₱' + Number(it.price || 0).toLocaleString(undefined,{minimumFractionDigits:2}), 420, y);
+        const lineTotal = (Number(it.price||0) * Number(it.quantity||1));
+        doc.text('₱' + Number(lineTotal).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
+        y += 16; if (y > 740) { doc.addPage(); y = 40; }
+      }
+
+      y += 8; doc.line(margin, y, 560, y); y += 12;
+      doc.text('Subtotal', 420, y); doc.text('₱' + Number(r.subtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y); y += 14;
+      doc.text('VAT', 420, y); doc.text('₱' + Number(r.vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y); y += 14;
+      doc.text('Delivery', 420, y); doc.text('₱' + Number(r.deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y); y += 16;
+      doc.setFontSize(13); doc.text('Total', 420, y); doc.text('₱' + Number(r.total||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
+      doc.setFontSize(9); doc.text(`TIN: ${r.tin}`, margin, 780); doc.text('This is a generated official receipt. Thank you for your purchase.', margin, 795);
+
+      const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob);
+      if (openInline) { window.open(url, '_blank'); return; }
+      if (typeof window._DOWNLOAD_DIRECT !== 'undefined' && window._DOWNLOAD_DIRECT === true) {
+        doc.save(`receipt-${r.tin}.pdf`);
+      } else { window.open(url, '_blank'); }
     }
 
     async function loadImageAsDataURL(src){
@@ -105,84 +187,7 @@
       try {
         if (btn) { btn.disabled = true; btn.innerHTML = 'Generating...'; }
         const r = await api(`/api/receipts/${receiptId}`);
-        // Use jsPDF to generate A4 PDF
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-
-        // Load logo
-        let logoData = null;
-        try { logoData = await loadImageAsDataURL(r.logoUrl || '/images/logo.png'); } catch (e) { logoData = null; }
-
-        const margin = 40;
-        let y = 40;
-        if (logoData) {
-          doc.addImage(logoData, 'PNG', margin, y, 80, 80);
-        }
-        doc.setFontSize(18);
-        doc.text('Fundamental Apparel', margin + 100, y + 30);
-        doc.setFontSize(10);
-        doc.text(`TIN: ${r.tin}`, margin + 100, y + 48);
-        y += 100;
-
-        doc.setFontSize(12);
-        doc.text('Billing / Shipping', margin, y);
-        doc.setFontSize(10);
-        doc.text(`Date: ${new Date(r.createdAt).toLocaleString()}`, 450, y);
-        y += 18;
-
-        // Items table header
-        doc.setFontSize(11);
-        doc.text('Item', margin, y);
-        doc.text('Qty', 350, y);
-        doc.text('Price', 420, y);
-        doc.text('Total', 500, y);
-        y += 12;
-        doc.line(margin, y, 560, y);
-        y += 8;
-
-        for (const it of (r.items || [])){
-          doc.setFontSize(10);
-          doc.text(String(it.name || ''), margin, y);
-          doc.text(String(it.quantity || 0), 350, y);
-          doc.text('₱' + Number(it.price || 0).toLocaleString(undefined,{minimumFractionDigits:2}), 420, y);
-          const lineTotal = (Number(it.price||0) * Number(it.quantity||1));
-          doc.text('₱' + Number(lineTotal).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
-          y += 16;
-          if (y > 740) { doc.addPage(); y = 40; }
-        }
-
-        y += 8;
-        doc.line(margin, y, 560, y);
-        y += 12;
-        doc.text('Subtotal', 420, y);
-        doc.text('₱' + Number(r.subtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
-        y += 14;
-        doc.text('VAT', 420, y);
-        doc.text('₱' + Number(r.vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
-        y += 14;
-        doc.text('Delivery', 420, y);
-        doc.text('₱' + Number(r.deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
-        y += 16;
-        doc.setFontSize(13);
-        doc.text('Total', 420, y);
-        doc.text('₱' + Number(r.total||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
-
-        // Footer with TIN and notes
-        doc.setFontSize(9);
-        doc.text(`TIN: ${r.tin}`, margin, 780);
-        doc.text('This is a generated official receipt. Thank you for your purchase.', margin, 795);
-
-        // Save PDF
-        // Return blob so caller can choose to save or open
-        const pdfBlob = doc.output('blob');
-        const url = URL.createObjectURL(pdfBlob);
-        // If caller expects to save, save; default behavior is to open in new tab
-        if (typeof window._DOWNLOAD_DIRECT !== 'undefined' && window._DOWNLOAD_DIRECT === true) {
-          doc.save(`receipt-${r.tin}.pdf`);
-        } else {
-          window.open(url, '_blank');
-        }
-
+        await renderReceiptPDF(r, /*openInline=*/false);
       } catch (err) {
         console.error('Download receipt failed', err);
         alert(err.message || 'Failed to generate receipt');
@@ -192,16 +197,12 @@
     }
 
     async function viewReceiptInline(receiptId){
-      // open receipt in a new tab as PDF viewer
       try {
-        // Signal downloadReceipt to open rather than force save
-        window._DOWNLOAD_DIRECT = false;
-        await downloadReceipt(receiptId);
+        const r = await api(`/api/receipts/${receiptId}`);
+        await renderReceiptPDF(r, /*openInline=*/true);
       } catch (e) {
         console.error('View receipt failed', e);
         alert(e.message || 'Failed to view receipt');
-      } finally {
-        window._DOWNLOAD_DIRECT = undefined;
       }
     }
 
