@@ -1492,7 +1492,8 @@
           return true;
         });
 
-        const rows = filtered.map(o => {
+        const rowsArr = [];
+        filtered.forEach(o => {
           let details = '';
           if (o.customType === 'FileUpload') {
             details = `<a href="${o.designFileUrl}" target="_blank" class="text-indigo-600 hover:underline">View Design File</a>`;
@@ -1521,25 +1522,56 @@
           }
           // --- END BADGE LOGIC ---
 
-          return `
-                  <tr>
-                      <td class="px-4 py-3">${new Date(o.createdAt).toLocaleDateString()}</td>
-                      <td class="px-4 py-3">${o.user?.name || 'N/A'}</td>
-                      <td class="px-4 py-3">${typeLabel(o.customType)(o)}</td>
-                      <td class="px-4 py-3">${o.quantity}</td>
-                      <td class="px-4 py-3">${statusBadge}</td>
-                      <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
-                      <td class="px-4 py-3 text-xs max-w-xs truncate">${details}</td>
-                        <td class="px-4 py-3 text-right">
-                          <div class="inline-flex gap-3 items-center justify-end">
-                            <button data-id="${o._id}" class="edit-custom-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
-                          </div>
-                        </td>
-                  </tr>
-              `;
-        }).join('');
+          // If this order contains team members, render one row per member so admins can quickly
+          // see individual entries in the table. The View/Edit button still opens the parent order modal.
+          if (o.includeTeamMembers && Array.isArray(o.teamMembers) && o.teamMembers.length) {
+            o.teamMembers.forEach(member => {
+              const memberName = member.name || '';
+              const memberNumber = member.jerseyNumber || member.number || '';
+              const memberSize = member.size || '';
+              const memberDetails = `${details} ${memberName ? `· ${memberName}` : ''} ${memberNumber ? `#${memberNumber}` : ''} ${memberSize ? `(${memberSize})` : ''}`;
+              rowsArr.push(`
+                <tr>
+                  <td class="px-4 py-3">${new Date(o.createdAt).toLocaleDateString()}</td>
+                  <td class="px-4 py-3">${o.user?.name || 'N/A'} ${memberName ? `<div class=\"text-xs text-gray-500\">${memberName}</div>` : ''}</td>
+                  <td class="px-4 py-3">${typeLabel(o.customType)(o)}</td>
+                  <td class="px-4 py-3">1</td>
+                  <td class="px-4 py-3">${statusBadge}</td>
+                  <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
+                  <td class="px-4 py-3 text-xs max-w-xs truncate">${memberDetails}</td>
+                  <td class="px-4 py-3 text-right">
+                    <div class="inline-flex gap-3 items-center justify-end">
+                      <button data-id="${o._id}" class="edit-custom-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              `);
+            });
+          } else {
+            rowsArr.push(`
+              <tr>
+                  <td class="px-4 py-3">${new Date(o.createdAt).toLocaleDateString()}</td>
+                  <td class="px-4 py-3">${o.user?.name || 'N/A'}</td>
+                  <td class="px-4 py-3">${typeLabel(o.customType)(o)}</td>
+                  <td class="px-4 py-3">${o.quantity}</td>
+                  <td class="px-4 py-3">${statusBadge}</td>
+                  <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
+                  <td class="px-4 py-3 text-xs max-w-xs truncate">${details}</td>
+                    <td class="px-4 py-3 text-right">
+                      <div class="inline-flex gap-3 items-center justify-end">
+                        <button data-id="${o._id}" class="edit-custom-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
+                      </div>
+                    </td>
+              </tr>
+            `);
+          }
+        });
+
+        const rows = rowsArr.join('');
         els.customOrdersBody.innerHTML = rows || '<tr><td colspan="8" class="px-4 py-6 text-center text-gray-500">No custom orders found.</td></tr>';
-        els.customCount.textContent = filtered.length;
+        // Count shown rows (expand team members into individual entries)
+        const displayedCount = rowsArr.length;
+        els.customCount.textContent = displayedCount;
       }
 
       // Removed: Payment Info button in table; details shown directly in modal
