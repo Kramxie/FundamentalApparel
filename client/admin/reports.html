@@ -253,6 +253,37 @@
             </div>
           </div>
 
+          <!-- Top Selling by Product Type: Fabric & Garment / Pre-Design Apparel -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+              <h2 class="text-lg font-semibold text-gray-800 mb-4">Top Selling Fabric & Garment</h2>
+              <div class="chart-wrapper" id="fabricChartWrapper"><canvas id="fabricChart"></canvas></div>
+              <div class="mt-4">
+                <h3 class="text-sm font-medium mb-2">Top Fabrics & Garments (table)</h3>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 text-xs text-gray-500"><tr><th class="p-2 text-left">Product</th><th class="p-2 text-right">Units</th><th class="p-2 text-right">Revenue</th></tr></thead>
+                    <tbody id="topFabricTbody" class="bg-white divide-y divide-gray-100"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md">
+              <h2 class="text-lg font-semibold text-gray-800 mb-4">Top Selling Pre-Design Apparel</h2>
+              <div class="chart-wrapper" id="predesignChartWrapper"><canvas id="predesignChart"></canvas></div>
+              <div class="mt-4">
+                <h3 class="text-sm font-medium mb-2">Top Pre-Design Apparel (table)</h3>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 text-xs text-gray-500"><tr><th class="p-2 text-left">Product</th><th class="p-2 text-right">Units</th><th class="p-2 text-right">Revenue</th></tr></thead>
+                    <tbody id="topPreDesignTbody" class="bg-white divide-y divide-gray-100"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
             <!-- Orders table -->
             <div id="orders-section" class="bg-white p-4 rounded shadow">
               <div class="flex items-center justify-between mb-3">
@@ -329,7 +360,7 @@
     }
 
     // Draw charts using Chart.js
-    let salesChart = null, topProductsChart = null;
+    let salesChart = null, topProductsChart = null, fabricChart = null, predesignChart = null;
     function drawSalesChart(labels, data) {
       const ctx = document.getElementById('salesChart').getContext('2d');
       if (salesChart) salesChart.destroy();
@@ -367,6 +398,23 @@
         data: { labels, datasets: [{ label: 'Units Sold', data, backgroundColor: '#10b981' }] },
         options: { responsive: true, maintainAspectRatio: false }
       });
+    }
+
+    // Generic bar chart drawer used for Fabric/PreDesign charts
+    function drawBarChartGeneric(canvasId, labels, data, color = '#3b82f6', chartRefName = null) {
+      const ctx = document.getElementById(canvasId)?.getContext('2d');
+      if (!ctx) return null;
+      // destroy existing if any (map chartRefName to variable)
+      try {
+        if (chartRefName && typeof window[chartRefName] !== 'undefined' && window[chartRefName]) { window[chartRefName].destroy(); window[chartRefName] = null; }
+      } catch (e) { /* ignore */ }
+      const cfg = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'Units Sold', data, backgroundColor: color }] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+      if (chartRefName) window[chartRefName] = cfg;
+      return cfg;
     }
 
     let categoryChart = null;
@@ -442,6 +490,63 @@
           tr.innerHTML = `<td class="p-2">${escapeHtmlGlobal(name)}</td><td class="p-2 text-right">${units}</td><td class="p-2 text-right">₱${revenue.toLocaleString(undefined,{minimumFractionDigits:2})}</td>`;
           tbody.appendChild(tr);
         });
+
+        // --- Top Selling Fabric & Garment and Top Selling Pre-Design Apparel ---
+        try {
+          const topProductsArr = data.topProducts || [];
+
+          // helper to map items to label/units/revenue
+          const mapItems = (arr) => arr.map(p => ({
+            name: (p.productInfo && p.productInfo.name) || String(p._id || ''),
+            units: Number(p.totalSold || p.unitsSold || 0),
+            revenue: Number(p.revenue || p.totalRevenue || (p.unitPrice ? p.unitPrice * (p.totalSold||p.unitsSold||0) : 0))
+          }));
+
+          // Fabric & Garment: prefer server-provided data; otherwise filter topProducts
+          let fabricItemsRaw = (data.topFabrics && data.topFabrics.length) ? data.topFabrics : topProductsArr.filter(p => {
+            const info = p.productInfo || {};
+            const cat = (info.category || '').toString().toLowerCase();
+            const type = (info.type || '').toString().toLowerCase();
+            const tags = ((info.tags && info.tags.join) ? info.tags.join(' ').toLowerCase() : (info.tags || '').toString().toLowerCase());
+            const name = (info.name || '').toString().toLowerCase();
+            return /fabric|garment/.test(cat) || /fabric|garment/.test(type) || /fabric|garment/.test(tags) || /fabric|garment/.test(name);
+          });
+          const fabricItems = mapItems(fabricItemsRaw || []);
+          const fabricLabels = fabricItems.map(i=>i.name);
+          const fabricValues = fabricItems.map(i=>i.units);
+          try { document.getElementById('fabricChartWrapper').classList.toggle('scrollable', (fabricLabels.length > 12)); } catch(e){}
+          if (!fabricLabels || fabricLabels.length === 0) {
+            showEmptyForCanvas('fabricChartWrapper','fabricChart','No fabric/garment sales for the selected range.');
+          } else {
+            clearEmptyForCanvas('fabricChartWrapper','fabricChart');
+            drawBarChartGeneric('fabricChart', fabricLabels, fabricValues, '#ef4444', 'fabricChart');
+          }
+          // populate fabric table
+          const fabricTbody = document.getElementById('topFabricTbody'); if (fabricTbody) { fabricTbody.innerHTML = ''; fabricItems.forEach(it => { const tr = document.createElement('tr'); tr.innerHTML = `<td class="p-2">${escapeHtmlGlobal(it.name)}</td><td class="p-2 text-right">${it.units}</td><td class="p-2 text-right">₱${Number(it.revenue||0).toLocaleString(undefined,{minimumFractionDigits:2})}</td>`; fabricTbody.appendChild(tr); }); }
+
+          // Pre-Design Apparel: server field or filter by product flags/names
+          let preItemsRaw = (data.topPreDesigns && data.topPreDesigns.length) ? data.topPreDesigns : topProductsArr.filter(p => {
+            const info = p.productInfo || {};
+            const name = (info.name || '').toString().toLowerCase();
+            const cat = (info.category || '').toString().toLowerCase();
+            const type = (info.type || '').toString().toLowerCase();
+            const tags = ((info.tags && info.tags.join) ? info.tags.join(' ').toLowerCase() : (info.tags || '').toString().toLowerCase());
+            const isPre = (info.isPreDesign || info.preDesign || info.pre_design) || false;
+            return isPre || /pre-?design|predesign|pre design|pre_design/.test(name) || /pre-?design|predesign/.test(cat) || /pre-?design|predesign/.test(type) || /pre-?design|predesign/.test(tags);
+          });
+          const preItems = mapItems(preItemsRaw || []);
+          const preLabels = preItems.map(i=>i.name);
+          const preValues = preItems.map(i=>i.units);
+          try { document.getElementById('predesignChartWrapper').classList.toggle('scrollable', (preLabels.length > 12)); } catch(e){}
+          if (!preLabels || preLabels.length === 0) {
+            showEmptyForCanvas('predesignChartWrapper','predesignChart','No pre-design apparel sales for the selected range.');
+          } else {
+            clearEmptyForCanvas('predesignChartWrapper','predesignChart');
+            drawBarChartGeneric('predesignChart', preLabels, preValues, '#8b5cf6', 'predesignChart');
+          }
+          // populate pre-design table
+          const preTbody = document.getElementById('topPreDesignTbody'); if (preTbody) { preTbody.innerHTML = ''; preItems.forEach(it => { const tr = document.createElement('tr'); tr.innerHTML = `<td class="p-2">${escapeHtmlGlobal(it.name)}</td><td class="p-2 text-right">${it.units}</td><td class="p-2 text-right">₱${Number(it.revenue||0).toLocaleString(undefined,{minimumFractionDigits:2})}</td>`; preTbody.appendChild(tr); }); }
+        } catch (e) { console.debug('Failed to render fabric/predesign sections', e); }
 
         // Category breakdown
         if (!data.byCategory && !(data.salesByCategory && data.salesByCategory.length)) {
