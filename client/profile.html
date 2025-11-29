@@ -491,11 +491,38 @@
         </div>
     </div>
     
-            <script src="/js/receipt-builder.js"></script>
             <script>
+                // Ensure `buildReceiptHtml` exists even if the shared file failed to load.
+                if (typeof window.buildReceiptHtml !== 'function') {
+                    (function(){
+                        function esc(s){ if (s===null||typeof s==='undefined') return ''; return String(s).replace(/[&<>"]+/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]||c)); }
+                        function fmt(n){ return '₱' + Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2}); }
+                        window.buildReceiptHtml = function(r){
+                            if (!r) return `<div class="p-6 text-center text-sm text-gray-600"><h2 class="font-semibold mb-2">FUNDAMENTAL APPAREL</h2><div class="mb-2">Receipt not available.</div></div>`;
+                            const items = (r.items||[]).map(it=>`<tr class="border-t"><td class="py-2">${esc(it.name||'Item')}</td><td class="py-2 text-center">${esc(it.size||'-')}</td><td class="py-2 text-center">${Number(it.quantity||1)}</td><td class="py-2 text-right">${fmt(it.price)}</td><td class="py-2 text-right">${fmt((Number(it.price)||0)*(Number(it.quantity)||1))}</td></tr>`).join('');
+                            const subtotal = Number(r.subtotal||0) || (r.items||[]).reduce((s,it)=>s+((Number(it.price)||0)*(Number(it.quantity)||1)),0);
+                            const voucher = Number(r.voucherDiscount||0) || 0;
+                            const delivery = Number(r.deliveryFee||0)||0;
+                            const taxable = Math.max(subtotal - voucher, 0);
+                            const vat = Math.round(taxable * 0.12 * 100)/100;
+                            const total = Math.round((subtotal - voucher + delivery + vat) * 100)/100;
+                            return `
+                                <div class="max-w-full">
+                                    <div class="text-center mb-2"><h1 class="text-xl font-bold">FUNDAMENTAL APPAREL</h1><div class="text-sm text-gray-600">Unit 4B, Creative Building • Makati City</div></div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div><div class="text-sm text-gray-600">Prepared by</div><div class="font-medium">${esc(r.preparedByName||r.preparedBy||'Fundamental Apparel')}</div></div>
+                                        <div><div class="text-sm text-gray-600">Billed to</div><div class="font-medium">${esc(r.customerName||r.customerEmail||'Customer')}</div></div>
+                                    </div>
+                                    <div class="overflow-auto"><table class="w-full text-sm border-collapse"><thead class="bg-gray-100"><tr><th class="text-left p-2">Product</th><th class="text-center p-2">Size</th><th class="text-center p-2">QTY</th><th class="text-right p-2">Unit</th><th class="text-right p-2">Amount</th></tr></thead><tbody>${items}</tbody></table></div>
+                                    <div class="mt-4 text-sm"><div class="flex justify-end"><div class="w-full md:w-1/3"><div class="flex justify-between"><span>Subtotal</span><span class="font-medium">${fmt(subtotal)}</span></div><div class="flex justify-between"><span>Voucher</span><span class="font-medium">${voucher>0?fmt(voucher):'(N/A)'}</span></div><div class="flex justify-between"><span>Delivery Fee</span><span class="font-medium">${fmt(delivery)}</span></div><div class="flex justify-between"><span>VAT (12%)</span><span class="font-medium">${fmt(vat)}</span></div><div class="flex justify-between font-semibold"><span>Total</span><span class="font-medium">${fmt(total)}</span></div></div></div></div>
+                                </div>`;
+                        };
+                    })();
+                    console.warn('Fallback buildReceiptHtml installed (shared script may not have loaded).');
+                }
+
                 const API = 'https://fundamental-apparel-backend.onrender.com';
 
-                
             document.addEventListener('DOMContentLoaded', async () => {
 
                 // Basic app constants and element bindings
@@ -1173,33 +1200,6 @@
                 if (viewReceiptBtn) {
                     const orderId = viewReceiptBtn.dataset.orderId;
                     try {
-<<<<<<< HEAD
-                                const receipt = await fetchReceiptForOrder(orderId).catch(async (err) => {
-                                    console.warn('fetchReceiptForOrder failed, attempting to fetch order fallback', err);
-                                    // Try to fetch order and synthesize minimal receipt to avoid failure
-                                    try {
-                                        const ordRes = await apiRequest(`/api/orders/${encodeURIComponent(orderId)}`);
-                                        if (ordRes && ordRes.success && ordRes.data) {
-                                            const order = ordRes.data;
-                                            const items = (order.orderItems || []).map(it => ({ name: it.name || it.productName || 'Item', size: it.size || '', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0 }));
-                                            return {
-                                                _id: `synth-${order._id}`,
-                                                createdAt: order.createdAt,
-                                                items,
-                                                subtotal: order.subtotal || items.reduce((s,i)=>s+((Number(i.price)||0)*(Number(i.quantity)||1)),0),
-                                                deliveryFee: order.deliveryFee || 0,
-                                                voucherDiscount: order.voucherDiscount || order.voucherAmount || 0,
-                                                preparedByName: order.acceptedByName || '',
-                                                customerName: (order.user && order.user.name) ? order.user.name : (order.shippingAddress ? (order.shippingAddress.contact || '') : '')
-                                            };
-                                        }
-                                    } catch (e) { console.error('fallback order fetch failed', e); }
-                                    return null;
-                                });
-                                if (!receipt) return showReceiptModal(null);
-                                showReceiptModal(receipt);
-                    } catch (e) { alert('Failed to load receipt'); }
-=======
                         const receipt = await fetchReceiptForOrder(orderId).catch(async (err) => {
                             console.warn('fetchReceiptForOrder failed, attempting order fallback', err);
                             try {
@@ -1231,14 +1231,12 @@
                         console.error('Unexpected error while loading receipt', e);
                         showReceiptModal(null);
                     }
->>>>>>> restore-S
                 }
                 const downloadReceiptBtn = e.target.closest('.btn-download-receipt');
                 if (downloadReceiptBtn) {
                     const orderId = downloadReceiptBtn.dataset.orderId;
                     try {
-                        const receipt = await fetchReceiptForOrder(orderId).catch(() => null);
-                        if (!receipt) return alert('Receipt not available for download');
+                        const receipt = await fetchReceiptForOrder(orderId);
                         window._DOWNLOAD_DIRECT = true;
                         await renderReceiptPDF(receipt);
                     } finally { window._DOWNLOAD_DIRECT = undefined; }
@@ -1349,45 +1347,46 @@
 
             async function fetchAndRenderReceiptForOrder(orderId, openInline = false) {
                 try {
-
-                    try {
-                        const recJson = await apiRequest(`/api/receipts/by-order/${orderId}`);
-                        if (recJson && recJson.success && recJson.data) { await renderReceiptPDF(recJson.data, openInline); return; }
-                    } catch (e) { /* fallback */ }
-
-                    const ordRes = await apiRequest(`/api/orders/${encodeURIComponent(orderId)}`);
-                    if (!ordRes || !ordRes.success || !ordRes.data) throw new Error('Order not found');
-                    const order = ordRes.data;
-                    const items = (order.orderItems || []).map(it => ({ name: it.name || 'Item', size: it.size || '', quantity: it.quantity || 1, price: it.price || 0 }));
-                    const receipt = {
-                        _id: `synth-${order._id}`,
-                        tin: 'SYNTH-' + order._id.slice(-8).toUpperCase(),
-                        createdAt: order.createdAt,
-                        logoUrl: '/images/logo.png',
-                        items,
-                        subtotal: order.subtotal || order.totalPrice || items.reduce((s,i)=>s+(i.price*(i.quantity||1)),0),
-                        // do not force vat to 0 here; let renderer compute VAT if not present
-                        vat: (typeof order.vat === 'number') ? order.vat : undefined,
-                        deliveryFee: order.deliveryFee || 0,
-                        total: (typeof order.totalPrice === 'number') ? order.totalPrice : undefined,
-                        preparedByName: order.acceptedByName || '',
-                        customerName: (order.user && order.user.name) ? order.user.name : (order.shippingAddress ? (order.shippingAddress.contact || '') : '')
-                    };
+                    const receipt = await fetchReceiptForOrder(orderId).catch(err => {
+                        console.warn('fetchReceiptForOrder fallback or error', err);
+                        return null;
+                    });
+                    if (!receipt) {
+                        // Nothing to render; show user-friendly message in modal
+                        showReceiptModal(null);
+                        return;
+                    }
                     await renderReceiptPDF(receipt, openInline);
                 } catch (err) {
                     console.error('Receipt fetch/render failed', err);
+                    try { showReceiptModal(null); } catch (e) { /* ignore */ }
                     alert(err.message || 'Failed to fetch or render receipt');
                 }
             }
 
             // Fetch a receipt object (try server-stored receipt, otherwise synthesize from order)
             async function fetchReceiptForOrder(orderId) {
+                // Try to fetch stored receipt first. Use raw fetch to inspect status and content-type.
                 try {
-                    try {
-                        const recJson = await apiRequest(`/api/receipts/by-order/${orderId}`);
-                        if (recJson && recJson.success && recJson.data) return recJson.data;
-                    } catch (e) { /* fallback to order */ }
+                    const url = `${API}/api/receipts/by-order/${encodeURIComponent(orderId)}`;
+                    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (res.ok) {
+                        const ct = (res.headers.get('content-type') || '').toLowerCase();
+                        if (ct.includes('application/json')) {
+                            const recJson = await res.json();
+                            if (recJson && recJson.success && recJson.data) return recJson.data;
+                        } else {
+                            console.warn('Receipt endpoint returned non-JSON content-type:', ct);
+                        }
+                    } else {
+                        console.warn('Receipt endpoint returned status', res.status);
+                    }
+                } catch (e) {
+                    console.warn('Error fetching receipt from /api/receipts/by-order:', e);
+                }
 
+                // Fallback: synthesize receipt from order data
+                try {
                     const ordRes = await apiRequest(`/api/orders/${encodeURIComponent(orderId)}`);
                     if (!ordRes || !ordRes.success || !ordRes.data) throw new Error('Order not found');
                     const order = ordRes.data;
@@ -1401,13 +1400,15 @@
                         subtotal: order.subtotal || order.totalPrice || items.reduce((s,i)=>s+((Number(i.price)||0)*(Number(i.quantity)||1)),0),
                         vat: (typeof order.vat === 'number') ? order.vat : undefined,
                         deliveryFee: order.deliveryFee || 0,
+                        voucherDiscount: order.voucherDiscount || order.voucher || 0,
                         total: (typeof order.totalPrice === 'number') ? order.totalPrice : undefined,
                         preparedByName: order.acceptedByName || '',
-                        customerName: (order.user && order.user.name) ? order.user.name : (order.shippingAddress ? (order.shippingAddress.contact || '') : '')
+                        customerName: (order.user && order.user.name) ? order.user.name : (order.shippingAddress ? (order.shippingAddress.contact || '') : ''),
+                        customerEmail: (order.user && order.user.email) ? order.user.email : (order.user && order.user.username) || ''
                     };
                     return receipt;
                 } catch (err) {
-                    console.error('fetchReceiptForOrder error', err);
+                    console.error('fetchReceiptForOrder fallback error', err);
                     throw err;
                 }
             }
@@ -1570,43 +1571,55 @@
                 
 
             function showReceiptModal(r){
-                const modal = document.getElementById('receipt-modal');
-                const body = document.getElementById('receipt-modal-body');
-                const loading = document.getElementById('receipt-loading');
-                body.innerHTML = '';
-                loading.classList.add('hidden');
-                // Build HTML content
-                body.innerHTML = buildReceiptHtml(r);
-                modal.classList.remove('hidden'); modal.classList.add('flex');
-                // wire download button: convert the modal HTML to PDF so layout matches
-                const dl = document.getElementById('receipt-download-btn');
-                dl.disabled = false; dl.textContent = 'Download PDF';
-                dl.onclick = async () => {
-                    const run = () => {
-                        try {
-                            dl.disabled = true; dl.textContent = 'Generating...';
-                            const el = document.getElementById('receipt-modal-body');
-                            const safeId = (r && (r._id || r.tin)) ? String(r._id || r.tin).slice(-12) : 'receipt';
-                            const fileName = `Invoice-${safeId}.pdf`;
-                            const opt = {
-                                margin: 8,
-                                filename: fileName,
-                                image: { type: 'jpeg', quality: 0.98 },
-                                html2canvas: { scale: Math.min(2, (window.devicePixelRatio || 1) * 1.5), useCORS: true, allowTaint: true },
-                                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                                pagebreak: { mode: ['css', 'legacy'] }
-                            };
-                            html2pdf().set(opt).from(el).save().then(() => {
-                                dl.disabled = false; dl.textContent = 'Download PDF';
-                            }).catch((err) => { console.error('html2pdf error', err); dl.disabled = false; dl.textContent = 'Download PDF'; alert('Failed to generate PDF'); });
-                        } catch (err) { console.error(err); dl.disabled = false; dl.textContent = 'Download PDF'; alert('Failed to generate PDF'); }
+                try {
+                    const modal = document.getElementById('receipt-modal');
+                    if (!modal) { console.error('Modal not found: receipt-modal'); alert('Receipt UI is not available.'); return; }
+                    const body = document.getElementById('receipt-modal-body');
+                    if (!body) { console.error('Receipt body element missing'); alert('Receipt UI is not available.'); return; }
+                    const loading = document.getElementById('receipt-loading');
+                    // reset
+                    body.innerHTML = '';
+                    if (loading) loading.classList.add('hidden');
+
+                    // Build HTML content safely
+                    try {
+                        body.innerHTML = buildReceiptHtml(r);
+                    } catch (e) {
+                        console.error('Error building receipt HTML', e);
+                        body.innerHTML = `<div class="p-6 text-center text-sm text-red-600">Failed to build receipt view.</div>`;
+                    }
+
+                    // show modal (responsive classes assumed in markup)
+                    modal.classList.remove('hidden'); modal.classList.add('flex');
+
+                    // wire download button: convert the modal HTML to PDF so layout matches
+                    const dl = document.getElementById('receipt-download-btn');
+                    if (!dl) { console.warn('Download button not found: receipt-download-btn'); return; }
+                    dl.disabled = false; dl.textContent = 'Download PDF';
+                    dl.onclick = async () => {
+                        dl.disabled = true; dl.textContent = 'Generating...';
+                        const run = () => {
+                            try {
+                                const opt = {
+                                    margin: 8,
+                                    filename: `receipt-${(r && (r._id||'receipt'))}.pdf`,
+                                    image: { type: 'jpeg', quality: 0.98 },
+                                    html2canvas: { scale: Math.min(2, (window.devicePixelRatio || 1) * 1.2) },
+                                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                                    pagebreak: { mode: ['css', 'legacy'] }
+                                };
+                                html2pdf().set(opt).from(body).save().then(() => { dl.disabled = false; dl.textContent = 'Download PDF'; }).catch(err => { throw err; });
+                            } catch (err) { console.error(err); dl.disabled = false; dl.textContent = 'Download PDF'; alert('Failed to generate PDF'); }
+                        };
+                        if (window.html2pdf) return run();
+                        const s = document.createElement('script');
+                        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js';
+                        s.onload = run; s.onerror = () => { alert('Could not load PDF generator. Use Print in the modal or open the receipt in a new tab to save as PDF.'); dl.disabled = false; dl.textContent = 'Download PDF'; };
+                        document.body.appendChild(s);
                     };
-                    if (window.html2pdf) return run();
-                    const s = document.createElement('script');
-                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js';
-                    s.onload = run; s.onerror = () => { alert('Could not load PDF generator. Use Print in the modal or open the receipt in a new tab to save as PDF.'); dl.disabled = false; dl.textContent = 'Download PDF'; };
-                    document.body.appendChild(s);
-                };
+                } catch (e) {
+                    console.error('showReceiptModal unexpected error', e);
+                }
             }
 
             document.getElementById('receipt-modal-close')?.addEventListener('click', () => {
