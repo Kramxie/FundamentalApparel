@@ -217,13 +217,21 @@
       doc.setFontSize(9); doc.setTextColor(99,102,106);
       const tx = totalsAreaX + 12; let ty = totalsY + 18;
       doc.text('Subtotal', tx, ty); doc.text('₱' + Number(computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
-      // Compute VAT: use provided value if numeric, otherwise compute at 12%
-      let vat = (typeof r.vat === 'number') ? Number(r.vat) : Math.round((computedSubtotal * 0.12) * 100) / 100;
-      doc.text('VAT (12%)', tx, ty); doc.text('₱' + Number(vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
+      // Derive VAT: prefer positive server-provided VAT; otherwise derive from server total if present; fallback to 12% of subtotal
       const deliveryFee = Number(r.deliveryFee || 0);
+      const serverTotal = (typeof r.total === 'number') ? Number(r.total) : NaN;
+      let vat;
+      if (typeof r.vat === 'number' && r.vat > 0) {
+        vat = Number(r.vat);
+      } else if (!isNaN(serverTotal)) {
+        vat = Math.round((serverTotal - computedSubtotal - deliveryFee) * 100) / 100;
+      } else {
+        vat = Math.round((computedSubtotal * 0.12) * 100) / 100;
+      }
+      doc.text('VAT (12%)', tx, ty); doc.text('₱' + Number(vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
       doc.text('Delivery', tx, ty); doc.text('₱' + Number(deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 18;
       doc.setFont(undefined, 'bold'); doc.setFontSize(11);
-      const totalComputed = (typeof r.total === 'number') ? Number(r.total) : (computedSubtotal + vat + deliveryFee);
+      const totalComputed = (!isNaN(serverTotal) && typeof r.total === 'number') ? serverTotal : (computedSubtotal + vat + deliveryFee);
       doc.text('TOTAL', tx, ty); doc.text('₱' + Number(totalComputed||computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' });
       doc.setFont(undefined, 'normal'); doc.setTextColor(0,0,0);
 

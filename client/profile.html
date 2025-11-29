@@ -410,7 +410,7 @@
                     <h3 id="details-modal-title" class="text-lg font-semibold text-red-700">Cancellation Details</h3>
                     <div id="details-modal-sub" class="text-sm text-gray-600 mt-1">&nbsp;</div>
                 </div>
-                <button id="details-modal-close" class="text-gray-500">&times;</button>
+                <div id="feedback-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
             </div>
             <div class="p-4 space-y-3">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -424,6 +424,25 @@
                     <p id="details-reason" class="text-sm text-gray-600 mt-2">No reason provided.</p>
                 </div>
             </div>
+                <!-- Receipt Modal (simple, printable) -->
+                <div id="receipt-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+                    <div class="bg-white rounded-lg shadow-lg max-w-2xl w-full overflow-hidden">
+                        <div class="flex items-center justify-between px-5 py-3 border-b">
+                            <h3 class="font-semibold text-gray-800">Receipt</h3>
+                            <div class="flex items-center gap-2">
+                                <button id="receipt-download-btn" class="px-3 py-1 bg-indigo-600 text-white rounded text-sm">Download PDF</button>
+                                <button id="receipt-modal-close" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div id="receipt-modal-body" class="p-5 overflow-auto max-h-[80vh]">
+                            <!-- populated dynamically -->
+                            <div id="receipt-loading" class="text-center py-8 hidden">Generating...</div>
+                        </div>
+                        <div class="px-5 py-3 border-t text-right">
+                            <button id="receipt-close-bottom" class="px-4 py-2 rounded bg-gray-200">Close</button>
+                        </div>
+                    </div>
+                </div>
             <div class="p-4 bg-gray-50 flex justify-end">
                 <button id="details-modal-ok" class="bg-indigo-600 text-white px-4 py-2 rounded">OK</button>
             </div>
@@ -1151,12 +1170,19 @@
                 const viewReceiptBtn = e.target.closest('.btn-view-receipt');
                 if (viewReceiptBtn) {
                     const orderId = viewReceiptBtn.dataset.orderId;
-                    await fetchAndRenderReceiptForOrder(orderId, /*openInline=*/true);
+                    try {
+                        const receipt = await fetchReceiptForOrder(orderId);
+                        showReceiptModal(receipt);
+                    } catch (e) { alert('Failed to load receipt'); }
                 }
                 const downloadReceiptBtn = e.target.closest('.btn-download-receipt');
                 if (downloadReceiptBtn) {
                     const orderId = downloadReceiptBtn.dataset.orderId;
-                    try { window._DOWNLOAD_DIRECT = true; await fetchAndRenderReceiptForOrder(orderId); } finally { window._DOWNLOAD_DIRECT = undefined; }
+                    try {
+                        const receipt = await fetchReceiptForOrder(orderId);
+                        window._DOWNLOAD_DIRECT = true;
+                        await renderReceiptPDF(receipt);
+                    } finally { window._DOWNLOAD_DIRECT = undefined; }
                 }
                 const viewReviewBtn = e.target.closest('.btn-view-review');
                 if (viewReviewBtn) {
@@ -1295,6 +1321,38 @@
                 }
             }
 
+            // Fetch a receipt object (try server-stored receipt, otherwise synthesize from order)
+            async function fetchReceiptForOrder(orderId) {
+                try {
+                    try {
+                        const recJson = await apiRequest(`/api/receipts/by-order/${orderId}`);
+                        if (recJson && recJson.success && recJson.data) return recJson.data;
+                    } catch (e) { /* fallback to order */ }
+
+                    const ordRes = await apiRequest(`/api/orders/${encodeURIComponent(orderId)}`);
+                    if (!ordRes || !ordRes.success || !ordRes.data) throw new Error('Order not found');
+                    const order = ordRes.data;
+                    const items = (order.orderItems || []).map(it => ({ name: it.name || it.productName || 'Item', size: it.size || '', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0 }));
+                    const receipt = {
+                        _id: `synth-${order._id}`,
+                        tin: 'SYNTH-' + order._id.slice(-8).toUpperCase(),
+                        createdAt: order.createdAt,
+                        logoUrl: '/images/logo.png',
+                        items,
+                        subtotal: order.subtotal || order.totalPrice || items.reduce((s,i)=>s+((Number(i.price)||0)*(Number(i.quantity)||1)),0),
+                        vat: (typeof order.vat === 'number') ? order.vat : undefined,
+                        deliveryFee: order.deliveryFee || 0,
+                        total: (typeof order.totalPrice === 'number') ? order.totalPrice : undefined,
+                        preparedByName: order.acceptedByName || '',
+                        customerName: (order.user && order.user.name) ? order.user.name : (order.shippingAddress ? (order.shippingAddress.contact || '') : '')
+                    };
+                    return receipt;
+                } catch (err) {
+                    console.error('fetchReceiptForOrder error', err);
+                    throw err;
+                }
+            }
+
             async function renderReceiptPDF(r, openInline = false) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -1392,13 +1450,21 @@
                 doc.setFontSize(9); doc.setTextColor(99,102,106);
                 const tx = totalsAreaX + 12; let ty = totalsY + 18;
                 doc.text('Subtotal', tx, ty); doc.text('₱' + Number(computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
-                // Compute VAT: use provided value if numeric, otherwise compute at 12%
-                let vat = (typeof r.vat === 'number') ? Number(r.vat) : Math.round((computedSubtotal * 0.12) * 100) / 100;
-                doc.text('VAT (12%)', tx, ty); doc.text('₱' + Number(vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
+                // Derive VAT: prefer positive server-provided VAT; otherwise derive from server total if present; fallback to 12% of subtotal
                 const deliveryFee = Number(r.deliveryFee || 0);
+                const serverTotal = (typeof r.total === 'number') ? Number(r.total) : NaN;
+                let vat;
+                if (typeof r.vat === 'number' && r.vat > 0) {
+                    vat = Number(r.vat);
+                } else if (!isNaN(serverTotal)) {
+                    vat = Math.round((serverTotal - computedSubtotal - deliveryFee) * 100) / 100;
+                } else {
+                    vat = Math.round((computedSubtotal * 0.12) * 100) / 100;
+                }
+                doc.text('VAT (12%)', tx, ty); doc.text('₱' + Number(vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
                 doc.text('Delivery', tx, ty); doc.text('₱' + Number(deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 18;
                 doc.setFont(undefined, 'bold'); doc.setFontSize(11);
-                const totalComputed = (typeof r.total === 'number') ? Number(r.total) : (computedSubtotal + vat + deliveryFee);
+                const totalComputed = (!isNaN(serverTotal) && typeof r.total === 'number') ? serverTotal : (computedSubtotal + vat + deliveryFee);
                 doc.text('TOTAL', tx, ty); doc.text('₱' + Number(totalComputed||computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' });
                 doc.setFont(undefined, 'normal'); doc.setTextColor(0,0,0);
 
@@ -1432,6 +1498,110 @@
                     } catch (e) { reject(e); }
                 });
             }
+            
+            // Show simple HTML receipt in modal
+            function formatCurrency(n){ return '₱' + Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2}); }
+            function buildReceiptHtml(r){
+                const itemsRows = (r.items||[]).map(it => `
+                    <tr class="border-t">
+                        <td class="py-2">${escapeHtml(it.name)}</td>
+                        <td class="py-2 text-center">${escapeHtml(it.size||'-')}</td>
+                        <td class="py-2 text-center">${Number(it.quantity||1)}</td>
+                        <td class="py-2 text-right">${formatCurrency((Number(it.price)||0))}</td>
+                        <td class="py-2 text-right">${formatCurrency((Number(it.price)||0)*(Number(it.quantity)||1))}</td>
+                    </tr>
+                `).join('');
+                const subtotal = Number(r.subtotal || 0) || (r.items||[]).reduce((s,it)=>s+((Number(it.price)||0)*(Number(it.quantity)||1)),0);
+                const delivery = Number(r.deliveryFee||0);
+                let vat = (typeof r.vat === 'number' && r.vat > 0) ? Number(r.vat) : undefined;
+                if (typeof vat === 'undefined' && typeof r.total === 'number') vat = Math.round((r.total - subtotal - delivery)*100)/100;
+                if (typeof vat === 'undefined') vat = Math.round(subtotal * 0.12 * 100)/100;
+                const total = (typeof r.total === 'number') ? r.total : (subtotal + vat + delivery);
+                const voucher = r.voucherCode ? `<div class="text-sm text-green-700">Voucher: ${escapeHtml(r.voucherCode)} (${formatCurrency(r.voucherDiscount||0)})</div>` : '';
+
+                return `
+                    <div class="max-w-full">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h1 class="text-xl font-bold">Fundamental Apparel</h1>
+                                <div class="text-sm text-gray-600">Unit 4B, Creative Building • Makati City</div>
+                            </div>
+                            <div class="text-right text-sm">
+                                <div><strong>OR No.:</strong> ${escapeHtml(String(r._id||r.tin||''))}</div>
+                                <div><strong>Date:</strong> ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <div class="text-sm text-gray-600">Prepared by</div>
+                                <div class="font-medium">${escapeHtml(r.preparedByName||r.preparedBy||'Fundamental Apparel')}</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-gray-600">Billed to</div>
+                                <div class="font-medium">${escapeHtml(r.customerName||'Customer')}</div>
+                                ${r.customerAddress? `<div class="text-sm text-gray-600">${escapeHtml(r.customerAddress)}</div>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="overflow-auto">
+                            <table class="w-full text-sm border-collapse">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="text-left p-2">Product</th>
+                                        <th class="text-center p-2">Size</th>
+                                        <th class="text-center p-2">QTY</th>
+                                        <th class="text-right p-2">Unit</th>
+                                        <th class="text-right p-2">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${itemsRows}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-4 text-right">
+                            ${voucher}
+                            <div class="text-sm">Subtotal: <strong>${formatCurrency(subtotal)}</strong></div>
+                            <div class="text-sm">VAT (12%): <strong>${formatCurrency(vat)}</strong></div>
+                            <div class="text-sm">Delivery: <strong>${formatCurrency(delivery)}</strong></div>
+                            <div class="text-lg mt-2">TOTAL: <strong class="text-indigo-700">${formatCurrency(total)}</strong></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function escapeHtml(s){ if (s === null || typeof s === 'undefined') return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c])); }
+
+            function showReceiptModal(r){
+                const modal = document.getElementById('receipt-modal');
+                const body = document.getElementById('receipt-modal-body');
+                const loading = document.getElementById('receipt-loading');
+                body.innerHTML = '';
+                loading.classList.add('hidden');
+                // Build HTML content
+                body.innerHTML = buildReceiptHtml(r);
+                modal.classList.remove('hidden'); modal.classList.add('flex');
+                // wire download button
+                const dl = document.getElementById('receipt-download-btn');
+                dl.disabled = false; dl.textContent = 'Download PDF';
+                dl.onclick = async () => {
+                    try {
+                        dl.disabled = true; dl.textContent = 'Generating...';
+                        window._DOWNLOAD_DIRECT = true;
+                        await renderReceiptPDF(r);
+                    } catch (e) { alert('Failed to generate PDF'); }
+                    finally { dl.disabled = false; dl.textContent = 'Download PDF'; window._DOWNLOAD_DIRECT = undefined; }
+                };
+            }
+
+            document.getElementById('receipt-modal-close')?.addEventListener('click', () => {
+                const m = document.getElementById('receipt-modal'); if (m) m.classList.add('hidden');
+            });
+            document.getElementById('receipt-close-bottom')?.addEventListener('click', () => {
+                const m = document.getElementById('receipt-modal'); if (m) m.classList.add('hidden');
+            });
             feedbackProductSelect?.addEventListener('change', () => {
                 currentFeedbackProductId = feedbackProductSelect.value;
             });
