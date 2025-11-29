@@ -90,7 +90,7 @@
       try {
         // Try lookup by order id
         try {
-          const r = await api(`/api/receipts/by-order/${orderId}`);
+            const r = await api(`/api/receipts/by-order/${orderId}`); 
           if (r) { await renderReceiptPDF(r, openInline); return; }
         } catch (e) {
           // ignore and fallback
@@ -108,7 +108,7 @@
           logoUrl: '/images/logo.png',
           items: (order.items || []).map(it => ({ name: it.name || it.productName || 'Item', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0 })),
           subtotal: order.subtotal || order.totalPrice || 0,
-          vat: (typeof order.vat === 'number') ? order.vat : undefined,
+            vat: (typeof order.vat === 'number') ? order.vat : undefined,
           deliveryFee: order.deliveryFee || 0,
           total: (typeof order.totalPrice === 'number') ? order.totalPrice : undefined,
           customerName: (order.user && order.user.name) ? order.user.name : ''
@@ -152,9 +152,10 @@
       doc.setFillColor(255,255,255);
       doc.roundedRect(infoX, infoY, infoW, 60, 6, 6, 'F');
       doc.setTextColor(0,0,0); doc.setFontSize(9);
-      doc.text(`OR No.: ${r._id ? r._id.toString().slice(-10).toUpperCase() : (r.tin || '')}`, infoX + 12, infoY + 18);
+      const displayTin = (r.tin && String(r.tin).trim()) ? r.tin : `AUTOGEN-${(r._id||'').toString().slice(-8).toUpperCase()}`;
+      doc.text(`OR No.: ${r._id ? r._id.toString().slice(-10).toUpperCase() : displayTin}`, infoX + 12, infoY + 18);
       doc.text(`Date: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}`, infoX + 12, infoY + 34);
-      doc.text(`TIN: ${r.tin || '—'}`, infoX + 12, infoY + 50);
+      doc.text(`TIN: ${displayTin}`, infoX + 12, infoY + 50);
 
       // Billed To
       y = 110;
@@ -213,25 +214,23 @@
 
       // Totals box
       const totalsY = Math.max(y + 10, 380);
-      doc.setFillColor(249,250,251); doc.roundedRect(totalsAreaX, totalsY, 180, 100, 6, 6, 'F');
+      doc.setFillColor(249,250,251); doc.roundedRect(totalsAreaX, totalsY, 180, 120, 6, 6, 'F');
       doc.setFontSize(9); doc.setTextColor(99,102,106);
       const tx = totalsAreaX + 12; let ty = totalsY + 18;
-      doc.text('Subtotal', tx, ty); doc.text('₱' + Number(computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
-      // Derive VAT: prefer positive server-provided VAT; otherwise derive from server total if present; fallback to 12% of subtotal
       const deliveryFee = Number(r.deliveryFee || 0);
-      const serverTotal = (typeof r.total === 'number') ? Number(r.total) : NaN;
-      let vat;
-      if (typeof r.vat === 'number' && r.vat > 0) {
-        vat = Number(r.vat);
-      } else if (!isNaN(serverTotal)) {
-        vat = Math.round((serverTotal - computedSubtotal - deliveryFee) * 100) / 100;
-      } else {
-        vat = Math.round((computedSubtotal * 0.12) * 100) / 100;
-      }
-      doc.text('VAT (12%)', tx, ty); doc.text('₱' + Number(vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
-      doc.text('Delivery', tx, ty); doc.text('₱' + Number(deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 18;
+      const voucherAmt = Math.round((Number(r.voucherDiscount || 0) || 0) * 100) / 100;
+      // VAT per checkout: VAT applies to taxable subtotal (subtotal - voucher); delivery not taxable
+      const taxable = Math.max(computedSubtotal - voucherAmt, 0);
+      const vat = Math.round(taxable * 0.12 * 100) / 100;
+
+      doc.text('Subtotal', tx, ty); doc.text('₱' + Number(computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
+      doc.text('Delivery', tx, ty); doc.text('₱' + Number(deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
+      if (voucherAmt > 0) { doc.text('Voucher', tx, ty); doc.text('-₱' + Number(voucherAmt).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16; }
+      else { doc.text('Voucher', tx, ty); doc.text('N/A', totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16; }
+      doc.text('VAT (12%)', tx, ty); doc.text('₱' + Number(vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 18;
+
       doc.setFont(undefined, 'bold'); doc.setFontSize(11);
-      const totalComputed = (!isNaN(serverTotal) && typeof r.total === 'number') ? serverTotal : (computedSubtotal + vat + deliveryFee);
+      const totalComputed = Math.round((computedSubtotal - voucherAmt + deliveryFee + vat) * 100) / 100;
       doc.text('TOTAL', tx, ty); doc.text('₱' + Number(totalComputed||computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' });
       doc.setFont(undefined, 'normal'); doc.setTextColor(0,0,0);
 
@@ -240,10 +239,10 @@
       if (prepared) doc.setFontSize(9).text('Prepared by: ' + prepared, margin, totalsY + 120);
 
       // Save/open
-      const safeName = `Invoice-${(r._id||r.tin||'receipt').toString().slice(-12)}.pdf`;
+      const safeName = `Invoice-${(r._id||displayTin||'receipt').toString().slice(-12)}.pdf`;
       if (openInline) { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); window.open(url, '_blank'); return; }
-      if (typeof window._DOWNLOAD_DIRECT !== 'undefined' && window._DOWNLOAD_DIRECT === true) { doc.save(safeName); }
-      else { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); window.open(url, '_blank'); }
+      try { doc.save(safeName); }
+      catch (e) { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); const a = document.createElement('a'); a.href = url; a.download = safeName; document.body.appendChild(a); a.click(); a.remove(); }
     }
 
     async function loadImageAsDataURL(src){

@@ -410,7 +410,7 @@
                     <h3 id="details-modal-title" class="text-lg font-semibold text-red-700">Cancellation Details</h3>
                     <div id="details-modal-sub" class="text-sm text-gray-600 mt-1">&nbsp;</div>
                 </div>
-                <div id="feedback-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+                <button id="details-modal-close" class="text-gray-500">&times;</button>
             </div>
             <div class="p-4 space-y-3">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -424,27 +424,28 @@
                     <p id="details-reason" class="text-sm text-gray-600 mt-2">No reason provided.</p>
                 </div>
             </div>
-                <!-- Receipt Modal (simple, printable) -->
-                <div id="receipt-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
-                    <div class="bg-white rounded-lg shadow-lg max-w-2xl w-full overflow-hidden">
-                        <div class="flex items-center justify-between px-5 py-3 border-b">
-                            <h3 class="font-semibold text-gray-800">Receipt</h3>
-                            <div class="flex items-center gap-2">
-                                <button id="receipt-download-btn" class="px-3 py-1 bg-indigo-600 text-white rounded text-sm">Download PDF</button>
-                                <button id="receipt-modal-close" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
-                            </div>
-                        </div>
-                        <div id="receipt-modal-body" class="p-5 overflow-auto max-h-[80vh]">
-                            <!-- populated dynamically -->
-                            <div id="receipt-loading" class="text-center py-8 hidden">Generating...</div>
-                        </div>
-                        <div class="px-5 py-3 border-t text-right">
-                            <button id="receipt-close-bottom" class="px-4 py-2 rounded bg-gray-200">Close</button>
-                        </div>
-                    </div>
-                </div>
             <div class="p-4 bg-gray-50 flex justify-end">
                 <button id="details-modal-ok" class="bg-indigo-600 text-white px-4 py-2 rounded">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal (simple, printable) -->
+    <div id="receipt-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-lg max-w-2xl w-full overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-3 border-b">
+                <h3 class="font-semibold text-gray-800">Receipt</h3>
+                <div class="flex items-center gap-2">
+                    <button id="receipt-download-btn" class="px-3 py-1 bg-indigo-600 text-white rounded text-sm">Download PDF</button>
+                    <button id="receipt-modal-close" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div id="receipt-modal-body" class="p-5 overflow-auto max-h-[80vh]">
+                <!-- populated dynamically -->
+                <div id="receipt-loading" class="text-center py-8 hidden">Generating...</div>
+            </div>
+            <div class="px-5 py-3 border-t text-right">
+                <button id="receipt-close-bottom" class="px-4 py-2 rounded bg-gray-200">Close</button>
             </div>
         </div>
     </div>
@@ -1382,9 +1383,10 @@
                 doc.setFillColor(255,255,255);
                 doc.roundedRect(infoX, infoY, infoW, 60, 6, 6, 'F');
                 doc.setTextColor(0,0,0); doc.setFontSize(9);
-                doc.text(`OR No.: ${r._id ? r._id.toString().slice(-10).toUpperCase() : (r.tin || '')}`, infoX + 12, infoY + 18);
+                const displayTin = (r.tin && String(r.tin).trim()) ? r.tin : `AUTOGEN-${(r._id||'').toString().slice(-8).toUpperCase()}`;
+                doc.text(`OR No.: ${r._id ? r._id.toString().slice(-10).toUpperCase() : displayTin}`, infoX + 12, infoY + 18);
                 doc.text(`Date: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}`, infoX + 12, infoY + 34);
-                doc.text(`TIN: ${r.tin || '—'}`, infoX + 12, infoY + 50);
+                doc.text(`TIN: ${displayTin}`, infoX + 12, infoY + 50);
 
                 // Billed To (left)
                 y = 110;
@@ -1444,27 +1446,25 @@
                     if (y > pageH - 160) { doc.addPage(); y = margin + 40; }
                 }
 
-                // Totals box on right
+                // Totals box on right (checkout-aligned)
                 const totalsY = Math.max(y + 10, 380);
-                doc.setFillColor(249,250,251); doc.roundedRect(totalsAreaX, totalsY, 180, 100, 6, 6, 'F');
+                doc.setFillColor(249,250,251); doc.roundedRect(totalsAreaX, totalsY, 180, 140, 6, 6, 'F');
                 doc.setFontSize(9); doc.setTextColor(99,102,106);
                 const tx = totalsAreaX + 12; let ty = totalsY + 18;
-                doc.text('Subtotal', tx, ty); doc.text('₱' + Number(computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
-                // Derive VAT: prefer positive server-provided VAT; otherwise derive from server total if present; fallback to 12% of subtotal
                 const deliveryFee = Number(r.deliveryFee || 0);
-                const serverTotal = (typeof r.total === 'number') ? Number(r.total) : NaN;
-                let vat;
-                if (typeof r.vat === 'number' && r.vat > 0) {
-                    vat = Number(r.vat);
-                } else if (!isNaN(serverTotal)) {
-                    vat = Math.round((serverTotal - computedSubtotal - deliveryFee) * 100) / 100;
-                } else {
-                    vat = Math.round((computedSubtotal * 0.12) * 100) / 100;
-                }
-                doc.text('VAT (12%)', tx, ty); doc.text('₱' + Number(vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
-                doc.text('Delivery', tx, ty); doc.text('₱' + Number(deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 18;
+                const voucherAmt = Math.round((Number(r.voucherDiscount || 0) || 0) * 100) / 100;
+                // Checkout VAT logic: VAT applies to taxable subtotal (subtotal - voucher), delivery is not taxable
+                const taxable = Math.max(computedSubtotal - voucherAmt, 0);
+                const vat = Math.round(taxable * 0.12 * 100) / 100;
+
+                doc.text('Subtotal', tx, ty); doc.text('₱' + Number(computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
+                doc.text('Delivery', tx, ty); doc.text('₱' + Number(deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
+                if (voucherAmt > 0) { doc.text('Voucher', tx, ty); doc.text('-₱' + Number(voucherAmt).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16; }
+                else { doc.text('Voucher', tx, ty); doc.text('N/A', totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16; }
+                doc.text('VAT (12%)', tx, ty); doc.text('₱' + Number(vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 18;
+
                 doc.setFont(undefined, 'bold'); doc.setFontSize(11);
-                const totalComputed = (!isNaN(serverTotal) && typeof r.total === 'number') ? serverTotal : (computedSubtotal + vat + deliveryFee);
+                const totalComputed = Math.round((computedSubtotal - voucherAmt + deliveryFee + vat) * 100) / 100;
                 doc.text('TOTAL', tx, ty); doc.text('₱' + Number(totalComputed||computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' });
                 doc.setFont(undefined, 'normal'); doc.setTextColor(0,0,0);
 
@@ -1475,10 +1475,11 @@
                 // Footer note
                 doc.setFontSize(9); doc.text('This is a computer-generated receipt.', margin, pageH - 60);
 
-                const safeName = `OR-${(r._id||r.tin||'receipt').toString().slice(-12)}.pdf`;
+                const safeName = `OR-${(r._id||displayTin||'receipt').toString().slice(-12)}.pdf`;
                 if (openInline) { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); window.open(url, '_blank'); return; }
-                if (typeof window._DOWNLOAD_DIRECT !== 'undefined' && window._DOWNLOAD_DIRECT === true) { doc.save(safeName); }
-                else { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); window.open(url, '_blank'); }
+                // Default behavior: trigger a direct download of the PDF
+                try { doc.save(safeName); }
+                catch (e) { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); const a = document.createElement('a'); a.href = url; a.download = safeName; document.body.appendChild(a); a.click(); a.remove(); }
             }
 
             async function loadImageAsDataURL(src){
@@ -1513,11 +1514,12 @@
                 `).join('');
                 const subtotal = Number(r.subtotal || 0) || (r.items||[]).reduce((s,it)=>s+((Number(it.price)||0)*(Number(it.quantity)||1)),0);
                 const delivery = Number(r.deliveryFee||0);
-                let vat = (typeof r.vat === 'number' && r.vat > 0) ? Number(r.vat) : undefined;
-                if (typeof vat === 'undefined' && typeof r.total === 'number') vat = Math.round((r.total - subtotal - delivery)*100)/100;
-                if (typeof vat === 'undefined') vat = Math.round(subtotal * 0.12 * 100)/100;
-                const total = (typeof r.total === 'number') ? r.total : (subtotal + vat + delivery);
-                const voucher = r.voucherCode ? `<div class="text-sm text-green-700">Voucher: ${escapeHtml(r.voucherCode)} (${formatCurrency(r.voucherDiscount||0)})</div>` : '';
+                const voucherAmt = Math.round((Number(r.voucherDiscount || 0) || 0) * 100) / 100;
+                // Checkout VAT logic: vat applies to taxable subtotal (subtotal - voucher); delivery is not taxable
+                const taxable = Math.max(subtotal - voucherAmt, 0);
+                const vat = Math.round(taxable * 0.12 * 100) / 100;
+                const total = Math.round((subtotal - voucherAmt + delivery + vat) * 100) / 100;
+                const voucher = `<div class="text-sm text-green-700">Voucher: ${escapeHtml(r.voucherCode || '')} ${voucherAmt > 0 ? `(${formatCurrency(voucherAmt)})` : '(N/A)'}</div>`;
 
                 return `
                     <div class="max-w-full">
@@ -1526,9 +1528,10 @@
                                 <h1 class="text-xl font-bold">Fundamental Apparel</h1>
                                 <div class="text-sm text-gray-600">Unit 4B, Creative Building • Makati City</div>
                             </div>
-                            <div class="text-right text-sm">
-                                <div><strong>OR No.:</strong> ${escapeHtml(String(r._id||r.tin||''))}</div>
+                                <div class="text-right text-sm">
+                                <div><strong>OR No.:</strong> ${escapeHtml(String(r._id || ''))}</div>
                                 <div><strong>Date:</strong> ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</div>
+                                <div><strong>TIN:</strong> ${escapeHtml((r.tin && String(r.tin).trim()) ? r.tin : `AUTOGEN-${(r._id||'').toString().slice(-8).toUpperCase()}`)}</div>
                             </div>
                         </div>
 
@@ -1561,12 +1564,15 @@
                             </table>
                         </div>
 
-                        <div class="mt-4 text-right">
+                        <div class="mt-4">
                             ${voucher}
-                            <div class="text-sm">Subtotal: <strong>${formatCurrency(subtotal)}</strong></div>
-                            <div class="text-sm">VAT (12%): <strong>${formatCurrency(vat)}</strong></div>
-                            <div class="text-sm">Delivery: <strong>${formatCurrency(delivery)}</strong></div>
-                            <div class="text-lg mt-2">TOTAL: <strong class="text-indigo-700">${formatCurrency(total)}</strong></div>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex justify-between"><div>Subtotal</div><div class="font-medium">${formatCurrency(subtotal)}</div></div>
+                                <div class="flex justify-between"><div>Delivery</div><div class="font-medium">${formatCurrency(delivery)}</div></div>
+                                <div class="flex justify-between"><div>Voucher</div><div class="font-medium">${voucherAmt > 0 ? `- ${formatCurrency(voucherAmt)}` : 'N/A'}</div></div>
+                                <div class="flex justify-between"><div>VAT (12%)</div><div class="font-medium">${formatCurrency(vat)}</div></div>
+                                <div class="flex justify-between text-lg pt-2"><div>TOTAL</div><div class="font-bold text-indigo-700">${formatCurrency(total)}</div></div>
+                            </div>
                         </div>
                     </div>
                 `;
