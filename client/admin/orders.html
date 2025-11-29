@@ -841,11 +841,13 @@
 
   <!-- Payment Details Modal removed: payment info now shown directly in Order Details modal -->
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/receipt-builder.js"></script>
   <script>
     const API = 'https://fundamental-apparel-backend.onrender.com'; // O ang ngrok URL mo
 
     function peso(n) { return '₱' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function shortId(id) { return id ? id.slice(0, 8) : '-'; }
+    
 
     // message helper (replaces alert())
     const messageEl = document.getElementById('message-container');
@@ -1172,7 +1174,11 @@
         doc.setFontSize(10); doc.setFont(undefined, 'bold');
         doc.text('Billed To:', margin, y);
         doc.setFont(undefined, 'normal'); doc.setFontSize(9);
-        if (r.customerName) doc.text(r.customerName, margin, y + 14);
+        const displayCustomer = (r.customerName && String(r.customerName).trim()) ? r.customerName
+          : (r.customerEmail && String(r.customerEmail).trim()) ? r.customerEmail
+          : (r.user && (r.user.name || r.user.email)) ? (r.user.name || r.user.email)
+          : (r.email ? r.email : '');
+        if (displayCustomer) doc.text(String(displayCustomer), margin, y + 14);
         if (r.customerAddress) doc.text(String(r.customerAddress), margin, y + 28);
 
         // Items table
@@ -1632,29 +1638,12 @@
             total: Number(order.totalPrice || 0)
           };
         } catch(e) { window.currentAdminReceipt = null; }
-        // Items table
-        els.receiptItems.innerHTML = (order.orderItems || []).map(it => `
-          <tr>
-            <td class="px-2 py-1">${it.name || 'Item'}</td>
-            <td class="px-2 py-1">${it.size || ''}</td>
-            <td class="px-2 py-1">${it.quantity || 0}</td>
-            <td class="px-2 py-1 text-right">${peso((it.price || 0) * (it.quantity || 0))}</td>
-          </tr>
-        `).join('');
-        // Compute amounts consistent with Checkout logic:
-        // taxable = max(subtotal - voucherApplied, 0)
-        // vat = 12% * taxable (rounded to 2 decimals)
-        // total = subtotal - voucher + delivery + vat
-        const voucherVal = Number(order.voucherDiscount ?? order.voucherAmount ?? order.voucher ?? 0) || 0;
-        const deliveryVal = Number(order.deliveryFee || 0) || 0;
-        const subtotalVal = Number((order.orderItems || []).reduce((s, i) => s + (Number(i.price || 0) * Number(i.quantity || 0)), 0)) || 0;
-        const taxable = Math.max(subtotalVal - voucherVal, 0);
-        const vatComputed = Math.round((taxable * 0.12) * 100) / 100;
-        const totalComputed = Math.round((subtotalVal - voucherVal + deliveryVal + vatComputed) * 100) / 100;
-
-        els.receiptDelivery.textContent = peso(deliveryVal);
-        if (els.receiptVat) els.receiptVat.textContent = peso(vatComputed);
-        els.receiptTotal.textContent = peso(totalComputed || order.totalPrice || 0);
+        // Render full WYSIWYG receipt HTML so admin view/download matches user receipt
+        try {
+          els.receiptWrap.innerHTML = buildReceiptHtml(window.currentAdminReceipt || {});
+        } catch (e) {
+          console.warn('Failed to render admin receipt HTML', e);
+        }
         // Optional gateway receipt URL
         if (order.receiptUrl) {
           els.receiptOpenUrl.href = order.receiptUrl;
@@ -1687,38 +1676,24 @@
               } catch (ee) { /* ignore */ }
             }
             if (!rec) return;
-            // Overwrite receipt display with stored receipt data
-            els.receiptReference.textContent = rec.tin || (order.paymentIntentId || '-');
-            els.receiptAmount.textContent = peso(rec.total || 0);
-            els.receiptDate.textContent = rec.createdAt ? new Date(rec.createdAt).toLocaleString() : (paidAt ? new Date(paidAt).toLocaleString() : '-');
-            els.receiptMethod.textContent = order.paymentMethod || rec.meta?.paymentMethod || '-';
-            els.receiptShortId.textContent = shortId(order._id);
-            els.receiptCustomer.textContent = order.user?.name || '-';
-            els.receiptStatus.textContent = 'Payment received';
-            els.receiptItems.innerHTML = (rec.items || []).map(it => `\n          <tr>\n            <td class="px-2 py-1">${it.name || 'Item'}</td>\n            <td class="px-2 py-1">${it.size || ''}</td>\n            <td class="px-2 py-1">${it.quantity || 0}</td>\n            <td class="px-2 py-1 text-right">${peso((it.price || 0) * (it.quantity || 1))}</td>\n          </tr>\n        `).join('');
-            // Use stored receipt values when available but ensure fallback computation
-            const recDelivery = Number(rec.deliveryFee || 0) || 0;
-            // If stored receipt provides a positive vat, use it; otherwise compute VAT similarly
-            const recVat = (rec.vat != null && Number(rec.vat) > 0) ? Number(rec.vat) : null;
-            const recSubtotal = Number((rec.items || []).reduce((s, i) => s + (Number(i.price || 0) * Number(i.quantity || 0)), 0)) || 0;
-            const recVoucher = Number(rec.voucherDiscount ?? rec.voucherAmount ?? 0) || 0;
-            const recTaxable = Math.max(recSubtotal - recVoucher, 0);
-            const recVatComputed = Math.round((recVat !== null ? recVat : (recTaxable * 0.12)) * 100) / 100;
-            const recTotal = Math.round((recSubtotal - recVoucher + recDelivery + recVatComputed) * 100) / 100;
-
-            els.receiptDelivery.textContent = peso(recDelivery);
-            if (els.receiptVat) els.receiptVat.textContent = peso(recVatComputed);
-            els.receiptPreparedby && (els.receiptPreparedby.textContent = rec.preparedByName || rec.preparedBy || '-');
-            els.receiptTotal.textContent = peso(rec.total || recTotal || 0);
-            // Keep authoritative receipt object for PDF generation
-            window.currentAdminReceipt = rec;
-            // Reveal the receipt section
-            els.receiptWrap.classList.remove('hidden');
-            // If receipt meta contains external receipt URL, show Open link
-            if (rec.meta && rec.meta.gatewayReceiptUrl) {
-              els.receiptOpenUrl.href = rec.meta.gatewayReceiptUrl;
-              els.receiptOpenUrl.classList.remove('hidden');
-            }
+            // Overwrite admin receipt with stored receipt HTML (authoritative)
+            try {
+              window.currentAdminReceipt = rec;
+              els.receiptWrap.innerHTML = buildReceiptHtml(rec);
+              els.receiptWrap.classList.remove('hidden');
+              if (rec.meta && rec.meta.gatewayReceiptUrl) {
+                let openEl = els.receiptWrap.querySelector('#receipt-open-url');
+                if (!openEl) {
+                  const topBar = document.createElement('div');
+                  topBar.className = 'mt-2';
+                  topBar.innerHTML = `<a id="receipt-open-url" href="${rec.meta.gatewayReceiptUrl}" target="_blank" class="text-sm text-indigo-600">Open gateway receipt</a>`;
+                  els.receiptWrap.prepend(topBar);
+                } else {
+                  openEl.href = rec.meta.gatewayReceiptUrl;
+                  openEl.classList.remove('hidden');
+                }
+              }
+            } catch (e) { console.warn('Failed to apply stored receipt into admin UI', e); }
           } catch (e) {
             console.warn('Failed to load stored receipt for admin view', e);
           }
@@ -2938,7 +2913,14 @@
               if (!el) return alert('No receipt content available to print.');
               const safeId = (window.currentAdminReceipt && (window.currentAdminReceipt._id || window.currentAdminReceipt.tin)) ? String(window.currentAdminReceipt._id || window.currentAdminReceipt.tin).slice(-12) : 'receipt';
               const fileName = `Invoice-${safeId}.pdf`;
-              const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' } };
+              const opt = {
+                margin: 8,
+                filename: fileName,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: Math.min(2, (window.devicePixelRatio || 1) * 1.5), useCORS: true, allowTaint: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'] }
+              };
               html2pdf().set(opt).from(el).save();
             } catch (err) { console.error('PDF generation failed', err); alert('Download failed. Please try Print from your browser or open the receipt in a new tab to save as PDF.'); }
           };
@@ -3230,7 +3212,14 @@
               try {
                 const el = document.getElementById('custom-payment-receipt-content');
                 const fileName = `custom-receipt-${(order._id||'').slice(-8)}.pdf`;
-                const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'pt', format: 'a4', orientation: 'landscape' } };
+                const opt = {
+                  margin: 8,
+                  filename: fileName,
+                  image: { type: 'jpeg', quality: 0.98 },
+                  html2canvas: { scale: Math.min(2, (window.devicePixelRatio || 1) * 1.5), useCORS: true, allowTaint: true },
+                  jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+                  pagebreak: { mode: ['css', 'legacy'] }
+                };
                 html2pdf().set(opt).from(el).save();
               } catch (err) { console.warn('PDF generation failed', err); alert('Download failed. Please try Print in the modal or open in a new window to print-to-PDF.'); }
             };

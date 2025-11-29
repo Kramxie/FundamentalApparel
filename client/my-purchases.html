@@ -6,6 +6,7 @@
   <title>My Purchases - Fundamental</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="/js/receipt-builder.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body class="bg-gray-100">
@@ -168,7 +169,11 @@
       doc.setFontSize(10); doc.setFont(undefined, 'bold');
       doc.text('Billed To:', margin, y);
       doc.setFont(undefined, 'normal'); doc.setFontSize(9);
-      if (r.customerName) doc.text(r.customerName, margin, y + 14);
+      const displayCustomer = (r.customerName && String(r.customerName).trim()) ? r.customerName
+        : (r.customerEmail && String(r.customerEmail).trim()) ? r.customerEmail
+        : (r.user && (r.user.name || r.user.email)) ? (r.user.name || r.user.email)
+        : (r.email ? r.email : '');
+      if (displayCustomer) doc.text(String(displayCustomer), margin, y + 14);
       if (r.customerAddress) doc.text(String(r.customerAddress), margin, y + 28);
 
       // Items table

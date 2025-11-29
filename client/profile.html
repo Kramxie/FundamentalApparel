@@ -491,6 +491,7 @@
         </div>
     </div>
     
+            <script src="/js/receipt-builder.js"></script>
             <script>
                 const API = 'https://fundamental-apparel-backend.onrender.com';
 
@@ -1392,13 +1393,17 @@
                 doc.text(`Date: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}`, infoX + 12, infoY + 34);
                 doc.text(`TIN: ${displayTin}`, infoX + 12, infoY + 50);
 
-                // Billed To (left)
-                y = 140;
-                doc.setFontSize(10); doc.setFont(undefined, 'bold');
-                doc.text('Billed To:', margin, y);
-                doc.setFont(undefined, 'normal'); doc.setFontSize(9);
-                if (r.customerName) doc.text(r.customerName, margin, y + 14);
-                if (r.customerAddress) doc.text(String(r.customerAddress), margin, y + 28);
+                                // Billed To (left)
+                                y = 140;
+                                doc.setFontSize(10); doc.setFont(undefined, 'bold');
+                                doc.text('Billed To:', margin, y);
+                                doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+                                const displayCustomer = (r.customerName && String(r.customerName).trim()) ? r.customerName
+                                    : (r.customerEmail && String(r.customerEmail).trim()) ? r.customerEmail
+                                    : (r.user && (r.user.name || r.user.email)) ? (r.user.name || r.user.email)
+                                    : (r.email ? r.email : '');
+                                if (displayCustomer) doc.text(String(displayCustomer), margin, y + 14);
+                                if (r.customerAddress) doc.text(String(r.customerAddress), margin, y + 28);
 
                 // Items table
                 y += 60;
@@ -1504,85 +1509,8 @@
                 });
             }
             
-            // Show simple HTML receipt in modal
-            function formatCurrency(n){ return '₱' + Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2}); }
-            function buildReceiptHtml(r){
-                const itemsRows = (r.items||[]).map(it => `
-                    <tr class="border-t">
-                        <td class="py-2">${escapeHtml(it.name)}</td>
-                        <td class="py-2 text-center">${escapeHtml(it.size||'-')}</td>
-                        <td class="py-2 text-center">${Number(it.quantity||1)}</td>
-                        <td class="py-2 text-right">${formatCurrency((Number(it.price)||0))}</td>
-                        <td class="py-2 text-right">${formatCurrency((Number(it.price)||0)*(Number(it.quantity)||1))}</td>
-                    </tr>
-                `).join('');
-                const subtotal = Number(r.subtotal || 0) || (r.items||[]).reduce((s,it)=>s+((Number(it.price)||0)*(Number(it.quantity)||1)),0);
-                const delivery = Number(r.deliveryFee||0);
-                const voucherAmt = Math.round((Number(r.voucherDiscount || 0) || 0) * 100) / 100;
-                // Checkout VAT logic: vat applies to taxable subtotal (subtotal - voucher); delivery is not taxable
-                const taxable = Math.max(subtotal - voucherAmt, 0);
-                const vat = Math.round(taxable * 0.12 * 100) / 100;
-                const total = Math.round((subtotal - voucherAmt + delivery + vat) * 100) / 100;
-                const voucher = `<div class="text-sm text-green-700">Voucher: ${escapeHtml(r.voucherCode || '')} ${voucherAmt > 0 ? `(${formatCurrency(voucherAmt)})` : '(N/A)'}</div>`;
-
-                return `
-                    <div class="max-w-full">
-                        <div class="text-center mb-2">
-                            <h1 class="text-xl font-bold">FUNDAMENTAL APPAREL</h1>
-                            <div class="text-sm text-gray-600">Unit 4B, Creative Building • Makati City</div>
-                        </div>
-                        <div class="flex justify-center mb-4">
-                            <div class="text-sm text-left border rounded px-3 py-2 bg-gray-50" style="min-width:260px;">
-                                <div><strong>OR No.:</strong> ${escapeHtml(String(r._id || ''))}</div>
-                                <div><strong>Date:</strong> ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</div>
-                                <div><strong>TIN:</strong> ${escapeHtml((r.tin && String(r.tin).trim()) ? r.tin : `AUTOGEN-${(r._id||'').toString().slice(-8).toUpperCase()}`)}</div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div class="text-center">
-                                <div class="text-sm text-gray-600">Prepared by</div>
-                                <div class="font-medium">${escapeHtml(r.preparedByName||r.preparedBy||'Fundamental Apparel')}</div>
-                            </div>
-                            <div>
-                                <div class="text-sm text-gray-600">Billed to</div>
-                                <div class="font-medium">${escapeHtml(r.customerName||'Customer')}</div>
-                                ${r.customerAddress? `<div class="text-sm text-gray-600">${escapeHtml(r.customerAddress)}</div>` : ''}
-                            </div>
-                        </div>
-
-                        <div class="overflow-auto">
-                            <table class="w-full text-sm border-collapse">
-                                <thead class="bg-gray-100">
-                                    <tr>
-                                        <th class="text-left p-2">Product</th>
-                                        <th class="text-center p-2">Size</th>
-                                        <th class="text-center p-2">QTY</th>
-                                        <th class="text-right p-2">Unit</th>
-                                        <th class="text-right p-2">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${itemsRows}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="mt-4">
-                            ${voucher}
-                            <div class="space-y-1 text-sm">
-                                <div class="flex justify-between"><div>Subtotal</div><div class="font-medium">${formatCurrency(subtotal)}</div></div>
-                                <div class="flex justify-between"><div>Delivery</div><div class="font-medium">${formatCurrency(delivery)}</div></div>
-                                <div class="flex justify-between"><div>Voucher</div><div class="font-medium">${voucherAmt > 0 ? `- ${formatCurrency(voucherAmt)}` : 'N/A'}</div></div>
-                                <div class="flex justify-between"><div>VAT (12%)</div><div class="font-medium">${formatCurrency(vat)}</div></div>
-                                <div class="flex justify-between text-lg pt-2"><div>TOTAL</div><div class="font-bold text-indigo-700">${formatCurrency(total)}</div></div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            function escapeHtml(s){ if (s === null || typeof s === 'undefined') return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c])); }
+            
+                
 
             function showReceiptModal(r){
                 const modal = document.getElementById('receipt-modal');
@@ -1603,7 +1531,14 @@
                             const el = document.getElementById('receipt-modal-body');
                             const safeId = (r && (r._id || r.tin)) ? String(r._id || r.tin).slice(-12) : 'receipt';
                             const fileName = `Invoice-${safeId}.pdf`;
-                            const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' } };
+                            const opt = {
+                                margin: 8,
+                                filename: fileName,
+                                image: { type: 'jpeg', quality: 0.98 },
+                                html2canvas: { scale: Math.min(2, (window.devicePixelRatio || 1) * 1.5), useCORS: true, allowTaint: true },
+                                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                                pagebreak: { mode: ['css', 'legacy'] }
+                            };
                             html2pdf().set(opt).from(el).save().then(() => {
                                 dl.disabled = false; dl.textContent = 'Download PDF';
                             }).catch((err) => { console.error('html2pdf error', err); dl.disabled = false; dl.textContent = 'Download PDF'; alert('Failed to generate PDF'); });
