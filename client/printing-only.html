@@ -283,17 +283,29 @@
       const sizes = getAvailableSizes();
       const sel = document.getElementById('garmentSize');
       if(sel){
+        // preserve previous selection if possible
+        const prev = sel.value;
         sel.innerHTML = buildSizeOptionsHTML(sizes);
+        if (prev && Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
         sel.disabled = sizes.length === 0;
       }
-      // regenerate team rows so their size selects reflect availability
+      // Update team member size selects WITHOUT wiping existing selections unless qty changed
       if(teamMode){
-        genTeamRows();
-        // populate each team row size select
+        const desiredQty = Math.max(1, parseInt(els.quantity.value || '1', 10));
         const rows = els.teamContainer.querySelectorAll('.grid');
-        rows.forEach(r=>{
+        if (rows.length !== desiredQty) {
+          // regenerate rows to match quantity, then populate selects
+          genTeamRows();
+        }
+        // populate each team row size select and preserve values
+        const rowsAfter = els.teamContainer.querySelectorAll('.grid');
+        rowsAfter.forEach(r=>{
           const s = r.querySelector('.size');
-          if(s){ s.innerHTML = buildSizeOptionsHTML(sizes); s.disabled = sizes.length === 0; }
+          if(!s) return;
+          const prevVal = s.value;
+          s.innerHTML = buildSizeOptionsHTML(sizes);
+          if (prevVal && Array.from(s.options).some(o => o.value === prevVal)) s.value = prevVal;
+          s.disabled = sizes.length === 0;
         });
       }
     }
