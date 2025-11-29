@@ -878,7 +878,8 @@
                     const results = [];
                     for (const o of pendings) {
                         try {
-                            const res = await apiRequest(`/api/payments/sync/${encodeURIComponent(o.paymentIntentId)}`);
+                            // Use order._id and POST to the server sync route (server expects POST /api/payments/sync/:orderId)
+                            const res = await apiRequest(`/api/payments/sync/${encodeURIComponent(o._id)}`, { method: 'POST' });
                             results.push(res);
                         } catch (e) {
                             // ignore per-order errors
