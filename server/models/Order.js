@@ -46,6 +46,9 @@ const orderSchema = new mongoose.Schema({
     deliveryFee: { type: Number, default: 0 },
     comment: { type: String },
 
+    // VAT amount stored on order (if applicable)
+    vat: { type: Number, default: 0 },
+
     // Payment (no gateway integration). A receipt image will be uploaded by the buyer
     paymentMethod: {
         type: String,
@@ -92,6 +95,10 @@ const orderSchema = new mongoose.Schema({
     // Optional logistics info
     shippingService: { type: String },
     trackingCode: { type: String },
+
+    // Admin who accepted the order (prepared by)
+    acceptedBy: { type: mongoose.Schema.ObjectId, ref: 'User' },
+    acceptedByName: { type: String },
 
     totalPrice: { type: Number, required: true, default: 0.0 },
     // Link to generated receipt (if any)

@@ -19,6 +19,8 @@ const receiptSchema = new mongoose.Schema({
   total: { type: Number, default: 0 },
   logoUrl: { type: String },
   meta: { type: mongoose.Schema.Types.Mixed },
+  preparedBy: { type: mongoose.Schema.ObjectId, ref: 'User' },
+  preparedByName: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 

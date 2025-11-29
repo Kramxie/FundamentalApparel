@@ -17,6 +17,8 @@
       body * { visibility: hidden; }
       #receipt-wrap, #receipt-wrap * { visibility: visible; }
       #receipt-wrap { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+      /* Hide interactive controls when printing */
+      .no-print { display: none !important; }
     }
 
     /* --- FIX PARA SA @APPLY WARNING --- */
@@ -288,8 +290,8 @@
                 <p id="receipt-reference" class="font-mono font-semibold text-gray-800">-</p>
               </div>
               <div class="flex items-center gap-2">
-                <button id="receipt-copy-ref" class="px-2 py-1 text-xs border rounded hover:bg-gray-100" title="Copy reference"><i class="fas fa-copy mr-1"></i>Copy</button>
-                <button id="receipt-print" class="px-2 py-1 text-xs border rounded hover:bg-gray-100" title="Print receipt"><i class="fas fa-print mr-1"></i>Print</button>
+                <button id="receipt-copy-ref" class="no-print px-2 py-1 text-xs border rounded hover:bg-gray-100" title="Copy reference"><i class="fas fa-copy mr-1"></i>Copy</button>
+                <button id="receipt-print" class="no-print px-2 py-1 text-xs border rounded hover:bg-gray-100" title="Print receipt"><i class="fas fa-print mr-1"></i>Print</button>
                 <a id="receipt-open-url" href="#" target="_blank" class="hidden px-2 py-1 text-xs border rounded hover:bg-gray-100" title="Open gateway receipt"><i class="fas fa-external-link-alt mr-1"></i>Open</a>
               </div>
             </div>
@@ -320,6 +322,7 @@
                   <thead class="bg-gray-50">
                     <tr>
                       <th class="text-left px-2 py-2">Item name</th>
+                      <th class="text-left px-2 py-2">Size</th>
                       <th class="text-left px-2 py-2">Qty</th>
                       <th class="text-right px-2 py-2">Price</th>
                     </tr>
@@ -329,6 +332,10 @@
                 <div class="mt-3 text-sm">
                   <div class="flex justify-between"><span>Delivery Fee</span><span id="receipt-delivery">₱0.00</span></div>
                   <div class="flex justify-between font-semibold"><span>Total</span><span id="receipt-total">₱0.00</span></div>
+                </div>
+                <div class="mt-3 text-sm">
+                  <div class="flex justify-between"><span>VAT</span><span id="receipt-vat">₱0.00</span></div>
+                  <div class="flex justify-between"><span>Prepared by</span><span id="receipt-preparedby">-</span></div>
                 </div>
               </div>
             </div>
@@ -1012,6 +1019,8 @@
         receiptStatus: document.getElementById('receipt-status'),
         receiptItems: document.getElementById('receipt-items'),
         receiptDelivery: document.getElementById('receipt-delivery'),
+        receiptVat: document.getElementById('receipt-vat'),
+        receiptPreparedby: document.getElementById('receipt-preparedby'),
         receiptTotal: document.getElementById('receipt-total'),
         receiptCopyRef: document.getElementById('receipt-copy-ref'),
         receiptPrint: document.getElementById('receipt-print'),
@@ -1458,11 +1467,13 @@
         els.receiptItems.innerHTML = (order.orderItems || []).map(it => `
           <tr>
             <td class="px-2 py-1">${it.name || 'Item'}</td>
+            <td class="px-2 py-1">${it.size || ''}</td>
             <td class="px-2 py-1">${it.quantity || 0}</td>
             <td class="px-2 py-1 text-right">${peso((it.price || 0) * (it.quantity || 0))}</td>
           </tr>
         `).join('');
         els.receiptDelivery.textContent = peso(order.deliveryFee || 0);
+        els.receiptVat && (els.receiptVat.textContent = peso(order.vat || order.vatAmount || 0));
         els.receiptTotal.textContent = peso(order.totalPrice || 0);
         // Optional gateway receipt URL
         if (order.receiptUrl) {
@@ -1504,8 +1515,10 @@
             els.receiptShortId.textContent = shortId(order._id);
             els.receiptCustomer.textContent = order.user?.name || '-';
             els.receiptStatus.textContent = 'Payment received';
-            els.receiptItems.innerHTML = (rec.items || []).map(it => `\n          <tr>\n            <td class="px-2 py-1">${it.name || 'Item'}</td>\n            <td class="px-2 py-1">${it.quantity || 0}</td>\n            <td class="px-2 py-1 text-right">${peso((it.price || 0))}</td>\n          </tr>\n        `).join('');
+            els.receiptItems.innerHTML = (rec.items || []).map(it => `\n          <tr>\n            <td class="px-2 py-1">${it.name || 'Item'}</td>\n            <td class="px-2 py-1">${it.size || ''}</td>\n            <td class="px-2 py-1">${it.quantity || 0}</td>\n            <td class="px-2 py-1 text-right">${peso((it.price || 0) * (it.quantity || 1))}</td>\n          </tr>\n        `).join('');
             els.receiptDelivery.textContent = peso(rec.deliveryFee || 0);
+            els.receiptVat && (els.receiptVat.textContent = peso(rec.vat || 0));
+            els.receiptPreparedby && (els.receiptPreparedby.textContent = rec.preparedByName || rec.preparedBy || '-');
             els.receiptTotal.textContent = peso(rec.total || 0);
             // Reveal the receipt section
             els.receiptWrap.classList.remove('hidden');

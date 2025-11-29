@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -282,7 +283,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <div id="addresses-content" class="hidden bg-white p-6 md:p-8 rounded-lg shadow-md">
                             <h2 class="text-2xl font-bold text-gray-800 mb-6">My Addresses</h2>
                             <div id="address-message-container" class="hidden mb-4"></div>
@@ -404,14 +404,25 @@
     </div>
 
     <div id="details-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg shadow-lg max-w-md w-full">
-            <div class="flex justify-between items-center p-4 border-b">
-                <h3 class="text-lg font-semibold">Cancellation Details</h3>
+        <div class="bg-white rounded-lg shadow-lg max-w-lg w-full">
+            <div class="flex justify-between items-start p-4 border-b flex-col sm:flex-row">
+                <div>
+                    <h3 id="details-modal-title" class="text-lg font-semibold text-red-700">Cancellation Details</h3>
+                    <div id="details-modal-sub" class="text-sm text-gray-600 mt-1">&nbsp;</div>
+                </div>
                 <button id="details-modal-close" class="text-gray-500">&times;</button>
             </div>
-            <div class="p-4 space-y-2">
-                <p class="text-sm"><strong>Cancelled By:</strong> <span id="details-cancelled-by"></span></p>
-                <p class="text-sm"><strong>Reason:</strong> <span id="details-reason"></span></p>
+            <div class="p-4 space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="text-sm text-gray-700"><strong>Requested by</strong><div id="details-cancelled-by" class="mt-1 font-medium">N/A</div></div>
+                    <div class="text-sm text-gray-700"><strong>Payment method</strong><div id="details-payment-method" class="mt-1 font-medium">—</div></div>
+                    <div class="text-sm text-gray-700"><strong>Order ID</strong><div id="details-order-id" class="mt-1 font-mono text-indigo-700">—</div></div>
+                    <div class="text-sm text-gray-700"><strong>Cancelled At</strong><div id="details-cancelled-at" class="mt-1">—</div></div>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-700"><strong>Reason</strong></p>
+                    <p id="details-reason" class="text-sm text-gray-600 mt-2">No reason provided.</p>
+                </div>
             </div>
             <div class="p-4 bg-gray-50 flex justify-end">
                 <button id="details-modal-ok" class="bg-indigo-600 text-white px-4 py-2 rounded">OK</button>
@@ -419,7 +430,7 @@
         </div>
     </div>
 
-    <!-- Feedback Modal -->
+    
     <div id="feedback-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-lg shadow-lg max-w-md w-full">
             <div class="flex justify-between items-center p-4 border-b">
@@ -459,72 +470,57 @@
             </div>
         </div>
     </div>
-
     
+            <script>
+                const API = 'https://fundamental-apparel-backend.onrender.com';
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const API = 'https://fundamental-apparel-backend.onrender.com';
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = 'login.html';
-                return;
-            }
+                
+            document.addEventListener('DOMContentLoaded', async () => {
 
-            // --- Lahat ng Selectors ---
-            const profileContainer = document.getElementById('profile-container');
-            const loadingContainer = document.getElementById('loading-container');
-            const sidebarAvatar = document.getElementById('sidebar-avatar');
-            const sidebarAvatarImg = document.getElementById('sidebar-avatar-img');
-            const sidebarInitials = document.getElementById('sidebar-initials');
-            const userNameDisplay = document.getElementById('user-name-display');
-            const userEmailDisplay = document.getElementById('user-email-display');
-            const logoutBtn = document.getElementById('logout-btn');
-            const sidebarNav = document.getElementById('sidebar-nav');
-            const profileForm = document.getElementById('profile-form');
-            const profileMessageContainer = document.getElementById('profile-message-container');
-            const avatarPreview = document.getElementById('avatar-preview');
-            const avatarInput = document.getElementById('avatar-input');
-            const avatarUploadBtn = document.getElementById('avatar-upload-btn');
-            const avatarMessageContainer = document.getElementById('avatar-message-container');
-            let selectedAvatarFile = null;
-            const purchasesTabs = document.getElementById('purchases-tabs');
-            const purchasesList = document.getElementById('purchases-list');
-            let currentCancelOrderId = null;
-            let purchasesCache = [];
-            let isPurchasesSyncing = false;
-            let currentUserId = null;
-            const cancelModal = document.getElementById('cancel-modal');
-            const cancelModalClose = document.getElementById('cancel-modal-close');
-            const cancelModalConfirm = document.getElementById('cancel-modal-confirm');
-            const cancelReasonSelect = document.getElementById('cancel-reason');
-            const cancelReasonOther = document.getElementById('cancel-reason-other');
-            const cancelError = document.getElementById('cancel-error');
-            const detailsModal = document.getElementById('details-modal');
-            const detailsModalClose = document.getElementById('details-modal-close');
-            const detailsModalOk = document.getElementById('details-modal-ok');
-            const detailsCancelledBy = document.getElementById('details-cancelled-by');
-            const detailsReason = document.getElementById('details-reason');
-            const addressesList = document.getElementById('addresses-list');
-            const addressMessageContainer = document.getElementById('address-message-container');
-            const addAddressBtn = document.getElementById('add-address-btn');
-            const addressForm = document.getElementById('address-form');
-            const cancelAddressBtn = document.getElementById('cancel-address-btn');
-            const vouchersList = document.getElementById('vouchers-list');
+                // Basic app constants and element bindings
+                
+                const token = localStorage.getItem('token');
+                const loadingContainer = document.getElementById('loading-container');
+                const profileContainer = document.getElementById('profile-container');
+                const profileForm = document.getElementById('profile-form');
+                const profileMessageContainer = document.getElementById('profile-message-container');
+                const avatarInput = document.getElementById('avatar-input');
+                const avatarUploadBtn = document.getElementById('avatar-upload-btn');
+                const avatarPreview = document.getElementById('avatar-preview');
+                const avatarMessageContainer = document.getElementById('avatar-message-container');
+                let selectedAvatarFile = null;
+                const sidebarAvatarImg = document.getElementById('sidebar-avatar-img');
+                const sidebarInitials = document.getElementById('sidebar-initials');
+                const userNameDisplay = document.getElementById('user-name-display');
+                const userEmailDisplay = document.getElementById('user-email-display');
+                const sidebarNav = document.getElementById('sidebar-nav');
+                const logoutBtn = document.getElementById('logout-btn');
 
-            // Custom orders UI removed; My Quotes page is canonical.
+                // Purchases / addresses state + elements
+                const purchasesTabs = document.getElementById('purchases-tabs');
+                const purchasesList = document.getElementById('purchases-list');
+                const addressesList = document.getElementById('addresses-list');
+                const addAddressBtn = document.getElementById('add-address-btn');
+                const cancelAddressBtn = document.getElementById('cancel-address-btn');
+                const addressForm = document.getElementById('address-form');
+                const cancelModal = document.getElementById('cancel-modal');
+                const cancelModalClose = document.getElementById('cancel-modal-close');
+                const cancelModalConfirm = document.getElementById('cancel-modal-confirm');
+                const cancelReasonSelect = document.getElementById('cancel-reason');
+                const cancelReasonOther = document.getElementById('cancel-reason-other');
+                const cancelError = document.getElementById('cancel-error');
+                const detailsModal = document.getElementById('details-modal');
+                const detailsModalClose = document.getElementById('details-modal-close');
+                const detailsModalOk = document.getElementById('details-modal-ok');
+                const detailsCancelledBy = document.getElementById('details-cancelled-by');
+                const detailsReason = document.getElementById('details-reason');
 
-            // --- API Helpers ---
-            const showMessage = (container, msg, type = 'success') => {
-                if (!container) return;
-                container.textContent = msg;
-                container.className = `p-3 rounded mb-4 ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
-                container.classList.remove('hidden');
-                setTimeout(() => container.classList.add('hidden'), 3500);
-            };
+                let purchasesCache = [];
+                let isPurchasesSyncing = false;
+                let currentUserId = null;
+                let currentCancelOrderId = null;
 
-            // --- NEW: Tracking URL Generator ---
-            function getTrackingUrl(courier, trackingCode) {
+                    function getTrackingUrl(courier, trackingCode) {
                 const courierUrls = {
                     'Lalamove': null, // Lalamove doesn't have public tracking URL
                     'J&T Express': `https://www.jtexpress.ph/track?billcode=${trackingCode}`,
@@ -539,7 +535,7 @@
                 return courierUrls[courier] || null;
             }
 
-            // --- NEW: Copy to Clipboard Function ---
+            
             function copyToClipboard(text, btn) {
                 navigator.clipboard.writeText(text).then(() => {
                     const originalText = btn.innerHTML;
@@ -572,7 +568,7 @@
                 return res.json();
             }
 
-            // --- Initial Data Fetch ---
+            
             async function fetchUserData() {
                 try {
                     const json = await apiRequest('/api/auth/me');
@@ -603,7 +599,7 @@
                 }
             }
 
-            // --- Populate UI ---
+            
             function populateUI(user) {
                 userNameDisplay.textContent = user.name || '';
                 userEmailDisplay.textContent = user.email || '';
@@ -639,7 +635,7 @@
                 }
             }
 
-            // --- Profile Form Logic ---
+           
             profileForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const data = {
@@ -669,7 +665,7 @@
                 }
             });
 
-            // --- Avatar Upload Logic ---
+       
             avatarInput.addEventListener('change', () => {
                 const file = avatarInput.files[0];
                 if (file) {
@@ -695,7 +691,7 @@
                 }
             });
 
-            // --- Address Logic ---
+            
             async function fetchAddresses() {
                 try {
                     const json = await apiRequest('/api/auth/me');
@@ -781,7 +777,7 @@
                 }
             });
 
-            // --- Purchases Logic ---
+            
             async function fetchPurchases(tabFilter = 'All') {
                 purchasesList.innerHTML = '<p class="text-gray-500 text-center py-8">Loading...</p>';
                 try {
@@ -836,7 +832,7 @@
                 }).join('');
             }
 
-            // For each order, check products for a review by current user. Attach first found review to order.userReview
+            
             async function annotateOrdersWithUserReviews(orders) {
                 if (!Array.isArray(orders) || orders.length === 0) return orders;
                 if (!currentUserId) return orders;
@@ -853,12 +849,14 @@
                         // ignore individual product errors
                     }
                 }));
-                // annotate orders
+                // annotate orders and attach lightweight product info to each orderItem
                 orders.forEach(o => {
                     o.userHasReview = false;
                     o.userReview = null;
                     for (const it of (o.orderItems || [])) {
                         const p = productMap[it.product];
+                        // attach product info (may be undefined)
+                        try { it.productInfo = p || null; } catch(e) { it.productInfo = null; }
                         if (!p || !Array.isArray(p.reviews)) continue;
                         const myReview = p.reviews.find(r => r.user && r.user.toString() === currentUserId.toString());
                         if (myReview) {
@@ -894,16 +892,34 @@
                     isPurchasesSyncing = false;
                 }
             }
+            // Helper: determine if an order item appears to have available stock
+            function itemHasStock(it) {
+                try {
+                    const p = it.productInfo || {};
+                    if (typeof p.quantity === 'number') return p.quantity > 0;
+                    if (typeof p.inventoryQuantity === 'number') return p.inventoryQuantity > 0;
+                    if (p && typeof p.available === 'boolean') return p.available === true;
+                    if (p && p.inventory && typeof p.inventory.quantity === 'number') return p.inventory.quantity > 0;
+                    // sizesInventory can be object or map of sizes
+                    if (p && p.sizesInventory && typeof p.sizesInventory === 'object') {
+                        const vals = Object.values(p.sizesInventory || {}).map(v => Number(v) || 0);
+                        return vals.reduce((s, v) => s + v, 0) > 0;
+                    }
+                } catch (e) {
+                    return false;
+                }
+                return false;
+            }
             function renderPurchases(orders, tabFilter) {
                 purchasesCache = Array.isArray(orders) ? orders : [];
-                // For the Completed tab, hide orders that the user already reviewed so they effectively move to 'All'
+               
                 if (tabFilter === 'Completed' && Array.isArray(purchasesCache)) {
                     orders = purchasesCache.filter(o => !o.userHasReview);
                 }
-                // For the All tab, show reviewed orders first (so recently-reviewed items appear at the top)
+                
                 if (tabFilter === 'All' && Array.isArray(orders)) {
                     orders.sort((a, b) => {
-                        // reviewed first
+                       
                         if (a.userHasReview && !b.userHasReview) return -1;
                         if (!a.userHasReview && b.userHasReview) return 1;
                         // If both reviewed, sort by review time (most recently reviewed first)
@@ -912,7 +928,7 @@
                             const rb = b.userReview && (b.userReview.reviewedAt || b.userReview.createdAt) ? new Date(b.userReview.reviewedAt || b.userReview.createdAt).getTime() : 0;
                             if (rb !== ra) return rb - ra;
                         }
-                        // otherwise, newest orders first by order createdAt
+                       
                         const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
                         const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
                         return tb - ta;
@@ -942,25 +958,32 @@
                     const showSpinner = isPurchasesSyncing && order.paymentStatus === 'Pending' && !!order.paymentIntentId;
                     let buttonsHtml = '';
                     if (order.status === 'Cancelled') {
-                        buttonsHtml = `<button data-order-id="${order._id}" data-reason="${order.cancellationReason}" data-by="${order.cancelledBy}" class="btn-details px-4 py-2 border rounded text-sm">Cancellation Details</button>`;
+                        // include metadata on the button so the details modal can show payment/order/cancel info
+                        const cancelledAt = order.cancelledAt || order.updatedAt || order.createdAt || '';
+                        const paymentMethod = order.paymentMethod || order.paymentType || '';
+                        buttonsHtml = `<button data-order-id="${order._id}" data-reason="${order.cancellationReason || ''}" data-by="${order.cancelledBy || ''}" data-cancelled-at="${cancelledAt}" data-payment-method="${paymentMethod}" class="btn-details px-4 py-2 border rounded text-sm">Cancellation Details</button>`;
                     } else if (order.paymentStatus === 'Pending') {
                         buttonsHtml = `<button data-order-id="${order._id}" class="btn-pay-now px-4 py-2 bg-indigo-600 text-white rounded text-sm">Pay Now</button>
                                      <button data-order-id="${order._id}" class="btn-cancel px-4 py-2 border rounded text-sm">Cancel Order</button>`;
                     } else if (order.status === 'Shipped') {
                         buttonsHtml = `<button data-order-id="${order._id}" class="btn-mark-received px-4 py-2 bg-green-600 text-white rounded text-sm">Mark Received</button>
-                                       <a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>`;
+                                       <a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>
+                                       <button data-order-id="${order._id}" class="btn-view-receipt px-4 py-2 border rounded text-sm">View Receipt</button>
+                                       <button data-order-id="${order._id}" class="btn-download-receipt px-4 py-2 bg-indigo-600 text-white rounded text-sm">Download Receipt</button>`;
                     } else if (order.status === 'Delivered' || order.status === 'Completed') {
                         const productIds = order.orderItems.map(it => it.product).filter(Boolean);
-                        // Refund window: allow refunds for 7 days after deliveredAt (if available)
+                        
                         const refundWindowMs = 7 * 24 * 60 * 60 * 1000; // 7 days
                         const deliveredAtMs = order.deliveredAt ? new Date(order.deliveredAt).getTime() : null;
                         const refundWindowExpired = deliveredAtMs ? (Date.now() > (deliveredAtMs + refundWindowMs)) : false;
                         const hasRefundRequest = !!order.hasRefundRequest;
 
-                        // Build base button (view details always available)
-                        buttonsHtml = `<a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>`;
+                        
+                        buttonsHtml = `<a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>
+                        <button data-order-id="${order._id}" class="btn-view-receipt px-4 py-2 border rounded text-sm">View Receipt</button>
+                        <button data-order-id="${order._id}" class="btn-download-receipt px-4 py-2 bg-indigo-600 text-white rounded text-sm">Download Receipt</button>`;
 
-                        // If user already left a review, show View Review; otherwise show Write Review
+                        
                         if (order.userHasReview) {
                             // Allow refund request even after review while within refund window and if no request exists
                             if (!refundWindowExpired && !hasRefundRequest) {
@@ -973,13 +996,23 @@
                         } else {
                             // user has not reviewed yet
                             if (!refundWindowExpired && !hasRefundRequest) {
-                                buttonsHtml += ` <button data-order-id="${order._id}" class="btn-request-refund px-4 py-2 border rounded text-sm">Request Refund</button>`;
+                                    buttonsHtml += ` <button data-order-id="${order._id}" class="btn-request-refund px-4 py-2 border rounded text-sm">Request Refund</button>`;
                             } else if (hasRefundRequest) {
                                 buttonsHtml += ` <button disabled class="px-4 py-2 border rounded text-sm text-gray-500">Refund Requested</button>`;
                             }
 
                             buttonsHtml += ` <button data-products="${productIds.join(',')}" class="btn-leave-feedback px-4 py-2 bg-indigo-600 text-white rounded text-sm">Write Review</button>`;
                         }
+                        // Show Buy Again button if at least one ordered item still shows available stock
+                        try {
+                            const anyAvailable = (order.orderItems || []).some(it => itemHasStock(it));
+                            if (anyAvailable) {
+                                // prefer linking to the first available product
+                                const firstAvailable = (order.orderItems || []).find(it => itemHasStock(it) && it.product);
+                                const pid = firstAvailable ? firstAvailable.product : (order.orderItems[0] ? order.orderItems[0].product : '');
+                                if (pid) buttonsHtml = `<a href="product.html?id=${encodeURIComponent(pid)}" class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded text-sm">Buy Again</a> ` + buttonsHtml;
+                            }
+                        } catch (e) { /* ignore stock-check errors */ }
                     } else {
                         buttonsHtml = `<a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>`;
                     }
@@ -1018,9 +1051,11 @@
                             ` : '<p class="text-sm text-yellow-600">⏳ Tracking number pending...</p>'}
                         </div>
                     </div>` : ''}
-                    <div class="p-4 bg-gray-50 flex flex-col sm:flex-row justify-end items-center gap-4">
-                        <div class="text-lg">Order Total: <span class="font-bold text-indigo-700">₱${order.totalPrice.toLocaleString()}</span></div>
-                        <div class="flex gap-3">${buttonsHtml}</div>
+                    <div class="p-4 bg-gray-50 flex items-center gap-4">
+                        <div class="flex-1 min-w-0 order-1 w-full sm:w-auto">
+                            <div class="flex gap-3 flex-nowrap items-center overflow-x-auto">${buttonsHtml}</div>
+                        </div>
+                        <div class="text-lg flex-shrink-0 order-2 ml-4">Order Total: <span class="font-bold text-indigo-700">₱${order.totalPrice.toLocaleString()}</span></div>
                     </div>
                 </div>`;
                 }).join('');
@@ -1071,8 +1106,24 @@
                 if (detailsBtn) {
                     const reason = detailsBtn.dataset.reason || "No reason provided.";
                     const by = detailsBtn.dataset.by || "N/A";
+                    const cancelledAt = detailsBtn.dataset.cancelledAt || '';
+                    const paymentMethod = detailsBtn.dataset.paymentMethod || '';
+                    const orderIdFor = detailsBtn.dataset.orderId || '';
+                    // Populate modal fields
+                    const titleEl = document.getElementById('details-modal-title');
+                    const subEl = document.getElementById('details-modal-sub');
+                    titleEl && (titleEl.textContent = 'Cancellation Completed');
+                    if (cancelledAt) {
+                        try { subEl.textContent = 'on ' + new Date(cancelledAt).toLocaleString(); }
+                        catch (e) { subEl.textContent = cancelledAt; }
+                    } else subEl.textContent = '';
                     detailsCancelledBy.textContent = by.charAt(0).toUpperCase() + by.slice(1);
                     detailsReason.textContent = reason;
+                    document.getElementById('details-payment-method').textContent = paymentMethod || '—';
+                    const orderIdEl = document.getElementById('details-order-id');
+                    if (orderIdEl) orderIdEl.textContent = orderIdFor ? orderIdFor : '—';
+                    const cancelledAtEl = document.getElementById('details-cancelled-at');
+                    if (cancelledAtEl) cancelledAtEl.textContent = cancelledAt ? (new Date(cancelledAt).toLocaleString()) : '—';
                     detailsModal.classList.remove('hidden'); detailsModal.classList.add('flex');
                 }
                 if (markReceivedBtn) {
@@ -1097,6 +1148,16 @@
                     const list = productIdsStr.split(',').filter(Boolean);
                     if (list.length > 0) openFeedbackModal(list);
                 }
+                const viewReceiptBtn = e.target.closest('.btn-view-receipt');
+                if (viewReceiptBtn) {
+                    const orderId = viewReceiptBtn.dataset.orderId;
+                    await fetchAndRenderReceiptForOrder(orderId, /*openInline=*/true);
+                }
+                const downloadReceiptBtn = e.target.closest('.btn-download-receipt');
+                if (downloadReceiptBtn) {
+                    const orderId = downloadReceiptBtn.dataset.orderId;
+                    try { window._DOWNLOAD_DIRECT = true; await fetchAndRenderReceiptForOrder(orderId); } finally { window._DOWNLOAD_DIRECT = undefined; }
+                }
                 const viewReviewBtn = e.target.closest('.btn-view-review');
                 if (viewReviewBtn) {
                     const orderId = viewReviewBtn.dataset.orderId;
@@ -1104,11 +1165,9 @@
                     if (order && order.userReview) {
                         openViewReviewModal(order.userReview);
                     } else {
-                        // try to fetch freshest data
                         try {
                             const refreshed = await apiRequest(`/api/orders/${encodeURIComponent(orderId)}`);
                             if (refreshed && refreshed.success && refreshed.data) {
-                                // try to find review for this user's products
                                 const annotated = await annotateOrdersWithUserReviews([refreshed.data]);
                                 const o = annotated[0];
                                 if (o && o.userReview) openViewReviewModal(o.userReview);
@@ -1149,7 +1208,6 @@
             detailsModalClose.addEventListener('click', () => detailsModal.classList.add('hidden'));
             detailsModalOk.addEventListener('click', () => detailsModal.classList.add('hidden'));
 
-            // --- Feedback Modal Logic ---
             const feedbackModal = document.getElementById('feedback-modal');
             const feedbackModalClose = document.getElementById('feedback-modal-close');
             const feedbackRating = document.getElementById('feedback-rating');
@@ -1182,7 +1240,7 @@
                 feedbackRating.value = '5';
                 feedbackComment.value = '';
                 feedbackError.classList.add('hidden');
-                // ensure write mode UI
+
                 const header = feedbackModal.querySelector('h3'); if (header) header.textContent = 'Product Feedback';
                 feedbackRating.disabled = false; feedbackComment.disabled = false; feedbackSubmit.style.display = '';
                 feedbackModal.classList.remove('hidden');
@@ -1191,7 +1249,7 @@
             
             function openViewReviewModal(reviewObj) {
                 if (!reviewObj) return;
-                // prepare modal for read-only view
+
                 const header = feedbackModal.querySelector('h3');
                 if (header) header.textContent = 'View Review';
                 feedbackProductSelectWrapper.classList.add('hidden');
@@ -1203,11 +1261,181 @@
                 feedbackModal.classList.remove('hidden');
                 feedbackModal.classList.add('flex');
             }
+
+            async function fetchAndRenderReceiptForOrder(orderId, openInline = false) {
+                try {
+
+                    try {
+                        const recJson = await apiRequest(`/api/receipts/by-order/${orderId}`);
+                        if (recJson && recJson.success && recJson.data) { await renderReceiptPDF(recJson.data, openInline); return; }
+                    } catch (e) { /* fallback */ }
+
+                    const ordRes = await apiRequest(`/api/orders/${encodeURIComponent(orderId)}`);
+                    if (!ordRes || !ordRes.success || !ordRes.data) throw new Error('Order not found');
+                    const order = ordRes.data;
+                    const items = (order.orderItems || []).map(it => ({ name: it.name || 'Item', size: it.size || '', quantity: it.quantity || 1, price: it.price || 0 }));
+                    const receipt = {
+                        _id: `synth-${order._id}`,
+                        tin: 'SYNTH-' + order._id.slice(-8).toUpperCase(),
+                        createdAt: order.createdAt,
+                        logoUrl: '/images/logo.png',
+                        items,
+                        subtotal: order.subtotal || order.totalPrice || items.reduce((s,i)=>s+(i.price*(i.quantity||1)),0),
+                        // do not force vat to 0 here; let renderer compute VAT if not present
+                        vat: (typeof order.vat === 'number') ? order.vat : undefined,
+                        deliveryFee: order.deliveryFee || 0,
+                        total: (typeof order.totalPrice === 'number') ? order.totalPrice : undefined,
+                        preparedByName: order.acceptedByName || '',
+                        customerName: (order.user && order.user.name) ? order.user.name : (order.shippingAddress ? (order.shippingAddress.contact || '') : '')
+                    };
+                    await renderReceiptPDF(receipt, openInline);
+                } catch (err) {
+                    console.error('Receipt fetch/render failed', err);
+                    alert(err.message || 'Failed to fetch or render receipt');
+                }
+            }
+
+            async function renderReceiptPDF(r, openInline = false) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+                let logoData = null;
+                try { logoData = await loadImageAsDataURL(r.logoUrl || '/images/logo.png'); } catch (e) { logoData = null; }
+
+                const margin = 36;
+                const pageW = doc.internal.pageSize.getWidth();
+                const pageH = doc.internal.pageSize.getHeight();
+                let y = margin;
+
+                // Dark header band
+                doc.setFillColor(17,24,39);
+                doc.rect(0, 0, pageW, 88, 'F');
+                if (logoData) doc.addImage(logoData, 'PNG', margin, 16, 56, 56);
+                doc.setTextColor(255,255,255);
+                doc.setFontSize(16);
+                doc.setFont(undefined, 'bold');
+                doc.text('Fundamental Apparel', margin + 72, 34);
+                doc.setFontSize(9); doc.setFont(undefined, 'normal');
+                doc.text('Unit 4B, Creative Building • Makati City', margin + 72, 50);
+                doc.text('hello@fundamental.ph • www.fundamental.ph', margin + 72, 64);
+                doc.setTextColor(0,0,0);
+
+                // Info box (OR/TIN/Date) top-right
+                const infoW = 220, infoX = pageW - margin - infoW, infoY = 18;
+                doc.setFillColor(255,255,255);
+                doc.roundedRect(infoX, infoY, infoW, 60, 6, 6, 'F');
+                doc.setTextColor(0,0,0); doc.setFontSize(9);
+                doc.text(`OR No.: ${r._id ? r._id.toString().slice(-10).toUpperCase() : (r.tin || '')}`, infoX + 12, infoY + 18);
+                doc.text(`Date: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}`, infoX + 12, infoY + 34);
+                doc.text(`TIN: ${r.tin || '—'}`, infoX + 12, infoY + 50);
+
+                // Billed To (left)
+                y = 110;
+                doc.setFontSize(10); doc.setFont(undefined, 'bold');
+                doc.text('Billed To:', margin, y);
+                doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+                if (r.customerName) doc.text(r.customerName, margin, y + 14);
+                if (r.customerAddress) doc.text(String(r.customerAddress), margin, y + 28);
+
+                // Items table
+                y += 60;
+                const tableX = margin; const tableW = pageW - margin*2 - 200; // leave right space for totals
+                const totalsAreaX = pageW - margin - 180;
+
+                doc.setFillColor(243,244,246); doc.rect(tableX, y, tableW, 22, 'F');
+                doc.setFontSize(9); doc.setFont(undefined, 'bold');
+                doc.text('Item', tableX + 6, y + 14);
+                doc.text('Size', tableX + 220, y + 14);
+                doc.text('Qty', tableX + 320, y + 14);
+                doc.text('Unit', tableX + 370, y + 14);
+                doc.text('Amount', tableX + tableW - 6, y + 14, { align: 'right' });
+                doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+                y += 28;
+
+                const items = r.items || [];
+                let computedSubtotal = Number(r.subtotal || 0);
+                if (!computedSubtotal) computedSubtotal = items.reduce((s,it)=>s+((Number(it.price)||0)*(Number(it.quantity)||1)),0);
+
+                // Improved item row rendering: fixed column positions, consistent line height and amount formatting
+                const descX = tableX + 6;
+                const descWidth = 220;
+                const sizeX = tableX + 240;
+                const qtyX = tableX + 320;
+                const unitX = tableX + 380;
+                const amountX = tableX + tableW - 6;
+                const lineHeight = 12;
+                for (const it of items) {
+                    const name = (it.name || it.description || '').toString().replace(/\s+/g,' ');
+                    const size = it.size || '-';
+                    const qty = Number(it.quantity || 1);
+                    const unit = Number(it.price || 0);
+                    const lineTotal = qty * unit;
+
+                    const descLines = doc.splitTextToSize(name, descWidth);
+                    // draw description lines
+                    for (let i = 0; i < descLines.length; i++) {
+                        doc.text(descLines[i], descX, y + (i * lineHeight));
+                    }
+                    // draw other columns aligned to first line
+                    doc.text(size.toString(), sizeX, y);
+                    doc.text(String(qty), qtyX, y);
+                    doc.text('₱' + unit.toLocaleString(undefined,{minimumFractionDigits:2}), unitX, y);
+                    doc.text('₱' + lineTotal.toLocaleString(undefined,{minimumFractionDigits:2}), amountX, y, { align: 'right' });
+
+                    // increment y by lines used
+                    y += Math.max(lineHeight, descLines.length * lineHeight) + 6;
+                    if (y > pageH - 160) { doc.addPage(); y = margin + 40; }
+                }
+
+                // Totals box on right
+                const totalsY = Math.max(y + 10, 380);
+                doc.setFillColor(249,250,251); doc.roundedRect(totalsAreaX, totalsY, 180, 100, 6, 6, 'F');
+                doc.setFontSize(9); doc.setTextColor(99,102,106);
+                const tx = totalsAreaX + 12; let ty = totalsY + 18;
+                doc.text('Subtotal', tx, ty); doc.text('₱' + Number(computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
+                // Compute VAT: use provided value if numeric, otherwise compute at 12%
+                let vat = (typeof r.vat === 'number') ? Number(r.vat) : Math.round((computedSubtotal * 0.12) * 100) / 100;
+                doc.text('VAT (12%)', tx, ty); doc.text('₱' + Number(vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
+                const deliveryFee = Number(r.deliveryFee || 0);
+                doc.text('Delivery', tx, ty); doc.text('₱' + Number(deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 18;
+                doc.setFont(undefined, 'bold'); doc.setFontSize(11);
+                const totalComputed = (typeof r.total === 'number') ? Number(r.total) : (computedSubtotal + vat + deliveryFee);
+                doc.text('TOTAL', tx, ty); doc.text('₱' + Number(totalComputed||computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' });
+                doc.setFont(undefined, 'normal'); doc.setTextColor(0,0,0);
+
+                // Prepared by
+                const prepared = r.preparedByName || r.preparedBy || '';
+                if (prepared) doc.setFontSize(9).text('Prepared by: ' + prepared, margin, totalsY + 120);
+
+                // Footer note
+                doc.setFontSize(9); doc.text('This is a computer-generated receipt.', margin, pageH - 60);
+
+                const safeName = `OR-${(r._id||r.tin||'receipt').toString().slice(-12)}.pdf`;
+                if (openInline) { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); window.open(url, '_blank'); return; }
+                if (typeof window._DOWNLOAD_DIRECT !== 'undefined' && window._DOWNLOAD_DIRECT === true) { doc.save(safeName); }
+                else { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); window.open(url, '_blank'); }
+            }
+
+            async function loadImageAsDataURL(src){
+                return new Promise((resolve, reject) => {
+                    try {
+                        const img = new Image();
+                        img.crossOrigin = 'Anonymous';
+                        img.onload = () => {
+                            const c = document.createElement('canvas');
+                            c.width = img.width; c.height = img.height;
+                            const ctx = c.getContext('2d');
+                            ctx.drawImage(img,0,0);
+                            resolve(c.toDataURL('image/png'));
+                        };
+                        img.onerror = (e)=> reject(new Error('Failed to load logo'));
+                        img.src = src;
+                    } catch (e) { reject(e); }
+                });
+            }
             feedbackProductSelect?.addEventListener('change', () => {
                 currentFeedbackProductId = feedbackProductSelect.value;
             });
 
-            // Feedback image handling
             let selectedFeedbackFiles = [];
             feedbackImagesInput?.addEventListener('change', (ev) => {
                 feedbackImagePreviews.innerHTML = '';
@@ -1245,7 +1473,7 @@
                 feedbackError.classList.add('hidden');
             });
             feedbackModalClose.addEventListener('click', () => {
-                // reset modal back to write mode
+
                 const header = feedbackModal.querySelector('h3');
                 if (header) header.textContent = 'Product Feedback';
                 feedbackRating.disabled = false;
@@ -1257,7 +1485,7 @@
                 if (!currentFeedbackProductId) return;
                 feedbackSubmit.disabled = true; feedbackSubmit.textContent = 'Submitting...';
                 try {
-                    // If images selected, use FormData; otherwise send JSON as before
+
                     let options = { method: 'POST' };
                     if (selectedFeedbackFiles && selectedFeedbackFiles.length > 0) {
                         const fd = new FormData();
@@ -1270,9 +1498,9 @@
                     }
                     const json = await apiRequest(`/api/products/${currentFeedbackProductId}/reviews`, options);
                     if (!json.success) throw new Error(json.msg || 'Failed to submit review');
-                    // Close modal, refresh purchases and switch to All tab so reviewed order moves to All
+
                     feedbackModal.classList.add('hidden');
-                    // reset image input
+
                     selectedFeedbackFiles = [];
                     if (feedbackImagesInput) { feedbackImagesInput.value = ''; feedbackImagePreviews.innerHTML = ''; }
                     try {
@@ -1291,7 +1519,6 @@
                 }
             });
 
-                        /* Return Request Modal (in-page) */
                         (function createReturnModal() {
                                 const html = `
                                 <div id="return-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
@@ -1391,7 +1618,6 @@
                                 }
                         }
 
-            // --- Vouchers Logic ---
             async function fetchVouchers() {
                 try {
                     const json = await apiRequest('/api/auth/me');
@@ -1414,9 +1640,7 @@
                 </div>`).join('');
             }
 
-            // Custom order logic removed in favor of dedicated My Quotes page.
 
-            // --- MODIFIED: Main Tab/Sidebar Switching Logic ---
             sidebarNav.addEventListener('click', (e) => {
                 const btn = e.target.closest('button[data-tab], button[data-tab-parent]');
                 if (!btn) return;
@@ -1443,7 +1667,6 @@
                         }
                     }
 
-                    // Fetch data on-demand
                     if (tab === 'purchases' && purchasesList.innerHTML.trim() === "") fetchPurchases('All');
                     if (tab === 'addresses' && addressesList.innerHTML.trim() === "") fetchAddresses();
                     // Always refresh vouchers when user opens the Vouchers tab so used/removed vouchers reflect server state
@@ -1468,13 +1691,11 @@
                 }
             });
 
-            // --- Logout Button ---
             logoutBtn.addEventListener('click', () => {
                 localStorage.removeItem('token');
                 window.location.href = 'index.html';
             });
 
-            // --- Privacy / Delete Account Button ---
             const requestDeleteBtn = document.getElementById('request-delete-btn');
             if (requestDeleteBtn) requestDeleteBtn.addEventListener('click', () => {
                 const modal = document.getElementById('delete-account-modal');
@@ -1514,8 +1735,7 @@
                     deleteConfirm.disabled = false; deleteConfirm.textContent = 'Delete My Account';
                 }
             });
-
-            // --- Initial Load ---
+            
             fetchUserData();
         });
     </script>

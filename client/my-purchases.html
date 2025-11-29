@@ -108,9 +108,10 @@
           logoUrl: '/images/logo.png',
           items: (order.items || []).map(it => ({ name: it.name || it.productName || 'Item', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0 })),
           subtotal: order.subtotal || order.totalPrice || 0,
-          vat: order.vat || 0,
+          vat: (typeof order.vat === 'number') ? order.vat : undefined,
           deliveryFee: order.deliveryFee || 0,
-          total: order.totalPrice || (order.subtotal || 0) + (order.vat || 0) + (order.deliveryFee || 0),
+          total: (typeof order.totalPrice === 'number') ? order.totalPrice : undefined,
+          customerName: (order.user && order.user.name) ? order.user.name : ''
         };
 
         await renderReceiptPDF(receipt, openInline);
@@ -127,40 +128,114 @@
       const doc = new jsPDF({ unit: 'pt', format: 'a4' });
       let logoData = null;
       try { logoData = await loadImageAsDataURL(r.logoUrl || '/images/logo.png'); } catch (e) { logoData = null; }
-      const margin = 40; let y = 40;
-      if (logoData) { doc.addImage(logoData, 'PNG', margin, y, 80, 80); }
-      doc.setFontSize(18); doc.text('Fundamental Apparel', margin + 100, y + 30);
-      doc.setFontSize(10); doc.text(`TIN: ${r.tin}`, margin + 100, y + 48);
-      y += 100;
-      doc.setFontSize(12); doc.text('Billing / Shipping', margin, y);
-      doc.setFontSize(10); doc.text(`Date: ${new Date(r.createdAt).toLocaleString()}`, 450, y);
-      y += 18;
-      doc.setFontSize(11);
-      doc.text('Item', margin, y); doc.text('Qty', 350, y); doc.text('Price', 420, y); doc.text('Total', 500, y);
-      y += 12; doc.line(margin, y, 560, y); y += 8;
 
-      for (const it of (r.items || [])){
-        doc.setFontSize(10);
-        doc.text(String(it.name || ''), margin, y);
-        doc.text(String(it.quantity || 0), 350, y);
-        doc.text('₱' + Number(it.price || 0).toLocaleString(undefined,{minimumFractionDigits:2}), 420, y);
-        const lineTotal = (Number(it.price||0) * Number(it.quantity||1));
-        doc.text('₱' + Number(lineTotal).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
-        y += 16; if (y > 740) { doc.addPage(); y = 40; }
+      const margin = 36;
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      let y = margin;
+
+      // Dark header band
+      doc.setFillColor(17,24,39);
+      doc.rect(0, 0, pageW, 88, 'F');
+      if (logoData) doc.addImage(logoData, 'PNG', margin, 16, 56, 56);
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text('Fundamental Apparel', margin + 72, 34);
+      doc.setFontSize(9); doc.setFont(undefined, 'normal');
+      doc.text('Unit 4B, Creative Building • Makati City', margin + 72, 50);
+      doc.text('hello@fundamental.ph • www.fundamental.ph', margin + 72, 64);
+      doc.setTextColor(0,0,0);
+
+      // Info box (OR/TIN/Date)
+      const infoW = 220, infoX = pageW - margin - infoW, infoY = 18;
+      doc.setFillColor(255,255,255);
+      doc.roundedRect(infoX, infoY, infoW, 60, 6, 6, 'F');
+      doc.setTextColor(0,0,0); doc.setFontSize(9);
+      doc.text(`OR No.: ${r._id ? r._id.toString().slice(-10).toUpperCase() : (r.tin || '')}`, infoX + 12, infoY + 18);
+      doc.text(`Date: ${r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}`, infoX + 12, infoY + 34);
+      doc.text(`TIN: ${r.tin || '—'}`, infoX + 12, infoY + 50);
+
+      // Billed To
+      y = 110;
+      doc.setFontSize(10); doc.setFont(undefined, 'bold');
+      doc.text('Billed To:', margin, y);
+      doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+      if (r.customerName) doc.text(r.customerName, margin, y + 14);
+      if (r.customerAddress) doc.text(String(r.customerAddress), margin, y + 28);
+
+      // Items table
+      y += 60;
+      const tableX = margin; const tableW = pageW - margin*2 - 200;
+      const totalsAreaX = pageW - margin - 180;
+
+      doc.setFillColor(243,244,246); doc.rect(tableX, y, tableW, 22, 'F');
+      doc.setFontSize(9); doc.setFont(undefined, 'bold');
+      doc.text('Item', tableX + 6, y + 14);
+      doc.text('Size', tableX + 220, y + 14);
+      doc.text('Qty', tableX + 320, y + 14);
+      doc.text('Unit', tableX + 370, y + 14);
+      doc.text('Amount', tableX + tableW - 6, y + 14, { align: 'right' });
+      doc.setFont(undefined, 'normal'); doc.setFontSize(9);
+      y += 28;
+
+      const items = r.items || [];
+      let computedSubtotal = Number(r.subtotal || 0);
+      if (!computedSubtotal) computedSubtotal = items.reduce((s,it)=>s+((Number(it.price)||0)*(Number(it.quantity)||1)),0);
+
+      // Improved item row rendering: fixed columns and consistent heights
+      const descX = tableX + 6;
+      const descWidth = 220;
+      const sizeX = tableX + 240;
+      const qtyX = tableX + 320;
+      const unitX = tableX + 370;
+      const amountX = tableX + tableW - 6;
+      const lineHeight = 12;
+      for (const it of items) {
+        const name = (it.name || it.description || '').toString().replace(/\s+/g,' ');
+        const size = it.size || '-';
+        const qty = Number(it.quantity || 1);
+        const unit = Number(it.price || 0);
+        const lineTotal = qty * unit;
+
+        const descLines = doc.splitTextToSize(name, descWidth);
+        for (let i = 0; i < descLines.length; i++) {
+          doc.text(descLines[i], descX, y + (i * lineHeight));
+        }
+        doc.text(size.toString(), sizeX, y);
+        doc.text(String(qty), qtyX, y);
+        doc.text('₱' + unit.toLocaleString(undefined,{minimumFractionDigits:2}), unitX, y);
+        doc.text('₱' + lineTotal.toLocaleString(undefined,{minimumFractionDigits:2}), amountX, y, { align: 'right' });
+
+        y += Math.max(lineHeight, descLines.length * lineHeight) + 6;
+        if (y > pageH - 160) { doc.addPage(); y = margin + 40; }
       }
 
-      y += 8; doc.line(margin, y, 560, y); y += 12;
-      doc.text('Subtotal', 420, y); doc.text('₱' + Number(r.subtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y); y += 14;
-      doc.text('VAT', 420, y); doc.text('₱' + Number(r.vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y); y += 14;
-      doc.text('Delivery', 420, y); doc.text('₱' + Number(r.deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y); y += 16;
-      doc.setFontSize(13); doc.text('Total', 420, y); doc.text('₱' + Number(r.total||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
-      doc.setFontSize(9); doc.text(`TIN: ${r.tin}`, margin, 780); doc.text('This is a generated official receipt. Thank you for your purchase.', margin, 795);
+      // Totals box
+      const totalsY = Math.max(y + 10, 380);
+      doc.setFillColor(249,250,251); doc.roundedRect(totalsAreaX, totalsY, 180, 100, 6, 6, 'F');
+      doc.setFontSize(9); doc.setTextColor(99,102,106);
+      const tx = totalsAreaX + 12; let ty = totalsY + 18;
+      doc.text('Subtotal', tx, ty); doc.text('₱' + Number(computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
+      // Compute VAT: use provided value if numeric, otherwise compute at 12%
+      let vat = (typeof r.vat === 'number') ? Number(r.vat) : Math.round((computedSubtotal * 0.12) * 100) / 100;
+      doc.text('VAT (12%)', tx, ty); doc.text('₱' + Number(vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 16;
+      const deliveryFee = Number(r.deliveryFee || 0);
+      doc.text('Delivery', tx, ty); doc.text('₱' + Number(deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' }); ty += 18;
+      doc.setFont(undefined, 'bold'); doc.setFontSize(11);
+      const totalComputed = (typeof r.total === 'number') ? Number(r.total) : (computedSubtotal + vat + deliveryFee);
+      doc.text('TOTAL', tx, ty); doc.text('₱' + Number(totalComputed||computedSubtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), totalsAreaX + 180 - 12, ty, { align: 'right' });
+      doc.setFont(undefined, 'normal'); doc.setTextColor(0,0,0);
 
-      const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob);
-      if (openInline) { window.open(url, '_blank'); return; }
-      if (typeof window._DOWNLOAD_DIRECT !== 'undefined' && window._DOWNLOAD_DIRECT === true) {
-        doc.save(`receipt-${r.tin}.pdf`);
-      } else { window.open(url, '_blank'); }
+      // Prepared by
+      const prepared = r.preparedBy || r.preparedByName || '';
+      if (prepared) doc.setFontSize(9).text('Prepared by: ' + prepared, margin, totalsY + 120);
+
+      // Save/open
+      const safeName = `Invoice-${(r._id||r.tin||'receipt').toString().slice(-12)}.pdf`;
+      if (openInline) { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); window.open(url, '_blank'); return; }
+      if (typeof window._DOWNLOAD_DIRECT !== 'undefined' && window._DOWNLOAD_DIRECT === true) { doc.save(safeName); }
+      else { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); window.open(url, '_blank'); }
     }
 
     async function loadImageAsDataURL(src){

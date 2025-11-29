@@ -410,6 +410,12 @@ exports.updateOrderStatus = async (req, res) => {
                 return res.status(400).json({ success: false, msg: 'Invalid order status' });
             }
             updates.status = req.body.status;
+
+            // If admin marks order as Accepted, record who accepted it (preparedBy)
+            if (req.body.status === 'Accepted') {
+                updates.acceptedBy = req.user._id;
+                updates.acceptedByName = req.user.name || '';
+            }
             
             // NEW: If admin cancels, log reason
             if (req.body.status === 'Cancelled') {
@@ -430,6 +436,15 @@ exports.updateOrderStatus = async (req, res) => {
         const updatedOrder = await Order.findByIdAndUpdate(id, updates, { new: true });
         if (!updatedOrder) {
             return res.status(404).json({ success: false, msg: 'Order not found' });
+        }
+        // If we recorded an acceptedBy and the order already has a stored receipt, update receipt's preparedBy info
+        try {
+            if (updates.acceptedBy && updatedOrder.receiptId) {
+                const Receipt = require('../models/Receipt');
+                await Receipt.findByIdAndUpdate(updatedOrder.receiptId, { preparedBy: updates.acceptedBy, preparedByName: req.user.name || '' }).exec();
+            }
+        } catch (e) {
+            console.warn('[OrderStatus] Failed to update receipt preparedBy:', e && e.message);
         }
         res.status(200).json({ success: true, data: updatedOrder });
     } catch (error) {
