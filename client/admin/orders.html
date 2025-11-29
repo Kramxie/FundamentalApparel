@@ -1472,9 +1472,20 @@
             <td class="px-2 py-1 text-right">${peso((it.price || 0) * (it.quantity || 0))}</td>
           </tr>
         `).join('');
-        els.receiptDelivery.textContent = peso(order.deliveryFee || 0);
-        els.receiptVat && (els.receiptVat.textContent = peso(order.vat || order.vatAmount || 0));
-        els.receiptTotal.textContent = peso(order.totalPrice || 0);
+        // Compute amounts consistent with Checkout logic:
+        // taxable = max(subtotal - voucherApplied, 0)
+        // vat = 12% * taxable (rounded to 2 decimals)
+        // total = subtotal - voucher + delivery + vat
+        const voucherVal = Number(order.voucherDiscount ?? order.voucherAmount ?? order.voucher ?? 0) || 0;
+        const deliveryVal = Number(order.deliveryFee || 0) || 0;
+        const subtotalVal = Number((order.orderItems || []).reduce((s, i) => s + (Number(i.price || 0) * Number(i.quantity || 0)), 0)) || 0;
+        const taxable = Math.max(subtotalVal - voucherVal, 0);
+        const vatComputed = Math.round((taxable * 0.12) * 100) / 100;
+        const totalComputed = Math.round((subtotalVal - voucherVal + deliveryVal + vatComputed) * 100) / 100;
+
+        els.receiptDelivery.textContent = peso(deliveryVal);
+        if (els.receiptVat) els.receiptVat.textContent = peso(vatComputed);
+        els.receiptTotal.textContent = peso(totalComputed || order.totalPrice || 0);
         // Optional gateway receipt URL
         if (order.receiptUrl) {
           els.receiptOpenUrl.href = order.receiptUrl;
@@ -1516,10 +1527,20 @@
             els.receiptCustomer.textContent = order.user?.name || '-';
             els.receiptStatus.textContent = 'Payment received';
             els.receiptItems.innerHTML = (rec.items || []).map(it => `\n          <tr>\n            <td class="px-2 py-1">${it.name || 'Item'}</td>\n            <td class="px-2 py-1">${it.size || ''}</td>\n            <td class="px-2 py-1">${it.quantity || 0}</td>\n            <td class="px-2 py-1 text-right">${peso((it.price || 0) * (it.quantity || 1))}</td>\n          </tr>\n        `).join('');
-            els.receiptDelivery.textContent = peso(rec.deliveryFee || 0);
-            els.receiptVat && (els.receiptVat.textContent = peso(rec.vat || 0));
+            // Use stored receipt values when available but ensure fallback computation
+            const recDelivery = Number(rec.deliveryFee || 0) || 0;
+            // If stored receipt provides a positive vat, use it; otherwise compute VAT similarly
+            const recVat = (rec.vat != null && Number(rec.vat) > 0) ? Number(rec.vat) : null;
+            const recSubtotal = Number((rec.items || []).reduce((s, i) => s + (Number(i.price || 0) * Number(i.quantity || 0)), 0)) || 0;
+            const recVoucher = Number(rec.voucherDiscount ?? rec.voucherAmount ?? 0) || 0;
+            const recTaxable = Math.max(recSubtotal - recVoucher, 0);
+            const recVatComputed = Math.round((recVat !== null ? recVat : (recTaxable * 0.12)) * 100) / 100;
+            const recTotal = Math.round((recSubtotal - recVoucher + recDelivery + recVatComputed) * 100) / 100;
+
+            els.receiptDelivery.textContent = peso(recDelivery);
+            if (els.receiptVat) els.receiptVat.textContent = peso(recVatComputed);
             els.receiptPreparedby && (els.receiptPreparedby.textContent = rec.preparedByName || rec.preparedBy || '-');
-            els.receiptTotal.textContent = peso(rec.total || 0);
+            els.receiptTotal.textContent = peso(rec.total || recTotal || 0);
             // Reveal the receipt section
             els.receiptWrap.classList.remove('hidden');
             // If receipt meta contains external receipt URL, show Open link
