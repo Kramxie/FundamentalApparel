@@ -505,23 +505,23 @@
           return;
         }
 
-        // Non-sales reports: generate via backend endpoint and export/preview
+        // Non-sales reports: fetch JSON and update preview/UI (do not auto-download CSV on Generate)
         let startDate = document.getElementById('startDate').value;
         let endDate = document.getElementById('endDate').value;
         if (period !== 'custom') {
           const days = Number(period) || 30; const e = new Date(); const s = new Date(); s.setDate(e.getDate() - (days - 1)); startDate = s.toISOString().slice(0,10); endDate = e.toISOString().slice(0,10);
         }
-        const url = await buildUrl(type, { startDate, endDate, format });
         try {
+          const url = await buildUrl(type, { startDate, endDate }); // no format -> return JSON preview
           const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
           if (!res.ok) throw new Error('Server error: ' + res.status);
-          if (format === 'csv') {
-            const blob = await res.blob();
-            const a = document.createElement('a');
-            const href = window.URL.createObjectURL(blob);
-            a.href = href; a.download = `${type}_report_${Date.now()}.csv`; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(href);
-          } else {
-            const json = await res.json(); document.getElementById('previewArea').textContent = JSON.stringify(json, null, 2);
+          const json = await res.json();
+          document.getElementById('previewArea').textContent = JSON.stringify(json, null, 2);
+          // Optionally populate table/summary for well-known types
+          if (type === 'refunds' || type.indexOf('refund') !== -1 || type === 'refunds & returns') {
+            // if backend returns a refunds array, show count in report-status
+            const count = (json.data && Array.isArray(json.data)) ? json.data.length : (json.count||0);
+            document.getElementById('report-status').textContent = `${count} refund records found`;
           }
         } catch (e) { alert('Failed to generate: ' + e.message); }
       });
