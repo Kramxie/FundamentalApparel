@@ -851,11 +851,12 @@
 
       // Update displays
       function round2(v){ return Math.round((v + Number.EPSILON) * 100) / 100; }
-      document.getElementById('base-price').textContent = (subtotal).toLocaleString();
+      // Display numbers with two decimals and currency formatting
+      document.getElementById('base-price').textContent = subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       // For balance payments, surface 0 and note that fee was already included before
       const effectiveDelivery = paymentOption === 'balance' ? 0 : selectedDeliveryFee;
-      document.getElementById('delivery-fee-amount').textContent = `₱${effectiveDelivery.toLocaleString()}`;
-      // Update the delivery price on the Standard Delivery card
+      document.getElementById('delivery-fee-amount').textContent = peso(effectiveDelivery);
+      // Update the delivery price on the Standard Delivery card (show only number)
       const feeCard = document.getElementById('fee-standard-services');
       if (feeCard) feeCard.textContent = effectiveDelivery.toLocaleString();
 
@@ -878,7 +879,8 @@
       // Final displayed total includes VAT (VAT not applied to delivery fee)
       const finalDisplayedTotal = round2(displayAmount + vatForDisplay);
       document.getElementById('vat-services').textContent = vatForDisplay.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      document.getElementById('total-amount').textContent = finalDisplayedTotal.toLocaleString();
+      // Display total with two decimals and include currency symbol in UI wrapper
+      document.getElementById('total-amount').textContent = finalDisplayedTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       
       // Remove existing payment option badge if any
       const existingBadge = document.querySelector('.payment-option-badge');

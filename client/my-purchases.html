@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>My Purchases - Fundamental</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+  <main class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">My Purchases</h1>
+    <div id="purchases-list" class="space-y-4">
+      <p class="text-gray-500">Loading purchases...</p>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = 'https://fundamental-apparel-backend.onrender.com';
+    const token = localStorage.getItem('token');
+    if (!token) { alert('Please log in'); window.location.href = 'login.html'; }
+
+    async function api(path, opts = {}){
+      opts.headers = { ...(opts.headers||{}), 'Authorization': `Bearer ${token}` };
+      const res = await fetch(API_BASE + path, opts);
+      if (res.status === 401) { localStorage.removeItem('token'); window.location.href='login.html'; throw new Error('Unauthorized'); }
+      const json = await res.json();
+      if (!json.success) throw new Error(json.msg || 'API error');
+      return json.data;
+    }
+
+    async function loadPurchases(){
+      const container = document.getElementById('purchases-list');
+      try {
+        const receipts = await api('/api/receipts');
+        if (!receipts || receipts.length === 0) {
+          container.innerHTML = '<p class="text-gray-500">No purchases found.</p>';
+          return;
+        }
+
+        const html = receipts.map(r => {
+          const dt = new Date(r.createdAt).toLocaleString();
+          return `
+            <div class="bg-white p-4 rounded-lg shadow-sm flex items-start justify-between">
+              <div>
+                <div class="font-semibold">Receipt • ${r.tin}</div>
+                <div class="text-sm text-gray-500">${dt}</div>
+                <div class="mt-2 text-sm">
+                  <strong>Total:</strong> ₱${Number(r.total||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button data-id="${r._id}" class="request-refund px-3 py-2 bg-yellow-500 text-white rounded">Request A Refund</button>
+                <button data-id="${r._id}" class="download-receipt px-3 py-2 bg-indigo-600 text-white rounded">Download Receipt</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        container.innerHTML = html;
+        document.querySelectorAll('.download-receipt').forEach(b => b.addEventListener('click', async (e)=>{
+          const id = e.currentTarget.dataset.id;
+          await downloadReceipt(id);
+        }));
+        document.querySelectorAll('.request-refund').forEach(b => b.addEventListener('click', (e)=>{
+          const id = e.currentTarget.dataset.id;
+          alert('Refund request for receipt: ' + id + ' — please use Requests page.');
+        }));
+
+      } catch (err) {
+        container.innerHTML = `<p class="text-red-500">${err.message}</p>`;
+      }
+    }
+
+    async function loadImageAsDataURL(src){
+      return new Promise((resolve, reject) => {
+        try {
+          const img = new Image();
+          img.crossOrigin = 'Anonymous';
+          img.onload = () => {
+            const c = document.createElement('canvas');
+            c.width = img.width; c.height = img.height;
+            const ctx = c.getContext('2d');
+            ctx.drawImage(img,0,0);
+            resolve(c.toDataURL('image/png'));
+          };
+          img.onerror = (e)=> reject(new Error('Failed to load logo'));
+          img.src = src;
+        } catch (e) { reject(e); }
+      });
+    }
+
+    async function downloadReceipt(receiptId){
+      const btn = document.querySelector(`button.download-receipt[data-id="${receiptId}"]`);
+      const orig = btn ? btn.innerHTML : null;
+      try {
+        if (btn) { btn.disabled = true; btn.innerHTML = 'Generating...'; }
+        const r = await api(`/api/receipts/${receiptId}`);
+        // Use jsPDF to generate A4 PDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+
+        // Load logo
+        let logoData = null;
+        try { logoData = await loadImageAsDataURL(r.logoUrl || '/images/logo.png'); } catch (e) { logoData = null; }
+
+        const margin = 40;
+        let y = 40;
+        if (logoData) {
+          doc.addImage(logoData, 'PNG', margin, y, 80, 80);
+        }
+        doc.setFontSize(18);
+        doc.text('Fundamental Apparel', margin + 100, y + 30);
+        doc.setFontSize(10);
+        doc.text(`TIN: ${r.tin}`, margin + 100, y + 48);
+        y += 100;
+
+        doc.setFontSize(12);
+        doc.text('Billing / Shipping', margin, y);
+        doc.setFontSize(10);
+        doc.text(`Date: ${new Date(r.createdAt).toLocaleString()}`, 450, y);
+        y += 18;
+
+        // Items table header
+        doc.setFontSize(11);
+        doc.text('Item', margin, y);
+        doc.text('Qty', 350, y);
+        doc.text('Price', 420, y);
+        doc.text('Total', 500, y);
+        y += 12;
+        doc.line(margin, y, 560, y);
+        y += 8;
+
+        for (const it of (r.items || [])){
+          doc.setFontSize(10);
+          doc.text(String(it.name || ''), margin, y);
+          doc.text(String(it.quantity || 0), 350, y);
+          doc.text('₱' + Number(it.price || 0).toLocaleString(undefined,{minimumFractionDigits:2}), 420, y);
+          const lineTotal = (Number(it.price||0) * Number(it.quantity||1));
+          doc.text('₱' + Number(lineTotal).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
+          y += 16;
+          if (y > 740) { doc.addPage(); y = 40; }
+        }
+
+        y += 8;
+        doc.line(margin, y, 560, y);
+        y += 12;
+        doc.text('Subtotal', 420, y);
+        doc.text('₱' + Number(r.subtotal||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
+        y += 14;
+        doc.text('VAT', 420, y);
+        doc.text('₱' + Number(r.vat||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
+        y += 14;
+        doc.text('Delivery', 420, y);
+        doc.text('₱' + Number(r.deliveryFee||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
+        y += 16;
+        doc.setFontSize(13);
+        doc.text('Total', 420, y);
+        doc.text('₱' + Number(r.total||0).toLocaleString(undefined,{minimumFractionDigits:2}), 500, y);
+
+        // Footer with TIN and notes
+        doc.setFontSize(9);
+        doc.text(`TIN: ${r.tin}`, margin, 780);
+        doc.text('This is a generated official receipt. Thank you for your purchase.', margin, 795);
+
+        // Save PDF
+        doc.save(`receipt-${r.tin}.pdf`);
+
+      } catch (err) {
+        console.error('Download receipt failed', err);
+        alert(err.message || 'Failed to generate receipt');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+      }
+    }
+
+    loadPurchases();
+  </script>
+</body>
+</html>

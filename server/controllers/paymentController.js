@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const { allocateInventoryBySizes, allocateInventory, findInventoryByName } = require('../utils/inventory');
 const deliveryRatesUtil = require('../utils/deliveryRates');
+const Receipt = require('../models/Receipt');
 
 // PayMongo API configuration
 // Use environment variables for production
@@ -1167,6 +1168,68 @@ async function handlePaymentSuccess(eventData) {
     await order.save();
 
     console.log('[PayMongo] Order updated successfully:', order._id, 'Type:', isProductOrder ? 'Product' : 'Service', 'Payment Option:', order.paymentOption);
+
+    // Create a receipt record with auto-generated TIN
+    try {
+      function generateTIN() { return 'TIN-' + Math.random().toString(36).substr(2, 8).toUpperCase(); }
+
+      const receiptItems = [];
+      let subtotal = 0;
+      if (isProductOrder) {
+        for (const it of (order.orderItems || [])) {
+          const q = Number(it.quantity || 0);
+          const p = Number(it.price || 0);
+          receiptItems.push({ name: it.name || 'Item', quantity: q, price: p, size: it.size || '' });
+          subtotal += p * q;
+        }
+      } else {
+        // For service/custom orders, try to extract items from quotePayload or team entries
+        if (order.quotePayload && Array.isArray(order.quotePayload.teamEntries) && order.quotePayload.teamEntries.length) {
+          for (const e of order.quotePayload.teamEntries) {
+            const q = Number(e.qty || e.quantity || 1) || 1;
+            const p = Number(e.price || 0);
+            receiptItems.push({ name: e.name || order.productName || 'Service Item', quantity: q, price: p, size: e.size || '' });
+            subtotal += p * q;
+          }
+        } else if (order.quantity) {
+          const p = Number(order.totalPrice || 0);
+          const q = Number(order.quantity || 1);
+          const unit = q ? Math.round((p / q + Number.EPSILON) * 100) / 100 : p;
+          receiptItems.push({ name: order.productName || 'Service', quantity: q, price: unit, size: order.garmentSize || '' });
+          subtotal += unit * q;
+        } else {
+          // Fallback: single line with totalPrice
+          const p = Number(order.totalPrice || 0);
+          receiptItems.push({ name: order.productName || order.serviceType || 'Service', quantity: 1, price: p, size: '' });
+          subtotal += p;
+        }
+      }
+
+      const vat = Number(order.vat || order.vatAmount || 0) || 0;
+      const delivery = Number(order.deliveryFee || 0) || 0;
+      const total = Number(order.totalPrice || order.paymentAmount || subtotal + vat + delivery) || 0;
+
+      const newReceipt = new Receipt({
+        user: order.user,
+        orderId: order._id,
+        orderType: isProductOrder ? 'product' : 'service',
+        tin: generateTIN(),
+        items: receiptItems,
+        subtotal,
+        vat,
+        deliveryFee: delivery,
+        total,
+        logoUrl: process.env.BUSINESS_LOGO_URL || '/images/logo.png',
+        meta: { paymentIntentId: order.paymentIntentId }
+      });
+
+      await newReceipt.save();
+      // Attach receipt reference to order for convenience
+      try { order.receiptId = newReceipt._id; await order.save(); } catch (e) { /* non-fatal */ }
+      console.log('[Receipt] Created receipt', newReceipt._id.toString(), 'for order', order._id.toString());
+    } catch (receiptErr) {
+      console.warn('[Receipt] Failed to create receipt:', receiptErr && receiptErr.message);
+    }
 
     // TODO: Send confirmation email to customer
 

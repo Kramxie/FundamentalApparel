@@ -407,7 +407,7 @@
         // Helpers
         function round2(v){ return Math.round((v + Number.EPSILON) * 100) / 100; }
 
-        subtotalEl.textContent = subtotal.toLocaleString();
+        subtotalEl.textContent = subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         let discount = 0;
         if (appliedVoucher) {
           if (appliedVoucher.type === 'percentage') {
@@ -421,7 +421,8 @@
         }
         document.getElementById('discount').textContent = discount.toLocaleString();
 
-        const deliveryFee = Number(deliveryFeeEl.textContent.replace(/,/g, '') || 0);
+        // Parse delivery fee robustly (strip currency symbols if any)
+        const deliveryFee = Number((deliveryFeeEl.textContent || '').replace(/[^0-9.\-]/g, '')) || 0;
 
         // VAT applies to subtotal after discounts only (not to delivery)
         const taxable = Math.max(subtotal - discount, 0);
@@ -432,7 +433,8 @@
         if (vatEl) vatEl.textContent = vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         const grand = round2(taxable + deliveryFee + vatAmount);
-        grandTotalEl.textContent = grand.toLocaleString();
+        // Display grand total with two decimals and currency
+        if (grandTotalEl) grandTotalEl.textContent = grand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       }
             // Voucher logic
             const voucherInput = document.getElementById('voucher-code');
@@ -504,7 +506,8 @@
         
         const shippingMethod = document.getElementById('method-pickup')?.checked ? 'Pick-Up' : 'Standard';
         const paymentMethod = document.getElementById('pay-card')?.checked ? 'card' : 'gcash';
-        const deliveryFee = Number(document.getElementById('delivery-fee')?.textContent.replace(/,/g, '') || 0);
+        // Robust parse of delivery fee (strip currency symbols if present)
+        const deliveryFee = Number((document.getElementById('delivery-fee')?.textContent || '').replace(/[^0-9.\-]/g, '')) || 0;
         const subtotal = Number(subtotalEl.textContent.replace(/,/g, '') || 0);
         const discount = Number(document.getElementById('discount')?.textContent.replace(/,/g, '') || 0);
         // VAT is applied to subtotal after discount only
@@ -651,7 +654,12 @@
           // Update the shipping method card price (standard) so UI stays consistent
           const feeStandardEl = document.getElementById('fee-standard');
           if (feeStandardEl) feeStandardEl.textContent = fee.toLocaleString();
-          grandTotalEl.textContent = (subtotal - discount + fee).toLocaleString();
+          // Recompute totals (this includes VAT) instead of overwriting grand total without VAT
+          if (typeof updateTotals === 'function') {
+            updateTotals(subtotal);
+          } else {
+            grandTotalEl.textContent = (subtotal - discount + fee).toLocaleString();
+          }
       }
       methodStandard?.addEventListener('change', updateShippingFee);
       methodPickup?.addEventListener('change', updateShippingFee);
