@@ -491,7 +491,6 @@
         </div>
     </div>
     
-            <script src="/js/receipt-builder.js"></script>
             <script>
                 const API = 'https://fundamental-apparel-backend.onrender.com';
 
@@ -1531,14 +1530,7 @@
                             const el = document.getElementById('receipt-modal-body');
                             const safeId = (r && (r._id || r.tin)) ? String(r._id || r.tin).slice(-12) : 'receipt';
                             const fileName = `Invoice-${safeId}.pdf`;
-                            const opt = {
-                                margin: 8,
-                                filename: fileName,
-                                image: { type: 'jpeg', quality: 0.98 },
-                                html2canvas: { scale: Math.min(2, (window.devicePixelRatio || 1) * 1.5), useCORS: true, allowTaint: true },
-                                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                                pagebreak: { mode: ['css', 'legacy'] }
-                            };
+                            const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' } };
                             html2pdf().set(opt).from(el).save().then(() => {
                                 dl.disabled = false; dl.textContent = 'Download PDF';
                             }).catch((err) => { console.error('html2pdf error', err); dl.disabled = false; dl.textContent = 'Download PDF'; alert('Failed to generate PDF'); });
