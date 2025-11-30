@@ -963,7 +963,10 @@
                 purchasesCache = Array.isArray(orders) ? orders : [];
                
                 if (tabFilter === 'Completed' && Array.isArray(purchasesCache)) {
-                    orders = purchasesCache.filter(o => !o.userHasReview);
+                    // Show orders that are delivered or completed when viewing the Completed tab.
+                    // Previous behavior filtered by whether the user left a review, which hid
+                    // many completed orders and caused the tab to appear empty.
+                    orders = purchasesCache.filter(o => o.status === 'Delivered' || o.status === 'Completed');
                 }
                 
                 if (tabFilter === 'All' && Array.isArray(orders)) {
