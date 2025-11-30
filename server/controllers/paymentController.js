@@ -105,7 +105,8 @@ exports.createPaymentSession = async (req, res) => {
     // Adjust VAT for downpayment/balance options
     let vatForCharge = totalVat;
     let finalCharge = 0;
-    const normalizedOption = (paymentOption === 'balance') ? 'full' : (paymentOption || 'full');
+    // Keep 'balance' as 'balance' so server computes remaining amount correctly
+    const normalizedOption = (paymentOption === 'balance') ? 'balance' : (paymentOption || 'full');
     if (normalizedOption === 'downpayment') {
       finalCharge = Math.round(((taxable + deliveryFeeNumber + totalVat) * 0.5 + Number.EPSILON) * 100) / 100;
       vatForCharge = Math.round((totalVat * 0.5 + Number.EPSILON) * 100) / 100;
