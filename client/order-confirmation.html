@@ -151,8 +151,25 @@
 
           <div>${itemsHtml}</div>
           <div class="mt-4 text-right">
-            <div class="text-gray-600">Delivery fee: ₱${Number(o.deliveryFee || 0).toLocaleString()}</div>
-            <div class="text-xl font-bold">Total: ₱${Number(o.totalPrice || 0).toLocaleString()}</div>
+            <div class="text-gray-600">Subtotal: <strong>₱${(o.orderItems.reduce((s,it)=>s + (Number(it.price||0) * Number(it.quantity||0)),0)).toLocaleString()}</strong></div>
+            <div class="text-gray-600">Voucher: <strong>₱${(Number(o.voucherDiscount || o.voucherAmount || o.voucher || 0)).toLocaleString()}</strong></div>
+            <div class="text-gray-600">Delivery fee: <strong>₱${Number(o.deliveryFee || 0).toLocaleString()}</strong></div>
+            <div class="text-gray-600">VAT (12%): <strong>₱${(function(){
+                  const subtotal = Number((o.orderItems || []).reduce((s,it)=>s + (Number(it.price||0) * Number(it.quantity||0)),0));
+                  const voucherAmt = Number(o.voucherDiscount || o.voucherAmount || o.voucher || 0) || 0;
+                  const taxable = Math.max(subtotal - voucherAmt, 0);
+                  const vat = Math.round((taxable * 0.12 + Number.EPSILON) * 100) / 100;
+                  return vat.toLocaleString();
+                })()}</strong></div>
+            <div class="text-xl font-bold">Total: ₱${(function(){
+                  const subtotal = Number((o.orderItems || []).reduce((s,it)=>s + (Number(it.price||0) * Number(it.quantity||0)),0));
+                  const voucherAmt = Number(o.voucherDiscount || o.voucherAmount || o.voucher || 0) || 0;
+                  const taxable = Math.max(subtotal - voucherAmt, 0);
+                  const vat = Math.round((taxable * 0.12 + Number.EPSILON) * 100) / 100;
+                  const delivery = Number(o.deliveryFee || 0) || 0;
+                  const grand = Math.round((taxable + delivery + vat + Number.EPSILON) * 100) / 100;
+                  return grand.toLocaleString();
+                })()}</div>
           </div>
         `;
         loading.classList.add('hidden');

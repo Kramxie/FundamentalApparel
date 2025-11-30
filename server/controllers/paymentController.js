@@ -936,8 +936,23 @@ async function handlePaymentSuccess(eventData) {
             }
           }
 
-          // Clear cart
-          await Cart.findOneAndUpdate({ user: orderInSession.user }, { $set: { items: [] } }, { session });
+          // Remove only the purchased items from the cart (match by product + size)
+          try {
+            const pullConds = (orderInSession.orderItems || []).map(it => {
+              if (!it || !it.product) return null;
+              return it.size ? { product: it.product, size: it.size } : { product: it.product, size: null };
+            }).filter(Boolean);
+            if (pullConds.length) {
+              await Cart.updateOne(
+                { user: orderInSession.user },
+                { $pull: { items: { $or: pullConds } } },
+                { session }
+              );
+            }
+          } catch (pullErr) {
+            console.warn('[PayMongo] Failed to remove purchased items from cart in transaction, falling back to clearing entire cart:', pullErr && pullErr.message);
+            await Cart.findOneAndUpdate({ user: orderInSession.user }, { $set: { items: [] } }, { session });
+          }
 
           // Mark voucher as used if present
           if (orderInSession.voucher && orderInSession.voucher.code) {
@@ -1011,7 +1026,20 @@ async function handlePaymentSuccess(eventData) {
             }
           }
 
-          await Cart.findOneAndUpdate({ user: order.user }, { $set: { items: [] } }, { new: true });
+          try {
+            const pullCondsFallback = (order.orderItems || []).map(it => {
+              if (!it || !it.product) return null;
+              return it.size ? { product: it.product, size: it.size } : { product: it.product, size: null };
+            }).filter(Boolean);
+            if (pullCondsFallback.length) {
+              await Cart.updateOne({ user: order.user }, { $pull: { items: { $or: pullCondsFallback } } });
+            } else {
+              await Cart.findOneAndUpdate({ user: order.user }, { $set: { items: [] } }, { new: true });
+            }
+          } catch (pullFallbackErr) {
+            console.warn('[PayMongo] Failed to selectively remove cart items (fallback), clearing entire cart:', pullFallbackErr && pullFallbackErr.message);
+            await Cart.findOneAndUpdate({ user: order.user }, { $set: { items: [] } }, { new: true });
+          }
 
           if (order.voucher && order.voucher.code) {
             await User.updateOne(
