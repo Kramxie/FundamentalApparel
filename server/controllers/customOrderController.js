@@ -1206,7 +1206,7 @@ exports.verifyFinalPayment = async (req, res) => {
               }
 
               if (!invDoc) {
-                throw new Error('Inventory item not found (tried: ' + (uniq.join(', ') || 'none') + ')');
+                return res.status(400).json({ success: false, msg: 'Inventory item not found', tried: uniq });
               }
 
               const inventoryId = invDoc ? invDoc._id : null;
@@ -1281,7 +1281,7 @@ exports.verifyFinalPayment = async (req, res) => {
               }
 
               if (!foundInv) {
-                throw new Error('Inventory item not found (tried: ' + (uniq.join(', ') || 'none') + ')');
+                return res.status(400).json({ success: false, msg: 'Inventory item not found', tried: uniq });
               }
 
               const invDoc = await allocateInventory({ name: foundInv.name, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });

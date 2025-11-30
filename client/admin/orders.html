@@ -2894,8 +2894,13 @@
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          const data = await res.json();
-          if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to verify');
+          let data = null;
+          try { data = await res.json(); } catch(e){ data = null; }
+          if (!res.ok || !data || !data.success) {
+            const msg = (data && data.msg) ? data.msg : `Failed to verify (status ${res.status})`;
+            const tried = (data && data.tried && Array.isArray(data.tried)) ? ` Tried candidates: ${data.tried.join(', ')}` : '';
+            throw new Error(msg + tried);
+          }
 
           const idx = allCustomOrders.findIndex(o => o._id === selectedCustomOrder._id);
           if (idx >= 0) allCustomOrders[idx] = data.data;
@@ -2903,8 +2908,9 @@
 
           els.customModal.classList.add('hidden');
         } catch (err) {
-          els.customModalError.textContent = err.message;
+          els.customModalError.textContent = err.message || 'Failed to verify';
           els.customModalError.classList.remove('hidden');
+          console.error('verifyDownPayment error details:', err);
         } finally {
           els.customModalVerifyDp.disabled = false;
           els.customModalVerifyDp.textContent = 'Verify & Start Production';
