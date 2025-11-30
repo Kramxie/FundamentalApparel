@@ -146,6 +146,8 @@
                 <input id="date-from" type="date" class="border rounded-md px-3 py-2 text-sm">
                 <input id="date-to" type="date" class="border rounded-md px-3 py-2 text-sm">
                 <button id="filter-reset" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Reset</button>
+                <button id="refresh-orders" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Refresh</button>
+                <label class="flex items-center gap-2 text-sm text-gray-600"><input id="auto-refresh-orders" type="checkbox" class="h-4 w-4"> Auto</label>
               </div>
               <div class="text-sm text-gray-500"><span id="count">0</span> orders</div>
             </div>
@@ -228,6 +230,8 @@
                   <input id="custom-date-to" type="date" class="border rounded-md px-2 py-1.5 text-sm" />
                 </div>
                 <button id="custom-filter-reset" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Reset</button>
+                <button id="refresh-custom" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Refresh</button>
+                <label class="flex items-center gap-2 text-sm text-gray-600"><input id="auto-refresh-custom" type="checkbox" class="h-4 w-4"> Auto</label>
               </div>
               <div class="text-sm text-gray-500"><span id="custom-count">0</span> custom requests</div>
             </div>
@@ -1043,6 +1047,8 @@
         dateFrom: document.getElementById('date-from'),
         dateTo: document.getElementById('date-to'),
         filterReset: document.getElementById('filter-reset'),
+        refreshOrdersBtn: document.getElementById('refresh-orders'),
+        autoRefreshOrders: document.getElementById('auto-refresh-orders'),
         modal: document.getElementById('modal'),
         modalClose: document.getElementById('modal-close'),
         modalItems: document.getElementById('modal-items'),
@@ -1105,6 +1111,8 @@
         customDateFrom: document.getElementById('custom-date-from'),
         customDateTo: document.getElementById('custom-date-to'),
         customFilterReset: document.getElementById('custom-filter-reset'),
+        refreshCustomBtn: document.getElementById('refresh-custom'),
+        autoRefreshCustom: document.getElementById('auto-refresh-custom'),
         customModal: document.getElementById('custom-order-modal'),
         customModalClose: document.getElementById('custom-modal-close'),
         customModalError: document.getElementById('custom-modal-error'),
@@ -1646,6 +1654,11 @@
         fulfillmentForm.classList.remove('hidden');
       }
 
+      // Cleanup auto-refresh intervals on unload
+      window.addEventListener('beforeunload', () => {
+        try { stopAutoRefresh('regular'); stopAutoRefresh('custom'); } catch (e) { /* ignore */ }
+      });
+
       // Wire filter change handlers
       function debounce(fn, wait = 300) {
         let t = null;
@@ -1667,6 +1680,23 @@
         els.dateFrom.value = '';
         els.dateTo.value = '';
         loadRegularOrders();
+      });
+
+      // Refresh controls: immediate refresh and optional auto-refresh polling
+      let refreshIntervals = { regular: null, custom: null };
+      function startAutoRefresh(type) {
+        stopAutoRefresh(type);
+        const fn = type === 'regular' ? loadRegularOrders : loadCustomOrders;
+        // default interval 15s
+        refreshIntervals[type] = setInterval(() => fn(), 15000);
+      }
+      function stopAutoRefresh(type) {
+        if (refreshIntervals[type]) { clearInterval(refreshIntervals[type]); refreshIntervals[type] = null; }
+      }
+
+      els.refreshOrdersBtn?.addEventListener('click', () => loadRegularOrders());
+      els.autoRefreshOrders?.addEventListener('change', (e) => {
+        if (e.target.checked) startAutoRefresh('regular'); else stopAutoRefresh('regular');
       });
 
       async function loadCustomOrders() {
@@ -1705,6 +1735,11 @@
             els.customDateFrom.value = '';
             els.customDateTo.value = '';
             renderCustomOrders();
+          });
+          // Custom orders refresh controls
+          els.refreshCustomBtn?.addEventListener('click', () => loadCustomOrders());
+          els.autoRefreshCustom?.addEventListener('change', (e) => {
+            if (e.target.checked) startAutoRefresh('custom'); else stopAutoRefresh('custom');
           });
         } catch (err) {
           showMessage(err.message, 'error');
