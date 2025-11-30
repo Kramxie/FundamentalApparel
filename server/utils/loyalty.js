@@ -19,11 +19,16 @@ async function checkAndAwardLoyaltyVoucher(userId){
     const monthStart = new Date(year, month, 1, 0, 0, 0, 0);
     const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
 
-    // Count completed/delivered orders in this month for the user
+    // Count orders that reached Delivered/Completed in this month for the user.
+    // Use deliveredAt when available, otherwise updatedAt — this captures orders
+    // that were completed/marked delivered during the current month.
     const count = await Order.countDocuments({
       user: userId,
       status: { $in: ['Delivered', 'Completed'] },
-      createdAt: { $gte: monthStart, $lte: monthEnd }
+      $or: [
+        { deliveredAt: { $gte: monthStart, $lte: monthEnd } },
+        { updatedAt: { $gte: monthStart, $lte: monthEnd } }
+      ]
     });
 
     // If less than threshold, nothing to do

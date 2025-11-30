@@ -447,6 +447,15 @@ exports.updateOrderStatus = async (req, res) => {
         } catch (e) {
             console.warn('[OrderStatus] Failed to update receipt preparedBy:', e && e.message);
         }
+        // If status transitioned to Delivered or Completed, attempt loyalty award
+        try {
+            if (typeof updates.status === 'string' && ['Delivered', 'Completed'].includes(updates.status)) {
+                // run loyalty check asynchronously (non-blocking)
+                checkAndAwardLoyaltyVoucher(updatedOrder.user).catch(err => console.warn('[Loyalty] award after status update failed:', err && err.message));
+            }
+        } catch (e) {
+            console.warn('[OrderStatus] Loyalty check after status update failed:', e && e.message);
+        }
         res.status(200).json({ success: true, data: updatedOrder });
     } catch (error) {
         console.error('[Admin Update Order Status] Error:', error);
