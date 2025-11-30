@@ -237,6 +237,37 @@
     })();
   </script>
     <div id="site-footer"></div>
+
+    <!-- Small auth toggle: hide Log In / Sign Up when a token exists -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const authLoggedOut = document.getElementById('auth-links-logged-out');
+        const authLoggedIn = document.getElementById('auth-links-logged-in');
+        const mobileAuthLoggedOut = document.getElementById('mobile-auth-logged-out');
+        const mobileAuthLoggedIn = document.getElementById('mobile-auth-logged-in');
+
+        function setLoggedOut() {
+          if (authLoggedOut) authLoggedOut.classList.remove('hidden');
+          if (authLoggedIn) authLoggedIn.classList.add('hidden');
+          if (mobileAuthLoggedOut) mobileAuthLoggedOut.classList.remove('hidden');
+          if (mobileAuthLoggedIn) mobileAuthLoggedIn.classList.add('hidden');
+        }
+        function setLoggedIn() {
+          if (authLoggedOut) authLoggedOut.classList.add('hidden');
+          if (authLoggedIn) authLoggedIn.classList.remove('hidden');
+          if (mobileAuthLoggedOut) mobileAuthLoggedOut.classList.add('hidden');
+          if (mobileAuthLoggedIn) mobileAuthLoggedIn.classList.remove('hidden');
+        }
+
+        // Default to logged-out UI, then show logged-in if a token exists.
+        setLoggedOut();
+        try {
+          const token = localStorage.getItem('token');
+          if (token) setLoggedIn();
+        } catch (e) { /* ignore localStorage errors */ }
+      });
+    </script>
+
     <script src="js/footer.js"></script>
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
