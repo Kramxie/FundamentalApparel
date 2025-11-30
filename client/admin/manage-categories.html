@@ -339,9 +339,11 @@
     // --- Deletion flow ---
     const deleteModal = document.createElement('div');
     deleteModal.id = 'delete-modal';
-    deleteModal.className = 'fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center';
+    // initial hidden + transparent backdrop; we'll animate opacity on the backdrop
+    deleteModal.className = 'fixed inset-0 bg-black bg-opacity-40 hidden opacity-0 transition-opacity duration-200 ease-out flex items-center justify-center z-50';
+    // dialog starts slightly down and scaled, invisible — will animate to translate-y-0 scale-100 opacity-100
     deleteModal.innerHTML = `
-      <div class="bg-white p-6 rounded shadow w-96">
+      <div class="bg-white p-6 rounded shadow w-96 transform opacity-0 translate-y-4 scale-95 transition-all duration-200 ease-out">
         <h3 id="delete-title" class="text-lg font-semibold mb-3"></h3>
         <p id="delete-msg" class="text-sm text-gray-700 mb-2"></p>
         <div id="delete-blocking-list" class="text-sm text-gray-700 mb-3" style="display:none;"></div>
@@ -352,6 +354,37 @@
       </div>
     `;
     document.body.appendChild(deleteModal);
+
+    // Animation helpers for modal show/hide (uses Tailwind utility classes)
+    const ANIM_DURATION = 200; // ms, should match Tailwind duration-200
+    function showDeleteModal(){
+      // make visible then animate to final state
+      deleteModal.classList.remove('hidden');
+      // ensure starting state
+      deleteModal.classList.remove('opacity-100');
+      deleteModal.classList.add('opacity-0');
+      const dialog = deleteModal.firstElementChild;
+      dialog.classList.remove('opacity-100','translate-y-0','scale-100');
+      dialog.classList.add('opacity-0','translate-y-4','scale-95');
+      // trigger animation on next frame
+      requestAnimationFrame(()=>{
+        deleteModal.classList.remove('opacity-0');
+        deleteModal.classList.add('opacity-100');
+        dialog.classList.remove('opacity-0','translate-y-4','scale-95');
+        dialog.classList.add('opacity-100','translate-y-0','scale-100');
+      });
+    }
+
+    function hideDeleteModal(){
+      const dialog = deleteModal.firstElementChild;
+      // animate to hidden state
+      deleteModal.classList.remove('opacity-100');
+      deleteModal.classList.add('opacity-0');
+      dialog.classList.remove('opacity-100','translate-y-0','scale-100');
+      dialog.classList.add('opacity-0','translate-y-4','scale-95');
+      // after animation, add hidden to remove from flow
+      setTimeout(()=>{ if(!deleteModal.classList.contains('hidden')) deleteModal.classList.add('hidden'); }, ANIM_DURATION + 10);
+    }
 
     async function hasPendingOrders(categoryId){
       try{
@@ -378,10 +411,10 @@
           document.getElementById('delete-title').textContent = `Cannot delete ${categoryName}`;
           document.getElementById('delete-msg').textContent = '';
           const blockEl = document.getElementById('delete-blocking-list'); blockEl.style.display = ''; blockEl.innerHTML = listHtml;
-          // show modal with only cancel
-          deleteModal.classList.remove('hidden');
+          // show modal with only cancel (animated)
+          showDeleteModal();
           document.getElementById('delete-confirm').style.display = 'none';
-          const onCancelOnly = () => { deleteModal.classList.add('hidden'); document.getElementById('delete-confirm').style.display = ''; cleanup(); };
+          const onCancelOnly = () => { hideDeleteModal(); document.getElementById('delete-confirm').style.display = ''; cleanup(); };
           function cleanup(){ document.getElementById('delete-cancel').removeEventListener('click', onCancelOnly); btnEl.disabled = false; btnEl.textContent = 'Remove'; }
           document.getElementById('delete-cancel').addEventListener('click', onCancelOnly);
           return;
@@ -391,9 +424,10 @@
         document.getElementById('delete-msg').textContent = 'Are you sure? This will unassign the category from its products (products will remain in catalog).';
         // ensure blocking list empty
         const blockEl = document.getElementById('delete-blocking-list'); blockEl.style.display = 'none'; blockEl.innerHTML = '';
-        deleteModal.classList.remove('hidden');
+        // show confirmation modal (animated)
+        showDeleteModal();
 
-        const onCancel = () => { deleteModal.classList.add('hidden'); cleanup(); };
+        const onCancel = () => { hideDeleteModal(); cleanup(); };
         const onConfirm = async () => {
           document.getElementById('delete-confirm').disabled = true;
           document.getElementById('delete-confirm').textContent = 'Deleting...';
@@ -412,7 +446,7 @@
               showMsg(j.msg || 'Failed to delete category', 'error');
             }
           }catch(err){ showMsg('Network error', 'error'); }
-          deleteModal.classList.add('hidden');
+          hideDeleteModal();
           cleanup();
         };
 
