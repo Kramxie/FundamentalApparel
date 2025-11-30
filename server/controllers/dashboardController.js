@@ -64,8 +64,8 @@ exports.getDashboardStats = async (req, res) => {
             Order.countDocuments(),
             // Query 6: Pending Orders
             Order.countDocuments({ status: 'Pending' }),
-            // Query 7: Completed Orders
-            Order.countDocuments({ status: 'Delivered' }),
+            // Query 7: Completed Orders (allow several possible status labels used across flows)
+            Order.countDocuments({ status: { $in: ['Delivered', 'Completed', 'Ready for Pickup/Delivery', 'Out for Delivery', 'Finished'] } }),
             // Query 8: New Customers Today
             User.countDocuments({ createdAt: { $gte: today }, role: 'user' }),
             // Query 9: New Customers This Month
@@ -96,7 +96,7 @@ exports.getDashboardStats = async (req, res) => {
                     revenue: { $sum: { $multiply: ['$orderItems.qty', '$orderItems.price'] } }
                 }},
                 { $sort: { totalSold: -1 } },
-                { $limit: 5 },
+                { $limit: 10 },
                 { $lookup: {
                     from: 'products',
                     localField: '_id',
@@ -174,11 +174,17 @@ exports.getDashboardStats = async (req, res) => {
                 // Chart data
                 salesLast7Days,
                 salesLast30Days,
-                
+
                 // Lists
                 recentOrders,
                 lowStockProducts,
-                topProducts,
+                // Normalize topProducts for frontend (ensure `name`, `totalSold`, `totalRevenue` fields)
+                (topProducts || []).map(tp => ({
+                    _id: tp._id,
+                    name: (tp.productInfo && (tp.productInfo.name || tp.productInfo.title)) || String(tp._id),
+                    totalSold: tp.totalSold || 0,
+                    totalRevenue: tp.revenue || 0
+                })),
                 customOrdersStats
             }
         });
