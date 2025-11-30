@@ -916,8 +916,76 @@ exports.verifyDownPayment = async (req, res) => {
         order.allocatedItems = [{ inventoryId: invDoc ? invDoc._id : null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
       } else {
         if (order.serviceType === 'printing-only' && (order.inventoryName || order.fabricType) && !order.inventoryAllocated) {
-          const allocName = order.inventoryName || order.fabricType;
-          const invDoc = await allocateInventory({ name: allocName, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+          const allocName = order.inventoryName || ((order.fabricType && order.garmentType) ? `${order.fabricType} - ${order.garmentType}` : order.fabricType);
+          let invDoc = null;
+          const triedCandidates = [];
+          // First attempt: try the allocName directly
+          triedCandidates.push(allocName);
+          try {
+            invDoc = await allocateInventory({ name: allocName, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+          } catch (allocErr) {
+            // If not found, attempt to resolve alternative inventory documents and retry allocation
+            if (allocErr.message && allocErr.message.includes('Inventory item not found')) {
+              // Build candidates: inventoryName, combined fabric-garment, productName, garmentType, fabricType
+              const candidates = [];
+              if (order.inventoryName) candidates.push(String(order.inventoryName).trim());
+              if (order.fabricType && order.garmentType) candidates.push(`${String(order.fabricType).trim()} - ${String(order.garmentType).trim()}`);
+              if (order.productName) candidates.push(String(order.productName).trim());
+              if (order.garmentType) candidates.push(String(order.garmentType).trim());
+              if (order.fabricType) candidates.push(String(order.fabricType).trim());
+              // dedupe
+              const seen = new Set();
+              const uniq = candidates.filter(c => { if(!c) return false; const k = c.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; });
+              // Try exact/contains/normalized via findInventoryByName
+              for (const cand of uniq) {
+                triedCandidates.push(cand);
+                try {
+                  const found = await findInventoryByName(cand, session);
+                  if (found) {
+                    // attempt allocation using found.name (authoritative)
+                    try {
+                      invDoc = await allocateInventory({ name: found.name, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+                      break;
+                    } catch (innerAllocErr) {
+                      // continue trying other candidates
+                      console.warn('[verifyDownPayment] allocation retry failed for', found.name, innerAllocErr.message);
+                    }
+                  }
+                } catch (lookupErr) {
+                  console.warn('[verifyDownPayment] candidate lookup failed', cand, lookupErr.message);
+                }
+              }
+              // If still not found, try tokenized search across inventory names
+              if (!invDoc) {
+                try {
+                  const source = (order.inventoryName || order.productName || `${order.fabricType || ''} ${order.garmentType || ''}`).toString();
+                  const tokens = (source || '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+                  if (tokens.length) {
+                    const orArr = tokens.map(t => ({ name: new RegExp(t.replace(/[.*+?^${}()|[\\]\\]/g,'\\\\$&'), 'i') }));
+                    const foundCandidates = await Inventory.find({ $or: orArr }).sort({ quantity: -1 }).session(session);
+                    for (const fc of (foundCandidates || [])) {
+                      triedCandidates.push(fc.name);
+                      try {
+                        invDoc = await allocateInventory({ name: fc.name, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
+                        break;
+                      } catch (e) {
+                        console.warn('[verifyDownPayment] tokenized allocation attempt failed for', fc.name, e.message);
+                      }
+                    }
+                  }
+                } catch (tokErr) { console.warn('[verifyDownPayment] tokenized lookup failed', tokErr && tokErr.message); }
+              }
+            } else {
+              // Allocation failed for reasons other than missing inventory - rethrow
+              throw allocErr;
+            }
+          }
+
+          if (!invDoc) {
+            // nothing worked; return 400 with tried candidates for admin visibility
+            return res.status(400).json({ success: false, msg: 'Inventory item not found', tried: triedCandidates });
+          }
+
           order.inventoryAllocated = true;
           order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
           // sync product count
