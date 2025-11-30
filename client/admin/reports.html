@@ -241,9 +241,17 @@
                   <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
                       <thead class="bg-gray-50 text-xs text-gray-500"><tr><th class="p-2 text-left">Product</th><th class="p-2 text-right">Units</th><th class="p-2 text-right">Revenue</th></tr></thead>
-                      <tbody id="topProductsTbody" class="bg-white divide-y divide-gray-100"></tbody>
+                          <tbody id="topProductsTbody" class="bg-white divide-y divide-gray-100"></tbody>
                     </table>
                   </div>
+                      <div class="mt-3 flex items-center justify-end gap-2">
+                        <div class="text-sm text-gray-600">Show</div>
+                        <div class="flex items-center gap-2">
+                          <button id="topProductsPrev" class="px-3 py-1 border rounded text-sm">Prev</button>
+                          <div id="topProductsPageInfo" class="text-sm text-gray-600 px-2">0 / 0</div>
+                          <button id="topProductsNext" class="px-3 py-1 border rounded text-sm">Next</button>
+                        </div>
+                      </div>
                 </div>
             </div>
           </div>
@@ -297,7 +305,14 @@
             <div id="orders-section" class="bg-white p-4 rounded shadow">
               <div class="flex items-center justify-between mb-3">
                 <h2 class="text-lg font-medium">Orders</h2>
-                <div class="text-sm text-gray-500">Showing up to 250 recent orders for selected range</div>
+                <div class="flex items-center gap-4">
+                  <div class="text-sm text-gray-500">Showing up to 250 recent orders for selected range</div>
+                  <div class="flex items-center gap-2">
+                    <button id="ordersPrev" class="px-3 py-1 border rounded text-sm">Prev</button>
+                    <div id="ordersPageInfo" class="text-sm text-gray-600">0 / 0</div>
+                    <button id="ordersNext" class="px-3 py-1 border rounded text-sm">Next</button>
+                  </div>
+                </div>
               </div>
               <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -370,6 +385,13 @@
 
     // Draw charts using Chart.js
     let salesChart = null, topProductsChart = null, fabricChart = null, predesignChart = null;
+    // Pagination state for top products and orders
+    let topProductsData = [];
+    let topProductsPage = 0;
+    const TOP_PRODUCTS_PAGE_SIZE = 5;
+
+    let ordersPage = 0;
+    const ORDERS_PAGE_SIZE = 10;
     function drawSalesChart(labels, data) {
       const ctx = document.getElementById('salesChart').getContext('2d');
       if (salesChart) salesChart.destroy();
@@ -482,27 +504,10 @@
           drawSalesChart(labels, values);
         }
 
-        // Top products chart and table
-        const topLabels = (data.topProducts || []).map(p => (p.productInfo && p.productInfo.name) || String(p._id));
-        const topValues = (data.topProducts || []).map(p => p.totalSold || p.unitsSold || 0);
-        try { document.getElementById('topProductsChartWrapper').classList.toggle('scrollable', (topLabels.length > 12)); } catch(e){}
-        if (!topLabels || topLabels.length === 0) {
-          showEmptyForCanvas('topProductsChartWrapper','topProductsChart','No top-products data for the selected range.');
-        } else {
-          clearEmptyForCanvas('topProductsChartWrapper','topProductsChart');
-          drawTopProductsChart(topLabels, topValues);
-        }
-
-        // render top products table
-        const tbody = document.getElementById('topProductsTbody'); tbody.innerHTML = '';
-        (data.topProducts || []).forEach(p => {
-          const tr = document.createElement('tr');
-          const name = (p.productInfo && p.productInfo.name) || String(p._id || '');
-          const units = Number(p.totalSold || p.unitsSold || 0);
-          const revenue = Number(p.revenue || p.totalRevenue || (p.unitPrice ? p.unitPrice * units : 0));
-          tr.innerHTML = `<td class="p-2">${escapeHtmlGlobal(name)}</td><td class="p-2 text-right">${units}</td><td class="p-2 text-right">₱${revenue.toLocaleString(undefined,{minimumFractionDigits:2})}</td>`;
-          tbody.appendChild(tr);
-        });
+        // Top products data: keep full array in state and render first page
+        topProductsData = data.topProducts || [];
+        topProductsPage = 0;
+        renderTopProductsPage();
 
         // --- Top Selling Fabric & Garment and Top Selling Pre-Design Apparel ---
         try {
@@ -584,10 +589,12 @@
         document.getElementById('aov').textContent = '₱' + Number(aov||0).toLocaleString(undefined,{minimumFractionDigits:2});
         document.getElementById('conversion-rate').textContent = (Number(data.conversionRate||0)*100).toFixed(2) + '%';
 
-        // Fetch and render Orders table for the selected range
+        // Fetch and render Orders table for the selected range (paginated)
         try {
           const orders = await fetchOrdersForTable(startDate, endDate, selectedPerType);
-          renderOrdersTable(orders);
+          // fetchOrdersForTable sets currentOrders; ensure we render first page
+          ordersPage = 0;
+          renderOrdersPage();
         } catch (e) { console.debug('Failed to fetch orders for table', e); }
 
         document.getElementById('report-status').textContent = '';
@@ -703,6 +710,18 @@
           setTimeout(()=> statusEl.textContent=' ', 3000);
         } catch (e) { alert('Export PDF failed: ' + e.message); }
       });
+      // Pagination button wiring (Top Products and Orders)
+      try {
+        const tpPrev = document.getElementById('topProductsPrev');
+        const tpNext = document.getElementById('topProductsNext');
+        if (tpPrev) tpPrev.addEventListener('click', () => { topProductsPage = Math.max(0, topProductsPage-1); renderTopProductsPage(); });
+        if (tpNext) tpNext.addEventListener('click', () => { topProductsPage = topProductsPage+1; renderTopProductsPage(); });
+
+        const oPrev = document.getElementById('ordersPrev');
+        const oNext = document.getElementById('ordersNext');
+        if (oPrev) oPrev.addEventListener('click', () => { ordersPage = Math.max(0, ordersPage-1); renderOrdersPage(); });
+        if (oNext) oNext.addEventListener('click', () => { ordersPage = ordersPage+1; renderOrdersPage(); });
+      } catch (e) { /* ignore if elements not present yet */ }
     });
 
     // --- Orders table and export implementations ---
@@ -761,6 +780,55 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    // Pagination renderers
+    function renderTopProductsPage() {
+      const tbody = document.getElementById('topProductsTbody');
+      const wrapperId = 'topProductsChartWrapper';
+      tbody.innerHTML = '';
+      const total = topProductsData.length || 0;
+      const pages = Math.max(1, Math.ceil(total / TOP_PRODUCTS_PAGE_SIZE));
+      topProductsPage = Math.min(Math.max(0, topProductsPage), pages - 1);
+      const start = topProductsPage * TOP_PRODUCTS_PAGE_SIZE;
+      const pageItems = topProductsData.slice(start, start + TOP_PRODUCTS_PAGE_SIZE);
+
+      const labels = pageItems.map(p => (p.productInfo && p.productInfo.name) || String(p._id));
+      const values = pageItems.map(p => Number(p.chartValue ?? p.totalSold ?? p.unitsSold ?? p.total ?? 0));
+      try { document.getElementById(wrapperId).classList.toggle('scrollable', (labels.length > 12)); } catch(e){}
+      if (!labels || labels.length === 0) {
+        showEmptyForCanvas(wrapperId,'topProductsChart','No top-products data for the selected range.');
+      } else {
+        clearEmptyForCanvas(wrapperId,'topProductsChart');
+        drawTopProductsChart(labels, values);
+      }
+
+      // populate table with current page
+      pageItems.forEach(p => {
+        const tr = document.createElement('tr');
+        const name = (p.productInfo && p.productInfo.name) || String(p._id || '');
+        const units = Number(p.totalSold ?? p.unitsSold ?? p.chartValue ?? 0);
+        const revenue = Number(p.revenue ?? p.totalRevenue ?? 0);
+        tr.innerHTML = `<td class="p-2">${escapeHtmlGlobal(name)}</td><td class="p-2 text-right">${units}</td><td class="p-2 text-right">₱${revenue.toLocaleString(undefined,{minimumFractionDigits:2})}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      // update pagination UI
+      const info = document.getElementById('topProductsPageInfo'); if (info) info.textContent = `${topProductsPage+1} / ${pages}`;
+      const prev = document.getElementById('topProductsPrev'); const next = document.getElementById('topProductsNext');
+      if (prev) prev.disabled = topProductsPage <= 0; if (next) next.disabled = topProductsPage >= pages-1;
+    }
+
+    function renderOrdersPage() {
+      const total = (currentOrders && currentOrders.length) || 0;
+      const pages = Math.max(1, Math.ceil(total / ORDERS_PAGE_SIZE));
+      ordersPage = Math.min(Math.max(0, ordersPage), pages - 1);
+      const start = ordersPage * ORDERS_PAGE_SIZE;
+      const pageItems = (currentOrders || []).slice(start, start + ORDERS_PAGE_SIZE);
+      renderOrdersTable(pageItems);
+      const info = document.getElementById('ordersPageInfo'); if (info) info.textContent = `${ordersPage+1} / ${pages}`;
+      const prev = document.getElementById('ordersPrev'); const next = document.getElementById('ordersNext');
+      if (prev) prev.disabled = ordersPage <= 0; if (next) next.disabled = ordersPage >= pages-1;
     }
 
     async function exportCurrentViewCSV() {
