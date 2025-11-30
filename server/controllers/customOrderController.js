@@ -1178,11 +1178,29 @@ exports.verifyFinalPayment = async (req, res) => {
                 if (order.fabricType) looseTerms.push(String(order.fabricType).trim());
                 if (order.garmentType) looseTerms.push(String(order.garmentType).trim());
                 if (looseTerms.length) {
-                  const orQs = looseTerms.map(t => ({ name: new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i') }));
+                  const orQs = looseTerms.map(t => ({ name: new RegExp(t.replace(/[.*+?^${}()|[\\]\\]/g,'\\\\$&'), 'i') }));
                   const candidatesDocs = await Inventory.find({ $or: orQs }).sort({ quantity: -1 }).session(session);
                   if (candidatesDocs && candidatesDocs.length) {
                     invDoc = candidatesDocs[0];
                     console.warn('[verifyFinalPayment] used loose inventory match:', invDoc.name, 'for terms', looseTerms);
+                  }
+                }
+
+                // Additional fallback: tokenized search across inventory names (split by non-alphanum)
+                if (!invDoc) {
+                  try {
+                    const source = (order.inventoryName || order.productName || `${order.fabricType || ''} ${order.garmentType || ''}`).toString();
+                    const tokens = (source || '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+                    if (tokens.length) {
+                      const orArr = tokens.map(t => ({ name: new RegExp(t.replace(/[.*+?^${}()|[\\]\\]/g,'\\\\$&'), 'i') }));
+                      const foundCandidates = await Inventory.find({ $or: orArr }).sort({ quantity: -1 }).session(session);
+                      if (foundCandidates && foundCandidates.length) {
+                        invDoc = foundCandidates[0];
+                        console.warn('[verifyFinalPayment] used tokenized fallback match:', invDoc.name, 'for tokens', tokens);
+                      }
+                    }
+                  } catch (tokErr) {
+                    console.warn('[verifyFinalPayment] tokenized inventory lookup failed:', tokErr && tokErr.message);
                   }
                 }
               }
@@ -1235,11 +1253,29 @@ exports.verifyFinalPayment = async (req, res) => {
                 if (order.fabricType) looseTerms.push(String(order.fabricType).trim());
                 if (order.garmentType) looseTerms.push(String(order.garmentType).trim());
                 if (looseTerms.length) {
-                  const orQs = looseTerms.map(t => ({ name: new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i') }));
+                  const orQs = looseTerms.map(t => ({ name: new RegExp(t.replace(/[.*+?^${}()|[\\]\\]/g,'\\\\$&'), 'i') }));
                   const candidatesDocs = await Inventory.find({ $or: orQs }).sort({ quantity: -1 }).session(session);
                   if (candidatesDocs && candidatesDocs.length) {
                     foundInv = candidatesDocs[0];
                     console.warn('[verifyFinalPayment] used loose inventory match (non-size):', foundInv.name, 'for terms', looseTerms);
+                  }
+                }
+
+                // Additional tokenized fallback for non-size allocation
+                if (!foundInv) {
+                  try {
+                    const source = (order.inventoryName || order.productName || `${order.fabricType || ''} ${order.garmentType || ''}`).toString();
+                    const tokens = (source || '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+                    if (tokens.length) {
+                      const orArr = tokens.map(t => ({ name: new RegExp(t.replace(/[.*+?^${}()|[\\]\\]/g,'\\\\$&'), 'i') }));
+                      const foundCandidates = await Inventory.find({ $or: orArr }).sort({ quantity: -1 }).session(session);
+                      if (foundCandidates && foundCandidates.length) {
+                        foundInv = foundCandidates[0];
+                        console.warn('[verifyFinalPayment] used tokenized fallback match (non-size):', foundInv.name, 'for tokens', tokens);
+                      }
+                    }
+                  } catch (tokErr) {
+                    console.warn('[verifyFinalPayment] tokenized inventory lookup (non-size) failed:', tokErr && tokErr.message);
                   }
                 }
               }
