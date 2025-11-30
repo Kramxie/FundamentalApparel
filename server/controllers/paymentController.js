@@ -105,12 +105,14 @@ exports.createPaymentSession = async (req, res) => {
     // Adjust VAT for downpayment/balance options
     let vatForCharge = totalVat;
     let finalCharge = 0;
-    // Keep 'balance' as 'balance' so server computes remaining amount correctly
-    const normalizedOption = (paymentOption === 'balance') ? 'balance' : (paymentOption || 'full');
-    if (normalizedOption === 'downpayment') {
+    // Preserve raw option for calculation (keep 'balance' to compute remaining correctly)
+    const rawOption = (paymentOption === 'balance') ? 'balance' : (paymentOption || 'full');
+    // For storing into the CustomOrder.paymentOption (enum), map 'balance' -> 'downpayment'
+    const storeOption = rawOption === 'balance' ? 'downpayment' : rawOption;
+    if (rawOption === 'downpayment') {
       finalCharge = Math.round(((taxable + deliveryFeeNumber + totalVat) * 0.5 + Number.EPSILON) * 100) / 100;
       vatForCharge = Math.round((totalVat * 0.5 + Number.EPSILON) * 100) / 100;
-    } else if (normalizedOption === 'balance') {
+    } else if (rawOption === 'balance') {
       // For remaining balance, infer alreadyPaid from serviceData or provided fields
       let alreadyPaid = Number(serviceData?.alreadyPaidAmount || 0);
       if (!alreadyPaid || alreadyPaid <= 0) {
@@ -175,7 +177,7 @@ exports.createPaymentSession = async (req, res) => {
       order.paymentStatus = 'pending';
       // Store full order total (including VAT and delivery) as authoritative totalPrice
       order.totalPrice = (base || 0) + (deliveryFeeNumber || 0) + (totalVat || 0);
-      order.paymentOption = normalizedOption;
+      order.paymentOption = storeOption;
       order.shippingMethod = shippingMethod || 'Standard';
       order.shippingAddress = shippingAddress || null;
       order.deliveryFee = deliveryFeeNumber || 0;
@@ -198,7 +200,7 @@ exports.createPaymentSession = async (req, res) => {
         quantity: serviceData?.quantity || 1,
         // Store full order total (including VAT + delivery)
         totalPrice: (base || 0) + (deliveryFeeNumber || 0) + (totalVat || 0),
-        paymentOption: normalizedOption,
+        paymentOption: storeOption,
         shippingMethod: shippingMethod || 'Standard',
         shippingAddress: shippingAddress || null,
         deliveryFee: deliveryFee || 0,
