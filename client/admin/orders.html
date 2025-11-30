@@ -2372,13 +2372,16 @@
             'heat-transfer': 'Heat Transfer',
             'vinyl-print': 'Vinyl Print',
           };
+          // Show combined Fabric & Garment as the inventory name (matches Inventory.item.name like "Dry-Fit - Jersey")
+          const combinedFG = (order.inventoryName && String(order.inventoryName).trim()) || ((order.fabricType && order.garmentType) ? `${String(order.fabricType).trim()} - ${String(order.garmentType).trim()}` : (order.fabricType || order.productName || 'N/A'));
           document.getElementById('custom-modal-printing-method').textContent = methodMap[order.printingMethod] || order.printingMethod || 'N/A';
-          document.getElementById('custom-modal-fabric-type').textContent = order.fabricType || 'N/A';
-          // Fetch inventory info for this fabric (admin endpoint)
+          // Display combined value so admin sees the Inventory key used
+          document.getElementById('custom-modal-fabric-type').textContent = combinedFG || 'N/A';
+          // Fetch inventory info for this combined name (admin endpoint)
           (async () => {
             try {
-              const name = order.fabricType;
-              if (!name) {
+              const name = combinedFG;
+              if (!name || name === 'N/A') {
                 document.getElementById('custom-modal-fabric-available').textContent = '-';
                 document.getElementById('custom-modal-fabric-reserved').textContent = '-';
                 return;
@@ -2396,11 +2399,12 @@
                 document.getElementById('custom-modal-fabric-reserved').textContent = (item.reserved != null) ? item.reserved : '0';
               }
             } catch (e) {
-              console.warn('Inventory fetch failed', e.message);
+              console.warn('Inventory fetch failed', e && e.message);
               document.getElementById('custom-modal-fabric-available').textContent = '?';
               document.getElementById('custom-modal-fabric-reserved').textContent = '?';
             }
           })();
+          // Still show garmentType separately for clarity
           document.getElementById('custom-modal-garment-type').textContent = order.garmentType || 'N/A';
 
           const sizeRow = document.getElementById('custom-modal-garment-size-row');
