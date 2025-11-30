@@ -6,6 +6,7 @@ const User = require('../models/User');
 const mongoose = require('mongoose');
 const notify = require('../utils/notify');
 const { allocateInventoryBySizes, findInventoryByName } = require('../utils/inventory');
+const { checkAndAwardLoyaltyVoucher } = require('../utils/loyalty');
 
 function escapeRegex(text) {
     return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -658,6 +659,8 @@ exports.completeOrder = async (req, res) => {
             console.warn('[Complete Order] Loyalty check failed:', loyaltyErr.message || loyaltyErr);
             // Don't fail the order completion if loyalty check fails
         }
+        // Respond with the updated order
+        return res.status(200).json({ success: true, data: order });
     } catch (error) {
         console.error('[Complete Order] Error:', error);
         return res.status(500).json({ success: false, msg: 'Server Error' });
