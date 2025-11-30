@@ -148,7 +148,8 @@ exports.submitCustomOrder = async (req, res) => {
     // Initialize order data with common fields
     orderData = {
       user: userId,
-      serviceType: serviceType || 'customize-jersey',
+      // Default to printing-only since the project uses Pre-Design and Printing-Only services
+      serviceType: serviceType || 'printing-only',
       productName: productName || "Custom Jersey",
       customType: customType || 'Template',
       quantity: Number(quantity),
@@ -183,59 +184,6 @@ exports.submitCustomOrder = async (req, res) => {
 
     // Route based on serviceType
     switch(serviceType) {
-      case 'customize-jersey':
-        // Add item and printing type
-        if (itemType) orderData.itemType = itemType;
-        if (printingType) orderData.printingType = printingType;
-
-        // Handle template customization fields
-        if (customType === 'Template') {
-          orderData.designDetails = designDetails || "Template customization";
-          if (designStyle) orderData.designStyle = designStyle;
-          if (primaryColor) orderData.primaryColor = primaryColor;
-          if (secondaryColor) orderData.secondaryColor = secondaryColor;
-          if (accentColor) orderData.accentColor = accentColor;
-          if (textFont) orderData.textFont = textFont;
-          if (textSize) orderData.textSize = textSize;
-          if (textPlacement) orderData.textPlacement = textPlacement;
-          if (customText) orderData.customText = customText;
-          if (logoType) orderData.logoType = logoType;
-          if (logoPlacement) orderData.logoPlacement = logoPlacement;
-        } else if (customType === 'FileUpload') {
-          // Validate design file for upload mode
-          if (!orderData.designFileUrl) {
-            return res.status(400).json({
-              success: false,
-              msg: "A design file is required for File Upload mode.",
-            });
-          }
-          orderData.designDetails = designDetails || "Customer uploaded design";
-        }
-
-        // Handle team details
-        if (teamName) orderData.teamName = teamName;
-        if (includeTeamMembers === 'true' || includeTeamMembers === true) {
-          orderData.includeTeamMembers = true;
-          // Accept team members submitted as `teamMembers` or `teamEntries` (client sometimes sends `teamEntries`)
-          const rawTeam = teamMembers || req.body.teamEntries || null;
-          if (rawTeam) {
-            try {
-              orderData.teamMembers = typeof rawTeam === 'string'
-                ? JSON.parse(rawTeam)
-                : rawTeam;
-            } catch (e) {
-              console.error('Error parsing team members:', e);
-            }
-          }
-        }
-
-        // Handle shorts options
-        if (includeShorts === 'true' || includeShorts === true) {
-          orderData.includeShorts = true;
-          orderData.shortsSameDesign = shortsSameDesign === 'true' || shortsSameDesign === true;
-          if (shortsDesignDetails) orderData.shortsDesignDetails = shortsDesignDetails;
-        }
-        break;
 
       case 'layout-creation':
         // Require inspiration image for layout creation
@@ -765,7 +713,9 @@ exports.verifyDownPayment = async (req, res) => {
 
         const sizesMap = extractSizesMap(order);
         if (sizesMap) {
-            const invName = order.inventoryName || order.productName || order.garmentType || order.fabricType || null;
+          // Prefer explicit inventoryName sent by client in the verification request
+          const requestedInventoryName = (req.body && req.body.inventoryName) ? String(req.body.inventoryName).trim() : null;
+          const invName = requestedInventoryName || order.inventoryName || order.productName || order.garmentType || order.fabricType || null;
           if (!invName) throw new Error('Cannot determine inventory name for per-size allocation');
           // Try to resolve Inventory doc first so we can pass inventoryId (more robust than name-only)
           const invDoc = await findInventoryByName(invName, session);
@@ -784,7 +734,8 @@ exports.verifyDownPayment = async (req, res) => {
           order.allocatedItems = [{ inventoryId: invDoc ? invDoc._id : null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
         } else {
           if (order.serviceType === 'printing-only' && (order.inventoryName || order.fabricType) && !order.inventoryAllocated) {
-            const allocName = order.inventoryName || order.fabricType;
+            const requestedInventoryName = (req.body && req.body.inventoryName) ? String(req.body.inventoryName).trim() : null;
+            const allocName = requestedInventoryName || order.inventoryName || order.fabricType;
             const invDoc = await allocateInventory({ name: allocName, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
             order.inventoryAllocated = true;
             order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
@@ -891,7 +842,8 @@ exports.verifyDownPayment = async (req, res) => {
       const sizesMap = extractSizesMap(order);
       if (sizesMap) {
         // Prefer mapping inventory by explicit inventoryName (combined), then product name; fall back to garmentType or fabricType
-        const invName = order.inventoryName || order.productName || order.garmentType || order.fabricType || null;
+        const requestedInventoryName = (req.body && req.body.inventoryName) ? String(req.body.inventoryName).trim() : null;
+        const invName = requestedInventoryName || order.inventoryName || order.productName || order.garmentType || order.fabricType || null;
         if (!invName) throw new Error('Cannot determine inventory name for per-size allocation');
         const invDoc = await findInventoryByName(invName, session);
         const inventoryId = invDoc ? invDoc._id : null;
@@ -916,7 +868,8 @@ exports.verifyDownPayment = async (req, res) => {
         order.allocatedItems = [{ inventoryId: invDoc ? invDoc._id : null, name: invName, qty: Object.values(sizesMap).reduce((a,b)=>a+b,0) }];
       } else {
         if (order.serviceType === 'printing-only' && (order.inventoryName || order.fabricType) && !order.inventoryAllocated) {
-          const allocName = order.inventoryName || ((order.fabricType && order.garmentType) ? `${order.fabricType} - ${order.garmentType}` : order.fabricType);
+          const requestedInventoryName = (req.body && req.body.inventoryName) ? String(req.body.inventoryName).trim() : null;
+          const allocName = requestedInventoryName || order.inventoryName || ((order.fabricType && order.garmentType) ? `${order.fabricType} - ${order.garmentType}` : order.fabricType);
           let invDoc = null;
           const triedCandidates = [];
           // First attempt: try the allocName directly
@@ -1177,6 +1130,9 @@ exports.verifyFinalPayment = async (req, res) => {
             return res.status(404).json({ success: false, msg: 'Custom order not found.' });
         }
 
+        // Prefer client-supplied inventoryName for matching (when admin supplied it from the modal)
+        const requestedInventoryName = (req.body && req.body.inventoryName) ? String(req.body.inventoryName).trim() : null;
+
         // Tiyakin na "Pending Final Verification" ang status
         if (order.status !== 'Pending Final Verification') {
             return res.status(400).json({ success: false, msg: 'This order is not awaiting final payment verification.' });
@@ -1216,9 +1172,12 @@ exports.verifyFinalPayment = async (req, res) => {
 
             const sizesMap = extractSizesMap(order);
             if (sizesMap) {
+              // Allow client to suggest an explicit inventory name for matching
+              const requestedInventoryName = (req.body && req.body.inventoryName) ? String(req.body.inventoryName).trim() : null;
               // Build candidate inventory names to try (prefer explicit inventoryName, then fabric+garment combos)
               const candidates = [];
-              if (order.inventoryName) candidates.push(String(order.inventoryName).trim());
+                if (requestedInventoryName) candidates.push(requestedInventoryName);
+                if (order.inventoryName) candidates.push(String(order.inventoryName).trim());
               if (order.fabricType && order.garmentType) candidates.push(`${String(order.fabricType).trim()} - ${String(order.garmentType).trim()}`);
               if (order.fabricType && order.itemType) candidates.push(`${String(order.fabricType).trim()} - ${String(order.itemType).trim()}`);
               if (order.productName) candidates.push(String(order.productName).trim());
@@ -1295,6 +1254,7 @@ exports.verifyFinalPayment = async (req, res) => {
             } else {
               // Try to find an inventory document using several candidate names before allocating
               const candidates = [];
+              if (requestedInventoryName) candidates.push(requestedInventoryName);
               if (order.inventoryName) candidates.push(String(order.inventoryName).trim());
               if (order.fabricType && order.garmentType) candidates.push(`${String(order.fabricType).trim()} - ${String(order.garmentType).trim()}`);
               if (order.fabricType && order.itemType) candidates.push(`${String(order.fabricType).trim()} - ${String(order.itemType).trim()}`);
