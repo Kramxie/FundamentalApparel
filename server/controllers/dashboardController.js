@@ -179,7 +179,7 @@ exports.getDashboardStats = async (req, res) => {
                 recentOrders,
                 lowStockProducts,
                 // Normalize topProducts for frontend (ensure `name`, `totalSold`, `totalRevenue` fields)
-                (topProducts || []).map(tp => ({
+                topProducts: (topProducts || []).map(tp => ({
                     _id: tp._id,
                     name: (tp.productInfo && (tp.productInfo.name || tp.productInfo.title)) || String(tp._id),
                     totalSold: tp.totalSold || 0,
