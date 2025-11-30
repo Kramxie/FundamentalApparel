@@ -656,6 +656,8 @@ exports.completeOrder = async (req, res) => {
             await checkAndAwardLoyaltyVoucher(order.user);
         } catch (loyaltyErr) {
             console.warn('[Complete Order] Loyalty check failed:', loyaltyErr.message || loyaltyErr);
+            // Don't fail the order completion if loyalty check fails
+        }
     } catch (error) {
         console.error('[Complete Order] Error:', error);
         return res.status(500).json({ success: false, msg: 'Server Error' });
