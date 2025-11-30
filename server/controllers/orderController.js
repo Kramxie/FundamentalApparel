@@ -650,6 +650,15 @@ exports.completeOrder = async (req, res) => {
         order.status = 'Completed';
         order.deliveredAt = new Date();
         await order.save();
+
+        // Check and award loyalty voucher after order completion
+        try {
+            await checkAndAwardLoyaltyVoucher(order.user);
+        } catch (loyaltyErr) {
+            console.warn('[Complete Order] Loyalty check failed:', loyaltyErr.message || loyaltyErr);
+            // Don't fail the order completion if loyalty check fails
+        }
+
         return res.status(200).json({ success: true, data: order });
     } catch (error) {
         console.error('[Complete Order] Error:', error);
