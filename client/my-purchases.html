@@ -96,7 +96,7 @@
             if (openInline) {
               // Open a new window and render the receipt HTML for WYSIWYG view
               const w = window.open('', '_blank');
-              w.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Receipt</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"><script>/* minimal */</script><style>body{font-family:Inter,system-ui,Arial; padding:20px; background:#fff}</style></head><body>${buildReceiptHtml(r)}</body></html>`);
+              w.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Receipt</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"><script>/* minimal */<\/script><style>body{font-family:Inter,system-ui,Arial; padding:20px; background:#fff}</style></head><body>${buildReceiptHtml(r)}</body></html>`);
               w.document.close();
               return;
             }

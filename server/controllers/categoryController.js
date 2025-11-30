@@ -122,7 +122,23 @@ exports.checkPending = async (req, res) => {
     // Consider orders with statuses that indicate not yet delivered
     const pendingStatuses = ['Processing','Accepted','Shipped'];
     const pendingCount = await Order.countDocuments({ 'orderItems.product': { $in: pids }, status: { $in: pendingStatuses } });
-    return res.status(200).json({ success: true, hasPending: pendingCount > 0, pendingCount });
+    // Additionally, provide a list of blocking products with their pending orders count (helpful for UI warnings)
+    let blockingProducts = [];
+    if (pendingCount > 0) {
+      // Aggregate pending orders grouped by product id
+      const agg = await Order.aggregate([
+        { $match: { status: { $in: pendingStatuses } } },
+        { $unwind: '$orderItems' },
+        { $match: { 'orderItems.product': { $in: pids } } },
+        { $group: { _id: '$orderItems.product', pendingOrders: { $sum: 1 } } }
+      ]);
+      // Map product id -> name
+      const idToName = {};
+      const prodDocs = await Product.find({ _id: { $in: agg.map(a => a._id) } }, '_id name').lean();
+      prodDocs.forEach(pd => { idToName[pd._id] = pd.name; });
+      blockingProducts = agg.map(a => ({ _id: a._id, name: idToName[a._id] || String(a._id), pendingOrders: a.pendingOrders }));
+    }
+    return res.status(200).json({ success: true, hasPending: pendingCount > 0, pendingCount, blockingProducts });
   } catch (error) {
     console.error('[Category checkPending] Error', error);
     return res.status(500).json({ success: false, msg: 'Server Error' });
@@ -143,7 +159,17 @@ exports.deleteCategory = async (req, res) => {
     if (pids.length > 0) {
       const pending = await Order.countDocuments({ 'orderItems.product': { $in: pids }, status: { $in: pendingStatuses } });
       if (pending > 0) {
-        return res.status(400).json({ success: false, msg: 'Cannot delete category: one or more products have pending orders' });
+        // Provide information about blocking products to help the admin
+        const agg = await Order.aggregate([
+          { $match: { status: { $in: pendingStatuses } } },
+          { $unwind: '$orderItems' },
+          { $match: { 'orderItems.product': { $in: pids } } },
+          { $group: { _id: '$orderItems.product', pendingOrders: { $sum: 1 } } }
+        ]);
+        const prodDocs = await Product.find({ _id: { $in: agg.map(a => a._id) } }, '_id name').lean();
+        const idToName = {}; prodDocs.forEach(pd => { idToName[pd._id] = pd.name; });
+        const blockingProducts = agg.map(a => ({ _id: a._id, name: idToName[a._id] || String(a._id), pendingOrders: a.pendingOrders }));
+        return res.status(400).json({ success: false, msg: 'Cannot delete category: one or more products have pending orders', pendingCount: pending, blockingProducts });
       }
     }
 
