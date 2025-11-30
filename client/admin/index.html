@@ -591,7 +591,8 @@
             }
 
             const labels = topProducts.map(item => item.name || 'Unknown Product');
-            const data = topProducts.map(item => item.totalSold || 0);
+            // Use server-provided `chartValue` (fallback to totalSold/totalRevenue) so slices are numeric
+            const data = topProducts.map(item => Number(item.chartValue || item.totalSold || item.totalRevenue || 0));
             const backgroundColors = [
                 'rgba(99, 102, 241, 0.8)',
                 'rgba(16, 185, 129, 0.8)',
