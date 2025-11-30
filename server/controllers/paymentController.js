@@ -255,10 +255,13 @@ exports.createPaymentSession = async (req, res) => {
 
     if (!paymongoResponse.ok) {
       console.error('[PayMongo] API Error:', paymongoData);
-      throw new Error(
-        paymongoData.errors?.[0]?.detail || 
-        'Failed to create payment session'
-      );
+      // Return detailed info to client for debugging (502 Bad Gateway)
+      return res.status(502).json({
+        success: false,
+        msg: paymongoData.errors?.[0]?.detail || 'Failed to create payment session',
+        paymongo: paymongoData,
+        status: paymongoResponse.status
+      });
     }
 
     console.log('[PayMongo] Checkout session created:', paymongoData.data.id);
@@ -533,14 +536,17 @@ exports.createOrderPaymentSession = async (req, res) => {
 
     if (!paymongoResponse.ok) {
       console.error('[PayMongo] API Error:', paymongoData);
-      
+
       // Delete the order if payment session creation fails
       await Order.findByIdAndDelete(order._id);
-      
-      throw new Error(
-        paymongoData.errors?.[0]?.detail || 
-        'Failed to create payment session'
-      );
+
+      // Return API error details to client to aid debugging
+      return res.status(502).json({
+        success: false,
+        msg: paymongoData.errors?.[0]?.detail || 'Failed to create payment session',
+        paymongo: paymongoData,
+        status: paymongoResponse.status
+      });
     }
 
     console.log('[PayMongo] Order checkout session created:', paymongoData.data.id);
