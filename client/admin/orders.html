@@ -840,6 +840,21 @@
     function peso(n) { return '₱' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function shortId(id) { return id ? id.slice(0, 8) : '-'; }
     
+    // Normalize fabric+garment into an inventory key: e.g. "Dry Fit" + "jersey" -> "Dry-Fit - Jersey"
+    function normalizeInventoryKey(fabric, garment) {
+      const safe = (s) => (s || '').toString().trim();
+      const cap = (str) => String(str).toLowerCase().replace(/[-_\s]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const fabricRaw = safe(fabric);
+      const garmentRaw = safe(garment);
+      if (!fabricRaw && !garmentRaw) return '';
+      // Fabric: replace multiple spaces with single, split into words, strip non-alphanum except hyphen, capitalize and join with hyphen
+      const fabricParts = fabricRaw.split(/\s+/).map(p => p.trim()).filter(Boolean);
+      const fabricNorm = fabricParts.map(p => p.replace(/[^a-zA-Z0-9-]/g,'')).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('-');
+      // Garment: capitalize words and collapse spaces
+      const garmentNorm = cap(garmentRaw).replace(/\s+/g, ' ');
+      if (fabricNorm && garmentNorm) return `${fabricNorm} - ${garmentNorm}`;
+      return fabricNorm || garmentNorm || '';
+    }
 
     // message helper (replaces alert())
     const messageEl = document.getElementById('message-container');
@@ -2373,7 +2388,7 @@
             'vinyl-print': 'Vinyl Print',
           };
           // Show combined Fabric & Garment as the inventory name (matches Inventory.item.name like "Dry-Fit - Jersey")
-          const combinedFG = (order.inventoryName && String(order.inventoryName).trim()) || ((order.fabricType && order.garmentType) ? `${String(order.fabricType).trim()} - ${String(order.garmentType).trim()}` : (order.fabricType || order.productName || 'N/A'));
+          const combinedFG = (order.inventoryName && String(order.inventoryName).trim()) || normalizeInventoryKey(order.fabricType, order.garmentType) || normalizeInventoryKey(order.fabricType, order.productName) || (order.fabricType || order.productName || 'N/A');
           document.getElementById('custom-modal-printing-method').textContent = methodMap[order.printingMethod] || order.printingMethod || 'N/A';
           // Display combined value so admin sees the Inventory key used
           const fabricEl = document.getElementById('custom-modal-fabric-type');
@@ -2389,7 +2404,7 @@
             }
           } catch(e) { /* ignore UI hide errors */ }
 
-          // Fetch inventory info for this combined name (admin endpoint)
+          // Fetch inventory info for this combined (normalized) name (admin endpoint)
           (async () => {
             try {
               const name = combinedFG;
@@ -2403,8 +2418,27 @@
               if (!r.ok) throw new Error('Failed to fetch inventory');
               const j = await r.json();
               if (!j.success || !j.data || j.data.length === 0) {
-                document.getElementById('custom-modal-fabric-available').textContent = '0';
-                document.getElementById('custom-modal-fabric-reserved').textContent = '0';
+                // try a looser search (without exact match) to help admins diagnose naming issues
+                try {
+                  const loose = new URLSearchParams({ search: order.fabricType || order.productName || '', limit: 5 });
+                  const rr = await fetch(`${API}/api/admin/inventory?` + loose.toString(), { headers: { 'Authorization': `Bearer ${token}` } });
+                  const jj = await rr.json();
+                  if (jj && jj.success && Array.isArray(jj.data) && jj.data.length) {
+                    // show first match info as a hint
+                    const item = jj.data[0];
+                    document.getElementById('custom-modal-fabric-available').textContent = (item.quantity != null) ? item.quantity : '0';
+                    document.getElementById('custom-modal-fabric-reserved').textContent = (item.reserved != null) ? item.reserved : '0';
+                    // also show a small hint in the available element so admin can see candidate names
+                    const hint = ` (Did you mean: ${item.name || (item.item && item.item.name) || 'unknown'})`;
+                    document.getElementById('custom-modal-fabric-available').textContent += hint;
+                  } else {
+                    document.getElementById('custom-modal-fabric-available').textContent = '0';
+                    document.getElementById('custom-modal-fabric-reserved').textContent = '0';
+                  }
+                } catch(e) {
+                  document.getElementById('custom-modal-fabric-available').textContent = '0';
+                  document.getElementById('custom-modal-fabric-reserved').textContent = '0';
+                }
               } else {
                 const item = j.data[0];
                 document.getElementById('custom-modal-fabric-available').textContent = (item.quantity != null) ? item.quantity : '-';
@@ -2906,9 +2940,12 @@
         els.customModalError.classList.add('hidden');
 
         try {
+          // include the normalized combined inventory name to help server match the Inventory item
+          const combinedName = (selectedCustomOrder.inventoryName && String(selectedCustomOrder.inventoryName).trim()) || normalizeInventoryKey(selectedCustomOrder.fabricType, selectedCustomOrder.garmentType) || normalizeInventoryKey(selectedCustomOrder.fabricType, selectedCustomOrder.productName) || (selectedCustomOrder.fabricType || selectedCustomOrder.productName || '');
           const res = await fetch(`${API}/api/custom-orders/${selectedCustomOrder._id}/verify-downpayment`, {
             method: 'PUT',
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inventoryName: combinedName || undefined })
           });
           let data = null;
           try { data = await res.json(); } catch(e){ data = null; }
