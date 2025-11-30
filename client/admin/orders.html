@@ -2376,7 +2376,19 @@
           const combinedFG = (order.inventoryName && String(order.inventoryName).trim()) || ((order.fabricType && order.garmentType) ? `${String(order.fabricType).trim()} - ${String(order.garmentType).trim()}` : (order.fabricType || order.productName || 'N/A'));
           document.getElementById('custom-modal-printing-method').textContent = methodMap[order.printingMethod] || order.printingMethod || 'N/A';
           // Display combined value so admin sees the Inventory key used
-          document.getElementById('custom-modal-fabric-type').textContent = combinedFG || 'N/A';
+          const fabricEl = document.getElementById('custom-modal-fabric-type');
+          const garmentEl = document.getElementById('custom-modal-garment-type');
+          fabricEl.textContent = combinedFG || 'N/A';
+          // If we have a combined Fabric-Garment string, hide the separate Garment line to avoid confusion
+          try {
+            if (combinedFG && combinedFG !== 'N/A') {
+              if (garmentEl && garmentEl.parentElement) garmentEl.parentElement.style.display = 'none';
+            } else {
+              if (garmentEl && garmentEl.parentElement) garmentEl.parentElement.style.display = '';
+              if (garmentEl) garmentEl.textContent = order.garmentType || 'N/A';
+            }
+          } catch(e) { /* ignore UI hide errors */ }
+
           // Fetch inventory info for this combined name (admin endpoint)
           (async () => {
             try {
