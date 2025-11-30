@@ -150,6 +150,15 @@ exports.getDashboardStats = async (req, res) => {
             console.error("Error fetching recent orders:", recentOrdersResult.reason);
         }
 
+        // Debug: log topProducts aggregation size and sample (helps diagnose empty chart)
+        try {
+            const rawTopOk = topProductsResult && topProductsResult.status === 'fulfilled';
+            console.debug('[Dashboard] topProducts aggregation fulfilled:', !!rawTopOk, 'items:', (rawTopOk && Array.isArray(topProductsResult.value) ? topProductsResult.value.length : 0));
+            if (rawTopOk && Array.isArray(topProductsResult.value) && topProductsResult.value.length) {
+                console.debug('[Dashboard] topProducts sample:', JSON.stringify(topProductsResult.value.slice(0,3)));
+            }
+        } catch (e) { /* non-fatal */ }
+
         res.status(200).json({
             success: true,
             data: {
@@ -178,13 +187,21 @@ exports.getDashboardStats = async (req, res) => {
                 // Lists
                 recentOrders,
                 lowStockProducts,
-                // Normalize topProducts for frontend (ensure `name`, `totalSold`, `totalRevenue` fields)
-                topProducts: (topProducts || []).map(tp => ({
-                    _id: tp._id,
-                    name: (tp.productInfo && (tp.productInfo.name || tp.productInfo.title)) || String(tp._id),
-                    totalSold: tp.totalSold || 0,
-                    totalRevenue: tp.revenue || 0
-                })),
+                // Normalize topProducts for frontend (ensure `name`, `totalSold`, `totalRevenue`, and `chartValue` fields)
+                topProducts: (topProducts || []).map(tp => {
+                    const name = (tp.productInfo && (tp.productInfo.name || tp.productInfo.title)) || String(tp._id);
+                    const totalSold = Number(tp.totalSold || 0);
+                    const totalRevenue = Number(tp.revenue || 0);
+                    // chartValue: prefer totalSold (units); if zero, fallback to revenue as a numeric value so chart shows segments
+                    const chartValue = totalSold > 0 ? totalSold : (totalRevenue > 0 ? totalRevenue : 0);
+                    return {
+                        _id: tp._id,
+                        name,
+                        totalSold,
+                        totalRevenue,
+                        chartValue
+                    };
+                }),
                 customOrdersStats
             }
         });
