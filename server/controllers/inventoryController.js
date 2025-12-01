@@ -38,7 +38,9 @@ async function syncToProduct(inventoryItem) {
             colors: inventoryItem.colors || [],
             material: inventoryItem.material || '',
             productDetails: inventoryItem.productDetails || '',
-            faqs: inventoryItem.faqs || ''
+            faqs: inventoryItem.faqs || '',
+            // Sync placements (featured, newArrivals, services)
+            placements: inventoryItem.placements || { featured: false, newArrivalExpiresAt: null, services: [] }
         };
 
         if (inventoryItem.productId) {

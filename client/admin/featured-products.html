@@ -370,7 +370,7 @@
 
       try {
         const res = await fetch(`${API_BASE}/api/admin/inventory/${itemId}`, {
-          method: 'PUT',
+          method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
@@ -380,7 +380,10 @@
           })
         });
 
-        if (!res.ok) throw new Error('Failed to update item');
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to update item');
+        }
 
         // Update local state
         const item = allItems.find(p => p._id === itemId);
