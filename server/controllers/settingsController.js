@@ -97,7 +97,11 @@ exports.getStaffAndRoles = async (req, res) => {
 exports.getRoles = async (req, res) => {
   try {
     const s = await Setting.findOne().lean();
-    const roles = (s && s.roles) || [];
+    const roles = (s && s.roles) || [
+      { name: 'Owner', permissions: ['*'] },
+      { name: 'Manager', permissions: ['manage_products','manage_orders','view_reports'] },
+      { name: 'Inventory Staff', permissions: ['manage_inventory'] }
+    ];
     res.json({ success: true, data: roles });
   } catch (err) {
     console.error('getRoles error', err); res.status(500).json({ success: false, msg: 'Server error' });
