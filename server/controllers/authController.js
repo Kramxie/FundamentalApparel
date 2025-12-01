@@ -69,43 +69,36 @@ exports.registerUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
-        if (!email || !password) return res.status(400).json({ success: false, msg: 'Please provide an email and password' });
-        
-        // --- MODIFIED: Kunin ang buong user info ---
-        const emailLC = String(email).trim().toLowerCase();
-        console.log('\n=== LOGIN DEBUG ===');
-        console.log('Login attempt: email=%s, pwd_len=%d', emailLC, password.length);
-        
+        const emailLC = String(email || '').trim().toLowerCase();
+
+        // Allow attempts with empty password to trigger "set-password" flow
         const user = await User.findOne({ email: emailLC }).select('+password');
-        if (!user) {
-          console.log('User not found for email=%s', emailLC);
-          console.log('=== END LOGIN DEBUG ===\n');
-          return res.status(401).json({ success: false, msg: 'Invalid credentials' });
+        if (!user) return res.status(401).json({ success: false, msg: 'Invalid credentials' });
+
+        // If user exists but has no password set, and the client submitted an empty password,
+        // generate a short-lived set-password token and return it so client can redirect.
+        if ((!user.password || user.password === '') && (!password || String(password).trim() === '')) {
+            const crypto = require('crypto');
+            const token = crypto.randomBytes(24).toString('hex');
+            user.resetPasswordToken = token;
+            user.resetPasswordExpire = Date.now() + 60 * 60 * 1000; // 1 hour
+            await user.save({ validateBeforeSave: false });
+            return res.status(200).json({ success: true, needsSetPassword: true, token, email: user.email, msg: 'Please set your password' });
         }
-        
-        console.log('User found: id=%s, email=%s, role=%s, isVerified=%s', user._id, user.email, user.role, user.isVerified);
+
+        // Otherwise, require a password and validate as normal
+        if (!password) return res.status(400).json({ success: false, msg: 'Please provide an email and password' });
 
         const isMatch = await user.matchPassword(password);
-        console.log('Password match: %s', isMatch);
-        
-        if (!isMatch) {
-          console.log('=== END LOGIN DEBUG ===\n');
-          return res.status(401).json({ success: false, msg: 'Invalid credentials' });
-        }
-        
-        console.log('=== END LOGIN DEBUG ===\n');
+        if (!isMatch) return res.status(401).json({ success: false, msg: 'Invalid credentials' });
 
         if (!user.isVerified && user.role !== 'admin') {
-            return res.status(401).json({
-                success: false,
-                verificationRequired: true,
-                email: user.email,
-                msg: 'Account not verified. Please check your email.'
-            });
+            return res.status(401).json({ success: false, verificationRequired: true, email: user.email, msg: 'Account not verified. Please check your email.' });
         }
 
         sendTokenResponse(user, 200, res);
     } catch (error) {
+        console.error('loginUser error', error);
         res.status(500).json({ success: false, msg: 'Server Error' });
     }
 };
