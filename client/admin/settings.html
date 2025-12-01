@@ -448,20 +448,28 @@
               const id = s._id || s.id || '';
               const userId = s.userId || '';
               const r = document.createElement('div'); r.className='flex items-center justify-between p-2 border-b';
-              r.innerHTML = `<div class="staff-main"><div class="font-medium">${s.name||''}</div><div class="text-xs text-gray-600 staff-meta">${s.email||''} • ${s.role||''}</div></div><div class="flex gap-2 items-center staff-actions"><button data-id="${id}" class="px-2 py-1 bg-red-600 text-white text-xs rounded staff-delete">Delete</button></div>`;
-              if (userId) {
-                const actionsDiv = r.querySelector('.staff-actions');
-                actionsDiv.insertAdjacentHTML('beforeend', `<button data-uid="${userId}" class="px-2 py-1 bg-blue-600 text-white text-xs rounded staff-edit">Edit</button>`);
-                actionsDiv.insertAdjacentHTML('beforeend', `<button data-uid="${userId}" class="px-2 py-1 bg-yellow-600 text-white text-xs rounded staff-toggle">Toggle Active</button>`);
+              // build actions: only show Delete when we have a settings-staff id (so deleting removes settings entry)
+              let actionsHtml = '<div class="flex gap-2 items-center staff-actions">';
+              if (id) {
+                actionsHtml += `<button data-id="${id}" class="px-2 py-1 bg-red-600 text-white text-xs rounded staff-delete">Delete</button>`;
+              } else {
+                // no settings id -> entry came from User collection fallback; show a note instead of delete
+                actionsHtml += `<span class="text-xs text-gray-500 mr-2">(from user)</span>`;
               }
+              if (userId) {
+                actionsHtml += `<button data-uid="${userId}" class="px-2 py-1 bg-blue-600 text-white text-xs rounded staff-edit">Edit</button>`;
+                actionsHtml += `<button data-uid="${userId}" class="px-2 py-1 bg-yellow-600 text-white text-xs rounded staff-toggle">Toggle Active</button>`;
+              }
+              actionsHtml += '</div>';
+              r.innerHTML = `<div class="staff-main"><div class="font-medium">${s.name||''}</div><div class="text-xs text-gray-600 staff-meta">${s.email||''} • ${s.role||''}</div></div>` + actionsHtml;
               staffListDiv.appendChild(r);
             });
 
             // Attach event listeners
             Array.from(staffListDiv.querySelectorAll('.staff-delete')).forEach(btn=> btn.addEventListener('click', (ev)=>{
-              const id = btn.getAttribute('data-id'); if (!id) return;
+              const id = btn.getAttribute('data-id'); if (!id){ toast('Cannot delete: not a settings entry', false); return; }
               openConfirm('Delete staff','Are you sure you want to delete this staff entry?', async ()=>{
-                try{ const dres = await fetch(`${API}/api/admin/settings/staff/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Authorization': headers['Authorization'] } }); const jd = await dres.json(); if (!dres.ok){ showMsg(usersMsg, jd.msg||'Failed delete', false); return; } showMsg(usersMsg, 'Deleted', true); toast('Staff entry deleted', true); loadStaff(); }catch(e){ console.error('delStaff',e); showMsg(usersMsg,'Error',false); toast('Error deleting staff', false); }
+                try{ const dres = await fetch(`${API}/api/admin/settings/staff/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Authorization': headers['Authorization'] } }); const jd = await dres.json(); if (!dres.ok){ showMsg(usersMsg, jd.msg||'Failed delete', false); toast(jd.msg||'Failed delete', false); return; } showMsg(usersMsg, 'Deleted', true); toast('Staff entry deleted', true); loadStaff(); }catch(e){ console.error('delStaff',e); showMsg(usersMsg,'Error',false); toast('Error deleting staff', false); }
               });
             }));
 
