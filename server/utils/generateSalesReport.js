@@ -160,7 +160,9 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
   const rangeText = `${startDate ? (new Date(startDate)).toISOString().split('T')[0] : 'All'} to ${endDate ? (new Date(endDate)).toISOString().split('T')[0] : 'All'}`;
   doc.fontSize(9).text(`Date Range: ${rangeText}`, { align: 'center' });
   doc.moveDown(0.5);
-  // Currency formatter
+  // Currency formatter (declare early so summary can use it)
+  const currency = businessInfo.currency || 'PHP';
+  const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2 });
 
   // --- Summary calculations (for range totals) ---
   let summary = { totalOrders: 0, totalRevenue: 0, totalQuantity: 0 };
@@ -192,9 +194,7 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
   // ensure we don't overlap the summary box with table header
   if (doc.y < summaryBoxY + summaryBoxHeight + 6) doc.y = summaryBoxY + summaryBoxHeight + 6;
 
-  // Currency formatter
-  const currency = businessInfo.currency || 'PHP';
-  const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2 });
+  // (formatter already declared above)
 
   // Table drawing helpers
   function ensurePageFor(heightNeeded){ if (doc.y + heightNeeded > doc.page.height - doc.page.margins.bottom) { doc.addPage(); } }

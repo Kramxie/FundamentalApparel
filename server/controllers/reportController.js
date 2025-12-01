@@ -166,6 +166,9 @@ exports.exportSalesPdf = async (req, res) => {
       if (s && s.store) {
         businessInfo.name = s.store.name || businessInfo.name;
         businessInfo.address = s.store.address || businessInfo.address;
+        // include logo and currency if set in settings
+        if (s.store.logoUrl) businessInfo.logoUrl = s.store.logoUrl;
+        if (s.store.currency) businessInfo.currency = s.store.currency;
       }
     } catch (e) { /* ignore */ }
 
