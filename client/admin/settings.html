@@ -215,7 +215,12 @@
       async function fetchRoles(){
         try{
           const res = await fetch(`${API}/api/admin/settings/roles`, { headers });
-          if (!res.ok) return; const j = await res.json(); if (!j.success) return;
+          if (!res.ok){
+            const txt = await res.text().catch(()=>'<no body>');
+            console.error('fetchRoles failed', res.status, txt);
+            return;
+          }
+          const j = await res.json(); if (!j.success){ console.error('fetchRoles returned success:false', j); return; }
           availableRoles = j.data || [];
           populateRoleSelects();
         }catch(e){ console.error('fetchRoles', e); }
@@ -391,11 +396,17 @@
         const staffCancelBtn = document.getElementById('staff-cancel');
         const staffSaveBtn = document.getElementById('staff-save');
 
-        showAddStaffBtn.addEventListener('click', ()=>{
+        showAddStaffBtn.addEventListener('click', async ()=>{
+          // fetch roles and then open create staff modal so role select is populated
+          try{
+            if (!(availableRoles && availableRoles.length)) await fetchRoles();
+          }catch(e){ console.error('roles prefetch failed', e); }
           // open create staff modal
           document.getElementById('create-staff-name').value = '';
           document.getElementById('create-staff-email').value = '';
           const cs = document.getElementById('create-staff-role'); if (cs) cs.value = '';
+          // if no roles are available, show message to user
+          if (!availableRoles || !availableRoles.length){ showMsg(document.getElementById('create-staff-msg'), 'No roles defined. Please add a role first.', false); }
           showOverlay(); document.getElementById('create-staff-modal').classList.remove('hidden');
         });
         staffCancelBtn.addEventListener('click', ()=> addStaffForm.classList.add('hidden'));
@@ -515,6 +526,7 @@
             const email = document.getElementById('staff-email').value||'';
             const role = document.getElementById('staff-role').value||'';
             if (!name || !email){ showMsg(usersMsg, 'Name and email required', false); return; }
+            if (!role){ showMsg(usersMsg, 'Role is required', false); return; }
             const res = await fetch(`${API}/api/admin/settings/staff`, { method: 'POST', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ name, email, role }) });
             const j = await res.json(); if (!res.ok){ showMsg(usersMsg, j.msg||'Failed', false); return; }
             showMsg(usersMsg, 'Saved', true); toast('Staff added', true); addStaffForm.classList.add('hidden'); document.getElementById('staff-name').value=''; document.getElementById('staff-email').value=''; document.getElementById('staff-role').value=''; loadStaff();
@@ -530,6 +542,7 @@
             const role = document.getElementById('create-staff-role').value || '';
             if (!name) return showMsg(document.getElementById('create-staff-msg'), 'Name is required', false);
             if (!email || !/^\S+@\S+\.\S+$/.test(email)) return showMsg(document.getElementById('create-staff-msg'), 'Valid email required', false);
+            if (!role) return showMsg(document.getElementById('create-staff-msg'), 'Role is required', false);
             const res = await fetch(`${API}/api/admin/settings/staff`, { method: 'POST', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ name, email, role }) });
             const j = await res.json(); if (!res.ok){ showMsg(document.getElementById('create-staff-msg'), j.msg||'Failed', false); toast(j.msg||'Failed to add staff', false); return; }
             showMsg(document.getElementById('create-staff-msg'),'Saved', true); toast('Staff created', true);
