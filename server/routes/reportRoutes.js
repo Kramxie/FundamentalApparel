@@ -6,6 +6,8 @@ const { requirePermission } = require('../middleware/permissionMiddleware');
 
 // Report routes require report permission
 router.get('/sales', protect, requirePermission('view_reports'), reportController.salesReport);
+router.get('/sales/csv', protect, requirePermission('view_reports'), reportController.exportSalesCsv);
+router.get('/sales/pdf', protect, requirePermission('view_reports'), reportController.exportSalesPdf);
 router.get('/orders', protect, requirePermission('view_reports'), reportController.orderListReport);
 router.get('/inventory', protect, requirePermission('view_reports'), reportController.inventoryReport);
 router.get('/top-products', protect, requirePermission('view_reports'), reportController.topProducts);

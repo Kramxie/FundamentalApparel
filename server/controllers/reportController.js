@@ -4,6 +4,215 @@ const Inventory = require('../models/Inventory');
 const Product = require('../models/Product');
 const User = require('../models/User');
 const RefundRequest = require('../models/RefundRequest');
+const PDFDocument = (() => {
+  try { return require('pdfkit'); } catch (e) { return null; }
+})();
+const stream = require('stream');
+
+// Clean helper: build CSV from array of objects with consistent columns
+function jsonToCsv(rows, columns) {
+  const esc = (v) => {
+    if (v === null || v === undefined) return '';
+    const s = String(v);
+    if (s.includes('"')) return '"' + s.replace(/"/g, '""') + '"';
+    if (s.includes(',') || s.includes('\n') || s.includes('\r')) return '"' + s + '"';
+    return s;
+  };
+  const header = columns.join(',') + '\n';
+  const body = rows.map(r => columns.map(c => esc(r[c])).join(',')).join('\n');
+  return header + body;
+}
+
+// New: getSalesReport returns rows suitable for CSV/PDF export
+// Fields per requirement: order_id, order_date, customer_name, product_name, quantity,
+// unit_price, vat, discount, delivery_fee, payment_method, payment_status, order_status,
+// downpayment_amount, balance_amount, total_revenue
+async function getSalesReport(startDate, endDate, options={}){
+  // options: includeCustom (boolean)
+  const match = { status: { $ne: 'Cancelled' } };
+  if (startDate) { match.createdAt = Object.assign({}, match.createdAt || {}, { $gte: startDate }); }
+  if (endDate) { match.createdAt = Object.assign({}, match.createdAt || {}, { $lte: endDate }); }
+
+  // Fetch Orders with user and product info
+  const orders = await Order.find(match).populate('user', 'name').lean();
+
+  const rows = [];
+  for (const o of orders) {
+    const orderId = String(o._id);
+    const orderDate = o.createdAt ? o.createdAt.toISOString() : '';
+    const customerName = o.user ? (o.user.name || '') : '';
+    const deliveryFee = Number(o.deliveryFee || 0);
+    const vat = Number(o.vat || 0);
+    const discount = Number(o.discount || 0) || 0; // if discount stored on order
+    const paymentMethod = o.paymentMethod || '';
+    const paymentStatus = o.paymentStatus || '';
+    const orderStatus = o.status || '';
+    const orderTotal = Number(o.totalPrice || 0);
+
+    // For each orderItem, create a row. Distribute VAT & discount proportionally by item price
+    const items = o.orderItems || [];
+    const subtotal = items.reduce((s,it)=> s + ((it.price||0) * (it.quantity||0)), 0);
+    for (const it of items) {
+      const productName = it.name || '';
+      const quantity = Number(it.quantity || 0);
+      const unitPrice = Number(it.price || 0);
+      const lineTotal = unitPrice * quantity;
+      const vatShare = subtotal ? (vat * (lineTotal / subtotal)) : 0;
+      const discountShare = subtotal ? (discount * (lineTotal / subtotal)) : 0;
+      const downpayment_amount = Number(o.downPaymentAmount || 0) || 0;
+      const balance_amount = Math.max(0, (orderTotal - downpayment_amount));
+
+      rows.push({
+        order_id: orderId,
+        order_date: orderDate,
+        customer_name: customerName,
+        product_name: productName,
+        quantity,
+        unit_price: unitPrice.toFixed(2),
+        vat: vatShare.toFixed(2),
+        discount: discountShare.toFixed(2),
+        delivery_fee: deliveryFee.toFixed(2),
+        payment_method: paymentMethod,
+        payment_status: paymentStatus,
+        order_status: orderStatus,
+        downpayment_amount: downpayment_amount.toFixed(2),
+        balance_amount: balance_amount.toFixed(2),
+        total_revenue: (lineTotal - discountShare + vatShare + deliveryFee * (lineTotal / subtotal || 0)).toFixed(2)
+      });
+    }
+  }
+
+  // Optionally include CustomOrder entries (service-type orders) if requested
+  if (options.includeCustom) {
+    const cMatch = Object.assign({}, match);
+    const customOrders = await CustomOrder.find(cMatch).lean();
+    for (const c of customOrders) {
+      const orderId = String(c._id);
+      const orderDate = c.createdAt ? c.createdAt.toISOString() : '';
+      const customerName = c.userName || '';
+      const productName = c.productName || '';
+      const quantity = Number(c.quantity || 0);
+      const unitPrice = Number(c.price || c.unitPrice || 0);
+      const vatShare = Number(c.vat || 0);
+      const discount = Number(c.discount || 0) || 0;
+      const deliveryFee = Number(c.deliveryFee || 0) || 0;
+      const paymentMethod = c.paymentMethod || '';
+      const paymentStatus = c.paymentStatus || '';
+      const orderStatus = c.status || '';
+      const downpayment_amount = Number(c.downPaymentPaid ? (c.paymentAmount || 0) : 0);
+      const balance_amount = Math.max(0, (Number(c.totalPrice || 0) - downpayment_amount));
+
+      rows.push({
+        order_id: orderId,
+        order_date: orderDate,
+        customer_name: customerName,
+        product_name: productName,
+        quantity,
+        unit_price: unitPrice.toFixed(2),
+        vat: vatShare.toFixed(2),
+        discount: discount.toFixed(2),
+        delivery_fee: deliveryFee.toFixed(2),
+        payment_method: paymentMethod,
+        payment_status: paymentStatus,
+        order_status: orderStatus,
+        downpayment_amount: downpayment_amount.toFixed(2),
+        balance_amount: balance_amount.toFixed(2),
+        total_revenue: (Number(c.totalPrice || 0)).toFixed(2)
+      });
+    }
+  }
+
+  return rows;
+}
+
+// Export handlers
+exports.exportSalesCsv = async (req, res) => {
+  try {
+    const q = req.query;
+    const start = q.startDate ? new Date(q.startDate) : null;
+    const end = q.endDate ? new Date(q.endDate) : null;
+    if (start) start.setHours(0,0,0,0);
+    if (end) end.setHours(23,59,59,999);
+    const includeCustom = q.includeCustom === 'true' || q.includeCustom === true;
+
+    const rows = await getSalesReport(start, end, { includeCustom });
+    const columns = ['order_id','order_date','customer_name','product_name','quantity','unit_price','vat','discount','delivery_fee','payment_method','payment_status','order_status','downpayment_amount','balance_amount','total_revenue'];
+    const csv = jsonToCsv(rows, columns);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="sales_export_${Date.now()}.csv"`);
+    return res.send(csv);
+  } catch (err) {
+    console.error('exportSalesCsv error', err);
+    return res.status(500).json({ success: false, msg: 'Failed to generate CSV' });
+  }
+};
+
+exports.exportSalesPdf = async (req, res) => {
+  try {
+    if (!PDFDocument) return res.status(500).json({ success: false, msg: 'PDF library not installed (pdfkit). Please install pdfkit.' });
+    const q = req.query;
+    const start = q.startDate ? new Date(q.startDate) : null;
+    const end = q.endDate ? new Date(q.endDate) : null;
+    if (start) start.setHours(0,0,0,0);
+    if (end) end.setHours(23,59,59,999);
+    const includeCustom = q.includeCustom === 'true' || q.includeCustom === true;
+
+    const rows = await getSalesReport(start, end, { includeCustom });
+    // summary
+    const totalOrders = new Set(rows.map(r=>r.order_id)).size;
+    const totalRevenue = rows.reduce((s,r)=> s + Number(r.total_revenue || 0), 0);
+    const aov = totalOrders ? (totalRevenue / totalOrders) : 0;
+
+    // Create PDF stream
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    const passThrough = new stream.PassThrough();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="sales_export_${Date.now()}.pdf"`);
+    doc.pipe(passThrough);
+
+    // Title
+    doc.fontSize(18).text('Sales Report', { align: 'center' });
+    doc.moveDown(0.5);
+    const rangeText = `${start ? start.toISOString().split('T')[0] : 'All'} to ${end ? end.toISOString().split('T')[0] : 'All'}`;
+    doc.fontSize(10).text(`Date Range: ${rangeText}`, { align: 'center' });
+    doc.moveDown(1);
+
+    // Summary
+    doc.fontSize(12).text('Summary', { underline: true });
+    doc.fontSize(10).text(`Total Orders: ${totalOrders}`);
+    doc.fontSize(10).text(`Total Revenue: ${totalRevenue.toFixed(2)}`);
+    doc.fontSize(10).text(`Average Order Value: ${aov.toFixed(2)}`);
+    doc.moveDown(0.5);
+
+    // Table header
+    const columns = ['Order ID','Date','Customer','Product','Qty','Unit Price','VAT','Discount','Delivery','Payment Method','Payment Status','Order Status','Downpayment','Balance','Total'];
+    const colWidths = [70,60,80,100,30,50,40,50,50,70,60,60,50,50,60];
+
+    // Simple table drawing: header
+    let x = doc.x;
+    doc.fontSize(9).fillColor('black');
+    columns.forEach((h, idx) => {
+      doc.text(h, { continued: idx !== columns.length -1, width: colWidths[idx], ellipsis: true });
+    });
+    doc.moveDown(0.25);
+
+    // Rows
+    for (const r of rows) {
+      const vals = [r.order_id, r.order_date.split('T')[0] || r.order_date, r.customer_name, r.product_name, String(r.quantity), r.unit_price, r.vat, r.discount, r.delivery_fee, r.payment_method, r.payment_status, r.order_status, r.downpayment_amount, r.balance_amount, r.total_revenue];
+      vals.forEach((v, idx) => {
+        doc.fontSize(8).text(String(v), { continued: idx !== vals.length-1, width: colWidths[idx], ellipsis: true });
+      });
+      doc.moveDown(0.25);
+      if (doc.y > doc.page.height - 80) doc.addPage();
+    }
+
+    doc.end();
+    passThrough.pipe(res);
+  } catch (err) {
+    console.error('exportSalesPdf error', err);
+    return res.status(500).json({ success: false, msg: 'Failed to generate PDF' });
+  }
+};
 
 // Helper: build CSV from array of objects (simple, escapes commas)
 function toCSV(rows, columns) {
