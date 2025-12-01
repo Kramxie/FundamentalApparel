@@ -10,17 +10,18 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style> body { font-family: 'Inter', sans-serif; } </style>
   <style>
-    /* Chart container constraints to prevent infinite vertical growth */
+    body { font-family: 'Inter', sans-serif; }
+    
+    /* Chart container constraints */
     .chart-wrapper {
-      max-height: 520px; /* upper bound for large screens */
-      height: 320px;     /* default visible height */
-      overflow: hidden;  /* hide any overflow by default */
+      max-height: 520px;
+      height: 320px;
+      overflow: hidden;
       position: relative;
     }
     .chart-wrapper.scrollable {
-      overflow-y: auto; /* enable vertical scroll if needed */
+      overflow-y: auto;
     }
     .chart-wrapper canvas {
       width: 100% !important;
@@ -30,116 +31,175 @@
     @media (max-width: 640px) {
       .chart-wrapper { height: 240px; }
     }
+    
+    /* Fixed Sidebar Styles */
+    .admin-sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 260px;
+      background: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%);
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 40;
+    }
+    .admin-sidebar::-webkit-scrollbar { width: 6px; }
+    .admin-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+    
+    .admin-main {
+      margin-left: 260px;
+    }
+    
+    @media (max-width: 768px) {
+      .admin-sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+      .admin-sidebar.open {
+        transform: translateX(0);
+      }
+      .admin-main {
+        margin-left: 0;
+      }
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      color: rgba(255,255,255,0.7);
+      border-radius: 0.5rem;
+      transition: all 0.2s;
+    }
+    .nav-link:hover {
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+    .nav-link.active {
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
   </style>
 </head>
 <body class="bg-gray-100">
-  <div class="flex min-h-screen bg-gray-100">
-    <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
-      <div class="flex items-center justify-center h-16 bg-white shadow-md">
-        <span class="text-2xl font-bold text-indigo-600">Admin Panel</span>
-      </div>
-      <div class="flex flex-col flex-grow p-4">
-        <nav class="flex-grow space-y-2">
-          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
-          </a>
-          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
-          </a>
-          <a href="manage-categories.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Manage Categories</span>
-          </a>
-          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
-          </a>
-          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
-          </a>
-          <a href="returns.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-undo w-6"></i><span class="ml-3">Returns & Refunds</span>
-          </a>
-          <a href="reports.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
-            <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
-          </a>
-          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
-          </a>
-          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
-          </a>
-          <a href="settings.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span>
-          </a>
-          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
-          </a>
-        </nav>
-      </div>
-    </div>
-
-    <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/40 z-40 md:hidden"></div>
-    <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform -translate-x-full transition-transform z-50 md:hidden">
-      <div class="flex items-center justify-between h-16 bg-white shadow-md px-3">
-        <div class="flex items-center"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
-        <button id="mobile-sidebar-close" class="p-2 rounded-md hover:bg-gray-100 text-gray-700"><i class="fas fa-times"></i></button>
-      </div>
-      <div class="flex flex-col flex-grow p-4">
-        <nav class="flex-grow space-y-2">
-          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
-          </a>
-          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
-          </a>
-          <a href="manage-categories.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Manage Categories</span>
-                    </a>
-          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
-          </a>
-          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
-          </a>
-          <a href="returns.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-undo w-6"></i><span class="ml-3">Returns & Refunds</span>
-          </a>
-          <a href="reports.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
-            <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
-          </a>
-          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
-          </a>
-          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
-          </a>
-          <a href="employees.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-users-cog w-6"></i><span class="ml-3">Employees</span>
-          </a>
-          <a href="settings.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span>
-          </a>
-          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
-          </a>
-        </nav>
-      </div>
-    </div>
-
-    <div class="flex flex-col flex-1 overflow-hidden">
-      <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
-        <div class="flex items-center">
-          <button id="mobile-menu-btn" class="block md:hidden mr-3 p-2 rounded-md hover:bg-gray-100 z-30" aria-label="Open menu">
-            <i class="fas fa-bars text-gray-700"></i>
-          </button>
-          <h1 class="text-xl font-semibold text-gray-800">Reports & Sales</h1>
+  <!-- Mobile Sidebar Overlay -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+  
+  <!-- Fixed Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="p-6">
+      <div class="flex items-center gap-3 mb-8">
+        <div class="bg-white rounded-lg p-2">
+          <i class="fas fa-store text-indigo-600 text-xl"></i>
         </div>
-        <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
-          <i class="fas fa-sign-out-alt mr-2"></i>Logout
-        </button>
+        <div>
+          <h1 class="text-white font-bold text-lg">BBT Admin</h1>
+          <p class="text-indigo-300 text-xs">Management Panel</p>
+        </div>
       </div>
-
-      <div class="flex-1 overflow-y-auto">
-        <div class="p-6 space-y-6">
+      
+      <nav class="space-y-1">
+        <p class="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3">Main</p>
+        <a href="index.html" class="nav-link">
+          <i class="fas fa-tachometer-alt w-5"></i>
+          <span class="ml-3">Dashboard</span>
+        </a>
+        <a href="orders.html" class="nav-link">
+          <i class="fas fa-shopping-cart w-5"></i>
+          <span class="ml-3">Orders</span>
+        </a>
+        <a href="messages.html" class="nav-link">
+          <i class="fas fa-comments w-5"></i>
+          <span class="ml-3">Messages</span>
+        </a>
+        
+        <p class="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">Products</p>
+        <a href="add-product.html" class="nav-link">
+          <i class="fas fa-plus-circle w-5"></i>
+          <span class="ml-3">Add Product</span>
+        </a>
+        <a href="inventory.html" class="nav-link">
+          <i class="fas fa-boxes w-5"></i>
+          <span class="ml-3">Inventory</span>
+        </a>
+        <a href="manage-categories.html" class="nav-link">
+          <i class="fas fa-tags w-5"></i>
+          <span class="ml-3">Categories</span>
+        </a>
+        <a href="featured-products.html" class="nav-link">
+          <i class="fas fa-star w-5"></i>
+          <span class="ml-3">Featured</span>
+        </a>
+        
+        <p class="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">Analytics</p>
+        <a href="reports.html" class="nav-link active">
+          <i class="fas fa-chart-bar w-5"></i>
+          <span class="ml-3">Reports</span>
+        </a>
+        <a href="vouchers.html" class="nav-link">
+          <i class="fas fa-ticket-alt w-5"></i>
+          <span class="ml-3">Vouchers</span>
+        </a>
+        <a href="returns.html" class="nav-link">
+          <i class="fas fa-undo w-5"></i>
+          <span class="ml-3">Returns</span>
+        </a>
+        
+        <p class="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">Admin</p>
+        <a href="employees.html" class="nav-link">
+          <i class="fas fa-users w-5"></i>
+          <span class="ml-3">Employees</span>
+        </a>
+      </nav>
+      
+      <div class="mt-8 pt-6 border-t border-indigo-700">
+        <a href="settings.html" class="nav-link">
+          <i class="fas fa-cog w-5"></i>
+          <span class="ml-3">Settings</span>
+        </a>
+        <a href="profile.html" class="nav-link">
+          <i class="fas fa-user-circle w-5"></i>
+          <span class="ml-3">Profile</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+  
+  <!-- Main Content -->
+  <main class="admin-main min-h-screen">
+    <!-- Sticky Header -->
+    <header class="sticky top-0 z-20 bg-white border-b border-gray-200 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg hover:bg-gray-100">
+            <i class="fas fa-bars text-gray-600"></i>
+          </button>
+          <div>
+            <h1 class="text-xl font-bold text-gray-800">Reports & Sales</h1>
+            <p class="text-sm text-gray-500">Business analytics and insights</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <button id="notif-btn" class="relative p-2 rounded-lg hover:bg-gray-100">
+            <i class="fas fa-bell text-gray-600"></i>
+            <span id="notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+          </button>
+          <div class="flex items-center gap-3 pl-4 border-l border-gray-200">
+            <img id="user-avatar" src="../images/default-avatar.png" alt="User" class="w-9 h-9 rounded-full object-cover">
+            <div class="hidden sm:block">
+              <p id="user-name" class="text-sm font-medium text-gray-700">Admin</p>
+              <p class="text-xs text-gray-500">Administrator</p>
+            </div>
+            <button id="logout-btn" class="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Logout">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+    
+    <div class="p-6 space-y-6">
           <!-- Filters and actions -->
           <div class="bg-white p-4 rounded shadow mb-6">
             <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -226,20 +286,29 @@
               <button id="export-pdf" class="px-4 py-2 bg-red-600 text-white rounded">Export as PDF</button>
               <div id="report-status" class="ml-3 text-sm text-gray-500">&nbsp;</div>
             </div>
+            <!-- Current Period Display -->
+            <div id="current-period-display" class="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+              <div class="flex items-center text-sm">
+                <i class="fas fa-calendar-alt text-indigo-600 mr-2"></i>
+                <span class="text-indigo-800 font-medium">Viewing: </span>
+                <span id="period-label" class="ml-1 text-indigo-700">Last 30 days</span>
+                <span id="period-dates" class="ml-2 text-indigo-600"></span>
+              </div>
+            </div>
           </div>
 
           <!-- Summary Cards -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="p-4 border rounded bg-white">
-              <p class="text-sm text-gray-500">Total Sales (Selected)</p>
+              <p class="text-sm text-gray-500">Total Sales (Selected Period)</p>
               <p id="total-sales-display" class="text-2xl font-bold">₱0</p>
             </div>
             <div class="p-4 border rounded bg-white">
-              <p class="text-sm text-gray-500">Total Orders (Selected)</p>
+              <p class="text-sm text-gray-500">Total Orders (Selected Period)</p>
               <p id="total-orders-display" class="text-2xl font-bold">0</p>
             </div>
             <div class="p-4 border rounded bg-white">
-              <p class="text-sm text-gray-500">Top Product (Selected)</p>
+              <p class="text-sm text-gray-500">Top Product (Selected Period)</p>
               <p id="top-product-display" class="text-md">—</p>
             </div>
           </div>
@@ -515,6 +584,28 @@
       categoryChart = new Chart(ctx, { type: 'pie', data: { labels, datasets:[{ data, backgroundColor: colors }] }, options: { responsive:true, maintainAspectRatio:false } });
     }
 
+    // Helper to update the period display
+    function updatePeriodDisplay(startDate, endDate, periodLabel = null) {
+      const labelEl = document.getElementById('period-label');
+      const datesEl = document.getElementById('period-dates');
+      if (!labelEl || !datesEl) return;
+      
+      if (periodLabel) {
+        labelEl.textContent = periodLabel;
+      } else {
+        labelEl.textContent = 'Custom Range';
+      }
+      
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        datesEl.textContent = `(${start.toLocaleDateString('en-PH', options)} - ${end.toLocaleDateString('en-PH', options)})`;
+      } else {
+        datesEl.textContent = '';
+      }
+    }
+
     // periodDays OR (startDateParam & endDateParam) may be provided. If both date params provided, they take precedence.
     async function fetchAndRenderReports(periodDays = 30, startDateParam = null, endDateParam = null) {
       const token = localStorage.getItem('adminToken');
@@ -522,16 +613,22 @@
 
       // Determine date range: prefer explicit params (custom range), otherwise compute from periodDays
       let startDate, endDate;
+      let periodLabel = null;
       if (startDateParam && endDateParam) {
         startDate = startDateParam;
         endDate = endDateParam;
+        periodLabel = 'Custom Range';
       } else {
         const end = new Date();
         const start = new Date();
         start.setDate(end.getDate() - (periodDays - 1));
         startDate = start.toISOString().slice(0,10);
         endDate = end.toISOString().slice(0,10);
+        periodLabel = `Last ${periodDays} days`;
       }
+      
+      // Update the period display
+      updatePeriodDisplay(startDate, endDate, periodLabel);
 
       // read selected per-type filter (product / predesign / fabric / all)
       const perTypeEl = document.getElementById('perTypeSelect');
@@ -709,6 +806,15 @@
             await fetchAndRenderReports(null, s, e);
             return;
           }
+          if (period === 'month') {
+            const monthVal = document.getElementById('month').value;
+            if (!monthVal) { alert('Please select a month.'); return; }
+            const [year, month] = monthVal.split('-').map(Number);
+            const start = new Date(year, month - 1, 1);
+            const end = new Date(year, month, 0); // Last day of month
+            await fetchAndRenderReports(null, start.toISOString().slice(0,10), end.toISOString().slice(0,10));
+            return;
+          }
           // numeric period (days)
           const days = Number(period) || 30;
           // pass per-type selection via DOM inside fetchAndRenderReports
@@ -719,7 +825,16 @@
         // Non-sales reports: fetch JSON and update preview/UI (do not auto-download CSV on Generate)
         let startDate = document.getElementById('startDate').value;
         let endDate = document.getElementById('endDate').value;
-        if (period !== 'custom') {
+        if (period === 'month') {
+          const monthVal = document.getElementById('month').value;
+          if (monthVal) {
+            const [year, month] = monthVal.split('-').map(Number);
+            const start = new Date(year, month - 1, 1);
+            const end = new Date(year, month, 0);
+            startDate = start.toISOString().slice(0,10);
+            endDate = end.toISOString().slice(0,10);
+          }
+        } else if (period !== 'custom') {
           const days = Number(period) || 30; const e = new Date(); const s = new Date(); s.setDate(e.getDate() - (days - 1)); startDate = s.toISOString().slice(0,10); endDate = e.toISOString().slice(0,10);
         }
         try {
@@ -767,10 +882,27 @@
       const defaultDays = (document.getElementById('periodSelect')||{value:'30'}).value;
       if (defaultDays === 'custom') {
         // if custom and dates provided, use them; otherwise use 30 days
-        const s = document.getElementById('startDate').value; const e = document.getElementById('endDate').value;
-        if (s && e) { fetchAndRenderReports( Math.max(1, Math.ceil((new Date(e)-new Date(s))/(1000*60*60*24))+1) ); }
-        else fetchAndRenderReports(30);
-      } else fetchAndRenderReports(Number(defaultDays || 30));
+        const s = document.getElementById('startDate').value; 
+        const e = document.getElementById('endDate').value;
+        if (s && e) { 
+          fetchAndRenderReports(null, s, e); 
+        } else {
+          fetchAndRenderReports(30);
+        }
+      } else if (defaultDays === 'month') {
+        // Handle month selection
+        const monthVal = document.getElementById('month').value;
+        if (monthVal) {
+          const [year, month] = monthVal.split('-').map(Number);
+          const start = new Date(year, month - 1, 1);
+          const end = new Date(year, month, 0); // Last day of month
+          fetchAndRenderReports(null, start.toISOString().slice(0,10), end.toISOString().slice(0,10));
+        } else {
+          fetchAndRenderReports(30);
+        }
+      } else {
+        fetchAndRenderReports(Number(defaultDays || 30));
+      }
 
       // Quick period buttons
       document.getElementById('btn-7days').addEventListener('click', () => fetchAndRenderReports(7));
@@ -982,6 +1114,15 @@
       if (period === 'custom') {
         startDate = document.getElementById('startDate')?.value || '';
         endDate = document.getElementById('endDate')?.value || '';
+      } else if (period === 'month') {
+        const monthVal = document.getElementById('month')?.value || '';
+        if (monthVal) {
+          const [year, month] = monthVal.split('-').map(Number);
+          const start = new Date(year, month - 1, 1);
+          const end = new Date(year, month, 0);
+          startDate = start.toISOString().slice(0,10);
+          endDate = end.toISOString().slice(0,10);
+        }
       } else {
         // calculate endDate = today, startDate = today - (period-1)
         const days = parseInt(period || '30', 10);
@@ -1242,7 +1383,43 @@
       })();
     })();
   </script>
-</script>
-<script src="admin-notifications.js"></script>
+  
+  <!-- Mobile Sidebar Script -->
+  <script>
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const sidebar = document.querySelector('.admin-sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    
+    mobileMenuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('hidden');
+    });
+    
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.add('hidden');
+    });
+    
+    // Load user info
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('adminToken');
+      if (token) {
+        try {
+          const res = await fetch('/api/admin/profile', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            document.getElementById('user-name').textContent = data.employee?.name || 'Admin';
+            if (data.employee?.profileImage) {
+              document.getElementById('user-avatar').src = data.employee.profileImage;
+            }
+          }
+        } catch (err) {}
+      }
+    });
+  </script>
+  
+  <script src="admin-notifications.js"></script>
 </body>
 </html>

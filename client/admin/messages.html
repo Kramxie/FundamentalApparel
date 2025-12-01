@@ -12,65 +12,114 @@
         .conversation-item:hover { background-color: #f3f4f6; }
         .conversation-item.active { background-color: #eef2ff; border-left: 4px solid #4f46e5; }
         #messages-list { scroll-behavior: smooth; }
+        
+        .admin-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 260px;
+            background: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%);
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 40;
+        }
+        .admin-sidebar::-webkit-scrollbar { width: 6px; }
+        .admin-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+        
+        .admin-main { margin-left: 260px; }
+        
+        @media (max-width: 768px) {
+            .admin-sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
+            .admin-sidebar.open { transform: translateX(0); }
+            .admin-main { margin-left: 0; }
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: rgba(255,255,255,0.7);
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+        .nav-link:hover { background: rgba(255,255,255,0.1); color: white; }
+        .nav-link.active { background: rgba(255,255,255,0.2); color: white; }
     </style>
 </head>
 <body class="bg-gray-100">
-
-    <div class="flex min-h-screen bg-gray-100">
-        <!-- Sidebar -->
-        <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
-            <div class="flex items-center justify-center h-16 bg-white shadow-md">
-                <span class="text-2xl font-bold text-indigo-600">Admin Messages</span>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+    
+    <aside class="admin-sidebar">
+        <div class="p-6">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="bg-white rounded-lg p-2">
+                    <i class="fas fa-store text-indigo-600 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-white font-bold text-lg">BBT Admin</h1>
+                    <p class="text-indigo-300 text-xs">Management Panel</p>
+                </div>
             </div>
-            <div class="flex flex-col flex-grow p-4">
-                <nav class="flex-grow space-y-2">
-                    <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
-                    </a>
-                    <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
-                    </a>
-                    <a href="manage-categories.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Manage Categories</span>
-                    </a>
-                    <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
-                    </a>
-                    <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
-                    </a>
-                    <a href="returns.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-undo w-6"></i><span class="ml-3">Returns & Refunds</span>
-                    </a>
-                    <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
-                    </a>
-                    <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
-                    </a>
-                    <a href="messages.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
-                        <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
-                    </a>
-                    <a href="settings.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span>
-                    </a>
-                    <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
-                    </a>
-                    
-                </nav>
+            
+            <nav class="space-y-1">
+                <p class="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3">Main</p>
+                <a href="index.html" class="nav-link"><i class="fas fa-tachometer-alt w-5"></i><span class="ml-3">Dashboard</span></a>
+                <a href="orders.html" class="nav-link"><i class="fas fa-shopping-cart w-5"></i><span class="ml-3">Orders</span></a>
+                <a href="messages.html" class="nav-link active"><i class="fas fa-comments w-5"></i><span class="ml-3">Messages</span></a>
+                
+                <p class="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">Products</p>
+                <a href="add-product.html" class="nav-link"><i class="fas fa-plus-circle w-5"></i><span class="ml-3">Add Product</span></a>
+                <a href="inventory.html" class="nav-link"><i class="fas fa-boxes w-5"></i><span class="ml-3">Inventory</span></a>
+                <a href="manage-categories.html" class="nav-link"><i class="fas fa-tags w-5"></i><span class="ml-3">Categories</span></a>
+                <a href="featured-products.html" class="nav-link"><i class="fas fa-star w-5"></i><span class="ml-3">Featured</span></a>
+                
+                <p class="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">Analytics</p>
+                <a href="reports.html" class="nav-link"><i class="fas fa-chart-bar w-5"></i><span class="ml-3">Reports</span></a>
+                <a href="vouchers.html" class="nav-link"><i class="fas fa-ticket-alt w-5"></i><span class="ml-3">Vouchers</span></a>
+                <a href="returns.html" class="nav-link"><i class="fas fa-undo w-5"></i><span class="ml-3">Returns</span></a>
+                
+                <p class="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">Admin</p>
+                <a href="employees.html" class="nav-link"><i class="fas fa-users w-5"></i><span class="ml-3">Employees</span></a>
+            </nav>
+            
+            <div class="mt-8 pt-6 border-t border-indigo-700">
+                <a href="settings.html" class="nav-link"><i class="fas fa-cog w-5"></i><span class="ml-3">Settings</span></a>
+                <a href="profile.html" class="nav-link"><i class="fas fa-user-circle w-5"></i><span class="ml-3">Profile</span></a>
             </div>
         </div>
-
-        <!-- Main Content -->
-        <div class="flex flex-col flex-1 overflow-hidden">
-            <!-- Header -->
-            <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
-                <h1 class="text-xl font-semibold text-gray-800">Customer Messages</h1>
-                <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
-                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                </button>
+    </aside>
+    
+    <main class="admin-main min-h-screen flex flex-col">
+        <header class="sticky top-0 z-20 bg-white border-b border-gray-200 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-bars text-gray-600"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800">Customer Messages</h1>
+                        <p class="text-sm text-gray-500">Chat with your customers</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button id="notif-btn" class="relative p-2 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-bell text-gray-600"></i>
+                        <span id="notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+                    </button>
+                    <div class="flex items-center gap-3 pl-4 border-l border-gray-200">
+                        <img id="user-avatar" src="../images/default-avatar.png" alt="User" class="w-9 h-9 rounded-full object-cover">
+                        <div class="hidden sm:block">
+                            <p id="user-name" class="text-sm font-medium text-gray-700">Admin</p>
+                            <p class="text-xs text-gray-500">Administrator</p>
+                        </div>
+                        <button id="logout-btn" class="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
+        </header>
 
             <!-- Messages Layout -->
             <div id="message-container" class="hidden mb-4 p-3 rounded-md bg-green-100 text-green-800"></div>
@@ -856,6 +905,37 @@
             return div.innerHTML;
         }
     </script>
+    
+    <script>
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const sidebar = document.querySelector('.admin-sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('hidden');
+        });
+        
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.add('hidden');
+        });
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                try {
+                    const res = await fetch('/api/admin/profile', { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (res.ok) {
+                        const data = await res.json();
+                        document.getElementById('user-name').textContent = data.employee?.name || 'Admin';
+                        if (data.employee?.profileImage) document.getElementById('user-avatar').src = data.employee.profileImage;
+                    }
+                } catch (err) {}
+            }
+        });
+    </script>
+    
+    <script src="admin-notifications.js"></script>
 </body>
-<script src="admin-notifications.js"></script>
 </html>

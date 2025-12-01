@@ -3,90 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
+    <title>Admin Login - Fundamental Apparel</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Inter', sans-serif; } </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .login-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+        }
+        .input-focus:focus {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 15s infinite ease-in-out;
+        }
+        .shape-1 { width: 300px; height: 300px; top: -100px; right: -100px; animation-delay: 0s; }
+        .shape-2 { width: 200px; height: 200px; bottom: -50px; left: -50px; animation-delay: 5s; }
+        .shape-3 { width: 150px; height: 150px; top: 50%; left: 10%; animation-delay: 10s; }
+        .shape-4 { width: 100px; height: 100px; bottom: 30%; right: 15%; animation-delay: 7s; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.1; }
+            50% { transform: translateY(-30px) rotate(180deg); opacity: 0.2; }
+        }
+        .logo-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+    </style>
 </head>
-<body class="bg-gray-200 flex items-center justify-center min-h-screen">
+<body class="min-h-screen login-gradient flex items-center justify-center p-4">
+    <!-- Floating Background Shapes -->
+    <div class="floating-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+    </div>
 
-    <div class="w-full max-w-sm bg-white p-8 rounded-xl shadow-lg">
-        <div class="text-center mb-8">
-            <h2 class="text-2xl font-bold text-gray-800">Admin Panel Login</h2>
-            <p class="text-gray-500 mt-2">Sign in to manage the store</p>
-        </div>
+    <!-- Main Login Container -->
+    <div class="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row bg-white rounded-3xl shadow-2xl overflow-hidden">
         
-        <div id="message-container" class="hidden mb-4 p-4 rounded-md"></div>
+        <!-- Left Side - Branding -->
+        <div class="hidden lg:flex lg:w-1/2 login-gradient p-12 flex-col justify-between relative overflow-hidden">
+            <div class="floating-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+            </div>
+            <div class="relative z-10">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center logo-pulse">
+                        <i class="fas fa-tshirt text-white text-2xl"></i>
+                    </div>
+                    <span class="text-white text-2xl font-bold">Fundamental Apparel</span>
+                </div>
+                <h1 class="text-4xl font-bold text-white mb-4">Admin Dashboard</h1>
+                <p class="text-white/80 text-lg leading-relaxed">
+                    Manage your store, track orders, analyze sales, and grow your business with our powerful admin tools.
+                </p>
+            </div>
+            <div class="relative z-10 space-y-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-chart-line text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold">Real-time Analytics</h3>
+                        <p class="text-white/70 text-sm">Monitor sales and performance</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-boxes text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold">Inventory Control</h3>
+                        <p class="text-white/70 text-sm">Track stock levels easily</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-users text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold">Customer Management</h3>
+                        <p class="text-white/70 text-sm">Build lasting relationships</p>
+                    </div>
+                </div>
+            </div>
+            <div class="relative z-10 pt-8 border-t border-white/20">
+                <p class="text-white/60 text-sm">© 2025 Fundamental Apparel. All rights reserved.</p>
+            </div>
+        </div>
 
-        <form id="login-form">
-            <div class="mb-4">
-                <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
-                <input type="email" id="email" name="email" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+        <!-- Right Side - Login Form -->
+        <div class="w-full lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
+            <!-- Mobile Logo -->
+            <div class="lg:hidden flex items-center justify-center gap-3 mb-8">
+                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-tshirt text-white text-lg"></i>
+                </div>
+                <span class="text-gray-800 text-xl font-bold">Fundamental Apparel</span>
             </div>
-            <div class="mb-6">
-                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                <input type="password" id="password" name="password" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
+                <p class="text-gray-500">Sign in to access your admin dashboard</p>
             </div>
-            <div class="mb-4 text-right">
-                <a href="#" id="forgot-password-link" class="text-sm text-indigo-600 hover:text-indigo-800">Forgot Password?</a>
-            </div>
-            <div>
-                <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    Sign In
+
+            <div id="message-container" class="hidden mb-6 p-4 rounded-xl flex items-center gap-3"></div>
+
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-envelope text-gray-400 mr-2"></i>Email Address
+                    </label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        required 
+                        class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 input-focus"
+                        placeholder="admin@example.com"
+                    >
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-lock text-gray-400 mr-2"></i>Password
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            required
+                            class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200 input-focus pr-12"
+                            placeholder="••••••••"
+                        >
+                        <button type="button" id="toggle-password" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="remember-me" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-sm text-gray-600">Remember me</span>
+                    </label>
+                    <a href="#" id="forgot-password-link" class="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                        Forgot password?
+                    </a>
+                </div>
+
+                <button 
+                    type="submit" 
+                    id="login-btn"
+                    class="w-full btn-gradient text-white py-4 px-6 rounded-xl font-semibold text-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                    <span>Sign In</span>
+                    <i class="fas fa-arrow-right"></i>
                 </button>
+            </form>
+
+            <div class="mt-8 pt-6 border-t border-gray-100">
+                <div class="flex items-center justify-center gap-4 text-sm text-gray-500">
+                    <a href="../index.html" class="flex items-center gap-2 hover:text-indigo-600 transition-colors">
+                        <i class="fas fa-store"></i>
+                        <span>Visit Store</span>
+                    </a>
+                    <span class="text-gray-300">|</span>
+                    <a href="#" class="flex items-center gap-2 hover:text-indigo-600 transition-colors">
+                        <i class="fas fa-headset"></i>
+                        <span>Support</span>
+                    </a>
+                </div>
             </div>
-        </form>
+        </div>
     </div>
 
     <!-- Forgot Password Modal -->
-    <div id="forgot-password-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4">
+    <div id="forgot-password-modal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
             <!-- Step 1: Request Reset Code -->
             <div id="forgot-step-1">
-                <h3 class="text-xl font-bold text-gray-800 mb-2">Reset Password</h3>
-                <p class="text-sm text-gray-600 mb-6">Enter your email to receive a password reset code</p>
+                <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-key text-indigo-600 text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 text-center mb-2">Reset Password</h3>
+                <p class="text-gray-500 text-center mb-6">Enter your email to receive a password reset code</p>
                 
-                <div id="forgot-message-1" class="hidden mb-4 p-3 rounded-md text-sm"></div>
+                <div id="forgot-message-1" class="hidden mb-4 p-3 rounded-xl text-sm"></div>
                 
-                <form id="forgot-form-1">
-                    <div class="mb-4">
-                        <label for="forgot-email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                        <input type="email" id="forgot-email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <form id="forgot-form-1" class="space-y-4">
+                    <div>
+                        <label for="forgot-email" class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                        <input type="email" id="forgot-email" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
                     </div>
-                    <div class="flex gap-3">
-                        <button type="button" id="cancel-forgot-1" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">Cancel</button>
-                        <button type="submit" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Send Code</button>
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" id="cancel-forgot-1" class="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-all">Cancel</button>
+                        <button type="submit" class="flex-1 px-4 py-3 btn-gradient text-white rounded-xl font-medium">Send Code</button>
                     </div>
                 </form>
             </div>
 
             <!-- Step 2: Enter Code & New Password -->
             <div id="forgot-step-2" class="hidden">
-                <h3 class="text-xl font-bold text-gray-800 mb-2">Enter Reset Code</h3>
-                <p class="text-sm text-gray-600 mb-6">Check your email for the 6-digit code</p>
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-envelope-open-text text-green-600 text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 text-center mb-2">Enter Reset Code</h3>
+                <p class="text-gray-500 text-center mb-6">Check your email for the 6-digit code</p>
                 
-                <div id="forgot-message-2" class="hidden mb-4 p-3 rounded-md text-sm"></div>
+                <div id="forgot-message-2" class="hidden mb-4 p-3 rounded-xl text-sm"></div>
                 
-                <form id="forgot-form-2">
-                    <div class="mb-4">
-                        <label for="reset-code" class="block text-sm font-medium text-gray-700 mb-1">Reset Code</label>
-                        <input type="text" id="reset-code" required maxlength="6" pattern="[0-9]{6}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="6-digit code">
+                <form id="forgot-form-2" class="space-y-4">
+                    <div>
+                        <label for="reset-code" class="block text-sm font-semibold text-gray-700 mb-2">Reset Code</label>
+                        <input type="text" id="reset-code" required maxlength="6" pattern="[0-9]{6}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-center text-2xl tracking-widest font-mono" placeholder="000000">
                     </div>
-                    <div class="mb-4">
-                        <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                        <input type="password" id="new-password" required minlength="8" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Minimum 8 characters">
+                    <div>
+                        <label for="new-password" class="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
+                        <input type="password" id="new-password" required minlength="8" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" placeholder="Minimum 8 characters">
                     </div>
-                    <div class="mb-6">
-                        <label for="confirm-new-password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                        <input type="password" id="confirm-new-password" required minlength="8" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Re-enter password">
+                    <div>
+                        <label for="confirm-new-password" class="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
+                        <input type="password" id="confirm-new-password" required minlength="8" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" placeholder="Re-enter password">
                     </div>
-                    <div class="flex gap-3">
-                        <button type="button" id="cancel-forgot-2" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">Cancel</button>
-                        <button type="submit" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Reset Password</button>
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" id="cancel-forgot-2" class="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-all">Cancel</button>
+                        <button type="submit" class="flex-1 px-4 py-3 btn-gradient text-white rounded-xl font-medium">Reset Password</button>
                     </div>
                 </form>
                 <div class="mt-4 text-center">
-                    <button id="resend-forgot-code" class="text-sm text-indigo-600 hover:text-indigo-800">Resend Code</button>
+                    <button id="resend-forgot-code" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">Resend Code</button>
                 </div>
             </div>
         </div>
@@ -107,19 +283,35 @@
             const cancelBtn1 = document.getElementById('cancel-forgot-1');
             const cancelBtn2 = document.getElementById('cancel-forgot-2');
             const resendBtn = document.getElementById('resend-forgot-code');
+            const togglePassword = document.getElementById('toggle-password');
+            const passwordInput = document.getElementById('password');
+            const loginBtn = document.getElementById('login-btn');
 
             let resendCooldown = 0;
 
+            // Toggle password visibility
+            togglePassword.addEventListener('click', () => {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                togglePassword.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+            });
+
             const showMessage = (message, type) => {
-                messageContainer.textContent = message;
-                messageContainer.className = `p-4 rounded-md mb-4 ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+                messageContainer.innerHTML = `
+                    <i class="fas ${type === 'success' ? 'fa-check-circle text-green-500' : 'fa-exclamation-circle text-red-500'} text-lg"></i>
+                    <span>${message}</span>
+                `;
+                messageContainer.className = `mb-6 p-4 rounded-xl flex items-center gap-3 ${type === 'success' ? 'bg-green-50 text-green-800 border border-green-100' : 'bg-red-50 text-red-800 border border-red-100'}`;
                 messageContainer.classList.remove('hidden');
             };
 
             const showForgotMessage = (step, message, type) => {
                 const msgEl = document.getElementById(`forgot-message-${step}`);
-                msgEl.textContent = message;
-                msgEl.className = `mb-4 p-3 rounded-md text-sm ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+                msgEl.innerHTML = `
+                    <i class="fas ${type === 'success' ? 'fa-check-circle text-green-500' : 'fa-exclamation-circle text-red-500'}"></i>
+                    <span>${message}</span>
+                `;
+                msgEl.className = `mb-4 p-3 rounded-xl text-sm flex items-center gap-2 ${type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`;
                 msgEl.classList.remove('hidden');
             };
 
@@ -136,6 +328,7 @@
             const startResendCooldown = () => {
                 resendCooldown = 60;
                 resendBtn.disabled = true;
+                resendBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 const originalText = resendBtn.textContent;
                 const interval = setInterval(() => {
                     if (resendCooldown > 0) {
@@ -144,6 +337,7 @@
                     } else {
                         resendBtn.textContent = originalText;
                         resendBtn.disabled = false;
+                        resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                         clearInterval(interval);
                     }
                 }, 1000);
@@ -155,6 +349,9 @@
                 const formData = new FormData(loginForm);
                 const data = Object.fromEntries(formData.entries());
                 data.email = String(data.email || '').trim().toLowerCase();
+                
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Signing in...';
 
                 try {
                     const response = await fetch(`${API}/api/auth/login`, {
@@ -186,6 +383,8 @@
                             }, 1500);
                         } else {
                             showMessage('Access Denied: You do not have admin or employee privileges.', 'error');
+                            loginBtn.disabled = false;
+                            loginBtn.innerHTML = '<span>Sign In</span><i class="fas fa-arrow-right"></i>';
                         }
                     } else {
                         if (result && result.verificationRequired) {
@@ -195,6 +394,8 @@
                     }
                 } catch (error) {
                     showMessage(error.message, 'error');
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<span>Sign In</span><i class="fas fa-arrow-right"></i>';
                 }
             });
 
@@ -202,6 +403,11 @@
             forgotLink.addEventListener('click', (e) => {
                 e.preventDefault();
                 forgotModal.classList.remove('hidden');
+            });
+
+            // Close modal on backdrop click
+            forgotModal.addEventListener('click', (e) => {
+                if (e.target === forgotModal) closeForgotModal();
             });
 
             // Cancel buttons
@@ -215,7 +421,7 @@
                 
                 const btn = e.target.querySelector('button[type="submit"]');
                 btn.disabled = true;
-                btn.textContent = 'Sending...';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
                 try {
                     const response = await fetch(`${API}/api/auth/forgotpassword`, {
@@ -271,7 +477,7 @@
 
                 const btn = e.target.querySelector('button[type="submit"]');
                 btn.disabled = true;
-                btn.textContent = 'Resetting...';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
                 try {
                     const response = await fetch(`${API}/api/auth/resetpassword`, {
