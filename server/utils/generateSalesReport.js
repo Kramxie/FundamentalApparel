@@ -160,6 +160,37 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
   const rangeText = `${startDate ? (new Date(startDate)).toISOString().split('T')[0] : 'All'} to ${endDate ? (new Date(endDate)).toISOString().split('T')[0] : 'All'}`;
   doc.fontSize(9).text(`Date Range: ${rangeText}`, { align: 'center' });
   doc.moveDown(0.5);
+  // Currency formatter
+
+  // --- Summary calculations (for range totals) ---
+  let summary = { totalOrders: 0, totalRevenue: 0, totalQuantity: 0 };
+  if (filterType === 'product' || filterType === 'predesign'){
+    summary.totalQuantity = rows.reduce((s,r)=> s + (r.totalQty||0), 0);
+    summary.totalRevenue = rows.reduce((s,r)=> s + (Number(r.revenue)||0), 0);
+  } else {
+    summary.totalOrders = rows.length;
+    summary.totalRevenue = rows.reduce((s,r)=> s + (Number(r.totalPrice)||0), 0);
+  }
+
+  // draw small summary box to the right under date range
+  const summaryBoxWidth = 200;
+  const summaryBoxHeight = 60;
+  const summaryBoxX = doc.page.margins.left + (pageWidth - summaryBoxWidth);
+  const summaryBoxY = doc.y;
+  doc.save();
+  doc.rect(summaryBoxX, summaryBoxY, summaryBoxWidth, summaryBoxHeight).fill('#f9fafb');
+  doc.fillColor('#000').fontSize(9).text('Summary', summaryBoxX + 8, summaryBoxY + 6);
+  if (filterType === 'product' || filterType === 'predesign'){
+    doc.fontSize(9).text(`Products: ${rows.length}`, summaryBoxX + 8, summaryBoxY + 22);
+    doc.fontSize(9).text(`Revenue: ${formatter.format(summary.totalRevenue)}`, summaryBoxX + 8, summaryBoxY + 36);
+  } else {
+    doc.fontSize(9).text(`Orders: ${summary.totalOrders}`, summaryBoxX + 8, summaryBoxY + 22);
+    doc.fontSize(9).text(`Revenue: ${formatter.format(summary.totalRevenue)}`, summaryBoxX + 8, summaryBoxY + 36);
+  }
+  doc.lineWidth(0.5).strokeColor('#e5e7eb').rect(summaryBoxX, summaryBoxY, summaryBoxWidth, summaryBoxHeight).stroke();
+  doc.restore();
+  // ensure we don't overlap the summary box with table header
+  if (doc.y < summaryBoxY + summaryBoxHeight + 6) doc.y = summaryBoxY + summaryBoxHeight + 6;
 
   // Currency formatter
   const currency = businessInfo.currency || 'PHP';
@@ -173,37 +204,41 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
   const colWidths = cols.map(f => Math.floor(f * pageWidth));
 
   if (filterType === 'product' || filterType === 'predesign'){
-    // header row
-    ensurePageFor(24);
+    // header row (explicit Y-based layout)
+    ensurePageFor(40);
     const startX = doc.x;
-    let cx = startX;
-    const headerHeight = 20;
+    const headerHeight = 22;
+    const headerY = doc.y;
     doc.save();
-    doc.rect(startX, doc.y, pageWidth, headerHeight).fill('#f3f4f6');
+    doc.rect(startX, headerY, pageWidth, headerHeight).fill('#f3f4f6');
     doc.fillColor('#000').fontSize(10);
     const headers = ['Product Name','Category','Quantity','Revenue'];
+    let cx = startX;
     for (let i=0;i<headers.length;i++){
-      doc.fillColor('#000').text(headers[i], cx + 4, doc.y + 4, { width: colWidths[i]-8, align: 'left' });
+      doc.text(headers[i], cx + 4, headerY + 6, { width: colWidths[i]-8, align: 'left' });
       cx += colWidths[i];
     }
-    // border
-    doc.lineWidth(0.5).strokeColor('#d1d5db').rect(startX, doc.y, pageWidth, headerHeight).stroke();
+    doc.lineWidth(0.5).strokeColor('#d1d5db').rect(startX, headerY, pageWidth, headerHeight).stroke();
     doc.restore();
-    doc.moveDown(1.6);
+    // move cursor below header
+    doc.y = headerY + headerHeight + 6;
 
     let totalQty = 0; let totalRevenue = 0;
+    const rowHeight = 20;
+    let curY = doc.y;
     for (const r of rows){
-      ensurePageFor(18);
-      const rowY = doc.y;
+      ensurePageFor(rowHeight + 6);
+      const rowY = curY;
       let x = startX;
       const values = [ r.productName || (r.productId||''), r.category || '', String(r.totalQty||0), formatter.format(Number(r.revenue)||0) ];
       for (let i=0;i<values.length;i++){
-        doc.fontSize(9).fillColor('#111').text(values[i], x + 4, rowY + 3, { width: colWidths[i]-8, align: i===2? 'right' : (i===3? 'right' : 'left') });
+        doc.fontSize(9).fillColor('#111').text(values[i], x + 4, rowY + 4, { width: colWidths[i]-8, align: i===2? 'right' : (i===3? 'right' : 'left') });
         x += colWidths[i];
       }
       // row border
-      doc.lineWidth(0.3).strokeColor('#e5e7eb').rect(startX, rowY, pageWidth, 18).stroke();
-      doc.moveDown(1.1);
+      doc.lineWidth(0.3).strokeColor('#e5e7eb').rect(startX, rowY, pageWidth, rowHeight).stroke();
+      curY += rowHeight + 6;
+      doc.y = curY;
       totalQty += (r.totalQty||0);
       totalRevenue += (r.revenue||0);
     }
@@ -214,17 +249,32 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
     doc.fontSize(9).text(`Total Quantity: ${totalQty}`);
     doc.fontSize(9).text(`Total Revenue: ${formatter.format(totalRevenue)}`);
   } else {
-    // Order level with borders
-    ensurePageFor(24);
+    // Order level with borders (explicit header placement)
+    ensurePageFor(40);
     const startX = doc.x;
-    let cx = startX; const headerHeight = 20;
-    doc.save(); doc.rect(startX, doc.y, pageWidth, headerHeight).fill('#f3f4f6'); doc.fillColor('#000').fontSize(10);
+    const headerHeight = 22;
+    const headerY = doc.y;
+    doc.save(); doc.rect(startX, headerY, pageWidth, headerHeight).fill('#f3f4f6'); doc.fillColor('#000').fontSize(10);
     const headers = ['Order ID','Date','Customer','Total','Paid'];
-    for (let i=0;i<headers.length;i++){ doc.text(headers[i], cx + 4, doc.y + 4, { width: colWidths[i]-8, align: 'left' }); cx += colWidths[i]; }
-    doc.lineWidth(0.5).strokeColor('#d1d5db').rect(startX, doc.y, pageWidth, headerHeight).stroke(); doc.restore(); doc.moveDown(1.6);
-    for (const r of rows){ ensurePageFor(18); const rowY = doc.y; let x = startX; const values = [ r.orderId||'', (r.date||'').split('T')[0]||'', r.customer||'', formatter.format(Number(r.totalPrice)||0), r.isPaid? 'Yes':'No' ];
-      for (let i=0;i<values.length;i++){ doc.fontSize(9).fillColor('#111').text(values[i], x + 4, rowY + 3, { width: colWidths[i]-8, align: i>=3? 'right' : 'left' }); x += colWidths[i]; }
-      doc.lineWidth(0.3).strokeColor('#e5e7eb').rect(startX, rowY, pageWidth, 18).stroke(); doc.moveDown(1.1);
+    let cx2 = startX;
+    for (let i=0;i<headers.length;i++){ doc.text(headers[i], cx2 + 4, headerY + 6, { width: colWidths[i]-8, align: 'left' }); cx2 += colWidths[i]; }
+    doc.lineWidth(0.5).strokeColor('#d1d5db').rect(startX, headerY, pageWidth, headerHeight).stroke(); doc.restore();
+    doc.y = headerY + headerHeight + 6;
+
+    const rowHeight = 20;
+    let curY = doc.y;
+    for (const r of rows){
+      ensurePageFor(rowHeight + 6);
+      const rowY = curY;
+      let x = startX;
+      const values = [ r.orderId||'', (r.date||'').split('T')[0]||'', r.customer||'', formatter.format(Number(r.totalPrice)||0), r.isPaid? 'Yes':'No' ];
+      for (let i=0;i<values.length;i++){
+        doc.fontSize(9).fillColor('#111').text(values[i], x + 4, rowY + 4, { width: colWidths[i]-8, align: i>=3? 'right' : 'left' });
+        x += colWidths[i];
+      }
+      doc.lineWidth(0.3).strokeColor('#e5e7eb').rect(startX, rowY, pageWidth, rowHeight).stroke();
+      curY += rowHeight + 6;
+      doc.y = curY;
     }
   }
 
