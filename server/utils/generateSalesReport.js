@@ -197,22 +197,18 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
   // (formatter already declared above)
 
   // Table drawing helpers
-  function ensurePageFor(heightNeeded){ if (doc.y + heightNeeded > doc.page.height - doc.page.margins.bottom) { doc.addPage(); } }
+  function ensurePageFor(heightNeeded){
+    const bottomLimit = doc.page.height - doc.page.margins.bottom;
+    if (doc.y + heightNeeded > bottomLimit) { doc.addPage(); return true; }
+    return false;
+  }
 
-  // Column widths (fractions of pageWidth)
-  const cols = (filterType === 'product' || filterType === 'predesign') ? [0.45,0.20,0.12,0.23] : [0.22,0.18,0.30,0.15,0.15];
-  const colWidths = cols.map(f => Math.floor(f * pageWidth));
+  function truncateText(s, max){ if (!s) return ''; const str = String(s); return str.length > max ? (str.substring(0, max-3) + '...') : str; }
 
-  if (filterType === 'product' || filterType === 'predesign'){
-    // header row (explicit Y-based layout)
-    ensurePageFor(40);
-    const startX = doc.x;
-    const headerHeight = 22;
-    const headerY = doc.y;
+  function drawTableHeader(headers, startX, headerY, headerHeight, colWidths){
     doc.save();
     doc.rect(startX, headerY, pageWidth, headerHeight).fill('#f3f4f6');
     doc.fillColor('#000').fontSize(10);
-    const headers = ['Product Name','Category','Quantity','Revenue'];
     let cx = startX;
     for (let i=0;i<headers.length;i++){
       doc.text(headers[i], cx + 4, headerY + 6, { width: colWidths[i]-8, align: 'left' });
@@ -220,25 +216,42 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
     }
     doc.lineWidth(0.5).strokeColor('#d1d5db').rect(startX, headerY, pageWidth, headerHeight).stroke();
     doc.restore();
-    // move cursor below header
-    doc.y = headerY + headerHeight + 6;
+  }
+
+  // Column widths (fractions of pageWidth)
+  const cols = (filterType === 'product' || filterType === 'predesign') ? [0.45,0.20,0.12,0.23] : [0.22,0.18,0.30,0.15,0.15];
+  const colWidths = cols.map(f => Math.floor(f * pageWidth));
+
+  if (filterType === 'product' || filterType === 'predesign'){
+    // header row (explicit Y-based layout)
+    const startX = doc.x;
+    const headerHeight = 20;
+    const headers = ['Product Name','Category','Quantity','Revenue'];
+    // draw header (ensure page space)
+    ensurePageFor(headerHeight + 6);
+    drawTableHeader(headers, startX, doc.y, headerHeight, colWidths);
+    doc.y = doc.y + headerHeight + 6;
 
     let totalQty = 0; let totalRevenue = 0;
-    const rowHeight = 20;
-    let curY = doc.y;
+    const rowHeight = 16;
     for (const r of rows){
-      ensurePageFor(rowHeight + 6);
-      const rowY = curY;
+      const added = ensurePageFor(rowHeight + 6);
+      if (added){
+        // redraw header on new page
+        drawTableHeader(headers, startX, doc.y, headerHeight, colWidths);
+        doc.y = doc.y + headerHeight + 6;
+      }
+      const rowY = doc.y;
       let x = startX;
-      const values = [ r.productName || (r.productId||''), r.category || '', String(r.totalQty||0), formatter.format(Number(r.revenue)||0) ];
+      const values = [ truncateText(r.productName || (r.productId||''), 40), truncateText(r.category || '', 18), String(r.totalQty||0), formatter.format(Number(r.revenue)||0) ];
       for (let i=0;i<values.length;i++){
-        doc.fontSize(9).fillColor('#111').text(values[i], x + 4, rowY + 4, { width: colWidths[i]-8, align: i===2? 'right' : (i===3? 'right' : 'left') });
+        doc.fontSize(9).fillColor('#111').text(values[i], x + 4, rowY + 3, { width: colWidths[i]-8, align: i===2? 'right' : (i===3? 'right' : 'left') });
         x += colWidths[i];
       }
       // row border
       doc.lineWidth(0.3).strokeColor('#e5e7eb').rect(startX, rowY, pageWidth, rowHeight).stroke();
-      curY += rowHeight + 6;
-      doc.y = curY;
+      // advance cursor
+      doc.y = doc.y + rowHeight + 4;
       totalQty += (r.totalQty||0);
       totalRevenue += (r.revenue||0);
     }
@@ -250,31 +263,27 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
     doc.fontSize(9).text(`Total Revenue: ${formatter.format(totalRevenue)}`);
   } else {
     // Order level with borders (explicit header placement)
-    ensurePageFor(40);
     const startX = doc.x;
-    const headerHeight = 22;
-    const headerY = doc.y;
-    doc.save(); doc.rect(startX, headerY, pageWidth, headerHeight).fill('#f3f4f6'); doc.fillColor('#000').fontSize(10);
+    const headerHeight = 20;
     const headers = ['Order ID','Date','Customer','Total','Paid'];
-    let cx2 = startX;
-    for (let i=0;i<headers.length;i++){ doc.text(headers[i], cx2 + 4, headerY + 6, { width: colWidths[i]-8, align: 'left' }); cx2 += colWidths[i]; }
-    doc.lineWidth(0.5).strokeColor('#d1d5db').rect(startX, headerY, pageWidth, headerHeight).stroke(); doc.restore();
-    doc.y = headerY + headerHeight + 6;
+    ensurePageFor(headerHeight + 6);
+    drawTableHeader(headers, startX, doc.y, headerHeight, colWidths);
+    doc.y = doc.y + headerHeight + 6;
 
-    const rowHeight = 20;
-    let curY = doc.y;
+    const rowHeight = 16;
     for (const r of rows){
-      ensurePageFor(rowHeight + 6);
-      const rowY = curY;
+      const added = ensurePageFor(rowHeight + 6);
+      if (added){ drawTableHeader(headers, startX, doc.y, headerHeight, colWidths); doc.y = doc.y + headerHeight + 6; }
+      const rowY = doc.y;
       let x = startX;
-      const values = [ r.orderId||'', (r.date||'').split('T')[0]||'', r.customer||'', formatter.format(Number(r.totalPrice)||0), r.isPaid? 'Yes':'No' ];
+      const shortOrderId = truncateText(String(r.orderId||''), 18);
+      const values = [ shortOrderId, (r.date||'').split('T')[0]||'', truncateText(r.customer||'', 24), formatter.format(Number(r.totalPrice)||0), r.isPaid? 'Yes':'No' ];
       for (let i=0;i<values.length;i++){
-        doc.fontSize(9).fillColor('#111').text(values[i], x + 4, rowY + 4, { width: colWidths[i]-8, align: i>=3? 'right' : 'left' });
+        doc.fontSize(9).fillColor('#111').text(values[i], x + 4, rowY + 3, { width: colWidths[i]-8, align: i>=3? 'right' : 'left' });
         x += colWidths[i];
       }
       doc.lineWidth(0.3).strokeColor('#e5e7eb').rect(startX, rowY, pageWidth, rowHeight).stroke();
-      curY += rowHeight + 6;
-      doc.y = curY;
+      doc.y = doc.y + rowHeight + 4;
     }
   }
 
