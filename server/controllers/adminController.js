@@ -288,3 +288,110 @@ exports.resetEmployeePassword = async (req, res) => {
     res.status(500).json({ success: false, msg: 'Server error' });
   }
 };
+
+// Admin: get customer stats (completed orders, completed quotes)
+exports.getCustomerStats = async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    const skip = parseInt(req.query.skip, 10) || 0;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+
+    const match = {};
+    if (q) match.email = { $regex: q, $options: 'i' };
+
+    // Aggregate users with lookups to orders and customorders
+    const pipeline = [
+      { $match: match },
+      { $lookup: {
+          from: 'orders',
+          let: { uid: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $and: [ { $eq: ['$user', '$$uid'] }, { $in: ['$status', ['Delivered','Completed']] } ] } } },
+            { $count: 'count' }
+          ],
+          as: 'completedOrdersArr'
+      }},
+      { $lookup: {
+          from: 'customorders',
+          let: { uid: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $and: [ { $eq: ['$user', '$$uid'] }, { $eq: ['$status', 'Completed'] } ] } } },
+            { $count: 'count' }
+          ],
+          as: 'completedQuotesArr'
+      }},
+      { $project: {
+          email: 1,
+          name: 1,
+          completedOrders: { $ifNull: [ { $arrayElemAt: ['$completedOrdersArr.count', 0] }, 0 ] },
+          completedQuotes: { $ifNull: [ { $arrayElemAt: ['$completedQuotesArr.count', 0] }, 0 ] }
+      }},
+      { $sort: { completedOrders: -1, completedQuotes: -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    ];
+
+    const User = require('../models/User');
+    const rows = await User.aggregate(pipeline);
+
+    // Also return total count for pagination (simple count of matched users)
+    const total = await User.countDocuments(match);
+
+    res.json({ success: true, data: rows, total });
+  } catch (error) {
+    console.error('getCustomerStats error:', error);
+    res.status(500).json({ success: false, msg: 'Server error retrieving customer stats' });
+  }
+};
+
+// Get a single user (admin)
+exports.getUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const user = await User.findById(id).lean();
+    if (!user) return res.status(404).json({ success: false, msg: 'User not found' });
+    res.json({ success: true, data: user });
+  } catch (err) {
+    console.error('getUser error', err);
+    res.status(500).json({ success: false, msg: 'Server error' });
+  }
+};
+
+// Update a user (admin)
+exports.updateUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { name, email, role } = req.body;
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ success: false, msg: 'User not found' });
+
+    if (email && email !== user.email) {
+      const dup = await User.findOne({ email: String(email).toLowerCase(), _id: { $ne: id } });
+      if (dup) return res.status(400).json({ success: false, msg: 'Email already in use' });
+      user.email = String(email).toLowerCase();
+    }
+    if (name) user.name = name;
+    if (role) user.role = role;
+    await user.save();
+    res.json({ success: true, data: { id: user._id, name: user.name, email: user.email, role: user.role, isActive: user.isActive } });
+  } catch (err) {
+    console.error('updateUser error', err);
+    res.status(500).json({ success: false, msg: 'Server error' });
+  }
+};
+
+// Toggle active/disable a user (admin)
+exports.toggleUserActive = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { isActive } = req.body;
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ success: false, msg: 'User not found' });
+    user.isActive = typeof isActive === 'boolean' ? isActive : !user.isActive;
+    await user.save();
+    res.json({ success: true, data: { id: user._id, isActive: user.isActive } });
+  } catch (err) {
+    console.error('toggleUserActive error', err);
+    res.status(500).json({ success: false, msg: 'Server error' });
+  }
+};

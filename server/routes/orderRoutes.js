@@ -17,6 +17,7 @@ const {
 const { createReturnRequest } = require('../controllers/returnController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { requirePermission } = require('../middleware/permissionMiddleware');
 
 // Configure multer storage for receipts
 const receiptsDir = path.join(__dirname, '..', 'uploads', 'receipts');
@@ -74,8 +75,8 @@ router.post('/:id/returns', returnsUpload.fields([{ name: 'videos' }, { name: 'i
 router.get('/myorders', getMyOrders);
 
 // Admin routes (literal)
-// Allow employees to view orders list; writes remain admin-only
-router.get('/admin', authorize('admin','employee'), getAllOrders);
+// Orders listing and status management require permissions
+router.get('/admin', requirePermission('manage_orders'), getAllOrders);
 
 // --- NEW ROUTE for user to cancel ---
 router.put('/:id/cancel', cancelOrder);
@@ -83,7 +84,7 @@ router.put('/:id/cancel', cancelOrder);
 router.put('/:id/complete', completeOrder);
 
 // Admin status update
-router.put('/:id/status', authorize('admin','employee'), updateOrderStatus);
+router.put('/:id/status', requirePermission('manage_orders'), updateOrderStatus);
 
 // Get single order (owner or admin) - param route placed last
 router.get('/:id', getOrderById);

@@ -139,6 +139,37 @@
                                 Voucher</button>
                         </div>
                     </form>
+                    <!-- Customer Stats Table -->
+                    <div id="customer-stats" class="mt-8">
+                        <h3 class="text-lg font-semibold mb-3">Customer Stats</h3>
+                        <div class="flex items-center gap-2 mb-3">
+                            <input id="cs-search" type="text" placeholder="Search email..." class="px-3 py-2 border rounded w-64" />
+                            <button id="cs-search-btn" class="px-3 py-2 bg-indigo-600 text-white rounded">Search</button>
+                            <button id="cs-refresh-btn" class="px-3 py-2 border rounded">Refresh</button>
+                        </div>
+                        <div class="overflow-auto">
+                            <table id="cs-table" class="min-w-full bg-white border">
+                                <thead>
+                                    <tr class="bg-gray-100 text-left">
+                                        <th class="p-3">Email</th>
+                                        <th class="p-3">Name</th>
+                                        <th class="p-3">Completed Orders</th>
+                                        <th class="p-3">Completed Quotes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cs-rows">
+                                    <tr><td colspan="4" class="p-6 text-center text-gray-500">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between">
+                            <div id="cs-meta" class="text-sm text-gray-600">&nbsp;</div>
+                            <div>
+                                <button id="cs-prev" class="px-3 py-1 border rounded mr-2">Previous</button>
+                                <button id="cs-next" class="px-3 py-1 border rounded">Next</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -201,6 +232,58 @@
                     showMessage(error.message, 'error');
                 }
             });
+
+            // Customer stats table logic
+            const CS_API = 'https://fundamental-apparel-backend.onrender.com/api/admin/customer-stats';
+            const csRows = document.getElementById('cs-rows');
+            const csSearch = document.getElementById('cs-search');
+            const csSearchBtn = document.getElementById('cs-search-btn');
+            const csRefreshBtn = document.getElementById('cs-refresh-btn');
+            const csPrev = document.getElementById('cs-prev');
+            const csNext = document.getElementById('cs-next');
+            const csMeta = document.getElementById('cs-meta');
+
+            let csSkip = 0; const CS_LIMIT = 25; let csTotal = 0;
+
+            async function loadCustomerStats() {
+                csRows.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-500">Loading...</td></tr>`;
+                try {
+                    const q = encodeURIComponent(csSearch.value || '');
+                    const url = `${CS_API}?q=${q}&skip=${csSkip}&limit=${CS_LIMIT}`;
+                    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                    const json = await res.json();
+                    if (!json.success) throw new Error(json.msg || 'Failed to load stats');
+                    const rows = json.data || [];
+                    csTotal = json.total || 0;
+                    if (!rows.length) {
+                        csRows.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-500">No results found.</td></tr>`;
+                        csMeta.textContent = `Showing 0 of ${csTotal}`;
+                        return;
+                    }
+                    csRows.innerHTML = rows.map(r => `
+                        <tr class="border-t">
+                            <td class="p-3 font-mono text-sm">${r.email || ''}</td>
+                            <td class="p-3 text-sm">${r.name || ''}</td>
+                            <td class="p-3 text-sm">${r.completedOrders || 0}</td>
+                            <td class="p-3 text-sm">${r.completedQuotes || 0}</td>
+                        </tr>
+                    `).join('');
+                    const start = csSkip + 1;
+                    const end = Math.min(csSkip + rows.length, csTotal);
+                    csMeta.textContent = `Showing ${start}-${end} of ${csTotal}`;
+                } catch (err) {
+                    csRows.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-red-600">${err.message}</td></tr>`;
+                    csMeta.textContent = '';
+                }
+            }
+
+            csSearchBtn.addEventListener('click', () => { csSkip = 0; loadCustomerStats(); });
+            csRefreshBtn.addEventListener('click', () => { csSkip = 0; csSearch.value = ''; loadCustomerStats(); });
+            csPrev.addEventListener('click', () => { if (csSkip - CS_LIMIT >= 0) { csSkip -= CS_LIMIT; loadCustomerStats(); } });
+            csNext.addEventListener('click', () => { if (csSkip + CS_LIMIT < csTotal) { csSkip += CS_LIMIT; loadCustomerStats(); } });
+
+            // Initial load
+            loadCustomerStats();
         });
     </script>
 <script src="admin-notifications.js"></script>

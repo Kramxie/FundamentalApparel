@@ -70,9 +70,126 @@
           <!-- Settings submenu -->
           <div class="bg-white p-4 rounded shadow mb-4">
             <nav class="flex gap-3">
-              <button id="settings-about-tab" class="px-4 py-2 bg-indigo-600 text-white rounded">About Us</button>
-              <button id="settings-contact-tab" class="px-4 py-2 bg-gray-100 text-gray-700 rounded">Contact</button>
+              <button id="settings-store-tab" class="px-4 py-2 bg-gray-100 text-gray-700 rounded">Store Info</button>
+              <button id="settings-users-tab" class="px-4 py-2 bg-gray-100 text-gray-700 rounded">User & Roles</button>
+              <button id="settings-about-tab" class="px-4 py-2 bg-gray-100 text-gray-700 rounded">Website Content</button>
             </nav>
+          </div>
+
+          <div id="store-panel" class="hidden bg-white p-6 rounded shadow">
+            <h2 class="text-lg font-semibold mb-3">Store Information</h2>
+            <div id="store-message" class="hidden p-3 rounded mb-3"></div>
+            <label class="block text-sm font-medium text-gray-700">Store Name</label>
+            <input id="store-name" class="w-full border p-2 rounded mb-3" />
+            <label class="block text-sm font-medium text-gray-700">Contact Email</label>
+            <input id="store-email" class="w-full border p-2 rounded mb-3" />
+            <label class="block text-sm font-medium text-gray-700">Phone</label>
+            <input id="store-phone" class="w-full border p-2 rounded mb-3" />
+            <label class="block text-sm font-medium text-gray-700">Address</label>
+            <textarea id="store-address" class="w-full border p-3 rounded h-24 mb-3"></textarea>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Logo</label>
+                <input id="store-logo-input" type="file" accept="image/*" class="mb-2" />
+                <div id="store-logo-preview"></div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Banner</label>
+                <input id="store-banner-input" type="file" accept="image/*" class="mb-2" />
+                <div id="store-banner-preview"></div>
+              </div>
+            </div>
+            <div id="roles-section" class="mt-4 border p-3 rounded">
+              <h3 class="font-semibold mb-2">Roles</h3>
+              <div id="roles-list" class="mb-3"></div>
+              <div id="add-role-form" class="flex gap-2 items-center">
+                <input id="new-role-name" placeholder="Role name" class="border p-2 rounded" />
+                <input id="new-role-perms" placeholder="Comma-separated permissions" class="border p-2 rounded" />
+                <button id="add-role-btn" class="px-3 py-2 bg-indigo-600 text-white rounded">Add Role</button>
+              </div>
+            </div>
+              <!-- Modals -->
+              <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+                <!-- Edit User Modal -->
+                <div id="edit-user-modal" class="bg-white rounded shadow-lg w-full max-w-xl p-6 hidden">
+                  <h3 class="text-lg font-semibold mb-4">Edit User</h3>
+                  <div id="edit-user-msg" class="hidden p-2 rounded mb-3"></div>
+                  <label class="block text-sm font-medium text-gray-700">Name</label>
+                  <input id="edit-user-name" class="w-full border p-2 rounded mb-3" />
+                  <label class="block text-sm font-medium text-gray-700">Email</label>
+                  <input id="edit-user-email" class="w-full border p-2 rounded mb-3" />
+                  <label class="block text-sm font-medium text-gray-700">Role</label>
+                  <select id="edit-user-role" class="w-full border p-2 rounded mb-4"><option value="">Select role</option></select>
+                  <div class="flex justify-end gap-3">
+                    <button id="edit-user-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+                    <button id="edit-user-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
+                  </div>
+                </div>
+
+                <!-- Create Staff Modal -->
+                <div id="create-staff-modal" class="bg-white rounded shadow-lg w-full max-w-xl p-6 hidden">
+                  <h3 class="text-lg font-semibold mb-4">Add Staff</h3>
+                  <div id="create-staff-msg" class="hidden p-2 rounded mb-3"></div>
+                  <label class="block text-sm font-medium text-gray-700">Name</label>
+                  <input id="create-staff-name" class="w-full border p-2 rounded mb-3" />
+                  <label class="block text-sm font-medium text-gray-700">Email</label>
+                  <input id="create-staff-email" class="w-full border p-2 rounded mb-3" />
+                  <label class="block text-sm font-medium text-gray-700">Role</label>
+                  <select id="create-staff-role" class="w-full border p-2 rounded mb-4"><option value="">Select role</option></select>
+                  <div class="flex justify-end gap-3">
+                    <button id="create-staff-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+                    <button id="create-staff-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Create Staff</button>
+                  </div>
+                </div>
+                <!-- Edit Role Modal -->
+                <div id="edit-role-modal" class="bg-white rounded shadow-lg w-full max-w-lg p-6 hidden">
+                  <h3 class="text-lg font-semibold mb-4">Edit Role</h3>
+                  <div id="edit-role-msg" class="hidden p-2 rounded mb-3"></div>
+                  <label class="block text-sm font-medium text-gray-700">Role Name</label>
+                  <input id="edit-role-name" class="w-full border p-2 rounded mb-3" />
+                  <label class="block text-sm font-medium text-gray-700">Permissions (comma separated)</label>
+                  <input id="edit-role-perms" class="w-full border p-2 rounded mb-4" />
+                  <div class="flex justify-end gap-3">
+                    <button id="edit-role-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+                    <button id="edit-role-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save Role</button>
+                  </div>
+                </div>
+
+                <!-- Confirm Modal -->
+                <div id="confirm-modal" class="bg-white rounded shadow-lg w-full max-w-md p-6 hidden">
+                  <h3 id="confirm-title" class="text-lg font-semibold mb-2">Confirm</h3>
+                  <p id="confirm-message" class="mb-4 text-sm text-gray-700"></p>
+                  <div class="flex justify-end gap-3">
+                    <button id="confirm-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+                    <button id="confirm-ok" class="px-4 py-2 bg-red-600 text-white rounded">Confirm</button>
+                  </div>
+                </div>
+              </div>
+            <div class="flex justify-end gap-3">
+              <button id="store-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save Store</button>
+            </div>
+          </div>
+
+          <div id="users-panel" class="hidden bg-white p-6 rounded shadow">
+            <h2 class="text-lg font-semibold mb-3">User & Role Management</h2>
+            <div id="users-message" class="hidden p-3 rounded mb-3"></div>
+            <div class="mb-4">
+              <button id="refresh-staff" class="px-3 py-2 bg-gray-100 rounded mr-2">Refresh</button>
+              <button id="show-add-staff" class="px-3 py-2 bg-indigo-600 text-white rounded">Add Staff</button>
+            </div>
+            <div id="staff-list" class="overflow-auto max-h-64 border rounded mb-4 p-3"></div>
+            <div id="add-staff-form" class="hidden border p-4 rounded">
+              <label class="block text-sm font-medium text-gray-700">Name</label>
+              <input id="staff-name" class="w-full border p-2 rounded mb-3" />
+              <label class="block text-sm font-medium text-gray-700">Email</label>
+              <input id="staff-email" class="w-full border p-2 rounded mb-3" />
+              <label class="block text-sm font-medium text-gray-700">Role</label>
+              <select id="staff-role" class="w-full border p-2 rounded mb-3"><option value="">Select role</option></select>
+              <div class="flex justify-end gap-3">
+                <button id="staff-cancel" class="px-3 py-2 bg-gray-200 rounded">Cancel</button>
+                <button id="staff-save" class="px-3 py-2 bg-indigo-600 text-white rounded">Save Staff</button>
+              </div>
+            </div>
           </div>
 
           <div id="about-panel" class="bg-white p-6 rounded shadow">
@@ -124,6 +241,70 @@
 
       function showMsg(el, msg, ok=true){ el.className = `p-3 rounded mb-3 ${ok? 'bg-green-100 text-green-800':'bg-red-100 text-red-800'}`; el.textContent = msg; el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'),3500); }
 
+      // Modal helpers
+      let modalConfirmCallback = null;
+      function showOverlay(){ const ov = document.getElementById('modal-overlay'); if (!ov) return; ov.classList.remove('hidden'); ov.classList.add('flex'); }
+      function hideOverlay(){ const ov = document.getElementById('modal-overlay'); if (!ov) return; ov.classList.add('hidden'); ov.classList.remove('flex'); // hide internal modals as well
+        ['edit-user-modal','edit-role-modal','confirm-modal','create-staff-modal'].forEach(id=>{ const m=document.getElementById(id); if(m) m.classList.add('hidden'); });
+      }
+
+      // Toast helper (floating toasts)
+      function toast(message, ok=true, ms=3500){
+        try{
+          const t = document.createElement('div'); t.className = `fixed right-4 top-6 z-60 max-w-sm p-3 rounded shadow-lg ${ok? 'bg-green-100 text-green-900':'bg-red-100 text-red-900'}`;
+          t.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)'; t.textContent = message || '';
+          document.body.appendChild(t);
+          setTimeout(()=>{ t.style.transition='opacity 300ms ease'; t.style.opacity='0'; setTimeout(()=>t.remove(),300); }, ms);
+        }catch(e){ console.error('toast', e); }
+      }
+
+      function openConfirm(title, message, onConfirm){
+        modalConfirmCallback = onConfirm || null;
+        const ov = document.getElementById('modal-overlay'); const cm = document.getElementById('confirm-modal');
+        if (!ov || !cm) return;
+        document.getElementById('confirm-title').textContent = title || 'Confirm';
+        document.getElementById('confirm-message').textContent = message || '';
+        showOverlay(); cm.classList.remove('hidden');
+      }
+
+      document.getElementById('confirm-cancel').addEventListener('click', ()=>{ modalConfirmCallback = null; hideOverlay(); });
+      document.getElementById('confirm-ok').addEventListener('click', ()=>{ try{ if (typeof modalConfirmCallback === 'function') modalConfirmCallback(); }catch(e){ console.error('confirm-cb', e); } finally{ modalConfirmCallback = null; hideOverlay(); } });
+
+      // Edit User modal buttons
+      let currentEditingUserId = null;
+      document.getElementById('edit-user-cancel').addEventListener('click', ()=>{ currentEditingUserId = null; hideOverlay(); });
+      document.getElementById('edit-user-save').addEventListener('click', async ()=>{
+        try{
+          const name = document.getElementById('edit-user-name').value||'';
+          const email = document.getElementById('edit-user-email').value||'';
+          const role = document.getElementById('edit-user-role').value||'';
+          if (!currentEditingUserId) return showMsg(document.getElementById('edit-user-msg'), 'No user selected', false);
+          const body = {};
+          if (name) body.name = name;
+          if (email) body.email = email;
+          if (role) body.role = role;
+          const res = await fetch(`${API}/api/admin/users/${encodeURIComponent(currentEditingUserId)}`, { method: 'PATCH', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify(body) });
+          const j = await res.json(); if (!res.ok){ showMsg(document.getElementById('edit-user-msg'), j.msg||'Failed update', false); return; }
+          showMsg(document.getElementById('edit-user-msg'), 'Saved', true);
+          hideOverlay(); currentEditingUserId = null; loadStaff();
+        }catch(e){ console.error('saveEditUser', e); showMsg(document.getElementById('edit-user-msg'),'Error saving', false); }
+      });
+
+      // Edit Role modal buttons
+      let currentEditingRole = null;
+      document.getElementById('edit-role-cancel').addEventListener('click', ()=>{ currentEditingRole = null; hideOverlay(); });
+      document.getElementById('edit-role-save').addEventListener('click', async ()=>{
+        try{
+          const name = document.getElementById('edit-role-name').value && document.getElementById('edit-role-name').value.trim();
+          const permsRaw = document.getElementById('edit-role-perms').value || '';
+          const perms = permsRaw.split(',').map(p=>p.trim()).filter(Boolean);
+          if (!currentEditingRole) return showMsg(document.getElementById('edit-role-msg'),'No role selected', false);
+          const res = await fetch(`${API}/api/admin/settings/roles/${encodeURIComponent(currentEditingRole)}`, { method: 'PATCH', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ name, permissions: perms }) });
+          const j = await res.json(); if (!res.ok){ showMsg(document.getElementById('edit-role-msg'), j.msg||'Failed update', false); return; }
+          availableRoles = j.data; renderRoles(); hideOverlay(); currentEditingRole = null; showMsg(usersMsg,'Role updated',true); toast('Role updated', true);
+        }catch(e){ console.error('saveRole', e); showMsg(document.getElementById('edit-role-msg'),'Error saving', false); }
+      });
+
       async function loadContent(key, setters){
         try{
           const res = await fetch(`${API}/api/admin/content/${encodeURIComponent(key)}`, { headers });
@@ -159,47 +340,265 @@
       }
 
       document.addEventListener('DOMContentLoaded', ()=>{
-        // Settings tab switching
-        const aboutTabBtn = document.getElementById('settings-about-tab');
-        const contactTabBtn = document.getElementById('settings-contact-tab');
+        // Tabs and panels
+        const storeTabBtn = document.getElementById('settings-store-tab');
+        const usersTabBtn = document.getElementById('settings-users-tab');
+        const contentTabBtn = document.getElementById('settings-about-tab');
+        const storePanel = document.getElementById('store-panel');
+        const usersPanel = document.getElementById('users-panel');
         const aboutPanel = document.getElementById('about-panel');
         const contactPanel = document.getElementById('contact-panel');
-        function showAbout() {
-          aboutPanel.classList.remove('hidden'); contactPanel.classList.add('hidden');
-          aboutTabBtn.classList.add('bg-indigo-600','text-white'); aboutTabBtn.classList.remove('bg-gray-100','text-gray-700');
-          contactTabBtn.classList.remove('bg-indigo-600','text-white'); contactTabBtn.classList.add('bg-gray-100','text-gray-700');
-        }
-        function showContact() {
-          contactPanel.classList.remove('hidden'); aboutPanel.classList.add('hidden');
-          contactTabBtn.classList.add('bg-indigo-600','text-white'); contactTabBtn.classList.remove('bg-gray-100','text-gray-700');
-          aboutTabBtn.classList.remove('bg-indigo-600','text-white'); aboutTabBtn.classList.add('bg-gray-100','text-gray-700');
-        }
-        aboutTabBtn.addEventListener('click', ()=> { showAbout(); loadAbout(); });
-        contactTabBtn.addEventListener('click', ()=> { showContact(); loadContact(); });
-        // default: show About and initialize editor + image management
-        showAbout();
 
-        // Mirror-based editor: inject the full About Us HTML into `#about-mirror`,
-        // make text nodes editable and provide per-image delete/replace controls.
+        function clearTabStyles(){
+          [storeTabBtn, usersTabBtn, contentTabBtn].forEach(b=>{ b.classList.remove('bg-indigo-600','text-white'); b.classList.add('bg-gray-100','text-gray-700'); });
+        }
+        function hideAllPanels(){ storePanel.classList.add('hidden'); usersPanel.classList.add('hidden'); aboutPanel.classList.add('hidden'); contactPanel.classList.add('hidden'); }
+
+        function showStore(){ clearTabStyles(); storeTabBtn.classList.add('bg-indigo-600','text-white'); hideAllPanels(); storePanel.classList.remove('hidden'); loadStore(); }
+        function showUsers(){ clearTabStyles(); usersTabBtn.classList.add('bg-indigo-600','text-white'); hideAllPanels(); usersPanel.classList.remove('hidden'); loadStaff(); }
+        function showContent(){ clearTabStyles(); contentTabBtn.classList.add('bg-indigo-600','text-white'); hideAllPanels(); aboutPanel.classList.remove('hidden'); contactPanel.classList.remove('hidden'); loadAbout(); }
+
+        storeTabBtn.addEventListener('click', ()=> showStore());
+        usersTabBtn.addEventListener('click', ()=> showUsers());
+        contentTabBtn.addEventListener('click', ()=> showContent());
+
+        // default: show Store Info so admin sees the new features
+        showStore();
+
+        // --------- Store handlers ---------
+        const storeMsg = document.getElementById('store-message');
+        const storeNameEl = document.getElementById('store-name');
+        const storeEmailEl = document.getElementById('store-email');
+        const storePhoneEl = document.getElementById('store-phone');
+        const storeAddressEl = document.getElementById('store-address');
+        const storeLogoInput = document.getElementById('store-logo-input');
+        const storeBannerInput = document.getElementById('store-banner-input');
+        const storeLogoPreview = document.getElementById('store-logo-preview');
+        const storeBannerPreview = document.getElementById('store-banner-preview');
+
+        async function loadStore(){
+          try{
+            const res = await fetch(`${API}/api/admin/settings`, { headers });
+            if (!res.ok) return;
+            const j = await res.json(); if (!j.success) return;
+            const s = j.data && j.data.store ? j.data.store : {};
+            storeNameEl.value = s.name||''; storeEmailEl.value = s.email||''; storePhoneEl.value = s.phone||''; storeAddressEl.value = s.address||'';
+            storeLogoPreview.innerHTML = s.logoUrl ? `<img src="${s.logoUrl}" class="thumb rounded border" />` : '';
+            storeBannerPreview.innerHTML = s.bannerUrl ? `<img src="${s.bannerUrl}" class="w-full h-28 object-cover rounded border" />` : '';
+          }catch(e){ console.error('loadStore',e); }
+        }
+
+        document.getElementById('store-save').addEventListener('click', async ()=>{
+          try{
+            const fd = new FormData();
+            fd.append('name', storeNameEl.value||''); fd.append('email', storeEmailEl.value||''); fd.append('phone', storePhoneEl.value||''); fd.append('address', storeAddressEl.value||'');
+            if (storeLogoInput.files && storeLogoInput.files[0]) fd.append('logo', storeLogoInput.files[0]);
+            if (storeBannerInput.files && storeBannerInput.files[0]) fd.append('banner', storeBannerInput.files[0]);
+            const res = await fetch(`${API}/api/admin/settings/store`, { method: 'PUT', headers: { 'Authorization': headers['Authorization'] }, body: fd });
+            const j = await res.json(); if (!res.ok){ showMsg(storeMsg, j.msg||'Failed', false); return; }
+            showMsg(storeMsg, 'Store saved', true); loadStore();
+          }catch(e){ console.error('saveStore', e); showMsg(storeMsg, 'Error saving', false); }
+        });
+
+        // preview selected images
+        storeLogoInput.addEventListener('change', ()=>{ const f=storeLogoInput.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>storeLogoPreview.innerHTML=`<img src="${e.target.result}" class="thumb rounded border" />`; r.readAsDataURL(f); });
+        storeBannerInput.addEventListener('change', ()=>{ const f=storeBannerInput.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>storeBannerPreview.innerHTML=`<img src="${e.target.result}" class="w-full h-28 object-cover rounded border" />`; r.readAsDataURL(f); });
+
+        // --------- Staff handlers ---------
+        const usersMsg = document.getElementById('users-message');
+        const staffListDiv = document.getElementById('staff-list');
+        const addStaffForm = document.getElementById('add-staff-form');
+        const showAddStaffBtn = document.getElementById('show-add-staff');
+        const refreshStaffBtn = document.getElementById('refresh-staff');
+        const staffCancelBtn = document.getElementById('staff-cancel');
+        const staffSaveBtn = document.getElementById('staff-save');
+
+        showAddStaffBtn.addEventListener('click', ()=>{
+          // open create staff modal
+          document.getElementById('create-staff-name').value = '';
+          document.getElementById('create-staff-email').value = '';
+          const cs = document.getElementById('create-staff-role'); if (cs) cs.value = '';
+          showOverlay(); document.getElementById('create-staff-modal').classList.remove('hidden');
+        });
+        staffCancelBtn.addEventListener('click', ()=> addStaffForm.classList.add('hidden'));
+        refreshStaffBtn.addEventListener('click', ()=> loadStaff());
+
+        let availableRoles = [];
+        async function loadStaff(){
+          try{
+            staffListDiv.innerHTML = '<div class="p-3 text-sm text-gray-600">Loading...</div>';
+            const res = await fetch(`${API}/api/admin/settings/staff`, { headers });
+            const j = await res.json(); if (!j.success){ staffListDiv.innerHTML = '<div class="p-3 text-sm text-red-600">Failed to load staff</div>'; return; }
+            const rows = j.data && j.data.staff ? j.data.staff : [];
+            availableRoles = j.data && j.data.roles ? j.data.roles : [];
+            // populate role selects (staff inline, create-staff modal)
+            const roleSelect = document.getElementById('staff-role');
+            const createRoleSelect = document.getElementById('create-staff-role');
+            if (roleSelect){
+              roleSelect.innerHTML = '<option value="">Select role</option>';
+              availableRoles.forEach(r=>{ const opt = document.createElement('option'); opt.value = r.name; opt.textContent = r.name; roleSelect.appendChild(opt); });
+            }
+            if (createRoleSelect){
+              createRoleSelect.innerHTML = '<option value="">Select role</option>';
+              availableRoles.forEach(r=>{ const opt = document.createElement('option'); opt.value = r.name; opt.textContent = r.name; createRoleSelect.appendChild(opt); });
+            }
+            if (!rows.length){ staffListDiv.innerHTML = '<div class="p-3 text-sm text-gray-600">No staff defined.</div>'; return; }
+            staffListDiv.innerHTML = '';
+            rows.forEach(s=>{
+              const id = s._id || s.id || '';
+              const userId = s.userId || '';
+              const r = document.createElement('div'); r.className='flex items-center justify-between p-2 border-b';
+              r.innerHTML = `<div class="staff-main"><div class="font-medium">${s.name||''}</div><div class="text-xs text-gray-600 staff-meta">${s.email||''} • ${s.role||''}</div></div><div class="flex gap-2 items-center staff-actions"><button data-id="${id}" class="px-2 py-1 bg-red-600 text-white text-xs rounded staff-delete">Delete</button></div>`;
+              if (userId) {
+                const actionsDiv = r.querySelector('.staff-actions');
+                actionsDiv.insertAdjacentHTML('beforeend', `<button data-uid="${userId}" class="px-2 py-1 bg-blue-600 text-white text-xs rounded staff-edit">Edit</button>`);
+                actionsDiv.insertAdjacentHTML('beforeend', `<button data-uid="${userId}" class="px-2 py-1 bg-yellow-600 text-white text-xs rounded staff-toggle">Toggle Active</button>`);
+              }
+              staffListDiv.appendChild(r);
+            });
+
+            // Attach event listeners
+            Array.from(staffListDiv.querySelectorAll('.staff-delete')).forEach(btn=> btn.addEventListener('click', (ev)=>{
+              const id = btn.getAttribute('data-id'); if (!id) return;
+              openConfirm('Delete staff','Are you sure you want to delete this staff entry?', async ()=>{
+                try{ const dres = await fetch(`${API}/api/admin/settings/staff/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Authorization': headers['Authorization'] } }); const jd = await dres.json(); if (!dres.ok){ showMsg(usersMsg, jd.msg||'Failed delete', false); return; } showMsg(usersMsg, 'Deleted', true); toast('Staff entry deleted', true); loadStaff(); }catch(e){ console.error('delStaff',e); showMsg(usersMsg,'Error',false); toast('Error deleting staff', false); }
+              });
+            }));
+
+            Array.from(staffListDiv.querySelectorAll('.staff-edit')).forEach(btn => btn.addEventListener('click', ()=>{
+              const uid = btn.getAttribute('data-uid');
+              if (!uid) return;
+              // open modal and populate
+              (async function(){
+                try{
+                  const res = await fetch(`${API}/api/admin/users/${encodeURIComponent(uid)}`, { headers });
+                  if (!res.ok) return showMsg(usersMsg, 'Failed to load user', false);
+                  const j = await res.json(); const user = j.data || {};
+                  currentEditingUserId = uid;
+                  document.getElementById('edit-user-name').value = user.name || '';
+                  document.getElementById('edit-user-email').value = user.email || '';
+                  // populate role select
+                  const sel = document.getElementById('edit-user-role'); sel.innerHTML = '<option value="">Select role</option>';
+                  (availableRoles||[]).forEach(r=>{ const o=document.createElement('option'); o.value=r.name; o.textContent=r.name; if (user.role && String(user.role)===String(r.name)) o.selected=true; sel.appendChild(o); });
+                  showOverlay(); document.getElementById('edit-user-modal').classList.remove('hidden');
+                }catch(e){ console.error('openEditUser', e); showMsg(usersMsg,'Error opening edit user', false); }
+              })();
+            }));
+
+            Array.from(staffListDiv.querySelectorAll('.staff-toggle')).forEach(btn => btn.addEventListener('click', (ev)=>{
+              const uid = btn.getAttribute('data-uid'); if (!uid) return;
+              openConfirm('Toggle Active','Toggle active state for this user?', async ()=>{
+                try{
+                  const curRes = await fetch(`${API}/api/admin/users/${encodeURIComponent(uid)}`, { headers });
+                  if (!curRes.ok) { showMsg(usersMsg, 'Failed to read user', false); return; }
+                  const curobj = await curRes.json(); const cur = curobj.data && curobj.data.isActive;
+                  const res = await fetch(`${API}/api/admin/users/${encodeURIComponent(uid)}/active`, { method: 'PATCH', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ isActive: !cur }) });
+                  const j = await res.json(); if (!res.ok){ showMsg(usersMsg, j.msg||'Failed toggle', false); return; }
+                  showMsg(usersMsg, `User is now ${j.data.isActive? 'active':'disabled'}`, true); loadStaff();
+                }catch(e){ console.error('toggleUser', e); showMsg(usersMsg, 'Error toggling user', false); }
+              });
+            }));
+          }catch(e){ console.error('loadStaff', e); staffListDiv.innerHTML = '<div class="p-3 text-sm text-red-600">Error loading</div>'; }
+        }
+
+        staffSaveBtn.addEventListener('click', async ()=>{
+          try{
+            const name = document.getElementById('staff-name').value||'';
+            const email = document.getElementById('staff-email').value||'';
+            const role = document.getElementById('staff-role').value||'';
+            if (!name || !email){ showMsg(usersMsg, 'Name and email required', false); return; }
+            const res = await fetch(`${API}/api/admin/settings/staff`, { method: 'POST', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ name, email, role }) });
+            const j = await res.json(); if (!res.ok){ showMsg(usersMsg, j.msg||'Failed', false); return; }
+            showMsg(usersMsg, 'Saved', true); toast('Staff added', true); addStaffForm.classList.add('hidden'); document.getElementById('staff-name').value=''; document.getElementById('staff-email').value=''; document.getElementById('staff-role').value=''; loadStaff();
+          }catch(e){ console.error('addStaff',e); showMsg(usersMsg,'Error',false); }
+        });
+
+        // Create-staff modal handlers
+        document.getElementById('create-staff-cancel').addEventListener('click', ()=>{ hideOverlay(); });
+        document.getElementById('create-staff-save').addEventListener('click', async ()=>{
+          try{
+            const name = document.getElementById('create-staff-name').value.trim();
+            const email = document.getElementById('create-staff-email').value.trim();
+            const role = document.getElementById('create-staff-role').value || '';
+            if (!name) return showMsg(document.getElementById('create-staff-msg'), 'Name is required', false);
+            if (!email || !/^\S+@\S+\.\S+$/.test(email)) return showMsg(document.getElementById('create-staff-msg'), 'Valid email required', false);
+            const res = await fetch(`${API}/api/admin/settings/staff`, { method: 'POST', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ name, email, role }) });
+            const j = await res.json(); if (!res.ok){ showMsg(document.getElementById('create-staff-msg'), j.msg||'Failed', false); toast(j.msg||'Failed to add staff', false); return; }
+            showMsg(document.getElementById('create-staff-msg'),'Saved', true); toast('Staff created', true);
+            hideOverlay(); document.getElementById('create-staff-name').value=''; document.getElementById('create-staff-email').value=''; if(document.getElementById('create-staff-role')) document.getElementById('create-staff-role').value=''; loadStaff();
+          }catch(e){ console.error('createStaff', e); showMsg(document.getElementById('create-staff-msg'),'Error', false); toast('Error creating staff', false); }
+        });
+
+        // Roles UI handlers
+        const rolesListDiv = document.getElementById('roles-list');
+        const addRoleBtn = document.getElementById('add-role-btn');
+        const newRoleName = document.getElementById('new-role-name');
+        const newRolePerms = document.getElementById('new-role-perms');
+
+        function renderRoles(){
+          rolesListDiv.innerHTML = '';
+          availableRoles.forEach(r=>{
+            const div = document.createElement('div'); div.className='flex items-center justify-between p-2 border-b';
+            div.innerHTML = `<div><div class="font-medium">${r.name}</div><div class="text-xs text-gray-600">${(r.permissions||[]).join(', ')}</div></div><div class="flex gap-2"><button data-name="${r.name}" class="px-2 py-1 bg-yellow-600 text-white text-xs rounded role-edit">Edit</button><button data-name="${r.name}" class="px-2 py-1 bg-red-600 text-white text-xs rounded role-delete">Delete</button></div>`;
+            rolesListDiv.appendChild(div);
+          });
+          Array.from(rolesListDiv.querySelectorAll('.role-delete')).forEach(btn => {
+            btn.addEventListener('click', () => {
+              const name = btn.getAttribute('data-name');
+              openConfirm('Delete role', 'Delete role "' + name + '"? This will not change existing users but will remove the role from the list.', async () => {
+                try {
+                  const res = await fetch(`${API}/api/admin/settings/roles/${encodeURIComponent(name)}`, { method: 'DELETE', headers: { 'Authorization': headers['Authorization'] } });
+                  const j = await res.json();
+                  if (!res.ok) { showMsg(usersMsg, j.msg || 'Failed delete', false); return; }
+                  availableRoles = j.data; renderRoles();
+                  const roleSelect = document.getElementById('staff-role');
+                  if (roleSelect) {
+                    roleSelect.innerHTML = '<option value="">Select role</option>';
+                    availableRoles.forEach(r => { const opt = document.createElement('option'); opt.value = r.name; opt.textContent = r.name; roleSelect.appendChild(opt); });
+                  }
+                  showMsg(usersMsg, 'Role deleted', true); toast('Role deleted', true);
+                } catch (e) { console.error('delRole', e); showMsg(usersMsg, 'Error', false); }
+              });
+            });
+          });
+          Array.from(rolesListDiv.querySelectorAll('.role-edit')).forEach(btn=> btn.addEventListener('click', ()=>{
+            const name = btn.getAttribute('data-name');
+            // open edit-role modal
+            const roleObj = availableRoles.find(x=>x.name===name) || { name, permissions: [] };
+            currentEditingRole = name;
+            document.getElementById('edit-role-name').value = roleObj.name || '';
+            document.getElementById('edit-role-perms').value = (roleObj.permissions||[]).join(', ');
+            showOverlay(); document.getElementById('edit-role-modal').classList.remove('hidden');
+          }));
+        }
+
+        addRoleBtn.addEventListener('click', async ()=>{
+          const name = newRoleName.value && newRoleName.value.trim();
+          const perms = newRolePerms.value && newRolePerms.value.split(',').map(p=>p.trim()).filter(Boolean);
+          if (!name){ showMsg(usersMsg,'Role name required', false); return; }
+          try{
+            const res = await fetch(`${API}/api/admin/settings/roles`, { method: 'POST', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ name, permissions: perms }) });
+            const j = await res.json(); if (!res.ok){ showMsg(usersMsg, j.msg||'Failed add', false); return; }
+            availableRoles = j.data; newRoleName.value=''; newRolePerms.value=''; renderRoles(); const roleSelect = document.getElementById('staff-role'); if (roleSelect){ roleSelect.innerHTML = '<option value="">Select role</option>'; availableRoles.forEach(r=>{ const opt = document.createElement('option'); opt.value = r.name; opt.textContent = r.name; roleSelect.appendChild(opt); }); } showMsg(usersMsg,'Role added', true); toast('Role added', true);
+          }catch(e){ console.error('addRole', e); showMsg(usersMsg,'Error', false); }
+        });
+
+
+        // --------- About & Contact (existing) ---------
         const aboutMsg = document.getElementById('about-message');
         const mirror = document.getElementById('about-mirror');
         let loadedAbout = null;
-        // imageState: { id: { originalSrc, deleted, replaceFile } }
         const imageState = {};
 
+        // existing helper functions makeEditable, setupImageControls, loadAbout, save handlers remain unchanged below
         // make textual elements editable inside the mirror
         function makeEditable(root){
           const selectors = 'h1,h2,h3,h4,p,li,blockquote,figcaption,span';
           const nodes = root.querySelectorAll(selectors);
           let idCounter = 0;
           nodes.forEach(n => {
-            // skip elements that are likely decorative or code
             if (n.closest('nav') || n.closest('button') || n.closest('form')) return;
-            if (!n.dataset.editId){
-              n.dataset.editId = 'edit-' + (++idCounter);
-              n.contentEditable = 'true';
-              n.classList.add('outline-none','focus:ring','focus:ring-indigo-200');
-            }
+            if (!n.dataset.editId){ n.dataset.editId = 'edit-' + (++idCounter); n.contentEditable = 'true'; n.classList.add('outline-none','focus:ring','focus:ring-indigo-200'); }
           });
         }
 
@@ -207,39 +606,19 @@
         function setupImageControls(root){
           const imgs = Array.from(root.querySelectorAll('img'));
           imgs.forEach((img, idx) => {
-            // assign stable id
             const id = img.dataset.adminId || ('img-' + idx + '-' + Date.now());
             img.dataset.adminId = id;
             if (!imageState[id]) imageState[id] = { originalSrc: img.src, deleted: false, replaceFile: null };
-
-            // create wrapper if not already wrapped
             if (!img.parentElement.classList.contains('admin-img-wrap')){
               const wrap = document.createElement('div'); wrap.className = 'admin-img-wrap relative inline-block';
-              img.parentElement.insertBefore(wrap, img);
-              wrap.appendChild(img);
-              // controls overlay
+              img.parentElement.insertBefore(wrap, img); wrap.appendChild(img);
               const ctrl = document.createElement('div'); ctrl.className = 'absolute top-1 right-1 flex gap-1 z-20';
-              // delete
               const del = document.createElement('button'); del.className='px-2 py-1 bg-red-600 text-white text-xs rounded'; del.textContent='Delete';
-              del.addEventListener('click', ()=>{
-                if (!confirm('Delete this image from About Us?')) return;
-                imageState[id].deleted = true;
-                img.style.opacity = '0.4';
-              });
-              // replace
+              del.addEventListener('click', ()=>{ if (!confirm('Delete this image from About Us?')) return; imageState[id].deleted = true; img.style.opacity = '0.4'; });
               const replLabel = document.createElement('label'); replLabel.className='px-2 py-1 bg-gray-200 text-xs rounded cursor-pointer'; replLabel.textContent='Replace';
               const replInput = document.createElement('input'); replInput.type='file'; replInput.accept='image/*'; replInput.className='hidden';
-              replInput.addEventListener('change', ()=>{
-                const f = replInput.files && replInput.files[0]; if (!f) return;
-                imageState[id].replaceFile = f; imageState[id].deleted = false; // undo delete if replaced
-                const reader = new FileReader(); reader.onload = (e)=>{ img.src = e.target.result; img.style.opacity='1'; };
-                reader.readAsDataURL(f);
-              });
-              replLabel.appendChild(replInput);
-              replLabel.addEventListener('click', ()=> replInput.click());
-
-              ctrl.appendChild(del); ctrl.appendChild(replLabel);
-              wrap.appendChild(ctrl);
+              replInput.addEventListener('change', ()=>{ const f = replInput.files && replInput.files[0]; if (!f) return; imageState[id].replaceFile = f; imageState[id].deleted = false; const reader = new FileReader(); reader.onload = (e)=>{ img.src = e.target.result; img.style.opacity='1'; }; reader.readAsDataURL(f); });
+              replLabel.appendChild(replInput); replLabel.addEventListener('click', ()=> replInput.click()); ctrl.appendChild(del); ctrl.appendChild(replLabel); wrap.appendChild(ctrl);
             }
           });
         }
@@ -247,75 +626,18 @@
         async function loadAbout(){
           try{
             const res = await fetch(`${API}/api/admin/content/about-us`, { headers });
-            if (!res.ok){
-              // fallback to static page
-              const htmlRes = await fetch('/client/about-us.html');
-              if (!htmlRes.ok){ loadedAbout = { body:'', images:[] }; mirror.innerHTML = '<div class="p-4 text-sm text-gray-600">No About content found.</div>'; return; }
-              const text = await htmlRes.text();
-              const parser = new DOMParser(); const doc = parser.parseFromString(text, 'text/html');
-              // try to locate the main about container by heading
-              let aboutEl = null; const headings = doc.querySelectorAll('h1,h2,h3');
-              for (let h of headings) if (/about\s*us/i.test(h.textContent||'')){ aboutEl = h; break; }
-              const container = aboutEl ? (aboutEl.closest('section') || aboutEl.parentElement) : doc.body;
-              loadedAbout = { title:'', body: container.innerHTML, images: Array.from(container.querySelectorAll('img')).map(im=>({ filename: im.getAttribute('data-filename')||'', url: im.src })) };
-              mirror.innerHTML = loadedAbout.body || '';
-              makeEditable(mirror); setupImageControls(mirror);
-              return;
-            }
-            // parse JSON
-            const j = await res.json();
-            if (!j.success){ loadedAbout = { body:'', images:[] }; mirror.innerHTML = '<div class="p-4 text-sm text-gray-600">No About content available.</div>'; return; }
+            if (!res.ok){ const htmlRes = await fetch('/client/about-us.html'); if (!htmlRes.ok){ loadedAbout = { body:'', images:[] }; mirror.innerHTML = '<div class="p-4 text-sm text-gray-600">No About content found.</div>'; return; } const text = await htmlRes.text(); const parser = new DOMParser(); const doc = parser.parseFromString(text, 'text/html'); let aboutEl = null; const headings = doc.querySelectorAll('h1,h2,h3'); for (let h of headings) if (/about\s*us/i.test(h.textContent||'')){ aboutEl = h; break; } const container = aboutEl ? (aboutEl.closest('section') || aboutEl.parentElement) : doc.body; loadedAbout = { title:'', body: container.innerHTML, images: Array.from(container.querySelectorAll('img')).map(im=>({ filename: im.getAttribute('data-filename')||'', url: im.src })) }; mirror.innerHTML = loadedAbout.body || ''; makeEditable(mirror); setupImageControls(mirror); return; }
+            const j = await res.json(); if (!j.success){ loadedAbout = { body:'', images:[] }; mirror.innerHTML = '<div class="p-4 text-sm text-gray-600">No About content available.</div>'; return; }
             loadedAbout = j.data || { body:'', images:[] };
-            // inject full body HTML into the mirror. However, prefer the static client page
-            // if it contains more images (covers cases where About is hard-coded on user page).
-            try{
-              const staticRes = await fetch('/client/about-us.html');
-              if (staticRes.ok){
-                const staticText = await staticRes.text();
-                const parser = new DOMParser(); const staticDoc = parser.parseFromString(staticText, 'text/html');
-                const staticImgCount = (staticDoc.querySelectorAll('img')||[]).length;
-                const jsonImgCount = ((loadedAbout.body||'').match(/<img\b/gi)||[]).length;
-                if (staticImgCount > jsonImgCount){
-                  // use full static body to ensure all images/sections appear
-                  mirror.innerHTML = staticDoc.body.innerHTML || (loadedAbout.body || '');
-                  loadedAbout.body = mirror.innerHTML;
-                  makeEditable(mirror); setupImageControls(mirror);
-                  return;
-                }
-              }
-            }catch(e){ /* ignore - fall back to API body */ }
-
+            try{ const staticRes = await fetch('/client/about-us.html'); if (staticRes.ok){ const staticText = await staticRes.text(); const parser = new DOMParser(); const staticDoc = parser.parseFromString(staticText, 'text/html'); const staticImgCount = (staticDoc.querySelectorAll('img')||[]).length; const jsonImgCount = ((loadedAbout.body||'').match(/<img\b/gi)||[]).length; if (staticImgCount > jsonImgCount){ mirror.innerHTML = staticDoc.body.innerHTML || (loadedAbout.body || ''); loadedAbout.body = mirror.innerHTML; makeEditable(mirror); setupImageControls(mirror); return; } } }catch(e){}
             mirror.innerHTML = loadedAbout.body || '';
-            // ensure images and text are editable
             makeEditable(mirror);
-            // fetch images from images/aboutus folder (or images/<key>) and append any missing images
-            try{
-              const imgsRes = await fetch(`${API}/api/admin/content/about-us/images`, { headers });
-              if (imgsRes.ok){
-                const imgsJson = await imgsRes.json();
-                const files = imgsJson && imgsJson.data ? imgsJson.data : [];
-                if (files.length){
-                  // ensure there's a container for extra images
-                  let panel = mirror.querySelector('.admin-images-panel');
-                  if (!panel){ panel = document.createElement('div'); panel.className = 'admin-images-panel grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6'; mirror.appendChild(panel); }
-                  files.forEach(f => {
-                    // if not already present in DOM, add it
-                    if (!mirror.querySelector(`img[src="${f.url}"]`)){
-                      const wrap = document.createElement('div'); wrap.className = 'border p-2 rounded';
-                      const im = document.createElement('img'); im.src = f.url; im.className = 'w-full h-auto'; im.setAttribute('data-filename', f.filename);
-                      wrap.appendChild(im);
-                      panel.appendChild(wrap);
-                    }
-                  });
-                }
-              }
-            }catch(e){ /* ignore image-list errors */ }
+            try{ const imgsRes = await fetch(`${API}/api/admin/content/about-us/images`, { headers }); if (imgsRes.ok){ const imgsJson = await imgsRes.json(); const files = imgsJson && imgsJson.data ? imgsJson.data : []; if (files.length){ let panel = mirror.querySelector('.admin-images-panel'); if (!panel){ panel = document.createElement('div'); panel.className = 'admin-images-panel grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6'; mirror.appendChild(panel); } files.forEach(f => { if (!mirror.querySelector(`img[src="${f.url}"]`)){ const wrap = document.createElement('div'); wrap.className = 'border p-2 rounded'; const im = document.createElement('img'); im.src = f.url; im.className = 'w-full h-auto'; im.setAttribute('data-filename', f.filename); wrap.appendChild(im); panel.appendChild(wrap); } }); } } }catch(e){}
             setupImageControls(mirror);
           }catch(e){ console.error('loadAbout', e); showMsg(aboutMsg, 'Failed to load About content', false); }
         }
 
-        // initial load
-        loadAbout();
+        // initial about load will be triggered by showContent when needed
 
         // Save: collect mirrored HTML and image replacements/deletions
         document.getElementById('about-save').addEventListener('click', async ()=>{
@@ -323,9 +645,7 @@
           const cancelBtn = document.getElementById('about-cancel');
           saveBtn.disabled = true; cancelBtn.disabled = true; saveBtn.classList.add('opacity-50');
           try{
-            // gather deletions
             const deletions = Object.keys(imageState).filter(k=>imageState[k].deleted).map(k=>imageState[k].originalSrc);
-            // gather replacement files
             const fd = new FormData();
             const bodyHtml = mirror.innerHTML || '';
             fd.append('body', bodyHtml);

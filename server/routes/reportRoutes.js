@@ -2,14 +2,15 @@ const express = require('express');
 const router = express.Router();
 const reportController = require('../controllers/reportController');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { requirePermission } = require('../middleware/permissionMiddleware');
 
-// All report routes are admin-only
-router.get('/sales', protect, authorize('admin'), reportController.salesReport);
-router.get('/orders', protect, authorize('admin'), reportController.orderListReport);
-router.get('/inventory', protect, authorize('admin'), reportController.inventoryReport);
-router.get('/top-products', protect, authorize('admin'), reportController.topProducts);
-router.get('/revenue-by-category', protect, authorize('admin'), reportController.revenueByCategory);
-router.get('/refunds', protect, authorize('admin'), reportController.refundsReport);
-router.get('/sales-by-cohort', protect, authorize('admin'), reportController.salesByCohort);
+// Report routes require report permission
+router.get('/sales', protect, requirePermission('view_reports'), reportController.salesReport);
+router.get('/orders', protect, requirePermission('view_reports'), reportController.orderListReport);
+router.get('/inventory', protect, requirePermission('view_reports'), reportController.inventoryReport);
+router.get('/top-products', protect, requirePermission('view_reports'), reportController.topProducts);
+router.get('/revenue-by-category', protect, requirePermission('view_reports'), reportController.revenueByCategory);
+router.get('/refunds', protect, requirePermission('view_reports'), reportController.refundsReport);
+router.get('/sales-by-cohort', protect, requirePermission('view_reports'), reportController.salesByCohort);
 
 module.exports = router;

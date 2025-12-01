@@ -2228,6 +2228,17 @@
                     if (previewCompact) previewCompact.classList.add('hidden');
                     // show Pre-Design front/back image inputs
                     const preImgSection = document.getElementById('predesign-images-section'); if (preImgSection) preImgSection.classList.remove('hidden');
+                    // Hide the regular Product Images block (Main Image + Gallery) for Pre-Design items
+                    const mainImageInput = document.getElementById('product-image');
+                    if (mainImageInput) {
+                        const imagesBlock = mainImageInput.closest('.col-span-2');
+                        if (imagesBlock) imagesBlock.classList.add('hidden');
+                    }
+                    const galleryInput = document.getElementById('product-gallery');
+                    if (galleryInput) {
+                        const galleryBlock = galleryInput.closest('.col-span-2');
+                        if (galleryBlock) galleryBlock.classList.add('hidden');
+                    }
                 } else {
                     // default -> Product type
                     document.getElementById('modal-title').textContent = 'Edit Product Item';
@@ -2240,6 +2251,17 @@
                     if (previewCompact) previewCompact.classList.add('hidden');
                     // hide Pre-Design front/back image inputs for non-PreDesign items
                     const preImgSection2 = document.getElementById('predesign-images-section'); if (preImgSection2) preImgSection2.classList.add('hidden');
+                    // Ensure the regular Product Images block (Main Image + Gallery) is visible for non-PreDesign items
+                    const mainImageInput2 = document.getElementById('product-image');
+                    if (mainImageInput2) {
+                        const imagesBlock2 = mainImageInput2.closest('.col-span-2');
+                        if (imagesBlock2) imagesBlock2.classList.remove('hidden');
+                    }
+                    const galleryInput2 = document.getElementById('product-gallery');
+                    if (galleryInput2) {
+                        const galleryBlock2 = galleryInput2.closest('.col-span-2');
+                        if (galleryBlock2) galleryBlock2.classList.remove('hidden');
+                    }
                 }
 
                 document.getElementById('inventory-modal').classList.remove('hidden');

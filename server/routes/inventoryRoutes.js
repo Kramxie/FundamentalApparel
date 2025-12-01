@@ -17,6 +17,7 @@ const {
 const { decrementStock } = require('../controllers/inventoryController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { requirePermission } = require('../middleware/permissionMiddleware');
 
 // Configure multer for product images
 const productsDir = path.join(__dirname, '..', 'uploads', 'products');
@@ -54,32 +55,32 @@ router.get('/public/variants', getPublicVariants);
 // All routes below require authentication; restrict per-route by role
 router.use(protect);
 
-// Get inventory statistics (read-only for admin and employee)
-router.get('/stats', authorize('admin','employee'), getInventoryStats);
+// Get inventory statistics (requires inventory permission)
+router.get('/stats', requirePermission('manage_inventory'), getInventoryStats);
 
 // Get per-size availability (authenticated users: admin/employee/user)
 router.get('/availability', authorize('admin','employee','user'), require('../controllers/inventoryController').getInventoryAvailability);
 
-// Bulk update quantities (admin and employee)
-router.post('/bulk-update', authorize('admin','employee'), bulkUpdateQuantities);
+// Bulk update quantities (requires inventory permission)
+router.post('/bulk-update', requirePermission('manage_inventory'), bulkUpdateQuantities);
 
 // CRUD operations
 router.route('/')
-    .get(authorize('admin','employee'), getAllInventory)
-    .post(authorize('admin','employee'), upload.fields([
+    .get(requirePermission('manage_inventory'), getAllInventory)
+    .post(requirePermission('manage_inventory'), upload.fields([
         { name: 'mainImage', maxCount: 1 },
         { name: 'galleryImages', maxCount: 10 }
     ]), createInventoryItem);
 
 router.route('/:id')
-    .get(authorize('admin','employee'), getInventoryItem)
-    .patch(authorize('admin','employee'), upload.fields([
+    .get(requirePermission('manage_inventory'), getInventoryItem)
+    .patch(requirePermission('manage_inventory'), upload.fields([
         { name: 'mainImage', maxCount: 1 },
         { name: 'galleryImages', maxCount: 10 }
     ]), updateInventoryItem)
-    .delete(authorize('admin','employee'), deleteInventoryItem);
+    .delete(requirePermission('manage_inventory'), deleteInventoryItem);
 
 // Decrement stock (per-size or overall) after payment verification or order processing
-router.post('/:id/decrement', authorize('admin','employee'), decrementStock);
+router.post('/:id/decrement', requirePermission('manage_inventory'), decrementStock);
 
 module.exports = router;

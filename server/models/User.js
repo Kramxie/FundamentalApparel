@@ -83,6 +83,10 @@ const userSchema = new mongoose.Schema({
         enum: ['user', 'admin', 'employee'],
         default: 'user'
     },
+    isActive: {
+        type: Boolean,
+        default: true
+    },
     isVerified: {
         type: Boolean,
         default: true // Gawing true by default para sa social logins
