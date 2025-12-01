@@ -104,61 +104,35 @@
         <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600"><i class="fas fa-bars text-xl"></i></button>
         <h1 class="text-xl font-semibold text-gray-800">Manage Products</h1>
       </div>
-      <div class="flex items-center gap-4" id="header-actions"></div>
+      <div class="flex items-center gap-4">
+        <div id="notification-container"></div>
+        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold">A</div>
+        <button id="logout-btn" class="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors">
+          <i class="fas fa-sign-out-alt"></i><span class="hidden sm:inline">Logout</span>
+        </button>
+      </div>
     </header>
 
     <main class="p-6">
-                    </a>
-                    <a href="returns.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-undo w-6"></i><span class="ml-3">Returns & Refunds</span>
-                    </a>
-                    <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
-                    </a>
-                    <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
-                    </a>
-                    <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
-                    </a>
-                    
-                </nav>
+        <div class="max-w-7xl mx-auto bg-white p-4 rounded-lg shadow-md">
+            <div id="message-container" class="hidden mb-4 p-4 rounded-md"></div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-2">Product Name</th>
+                            <th scope="col" class="px-4 py-2">Category</th>
+                            <th scope="col" class="px-4 py-2">Price</th>
+                            <th scope="col" class="px-4 py-2">Stock</th>
+                            <th scope="col" class="px-4 py-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-table-body"></tbody>
+                </table>
             </div>
         </div>
-        <!-- Main content (table remains the same) -->
-        <div class="flex flex-col flex-1 overflow-auto">
-            <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6 sticky top-0 z-20">
-                <div class="flex items-center">
-                    <button id="mobile-menu-btn" class="block md:hidden mr-3 p-2 rounded-md hover:bg-gray-100 z-30" aria-label="Open menu">
-                        <i class="fas fa-bars text-gray-700"></i>
-                    </button>
-                    <h1 class="text-xl font-semibold text-gray-800">Manage Products</h1>
-                </div>
-                <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
-                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                </button>
-            </div>
-            <div class="p-6">
-                <div class="max-w-7xl mx-auto bg-white p-4 rounded-lg shadow-md">
-                    <div id="message-container" class="hidden mb-4 p-4 rounded-md"></div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-gray-500">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                <tr>
-                                            <th scope="col" class="px-4 py-2">Product Name</th>
-                                            <th scope="col" class="px-4 py-2">Category</th>
-                                            <th scope="col" class="px-4 py-2">Price</th>
-                                            <th scope="col" class="px-4 py-2">Stock</th>
-                                            <th scope="col" class="px-4 py-2">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="products-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    </main>
+  </div>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('adminToken');
