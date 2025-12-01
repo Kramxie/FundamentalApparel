@@ -73,7 +73,19 @@ exports.getStaffAndRoles = async (req, res) => {
       { name: 'Manager', permissions: ['manage_products','manage_orders','view_reports'] },
       { name: 'Inventory Staff', permissions: ['manage_inventory'] }
     ];
-    const staff = (s && s.staff) || [];
+    let staff = (s && s.staff) || [];
+
+    // If no staff entries stored in settings, fall back to users with role 'employee'
+    if ((!staff || staff.length === 0)) {
+      try {
+        const employees = await User.find({ role: 'employee' }).select('name email _id role').lean();
+        if (employees && employees.length) {
+          staff = employees.map(u => ({ userId: u._id, name: u.name || '', email: u.email || '', role: u.role || 'employee' }));
+        }
+      } catch (e) {
+        console.error('fallback staff load error', e);
+      }
+    }
     res.json({ success: true, data: { roles, staff } });
   } catch (err) {
     console.error('getStaffAndRoles error', err);
