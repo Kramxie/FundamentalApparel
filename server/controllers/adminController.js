@@ -293,8 +293,11 @@ exports.resetEmployeePassword = async (req, res) => {
 exports.getCustomerStats = async (req, res) => {
   try {
     const q = (req.query.q || '').trim();
-    const skip = parseInt(req.query.skip, 10) || 0;
-    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    // pagination: support `page` or `skip` + `limit`. Default to 5 per page.
+    let skip = parseInt(req.query.skip, 10) || 0;
+    const page = parseInt(req.query.page, 10) || null;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 5, 200);
+    if (page && page > 0) skip = (page - 1) * limit;
 
     const match = {};
     if (q) match.email = { $regex: q, $options: 'i' };
@@ -320,15 +323,17 @@ exports.getCustomerStats = async (req, res) => {
           ],
           as: 'completedQuotesArr'
       }},
-      { $project: {
+        { $project: {
           email: 1,
           name: 1,
+          createdAt: 1,
           completedOrders: { $ifNull: [ { $arrayElemAt: ['$completedOrdersArr.count', 0] }, 0 ] },
           completedQuotes: { $ifNull: [ { $arrayElemAt: ['$completedQuotesArr.count', 0] }, 0 ] }
-      }},
-      { $sort: { completedOrders: -1, completedQuotes: -1 } },
+        }},
+        // Sort by completed orders DESC, then by createdAt DESC (LIFO tie-breaker), then completedQuotes DESC
+        { $sort: { completedOrders: -1, createdAt: -1, completedQuotes: -1 } },
       { $skip: skip },
-      { $limit: limit }
+        { $limit: limit }
     ];
 
     const User = require('../models/User');
@@ -337,7 +342,9 @@ exports.getCustomerStats = async (req, res) => {
     // Also return total count for pagination (simple count of matched users)
     const total = await User.countDocuments(match);
 
-    res.json({ success: true, data: rows, total });
+    // Calculate current page
+    const currentPage = page && page > 0 ? page : Math.floor(skip / limit) + 1;
+    res.json({ success: true, data: rows, total, page: currentPage, perPage: limit });
   } catch (error) {
     console.error('getCustomerStats error:', error);
     res.status(500).json({ success: false, msg: 'Server error retrieving customer stats' });
@@ -392,6 +399,26 @@ exports.toggleUserActive = async (req, res) => {
     res.json({ success: true, data: { id: user._id, isActive: user.isActive } });
   } catch (err) {
     console.error('toggleUserActive error', err);
+    res.status(500).json({ success: false, msg: 'Server error' });
+  }
+};
+
+// Delete a user (admin)
+exports.deleteUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ success: false, msg: 'User not found' });
+
+    // Prevent deleting primary owner/admin accidentally? Allow admins to delete employees only by default
+    if (user.role === 'admin') {
+      return res.status(403).json({ success: false, msg: 'Cannot delete admin users via this endpoint' });
+    }
+
+    await User.deleteOne({ _id: id });
+    res.json({ success: true, msg: 'User deleted' });
+  } catch (err) {
+    console.error('deleteUser error', err);
     res.status(500).json({ success: false, msg: 'Server error' });
   }
 };

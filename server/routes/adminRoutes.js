@@ -38,6 +38,7 @@ const settingsController = require('../controllers/settingsController');
 router.get('/users/:id', protect, isAdmin, adminController.getUser);
 router.patch('/users/:id', protect, isAdmin, adminController.updateUser);
 router.patch('/users/:id/active', protect, isAdmin, adminController.toggleUserActive);
+router.delete('/users/:id', protect, isAdmin, adminController.deleteUser);
 
 // Settings routes
 const multer = require('multer');
