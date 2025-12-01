@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 const {
   getAllEmployees,
   getEmployee,
@@ -14,7 +14,7 @@ const {
 
 // All routes require authentication and admin role
 router.use(protect);
-router.use(adminOnly);
+router.use(authorize('admin'));
 
 // Employee CRUD
 router.route('/')
