@@ -131,6 +131,12 @@
         </div>
       </section>
 
+      <!-- Customer Notes -->
+      <section>
+        <label class="block text-sm font-bold text-gray-800 mb-2">Additional Notes (Optional)</label>
+        <textarea id="customerNotes" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Any special instructions, requirements, or details you want us to know..."></textarea>
+      </section>
+
       <div class="pt-2">
         <button id="submitBtn" type="submit" class="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-teal-700">
           <i class="fas fa-paper-plane mr-2"></i>Submit Quote Order
@@ -403,6 +409,7 @@
 
       const fd = new FormData();
       fd.append('serviceType', 'printing-only');
+      fd.append('customType', 'PrintingOnly');
       fd.append('printingMethod', (document.querySelector('input[name="printingMethod"]:checked')?.value)||'dye-sublimation');
       // split combined "Fabric - Garment" into separate fields for backend compatibility
       const fg = (els.fabricGarment && els.fabricGarment.value) ? els.fabricGarment.value : '';
@@ -420,6 +427,12 @@
       fd.append('fabricType', fabricVal);
       fd.append('garmentType', garmentVal);
       fd.append('quantity', document.getElementById('quantity').value);
+
+      // Add customer notes if provided
+      const customerNotes = document.getElementById('customerNotes');
+      if (customerNotes && customerNotes.value.trim()) {
+        fd.append('notes', customerNotes.value.trim());
+      }
 
       const designFile = document.getElementById('designFile').files[0];
       if(designFile) fd.append('designFile', designFile);

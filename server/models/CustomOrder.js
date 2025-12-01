@@ -139,6 +139,10 @@ const CustomOrderSchema = new mongoose.Schema({
         enum: ['Cotton', 'Dry Fit', 'Polyester', 'Mixed', 'Polycotton'],
         default: 'Cotton'
     },
+    // inventoryName: Combined fabric-garment name for inventory matching (e.g., "Dry-Fit - Jersey")
+    inventoryName: {
+        type: String
+    },
     // selectedLocation: Placement location (Front, Back, Sleeves, etc.)
     selectedLocation: String,
     // Selected garment color from dropdown

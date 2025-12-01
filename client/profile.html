@@ -213,6 +213,9 @@
                             <a href="my-quotes.html" class="sidebar-parent-link w-full">
                                 <i class="sidebar-icon fas fa-file-invoice"></i> My Quotes
                             </a>
+                            <button data-tab="returns" class="sidebar-parent-link w-full">
+                                <i class="sidebar-icon fas fa-undo"></i> My Returns
+                            </button>
                             <button data-tab="vouchers" class="sidebar-parent-link w-full">
                                 <i class="sidebar-icon fas fa-ticket-alt"></i> My Vouchers
                             </button>
@@ -346,6 +349,19 @@
                                         class="purchase-tab flex-shrink-0 px-4 py-3 text-center text-gray-600 border-b-2 border-transparent">Returns</button>
                                 </nav>
                                 <div id="purchases-list" class="space-y-4 p-4"></div>
+                            </div>
+                        </div>
+
+                        <!-- My Returns Tab Content -->
+                        <div id="returns-content" class="hidden bg-white p-6 md:p-8 rounded-lg shadow-md">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-2">My Returns</h2>
+                            <p class="text-gray-500 mb-6">Track the status of your return and refund requests</p>
+                            
+                            <div id="returns-list" class="space-y-4">
+                                <div class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                    <p>Loading your return requests...</p>
+                                </div>
                             </div>
                         </div>
 
@@ -669,6 +685,8 @@
                     document.querySelector('#sidebar-nav button[data-tab="purchases"]').click();
                 } else if (section === 'vouchers') {
                     document.querySelector('#sidebar-nav button[data-tab="vouchers"]').click();
+                } else if (section === 'returns') {
+                    document.querySelector('#sidebar-nav button[data-tab="returns"]').click();
                 }
             }
 
@@ -1745,39 +1763,117 @@
 
                         (function createReturnModal() {
                                 const html = `
-                                <div id="return-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
-                                    <div class="bg-white rounded-lg shadow max-w-2xl w-full overflow-hidden">
-                                        <div class="flex items-center justify-between px-5 py-3 border-b">
+                                <div id="return-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50" style="display:none;">
+                                    <div class="bg-white rounded-lg shadow max-w-2xl w-full overflow-hidden max-h-[90vh] overflow-y-auto">
+                                        <div class="flex items-center justify-between px-5 py-3 border-b sticky top-0 bg-white">
                                             <h3 class="font-semibold text-gray-800">Request Return / Refund</h3>
                                             <button id="return-modal-close" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
                                         </div>
                                         <div class="p-5 space-y-4">
                                             <div>
-                                                <label class="block text-sm font-medium text-gray-700">Reason</label>
+                                                <label class="block text-sm font-medium text-gray-700">Reason <span class="text-red-500">*</span></label>
                                                 <input id="return-reason" type="text" class="mt-1 block w-full border rounded px-3 py-2" placeholder="e.g. Wrong size received" />
                                             </div>
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700">Details (optional)</label>
-                                                <textarea id="return-details" class="mt-1 block w-full border rounded px-3 py-2" rows="3"></textarea>
+                                                <textarea id="return-details" class="mt-1 block w-full border rounded px-3 py-2" rows="3" placeholder="Provide more details about your return request..."></textarea>
                                             </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700">Upload video (optional, mp4/mov/webm)</label>
-                                                <input id="return-videos" type="file" accept="video/*" multiple class="mt-1" />
+
+                                            <!-- Refund Payment Method Section -->
+                                            <div class="border-t pt-4 mt-4">
+                                                <h4 class="font-medium text-gray-800 mb-3">💰 Where should we send your refund?</h4>
+                                                <div class="space-y-3">
+                                                    <div class="flex gap-4">
+                                                        <label class="flex items-center gap-2 cursor-pointer">
+                                                            <input type="radio" name="refund-payment-method" value="gcash" class="text-indigo-600" checked>
+                                                            <span class="text-sm">GCash</span>
+                                                        </label>
+                                                        <label class="flex items-center gap-2 cursor-pointer">
+                                                            <input type="radio" name="refund-payment-method" value="bank" class="text-indigo-600">
+                                                            <span class="text-sm">Bank Transfer</span>
+                                                        </label>
+                                                    </div>
+
+                                                    <!-- GCash Fields -->
+                                                    <div id="gcash-fields" class="space-y-2">
+                                                        <div>
+                                                            <label class="block text-sm text-gray-600">GCash Number <span class="text-red-500">*</span></label>
+                                                            <input id="return-gcash-number" type="text" class="mt-1 block w-full border rounded px-3 py-2" placeholder="09XX-XXX-XXXX" />
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Bank Fields (hidden by default) -->
+                                                    <div id="bank-fields" class="space-y-2 hidden">
+                                                        <div>
+                                                            <label class="block text-sm text-gray-600">Bank Name <span class="text-red-500">*</span></label>
+                                                            <select id="return-bank-name" class="mt-1 block w-full border rounded px-3 py-2">
+                                                                <option value="">Select Bank</option>
+                                                                <option value="BDO">BDO</option>
+                                                                <option value="BPI">BPI</option>
+                                                                <option value="Metrobank">Metrobank</option>
+                                                                <option value="Landbank">Landbank</option>
+                                                                <option value="UnionBank">UnionBank</option>
+                                                                <option value="PNB">PNB</option>
+                                                                <option value="RCBC">RCBC</option>
+                                                                <option value="Chinabank">Chinabank</option>
+                                                                <option value="Security Bank">Security Bank</option>
+                                                                <option value="EastWest">EastWest</option>
+                                                                <option value="Other">Other</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-sm text-gray-600">Account Name <span class="text-red-500">*</span></label>
+                                                            <input id="return-bank-account-name" type="text" class="mt-1 block w-full border rounded px-3 py-2" placeholder="Juan Dela Cruz" />
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-sm text-gray-600">Account Number <span class="text-red-500">*</span></label>
+                                                            <input id="return-bank-account-number" type="text" class="mt-1 block w-full border rounded px-3 py-2" placeholder="1234567890" />
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700">Upload images (optional)</label>
-                                                <input id="return-images" type="file" accept="image/*" multiple class="mt-1" />
+
+                                            <div class="border-t pt-4">
+                                                <h4 class="font-medium text-gray-800 mb-3">📎 Evidence (helps speed up approval)</h4>
+                                                <div class="space-y-3">
+                                                    <div>
+                                                        <label class="block text-sm text-gray-600">Upload video (mp4/mov/webm)</label>
+                                                        <input id="return-videos" type="file" accept="video/*" multiple class="mt-1 text-sm" />
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-sm text-gray-600">Upload images</label>
+                                                        <input id="return-images" type="file" accept="image/*" multiple class="mt-1 text-sm" />
+                                                    </div>
+                                                </div>
                                             </div>
+
                                             <div id="return-error" class="text-sm text-red-600 hidden"></div>
                                         </div>
-                                        <div class="px-5 py-3 border-t flex items-center justify-end gap-3">
+                                        <div class="px-5 py-3 border-t flex items-center justify-end gap-3 sticky bottom-0 bg-white">
+                                            <button id="return-cancel" class="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50">Cancel</button>
                                             <button id="return-submit" class="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded">Submit Request</button>
                                         </div>
                                     </div>
                                 </div>`;
                                 document.body.insertAdjacentHTML('beforeend', html);
                                 document.getElementById('return-modal-close').addEventListener('click', closeReturnModal);
+                                document.getElementById('return-cancel').addEventListener('click', closeReturnModal);
                                 document.getElementById('return-submit').addEventListener('click', submitReturnRequest);
+
+                                // Toggle payment method fields
+                                document.querySelectorAll('input[name="refund-payment-method"]').forEach(radio => {
+                                    radio.addEventListener('change', (e) => {
+                                        const gcashFields = document.getElementById('gcash-fields');
+                                        const bankFields = document.getElementById('bank-fields');
+                                        if (e.target.value === 'gcash') {
+                                            gcashFields.classList.remove('hidden');
+                                            bankFields.classList.add('hidden');
+                                        } else {
+                                            gcashFields.classList.add('hidden');
+                                            bankFields.classList.remove('hidden');
+                                        }
+                                    });
+                                });
                         })();
 
                         function openReturnModal(eOrId) {
@@ -1792,13 +1888,31 @@
                                         return;
                                 }
                                 modal.dataset.orderId = orderId;
+                                // Reset form
+                                document.getElementById('return-reason').value = '';
+                                document.getElementById('return-details').value = '';
+                                document.getElementById('return-gcash-number').value = '';
+                                document.getElementById('return-bank-name').value = '';
+                                document.getElementById('return-bank-account-name').value = '';
+                                document.getElementById('return-bank-account-number').value = '';
+                                document.getElementById('return-videos').value = '';
+                                document.getElementById('return-images').value = '';
+                                // Reset to GCash by default
+                                document.querySelector('input[name="refund-payment-method"][value="gcash"]').checked = true;
+                                document.getElementById('gcash-fields').classList.remove('hidden');
+                                document.getElementById('bank-fields').classList.add('hidden');
+                                
+                                modal.style.display = 'flex';
                                 modal.classList.remove('hidden');
                                 document.getElementById('return-error').classList.add('hidden');
                         }
 
                         function closeReturnModal() {
                                 const modal = document.getElementById('return-modal');
-                                if (modal) modal.classList.add('hidden');
+                                if (modal) {
+                                    modal.classList.add('hidden');
+                                    modal.style.display = 'none';
+                                }
                         }
 
                         async function submitReturnRequest() {
@@ -1811,15 +1925,44 @@
                                 const errEl = document.getElementById('return-error');
                                 errEl.classList.add('hidden'); errEl.textContent = '';
 
+                                // Get payment method details
+                                const refundPaymentMethod = document.querySelector('input[name="refund-payment-method"]:checked')?.value || 'gcash';
+                                const gcashNumber = document.getElementById('return-gcash-number').value.trim();
+                                const bankName = document.getElementById('return-bank-name').value;
+                                const bankAccountName = document.getElementById('return-bank-account-name').value.trim();
+                                const bankAccountNumber = document.getElementById('return-bank-account-number').value.trim();
+
+                                // Validation
                                 if (!reason) { errEl.textContent = 'Please provide a reason.'; errEl.classList.remove('hidden'); return; }
+                                
+                                if (refundPaymentMethod === 'gcash') {
+                                    if (!gcashNumber) { errEl.textContent = 'Please provide your GCash number.'; errEl.classList.remove('hidden'); return; }
+                                } else if (refundPaymentMethod === 'bank') {
+                                    if (!bankName) { errEl.textContent = 'Please select your bank.'; errEl.classList.remove('hidden'); return; }
+                                    if (!bankAccountName) { errEl.textContent = 'Please provide the account name.'; errEl.classList.remove('hidden'); return; }
+                                    if (!bankAccountNumber) { errEl.textContent = 'Please provide the account number.'; errEl.classList.remove('hidden'); return; }
+                                }
+
                                 const token = localStorage.getItem('token');
                                 if (!token) { errEl.textContent = 'Please log in to submit a return.'; errEl.classList.remove('hidden'); return; }
 
                                 const fd = new FormData();
                                 fd.append('reason', reason);
                                 fd.append('details', details);
+                                fd.append('refundPaymentMethod', refundPaymentMethod);
+                                if (refundPaymentMethod === 'gcash') {
+                                    fd.append('gcashNumber', gcashNumber);
+                                } else {
+                                    fd.append('bankName', bankName);
+                                    fd.append('bankAccountName', bankAccountName);
+                                    fd.append('bankAccountNumber', bankAccountNumber);
+                                }
                                 for (let i=0;i<videos.length;i++) fd.append('videos', videos[i]);
                                 for (let i=0;i<images.length;i++) fd.append('images', images[i]);
+
+                                const submitBtn = document.getElementById('return-submit');
+                                submitBtn.disabled = true;
+                                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
 
                                 try {
                                         const res = await fetch(`${API}/api/orders/${orderId}/returns`, {
@@ -1834,13 +1977,132 @@
                                                 return;
                                         }
                                         closeReturnModal();
-                                        alert('Return request submitted. Admin will review it shortly.');
+                                        showMessage('Return request submitted successfully! We will review it and email you with updates.', 'success');
+                                        // Refresh orders if function exists
+                                        if (typeof loadOrders === 'function') loadOrders();
                                 } catch (e) {
                                         errEl.textContent = 'Failed to submit request. Try again later.';
                                         errEl.classList.remove('hidden');
                                         console.error('Submit return error', e);
+                                } finally {
+                                        submitBtn.disabled = false;
+                                        submitBtn.textContent = 'Submit Request';
                                 }
                         }
+
+            // ========== MY RETURNS TAB ==========
+            async function fetchMyReturns() {
+                const returnsList = document.getElementById('returns-list');
+                try {
+                    const json = await apiRequest('/api/returns/my');
+                    if (!json.success) throw new Error(json.msg || 'Could not load returns');
+                    renderMyReturns(json.data || []);
+                } catch (err) {
+                    returnsList.innerHTML = `<p class="text-red-500">${err.message}</p>`;
+                }
+            }
+
+            function getStatusBadge(status) {
+                const statusConfig = {
+                    'Pending': { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: '⏳' },
+                    'Approved': { bg: 'bg-green-100', text: 'text-green-800', icon: '✅' },
+                    'Awaiting Return': { bg: 'bg-blue-100', text: 'text-blue-800', icon: '📦' },
+                    'Received': { bg: 'bg-purple-100', text: 'text-purple-800', icon: '📬' },
+                    'Refunded': { bg: 'bg-emerald-100', text: 'text-emerald-800', icon: '💰' },
+                    'Rejected': { bg: 'bg-red-100', text: 'text-red-800', icon: '❌' },
+                    'Cancelled': { bg: 'bg-gray-100', text: 'text-gray-800', icon: '🚫' }
+                };
+                const config = statusConfig[status] || { bg: 'bg-gray-100', text: 'text-gray-800', icon: '❔' };
+                return `<span class="${config.bg} ${config.text} px-3 py-1 rounded-full text-sm font-medium">${config.icon} ${status}</span>`;
+            }
+
+            function renderMyReturns(returns) {
+                const returnsList = document.getElementById('returns-list');
+                if (!returns || returns.length === 0) {
+                    returnsList.innerHTML = `
+                        <div class="text-center py-12 text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-3"></i>
+                            <p class="text-lg">No return requests yet</p>
+                            <p class="text-sm mt-1">Your return and refund requests will appear here</p>
+                        </div>`;
+                    return;
+                }
+
+                returnsList.innerHTML = returns.map(ret => {
+                    const orderId = ret.order?._id || ret.order || '';
+                    const orderIdShort = orderId ? orderId.slice(-8).toUpperCase() : 'N/A';
+                    const createdAt = new Date(ret.createdAt).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+                    const amount = ret.approvedAmount || ret.amount || 0;
+                    
+                    // Payment method display
+                    let paymentMethodHtml = '';
+                    if (ret.refundPaymentMethod === 'gcash' && ret.gcashNumber) {
+                        paymentMethodHtml = `<p class="text-sm"><strong>Refund to:</strong> GCash ${ret.gcashNumber}</p>`;
+                    } else if (ret.refundPaymentMethod === 'bank' && ret.bankAccountNumber) {
+                        paymentMethodHtml = `<p class="text-sm"><strong>Refund to:</strong> ${ret.bankName} - ${ret.bankAccountName} (${ret.bankAccountNumber})</p>`;
+                    }
+
+                    // Admin notes / return address
+                    let adminInfoHtml = '';
+                    if (ret.adminNotes) {
+                        adminInfoHtml += `<div class="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <p class="text-sm font-medium text-blue-800"><i class="fas fa-comment-alt mr-1"></i> Admin Response:</p>
+                            <p class="text-sm text-blue-700 mt-1">${ret.adminNotes}</p>
+                        </div>`;
+                    }
+                    if (ret.returnShippingAddress) {
+                        adminInfoHtml += `<div class="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                            <p class="text-sm font-medium text-amber-800"><i class="fas fa-map-marker-alt mr-1"></i> Ship Return To:</p>
+                            <p class="text-sm text-amber-700 mt-1">${ret.returnShippingAddress}</p>
+                        </div>`;
+                    }
+
+                    // Status timeline
+                    let timelineHtml = '';
+                    if (ret.approvedAt || ret.receivedAt || ret.processedAt || ret.rejectedAt) {
+                        timelineHtml = `<div class="mt-3 text-xs text-gray-500 space-y-1">`;
+                        if (ret.approvedAt) timelineHtml += `<p>✓ Approved: ${new Date(ret.approvedAt).toLocaleString()}</p>`;
+                        if (ret.receivedAt) timelineHtml += `<p>✓ Received: ${new Date(ret.receivedAt).toLocaleString()}</p>`;
+                        if (ret.processedAt) timelineHtml += `<p>✓ Refunded: ${new Date(ret.processedAt).toLocaleString()}</p>`;
+                        if (ret.rejectedAt) timelineHtml += `<p>✗ Rejected: ${new Date(ret.rejectedAt).toLocaleString()}</p>`;
+                        timelineHtml += `</div>`;
+                    }
+
+                    return `
+                        <div class="border rounded-lg p-4 hover:shadow-md transition">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="font-semibold text-gray-800">Order #${orderIdShort}</span>
+                                        ${getStatusBadge(ret.status)}
+                                    </div>
+                                    <p class="text-sm text-gray-600"><strong>Reason:</strong> ${ret.reason}</p>
+                                    ${ret.details ? `<p class="text-sm text-gray-500 mt-1">${ret.details}</p>` : ''}
+                                    <div class="mt-2 text-sm text-gray-600">
+                                        <p><strong>Amount:</strong> ₱${amount.toLocaleString()}</p>
+                                        ${paymentMethodHtml}
+                                    </div>
+                                    ${adminInfoHtml}
+                                    ${timelineHtml}
+                                </div>
+                                <div class="text-right text-sm text-gray-500">
+                                    <p>Submitted</p>
+                                    <p class="font-medium">${createdAt}</p>
+                                </div>
+                            </div>
+                            ${(ret.videos?.length || ret.images?.length) ? `
+                                <div class="mt-3 pt-3 border-t">
+                                    <p class="text-xs text-gray-500 mb-2">Attached Evidence:</p>
+                                    <div class="flex gap-2 flex-wrap">
+                                        ${(ret.videos || []).map(v => `<a href="${API}${v}" target="_blank" class="text-indigo-600 text-xs hover:underline"><i class="fas fa-video mr-1"></i>Video</a>`).join('')}
+                                        ${(ret.images || []).map(img => `<a href="${API}${img}" target="_blank" class="text-indigo-600 text-xs hover:underline"><i class="fas fa-image mr-1"></i>Image</a>`).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
 
             async function fetchVouchers() {
                 try {
@@ -1966,6 +2228,8 @@
                     if (tab === 'addresses' && addressesList.innerHTML.trim() === "") fetchAddresses();
                     // Always refresh vouchers when user opens the Vouchers tab so used/removed vouchers reflect server state
                     if (tab === 'vouchers') fetchVouchers();
+                    // Load returns when user opens the Returns tab
+                    if (tab === 'returns') fetchMyReturns();
 
                 } else if (parentTab) {
                     btn.classList.add('sidebar-active');

@@ -73,6 +73,9 @@
             <a href="orders.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
               <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
             </a>
+            <a href="returns.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+              <i class="fas fa-undo w-6"></i><span class="ml-3">Returns & Refunds</span>
+            </a>
             <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
               <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
             </a>
@@ -181,17 +184,18 @@
               <div class="flex flex-wrap gap-2 items-center">
                 <input id="custom-search" type="text" placeholder="Search name, ref, courier..." class="border rounded-md px-3 py-2 text-sm w-full sm:w-56">
                 <select id="custom-filter-status" class="border rounded-md px-3 py-2 text-sm">
-                  <option value="">Status</option>
-                  <option>Pending Quote</option>
-                  <option>Quote Sent</option>
-                  <option>Pending Downpayment</option>
-                  <option>In Production</option>
-                  <option>Pending Balance</option>
-                  <option>Pending Final Verification</option>
-                  <option>Ready for Pickup/Delivery</option>
-                  <option>Out for Delivery</option>
-                  <option>Completed</option>
-                  <option>Cancelled</option>
+                  <option value="">All Status</option>
+                  <option value="Pending Quote">⏳ Pending Quote</option>
+                  <option value="Quote Sent">📤 Quote Sent</option>
+                  <option value="Quote Accepted">✅ Quote Accepted</option>
+                  <option value="Pending Downpayment">💳 Awaiting DP Verification</option>
+                  <option value="In Production">🏭 In Production</option>
+                  <option value="Pending Balance">💰 Awaiting Balance Payment</option>
+                  <option value="Pending Final Verification">🔍 Verifying Final Payment</option>
+                  <option value="Ready for Pickup/Delivery">📦 Ready for Fulfillment</option>
+                  <option value="Out for Delivery">🚚 Out for Delivery</option>
+                  <option value="Completed">✅ Completed</option>
+                  <option value="Cancelled">❌ Cancelled</option>
                 </select>
                 <select id="custom-filter-type" class="border rounded-md px-3 py-2 text-sm">
                   <option value="">Type</option>
@@ -711,10 +715,44 @@
           </div>
         </div>
 
-        <!-- Price Display -->
-        <div id="custom-modal-info-box" class="hidden bg-green-50 p-4 rounded-lg border border-green-200">
-          <p class="text-sm"><strong>Total Price:</strong> <span id="custom-modal-price-display" class="font-bold text-xl text-green-700"></span></p>
-          <p id="custom-modal-info-text" class="text-sm text-gray-600 mt-1">Waiting for user to accept quote.</p>
+        <!-- Billing Summary -->
+        <div id="custom-modal-info-box" class="hidden bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+          <h4 class="font-semibold text-green-900 mb-3 flex items-center">
+            <i class="fas fa-file-invoice-dollar mr-2 text-green-600"></i>
+            Billing Summary
+          </h4>
+          <div class="bg-white rounded-md border p-3 space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Subtotal:</span>
+              <span id="custom-modal-subtotal" class="font-medium">₱0.00</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Delivery Fee:</span>
+              <span id="custom-modal-delivery-fee" class="font-medium">₱0.00</span>
+            </div>
+            <div class="flex justify-between text-green-700">
+              <span>VAT (12%):</span>
+              <span id="custom-modal-vat" class="font-medium">₱0.00</span>
+            </div>
+            <div class="border-t pt-2 flex justify-between">
+              <span class="font-semibold text-gray-800">Grand Total:</span>
+              <span id="custom-modal-price-display" class="font-bold text-xl text-green-700">₱0.00</span>
+            </div>
+            <div id="custom-modal-payment-breakdown" class="border-t pt-2 mt-2 space-y-1 hidden">
+              <div class="flex justify-between text-blue-700">
+                <span>50% Downpayment:</span>
+                <span id="custom-modal-dp-amount" class="font-medium">₱0.00</span>
+              </div>
+              <div class="flex justify-between text-indigo-700">
+                <span>50% Balance:</span>
+                <span id="custom-modal-balance-amount" class="font-medium">₱0.00</span>
+              </div>
+            </div>
+          </div>
+          <p id="custom-modal-info-text" class="text-sm text-gray-600 mt-3 flex items-center">
+            <i class="fas fa-info-circle mr-2 text-green-500"></i>
+            <span>Waiting for user to accept quote.</span>
+          </p>
         </div>
 
         <!-- Fulfillment Details Section -->
@@ -818,20 +856,21 @@
   </div>
 
   <!-- Payment Receipt Modal for Custom Orders -->
-  <div id="custom-payment-receipt-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div id="custom-payment-receipt-dialog" class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
-      <div class="flex items-center justify-between p-4 border-b">
+  <div id="custom-payment-receipt-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div id="custom-payment-receipt-dialog" class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between p-4 border-b flex-shrink-0">
         <h3 class="text-lg font-semibold flex items-center gap-2">
-          <i class="fas fa-receipt text-green-600"></i>View Receipt
+          <i class="fas fa-receipt text-green-600"></i>Payment Receipt
         </h3>
         <div class="flex items-center gap-2">
-          <button id="custom-receipt-download-btn" title="Download receipt" class="text-gray-600 hover:text-gray-800 px-3 py-1"><i class="fas fa-download"></i></button>
-          <button onclick="closeCustomPaymentModal()" class="text-gray-400 hover:text-gray-600">
+          <button id="custom-receipt-print-btn" onclick="window.print()" title="Print receipt" class="text-gray-600 hover:text-gray-800 px-3 py-1.5 border rounded hover:bg-gray-50"><i class="fas fa-print mr-1"></i>Print</button>
+          <button id="custom-receipt-download-btn" title="Download receipt" class="text-gray-600 hover:text-gray-800 px-3 py-1.5 border rounded hover:bg-gray-50"><i class="fas fa-download mr-1"></i>PDF</button>
+          <button onclick="closeCustomPaymentModal()" class="text-gray-400 hover:text-gray-600 ml-2">
             <i class="fas fa-times text-xl"></i>
           </button>
         </div>
       </div>
-      <div id="custom-payment-receipt-content" class="p-6">
+      <div id="custom-payment-receipt-content" class="p-6 overflow-y-auto flex-1">
         <!-- Receipt content will be inserted here -->
       </div>
     </div>
@@ -845,6 +884,39 @@
 
     function peso(n) { return '₱' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function shortId(id) { return id ? id.slice(0, 8) : '-'; }
+    
+    // Populate billing summary for custom orders (matches PayMongo VAT calculation)
+    function populateBillingSummary(order, els) {
+      const price = Number(order.price) || 0;
+      const deliveryFee = Number(order.deliveryFee) || 0;
+      
+      // VAT is calculated on subtotal (excluding delivery) at 12%
+      const subtotal = price; // Quote price is the subtotal
+      const vat = subtotal * 0.12;
+      const grandTotal = subtotal + deliveryFee + vat;
+      
+      // 50% downpayment and balance (VAT proportionally split)
+      const dpSubtotal = subtotal * 0.5;
+      const dpVat = dpSubtotal * 0.12;
+      const dpAmount = dpSubtotal + dpVat;
+      
+      const balanceSubtotal = subtotal * 0.5;
+      const balanceVat = balanceSubtotal * 0.12;
+      const balanceAmount = balanceSubtotal + balanceVat;
+      
+      // Populate elements
+      if (els.customModalSubtotal) els.customModalSubtotal.textContent = peso(subtotal);
+      if (els.customModalDeliveryFee) els.customModalDeliveryFee.textContent = peso(deliveryFee);
+      if (els.customModalVat) els.customModalVat.textContent = peso(vat);
+      if (els.customModalPriceDisplay) els.customModalPriceDisplay.textContent = peso(grandTotal);
+      if (els.customModalDpAmount) els.customModalDpAmount.textContent = peso(dpAmount);
+      if (els.customModalBalanceAmount) els.customModalBalanceAmount.textContent = peso(balanceAmount);
+      
+      // Show payment breakdown if order has a valid price
+      if (els.customModalPaymentBreakdown && price > 0) {
+        els.customModalPaymentBreakdown.classList.remove('hidden');
+      }
+    }
     
     // Normalize fabric+garment into an inventory key: e.g. "Dry Fit" + "jersey" -> "Dry-Fit - Jersey"
     function normalizeInventoryKey(fabric, garment) {
@@ -1132,6 +1204,12 @@
         customModalInfoBox: document.getElementById('custom-modal-info-box'),
         customModalInfoText: document.getElementById('custom-modal-info-text'),
         customModalPriceDisplay: document.getElementById('custom-modal-price-display'),
+        customModalSubtotal: document.getElementById('custom-modal-subtotal'),
+        customModalDeliveryFee: document.getElementById('custom-modal-delivery-fee'),
+        customModalVat: document.getElementById('custom-modal-vat'),
+        customModalDpAmount: document.getElementById('custom-modal-dp-amount'),
+        customModalBalanceAmount: document.getElementById('custom-modal-balance-amount'),
+        customModalPaymentBreakdown: document.getElementById('custom-modal-payment-breakdown'),
         customModalSaveQuote: document.getElementById('custom-modal-save-quote'),
         customModalVerifyDp: document.getElementById('custom-modal-verify-dp'),
         customModalRequestFinal: document.getElementById('custom-modal-request-final'),
@@ -1531,19 +1609,38 @@
             details = o.designDetails || 'N/A';
           }
 
-          // --- BADGE LOGIC (UPDATED) ---
+          // --- BADGE LOGIC (UPDATED) with better status labels ---
+          // Map internal status codes to user-friendly labels
+          const statusLabelMap = {
+            'Pending Quote': '⏳ Pending Quote',
+            'Quote Sent': '📤 Quote Sent',
+            'Quote Accepted': '✅ Quote Accepted',
+            'Pending Downpayment': '💳 Awaiting DP Verification',
+            'In Production': '🏭 In Production',
+            'Pending Balance': '💰 Awaiting Balance Payment',
+            'Pending Final Verification': '🔍 Verifying Final Payment',
+            'Completed': '✅ Completed',
+            'Cancelled': '❌ Cancelled',
+            'Ready for Pickup/Delivery': '📦 Ready for Fulfillment',
+            'Out for Delivery': '🚚 Out for Delivery'
+          };
+          const displayLabel = statusLabelMap[o.status] || o.status;
+          
           let statusBadge;
           switch (o.status) {
-            case 'Pending Quote': statusBadge = badge(o.status, 'yellow'); break;
-              case 'Quote Sent': statusBadge = badge(o.status, 'green'); break;
-              case 'Pending Downpayment': statusBadge = badge(o.status, 'blue'); break;
-              case 'In Production': statusBadge = badge(o.status, 'blue'); break;
-              case 'Pending Balance': statusBadge = badge(o.status, 'yellow'); break;
+            case 'Pending Quote': statusBadge = badge(displayLabel, 'yellow'); break;
+              case 'Quote Sent': statusBadge = badge(displayLabel, 'green'); break;
+              case 'Quote Accepted': statusBadge = badge(displayLabel, 'green'); break;
+              case 'Pending Downpayment': statusBadge = badge(displayLabel, 'blue'); break;
+              case 'In Production': statusBadge = badge(displayLabel, 'blue'); break;
+              case 'Pending Balance': statusBadge = badge(displayLabel, 'yellow'); break;
               // --- ITO ANG BAGO PARA SA PHASE 5.3 ---
-              case 'Pending Final Verification': statusBadge = badge(o.status, 'blue'); break; 
-              case 'Completed': statusBadge = badge(o.status, 'green'); break;
-              case 'Cancelled': statusBadge = badge(o.status, 'red'); break;
-              default: statusBadge = badge(o.status, 'gray');
+              case 'Pending Final Verification': statusBadge = badge(displayLabel, 'blue'); break; 
+              case 'Ready for Pickup/Delivery': statusBadge = badge(displayLabel, 'purple'); break;
+              case 'Out for Delivery': statusBadge = badge(displayLabel, 'indigo'); break;
+              case 'Completed': statusBadge = badge(displayLabel, 'green'); break;
+              case 'Cancelled': statusBadge = badge(displayLabel, 'red'); break;
+              default: statusBadge = badge(displayLabel, 'gray');
           }
           // --- END BADGE LOGIC ---
 
@@ -2578,18 +2675,18 @@
         }
         else if (order.status === 'Quote Sent') {
           els.customModalInfoBox.classList.remove('hidden');
-          els.customModalPriceDisplay.textContent = `₱${order.price?.toLocaleString?.() || order.price || ''}`;
-          els.customModalInfoText.textContent = "Waiting for user to accept quote.";
+          populateBillingSummary(order, els);
+          els.customModalInfoText.innerHTML = "<span>Waiting for user to accept quote.</span>";
         }
         else if (order.status === 'Quote Accepted') {
           els.customModalInfoBox.classList.remove('hidden');
-          els.customModalPriceDisplay.textContent = `₱${order.price?.toLocaleString?.() || order.price || ''}`;
-          els.customModalInfoText.textContent = "Waiting for user to pay 50% down payment.";
+          populateBillingSummary(order, els);
+          els.customModalInfoText.innerHTML = "<span>Waiting for user to pay 50% down payment.</span>";
         }
         else if (order.status === 'Pending Downpayment') {
           els.customModalInfoBox.classList.remove('hidden');
-          els.customModalPriceDisplay.textContent = `₱${order.price.toLocaleString()}`;
-          els.customModalInfoText.textContent = "User has submitted a down payment receipt.";
+          populateBillingSummary(order, els);
+          els.customModalInfoText.innerHTML = "<span class='text-yellow-700 font-medium'>User has submitted a down payment. Awaiting verification.</span>";
 
           // Show DP receipt section
           els.customModalDpSection.classList.remove('hidden');
@@ -2618,8 +2715,8 @@
 
         else if (order.status === 'In Production') {
           els.customModalInfoBox.classList.remove('hidden');
-          els.customModalPriceDisplay.textContent = `₱${order.price.toLocaleString()}`;
-          els.customModalInfoText.textContent = "Order is currently in production.";
+          populateBillingSummary(order, els);
+          els.customModalInfoText.innerHTML = "<span class='text-blue-700 font-medium'>Order is currently in production.</span>";
           els.customModalDpSection.classList.remove('hidden');
           
           // Check both old and new payment fields
@@ -2655,9 +2752,9 @@
         }
         else if (order.status === 'Pending Final Verification') {
               els.customModalInfoBox.classList.remove('hidden');
-              els.customModalPriceDisplay.textContent = `₱${order.price.toLocaleString()}`;
+              populateBillingSummary(order, els);
               // Updated messaging for PayMongo final payment flow
-              els.customModalInfoText.textContent = "Final payment received via PayMongo. Awaiting admin verification.";
+              els.customModalInfoText.innerHTML = "<span class='text-yellow-700 font-medium'>Final payment received. Awaiting admin verification.</span>";
 
               // Show Downpayment section (legacy/manual vs PayMongo)
               els.customModalDpSection.classList.remove('hidden');
@@ -2696,8 +2793,14 @@
         else {
           // Para sa "In Production", "Completed", etc.
           els.customModalInfoBox.classList.remove('hidden');
-          els.customModalPriceDisplay.textContent = `₱${order.price.toLocaleString()}`;
-          els.customModalInfoText.textContent = `Order is currently: ${order.status}`;
+          populateBillingSummary(order, els);
+          const statusLabels = {
+            'Pending Balance': 'Waiting for remaining 50% balance payment',
+            'Completed': 'Order completed successfully',
+            'Cancelled': 'Order has been cancelled'
+          };
+          const statusText = statusLabels[order.status] || `Order is currently: ${order.status}`;
+          els.customModalInfoText.innerHTML = `<span>${statusText}</span>`;
         }
 
         // --- NEW: Handle Fulfillment Section ---
@@ -3290,10 +3393,12 @@
         const order = json.data;
         const code = (order._id || '').toString().slice(-8).toUpperCase();
         
-        // Calculate payment breakdown
-        const totalAmount = Number(order.price || 0);
+        // Calculate payment breakdown with VAT (matches PayMongo calculation)
+        const subtotal = Number(order.price || 0);
         const deliveryFee = Number(order.deliveryFee || 0);
-        const grandTotal = totalAmount + deliveryFee;
+        const vat = subtotal * 0.12; // 12% VAT on subtotal only
+        const grandTotal = subtotal + deliveryFee + vat;
+        
         let paymentType = order.paymentType || order.paymentOption || 'downpayment'; // 'downpayment' | 'full' | 'remaining'
         // Use actual PayMongo payment amount when available; fallback to PayMongo details if DB missing
         let amountPaid = Number(order.paymentAmount || 0);
@@ -3377,21 +3482,25 @@
               <div class="flex justify-between items-center py-2">
                 <span class="font-medium">${order.productName || 'Custom Order'}</span>
                 <span class="font-medium">${order.quantity || 1}</span>
-                <span class="font-medium">₱${totalAmount.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span class="font-medium">₱${subtotal.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
             </div>
             
             <div class="border-t pt-3 space-y-1 text-sm">
               <div class="flex justify-between">
                 <span class="text-gray-600">Subtotal</span>
-                <span class="font-medium">₱${totalAmount.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                <span class="font-medium">₱${subtotal.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Delivery Fee</span>
                 <span class="font-medium">₱${deliveryFee.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
+              <div class="flex justify-between text-green-600">
+                <span class="text-gray-600">VAT (12%)</span>
+                <span class="font-medium text-green-600">₱${vat.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              </div>
               <div class="flex justify-between font-bold text-base pt-2 border-t">
-                <span>Total Amount</span>
+                <span>Grand Total</span>
                 <span>₱${grandTotal.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
               </div>
               <div class="flex justify-between text-green-600 font-semibold">

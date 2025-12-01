@@ -18,8 +18,16 @@
       <div class="flex flex-col flex-grow p-4">
         <nav class="flex-grow space-y-2">
           <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span></a>
+          <a href="manage-categories.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-folder w-6"></i><span class="ml-3">Manage Categories</span></a>
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span></a>
           <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span></a>
-          <a href="returns.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md"><i class="fas fa-undo w-6"></i><span class="ml-3">Returns</span></a>
+          <a href="returns.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md"><i class="fas fa-undo w-6"></i><span class="ml-3">Returns & Refunds</span></a>
+          <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-chart-line w-6"></i><span class="ml-3">Reports & Sales</span></a>
+          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span></a>
+          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span></a>
+          <a href="settings.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
+          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span></a>
         </nav>
       </div>
     </div>
@@ -39,8 +47,10 @@
                 <option value="">All Statuses</option>
                 <option value="Pending">Pending</option>
                 <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
+                <option value="Awaiting Return">Awaiting Return</option>
+                <option value="Received">Received</option>
                 <option value="Refunded">Refunded</option>
+                <option value="Rejected">Rejected</option>
                 <option value="Cancelled">Cancelled</option>
               </select>
             </div>
@@ -70,17 +80,49 @@
   </div>
 
   <!-- Modal -->
-  <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-lg shadow max-w-4xl w-full overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-3 border-b">
-        <h3 class="font-semibold text-gray-800">Return Request</h3>
+  <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50" style="display:none;">
+    <div class="bg-white rounded-lg shadow max-w-4xl w-full overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-5 py-3 border-b sticky top-0 bg-white">
+        <h3 class="font-semibold text-gray-800">Return Request Details</h3>
         <button id="modal-close" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
       </div>
       <div class="p-5 space-y-4" id="modal-content"></div>
-      <div class="px-5 py-3 border-t flex items-center justify-end gap-3">
+      <div class="px-5 py-3 border-t flex items-center justify-end gap-3 flex-wrap sticky bottom-0 bg-white">
         <button id="btn-reject" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Reject</button>
+        <button id="btn-received" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">Mark Received</button>
         <button id="btn-approve" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Approve</button>
-        <button id="btn-refund" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">Refund</button>
+        <button id="btn-refund" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">Process Refund</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approve Modal with extra fields -->
+  <div id="approve-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-[60]" style="display:none;">
+    <div class="bg-white rounded-lg shadow max-w-lg w-full overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b">
+        <h3 class="font-semibold text-gray-800">Approve Return Request</h3>
+        <button id="approve-modal-close" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Approved Refund Amount</label>
+          <input id="approve-amount" type="number" step="0.01" class="mt-1 w-full border rounded px-3 py-2" placeholder="Leave empty for full amount">
+          <p class="text-xs text-gray-500 mt-1">Set a custom amount for partial refunds</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Return Shipping Address (if item must be shipped back)</label>
+          <textarea id="approve-return-address" class="mt-1 w-full border rounded px-3 py-2" rows="3" placeholder="Enter address where customer should ship the item back..."></textarea>
+          <p class="text-xs text-gray-500 mt-1">If provided, status will be set to "Awaiting Return"</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Admin Notes</label>
+          <textarea id="approve-notes" class="mt-1 w-full border rounded px-3 py-2" rows="2" placeholder="Notes for the customer..."></textarea>
+        </div>
+        <div id="approve-error" class="text-sm text-red-600 hidden"></div>
+      </div>
+      <div class="px-5 py-3 border-t flex items-center justify-end gap-3">
+        <button id="approve-cancel" class="px-4 py-2 border rounded text-gray-600">Cancel</button>
+        <button id="approve-confirm" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Approve</button>
       </div>
     </div>
   </div>
@@ -102,6 +144,19 @@
     function shortId(id){ return id ? id.slice(0,8) : '-'; }
     function peso(n){ return '₱' + Number(n||0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
+    function getStatusBadge(status) {
+      const config = {
+        'Pending': 'bg-yellow-100 text-yellow-800',
+        'Approved': 'bg-green-100 text-green-800',
+        'Awaiting Return': 'bg-blue-100 text-blue-800',
+        'Received': 'bg-purple-100 text-purple-800',
+        'Refunded': 'bg-emerald-100 text-emerald-800',
+        'Rejected': 'bg-red-100 text-red-800',
+        'Cancelled': 'bg-gray-100 text-gray-800'
+      };
+      return `<span class="px-2 py-1 rounded-full text-xs font-medium ${config[status] || 'bg-gray-100'}">${status}</span>`;
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const token = localStorage.getItem('adminToken');
       if (!token) { window.location.href = 'login.html'; return; }
@@ -118,7 +173,9 @@
         modalClose: document.getElementById('modal-close'),
         btnApprove: document.getElementById('btn-approve'),
         btnReject: document.getElementById('btn-reject'),
-        btnRefund: document.getElementById('btn-refund')
+        btnReceived: document.getElementById('btn-received'),
+        btnRefund: document.getElementById('btn-refund'),
+        approveModal: document.getElementById('approve-modal')
       };
 
       let items = [];
@@ -127,35 +184,97 @@
       els.search.addEventListener('input', render);
       els.filterStatus.addEventListener('change', render);
 
-      els.modalClose.addEventListener('click', () => els.modal.classList.add('hidden'));
+      els.modalClose.addEventListener('click', closeModal);
+      function closeModal() {
+        els.modal.classList.add('hidden');
+        els.modal.style.display = 'none';
+      }
 
-      els.btnApprove.addEventListener('click', async () => {
+      // Approve button opens approve modal
+      els.btnApprove.addEventListener('click', () => {
         if (!selected) return;
-        const note = prompt('Optional admin note:') || '';
+        document.getElementById('approve-amount').value = selected.amount || '';
+        document.getElementById('approve-return-address').value = '';
+        document.getElementById('approve-notes').value = '';
+        document.getElementById('approve-error').classList.add('hidden');
+        els.approveModal.style.display = 'flex';
+        els.approveModal.classList.remove('hidden');
+      });
+
+      document.getElementById('approve-modal-close').addEventListener('click', closeApproveModal);
+      document.getElementById('approve-cancel').addEventListener('click', closeApproveModal);
+      function closeApproveModal() {
+        els.approveModal.classList.add('hidden');
+        els.approveModal.style.display = 'none';
+      }
+
+      document.getElementById('approve-confirm').addEventListener('click', async () => {
+        if (!selected) return;
+        const approvedAmount = document.getElementById('approve-amount').value;
+        const returnShippingAddress = document.getElementById('approve-return-address').value.trim();
+        const adminNotes = document.getElementById('approve-notes').value.trim();
+        const errEl = document.getElementById('approve-error');
+        errEl.classList.add('hidden');
+
         try {
-          const res = await fetch(`${API}/api/returns/${selected._id}/approve`, { method: 'PUT', headers: { 'Content-Type':'application/json','Authorization':`Bearer ${token}` }, body: JSON.stringify({ adminNotes: note, refundMethod: 'manual' }) });
-          const data = await res.json(); if (!res.ok) throw new Error(data.msg || 'Failed');
-          showMessage('Approved', 'success'); await load();
-        } catch (e) { showMessage('Approve failed: ' + e.message, 'error'); }
+          const body = { adminNotes, refundMethod: 'manual' };
+          if (approvedAmount) body.approvedAmount = Number(approvedAmount);
+          if (returnShippingAddress) body.returnShippingAddress = returnShippingAddress;
+
+          const res = await fetch(`${API}/api/returns/${selected._id}/approve`, { 
+            method: 'PUT', 
+            headers: { 'Content-Type':'application/json','Authorization':`Bearer ${token}` }, 
+            body: JSON.stringify(body) 
+          });
+          const data = await res.json(); 
+          if (!res.ok) throw new Error(data.msg || 'Failed');
+          closeApproveModal();
+          closeModal();
+          showMessage('Return request approved! Customer will be notified.', 'success'); 
+          await load();
+        } catch (e) { 
+          errEl.textContent = e.message;
+          errEl.classList.remove('hidden');
+        }
       });
 
       els.btnReject.addEventListener('click', async () => {
         if (!selected) return;
-        const note = prompt('Optional rejection note:') || '';
+        const note = prompt('Rejection reason (will be shown to customer):') || '';
         try {
           const res = await fetch(`${API}/api/returns/${selected._id}/reject`, { method: 'PUT', headers: { 'Content-Type':'application/json','Authorization':`Bearer ${token}` }, body: JSON.stringify({ adminNotes: note }) });
           const data = await res.json(); if (!res.ok) throw new Error(data.msg || 'Failed');
-          showMessage('Rejected', 'success'); await load();
+          closeModal();
+          showMessage('Return request rejected. Customer will be notified.', 'success'); await load();
         } catch (e) { showMessage('Reject failed: ' + e.message, 'error'); }
+      });
+
+      els.btnReceived.addEventListener('click', async () => {
+        if (!selected) return;
+        if (!confirm('Mark this return as received? This means you have received the item back from the customer.')) return;
+        try {
+          const res = await fetch(`${API}/api/returns/${selected._id}/received`, { method: 'PUT', headers: { 'Content-Type':'application/json','Authorization':`Bearer ${token}` }, body: JSON.stringify({}) });
+          const data = await res.json(); if (!res.ok) throw new Error(data.msg || 'Failed');
+          closeModal();
+          showMessage('Return marked as received. You can now process the refund.', 'success'); await load();
+        } catch (e) { showMessage('Mark received failed: ' + e.message, 'error'); }
       });
 
       els.btnRefund.addEventListener('click', async () => {
         if (!selected) return;
-        if (!confirm('Proceed to refund this request now?')) return;
+        const amount = selected.approvedAmount || selected.amount || 0;
+        let paymentInfo = '';
+        if (selected.refundPaymentMethod === 'gcash' && selected.gcashNumber) {
+          paymentInfo = `GCash: ${selected.gcashNumber}`;
+        } else if (selected.refundPaymentMethod === 'bank' && selected.bankAccountNumber) {
+          paymentInfo = `${selected.bankName} - ${selected.bankAccountName} (${selected.bankAccountNumber})`;
+        }
+        if (!confirm(`Process refund of ${peso(amount)}?\n\nSend to: ${paymentInfo || 'PayMongo (if available)'}\n\nClick OK to confirm.`)) return;
         try {
           const res = await fetch(`${API}/api/returns/${selected._id}/refund`, { method: 'POST', headers: { 'Authorization':`Bearer ${token}` } });
           const data = await res.json(); if (!res.ok) throw new Error(data.msg || JSON.stringify(data));
-          showMessage('Refund processed', 'success'); await load();
+          closeModal();
+          showMessage('Refund processed successfully! Customer will be notified.', 'success'); await load();
         } catch (e) { showMessage('Refund failed: ' + e.message, 'error'); }
       });
 
@@ -180,17 +299,15 @@
         });
         els.count.textContent = filtered.length;
         els.body.innerHTML = filtered.map(it => `
-          <tr>
-            <td class="px-4 py-3 font-mono">${shortId(it._id)}</td>
-            <td class="px-4 py-3">${it.order?._id? shortId(it.order._id) : '-'}</td>
+          <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 font-mono text-xs">${shortId(it._id)}</td>
+            <td class="px-4 py-3 text-xs">${it.order?._id? shortId(it.order._id) : '-'}</td>
             <td class="px-4 py-3">${it.user?.name || (it.user?.email||'-')}</td>
             <td class="px-4 py-3 text-sm max-w-xs truncate">${it.reason}</td>
-            <td class="px-4 py-3">${it.status}</td>
-            <td class="px-4 py-3">${peso(it.amount)}</td>
+            <td class="px-4 py-3">${getStatusBadge(it.status)}</td>
+            <td class="px-4 py-3">${peso(it.approvedAmount || it.amount)}</td>
             <td class="px-4 py-3 text-right">
-              <div class="inline-flex gap-2 items-center justify-end">
-                <button data-id="${it._id}" class="view-btn text-indigo-600 hover:text-indigo-800 text-sm">View</button>
-              </div>
+              <button data-id="${it._id}" class="view-btn text-indigo-600 hover:text-indigo-800 text-sm font-medium">View</button>
             </td>
           </tr>
         `).join('') || '<tr><td colspan="7" class="px-4 py-6 text-center text-gray-500">No requests.</td></tr>';
@@ -200,29 +317,110 @@
           const id = e.currentTarget.dataset.id;
           selected = items.find(x=>x._id===id);
           if (!selected) return;
-          // build modal content
-          const orderHtml = selected.order ? `Order: <a class="text-indigo-600" href="/client/admin/orders.html?oid=${selected.order._id}">${shortId(selected.order._id)}</a>` : 'Order: -';
-          const userHtml = selected.user ? `${selected.user.name||'-'} <span class="text-xs text-gray-500">${selected.user.email||''}</span>` : '-';
-          const vids = (selected.videos||[]).map(u=>`<a href="${u}" target="_blank" class="text-indigo-600">View</a>`).join(' ');
-          const imgs = (selected.images||[]).map(u=>`<a href="${u}" target="_blank" class="text-indigo-600">View</a>`).join(' ');
+          
+          // Build modal content
+          const orderHtml = selected.order ? `<a class="text-indigo-600 hover:underline" href="orders.html?oid=${selected.order._id}">Order #${shortId(selected.order._id)}</a>` : '-';
+          const userHtml = selected.user ? `${selected.user.name||'-'} <span class="text-xs text-gray-500">(${selected.user.email||''})</span>` : '-';
+          const vids = (selected.videos||[]).map(u=>`<a href="${API}${u}" target="_blank" class="text-indigo-600 hover:underline text-xs"><i class="fas fa-video mr-1"></i>Video</a>`).join(' ');
+          const imgs = (selected.images||[]).map(u=>`<a href="${API}${u}" target="_blank" class="text-indigo-600 hover:underline text-xs"><i class="fas fa-image mr-1"></i>Image</a>`).join(' ');
+          
+          // Payment info
+          let paymentInfoHtml = '<span class="text-gray-400">Not provided</span>';
+          if (selected.refundPaymentMethod === 'gcash' && selected.gcashNumber) {
+            paymentInfoHtml = `<span class="font-medium text-green-700">GCash: ${selected.gcashNumber}</span>`;
+          } else if (selected.refundPaymentMethod === 'bank' && selected.bankAccountNumber) {
+            paymentInfoHtml = `<span class="font-medium text-blue-700">${selected.bankName} - ${selected.bankAccountName}<br><span class="font-mono">${selected.bankAccountNumber}</span></span>`;
+          }
+
+          // Update button visibility based on status
+          els.btnApprove.classList.toggle('hidden', selected.status !== 'Pending');
+          els.btnReject.classList.toggle('hidden', !['Pending', 'Approved', 'Awaiting Return'].includes(selected.status));
+          els.btnReceived.classList.toggle('hidden', selected.status !== 'Awaiting Return');
+          els.btnRefund.classList.toggle('hidden', !['Approved', 'Awaiting Return', 'Received'].includes(selected.status));
+
           els.modalContent.innerHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p class="text-sm text-gray-600">${orderHtml}</p>
-                <p class="text-sm text-gray-600 mt-2">Customer: ${userHtml}</p>
-                <p class="text-sm text-gray-600 mt-2">Amount: <strong>${peso(selected.amount)}</strong></p>
-                <p class="text-sm text-gray-600 mt-2">Status: <strong>${selected.status}</strong></p>
-                <p class="text-sm text-gray-600 mt-2">Reason: <span class="block mt-1">${selected.reason}</span></p>
-                <p class="text-sm text-gray-600 mt-2">Details: <span class="block mt-1">${selected.details||'-'}</span></p>
-                <p class="text-sm text-gray-600 mt-2">Admin Notes: <span class="block mt-1">${selected.adminNotes||'-'}</span></p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-500">Status:</span>
+                  ${getStatusBadge(selected.status)}
+                </div>
+                <div>
+                  <span class="text-gray-500 text-sm">Order:</span>
+                  <p class="font-medium">${orderHtml}</p>
+                </div>
+                <div>
+                  <span class="text-gray-500 text-sm">Customer:</span>
+                  <p class="font-medium">${userHtml}</p>
+                </div>
+                <div>
+                  <span class="text-gray-500 text-sm">Requested Amount:</span>
+                  <p class="font-medium text-lg">${peso(selected.amount)}</p>
+                </div>
+                ${selected.approvedAmount ? `
+                <div>
+                  <span class="text-gray-500 text-sm">Approved Amount:</span>
+                  <p class="font-medium text-lg text-green-600">${peso(selected.approvedAmount)}</p>
+                </div>` : ''}
               </div>
-              <div>
-                <p class="text-sm text-gray-600">Videos: ${vids || '-'}</p>
-                <p class="text-sm text-gray-600 mt-2">Images: ${imgs || '-'}</p>
-                <p class="text-sm text-gray-600 mt-4">Created: ${new Date(selected.createdAt).toLocaleString()}</p>
+              <div class="space-y-3">
+                <div>
+                  <span class="text-gray-500 text-sm">Reason:</span>
+                  <p class="font-medium">${selected.reason}</p>
+                </div>
+                ${selected.details ? `
+                <div>
+                  <span class="text-gray-500 text-sm">Details:</span>
+                  <p class="text-gray-700">${selected.details}</p>
+                </div>` : ''}
+                <div>
+                  <span class="text-gray-500 text-sm">Created:</span>
+                  <p>${new Date(selected.createdAt).toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Refund Payment Info -->
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg border">
+              <h4 class="font-semibold text-gray-800 mb-2"><i class="fas fa-money-bill-wave mr-2 text-green-600"></i>Refund Payment Details</h4>
+              <p class="text-sm">${paymentInfoHtml}</p>
+            </div>
+
+            <!-- Evidence -->
+            ${(selected.videos?.length || selected.images?.length) ? `
+            <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+              <h4 class="font-semibold text-gray-800 mb-2"><i class="fas fa-paperclip mr-2 text-blue-600"></i>Evidence Attached</h4>
+              <div class="flex gap-3 flex-wrap">${vids} ${imgs}</div>
+            </div>` : ''}
+
+            <!-- Admin Notes -->
+            ${selected.adminNotes ? `
+            <div class="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-100">
+              <h4 class="font-semibold text-gray-800 mb-2"><i class="fas fa-comment-alt mr-2 text-yellow-600"></i>Admin Notes</h4>
+              <p class="text-gray-700">${selected.adminNotes}</p>
+            </div>` : ''}
+
+            <!-- Return Address -->
+            ${selected.returnShippingAddress ? `
+            <div class="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-100">
+              <h4 class="font-semibold text-gray-800 mb-2"><i class="fas fa-truck mr-2 text-amber-600"></i>Return Shipping Address</h4>
+              <p class="text-gray-700">${selected.returnShippingAddress}</p>
+            </div>` : ''}
+
+            <!-- Timeline -->
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg border">
+              <h4 class="font-semibold text-gray-800 mb-2"><i class="fas fa-history mr-2 text-gray-600"></i>Timeline</h4>
+              <div class="text-sm space-y-1 text-gray-600">
+                <p>📝 Submitted: ${new Date(selected.createdAt).toLocaleString()}</p>
+                ${selected.approvedAt ? `<p>✅ Approved: ${new Date(selected.approvedAt).toLocaleString()}</p>` : ''}
+                ${selected.receivedAt ? `<p>📬 Received: ${new Date(selected.receivedAt).toLocaleString()}</p>` : ''}
+                ${selected.processedAt ? `<p>💰 Refunded: ${new Date(selected.processedAt).toLocaleString()}</p>` : ''}
+                ${selected.rejectedAt ? `<p>❌ Rejected: ${new Date(selected.rejectedAt).toLocaleString()}</p>` : ''}
               </div>
             </div>
           `;
+          
+          els.modal.style.display = 'flex';
           els.modal.classList.remove('hidden');
         }));
       }

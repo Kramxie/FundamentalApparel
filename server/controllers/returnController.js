@@ -5,16 +5,46 @@ const Order = require('../models/Order');
 const CustomOrder = require('../models/CustomOrder');
 const User = require('../models/User');
 const notify = require('../utils/notify');
+const sendEmail = require('../utils/sendEmail');
 
 const PAYMONGO_SECRET_KEY = process.env.PAYMONGO_SECRET_KEY;
 const PAYMONGO_API_URL = 'https://api.paymongo.com/v1';
+
+// Helper: Send refund status email to customer
+async function sendRefundStatusEmail(user, refundRequest, statusMessage) {
+  if (!user || !user.email) return;
+  try {
+    const subject = `Refund Request Update - ${refundRequest.status}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #4F46E5;">Fundamental Apparel</h2>
+        <h3>Refund Request Update</h3>
+        <p>Hi ${user.name || 'Valued Customer'},</p>
+        <p>${statusMessage}</p>
+        <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Request ID:</strong> ${refundRequest._id}</p>
+          <p><strong>Status:</strong> ${refundRequest.status}</p>
+          <p><strong>Reason:</strong> ${refundRequest.reason}</p>
+          ${refundRequest.adminNotes ? `<p><strong>Admin Notes:</strong> ${refundRequest.adminNotes}</p>` : ''}
+          ${refundRequest.returnShippingAddress ? `<p><strong>Return Address:</strong> ${refundRequest.returnShippingAddress}</p>` : ''}
+          ${refundRequest.approvedAmount ? `<p><strong>Approved Refund Amount:</strong> ₱${refundRequest.approvedAmount.toLocaleString()}</p>` : ''}
+        </div>
+        <p>If you have questions, please contact our support team.</p>
+        <p>Thank you,<br>Fundamental Apparel Team</p>
+      </div>
+    `;
+    await sendEmail({ email: user.email, subject, html });
+  } catch (e) {
+    console.warn('[Returns] Failed to send status email:', e.message);
+  }
+}
 
 // Create a return/refund request (user)
 exports.createReturnRequest = async (req, res) => {
   try {
     const userId = req.user._id;
     const { id: orderId } = req.params;
-    const { reason, details, amount } = req.body;
+    const { reason, details, amount, refundPaymentMethod, gcashNumber, bankName, bankAccountName, bankAccountNumber } = req.body;
 
     if (!reason) return res.status(400).json({ success: false, msg: 'Reason is required' });
 
@@ -43,7 +73,13 @@ exports.createReturnRequest = async (req, res) => {
       details: details || '',
       videos,
       images,
-      amount: amount ? Number(amount) : (order.totalPrice || order.price || 0)
+      amount: amount ? Number(amount) : (order.totalPrice || order.price || 0),
+      // New payment method fields
+      refundPaymentMethod: refundPaymentMethod || '',
+      gcashNumber: gcashNumber || '',
+      bankName: bankName || '',
+      bankAccountName: bankAccountName || '',
+      bankAccountNumber: bankAccountNumber || ''
     });
 
     await refund.save();
@@ -121,29 +157,44 @@ exports.getReturn = async (req, res) => {
 exports.approveReturn = async (req, res) => {
   try {
     const { id } = req.params;
-    const { adminNotes, refundMethod } = req.body;
-    const item = await RefundRequest.findById(id).populate('order');
+    const { adminNotes, refundMethod, approvedAmount, returnShippingAddress } = req.body;
+    const item = await RefundRequest.findById(id).populate('order').populate('user', 'name email');
     if (!item) return res.status(404).json({ success: false, msg: 'Return request not found' });
 
     item.status = 'Approved';
     item.adminNotes = adminNotes || '';
     item.refundMethod = refundMethod || 'manual';
+    item.approvedAt = new Date();
+    // Allow partial refund - admin can set a different amount
+    if (approvedAmount !== undefined && approvedAmount !== null) {
+      item.approvedAmount = Number(approvedAmount);
+    } else {
+      item.approvedAmount = item.amount; // Default to full amount
+    }
+    // Return shipping address for customer to send item back
+    if (returnShippingAddress) {
+      item.returnShippingAddress = returnShippingAddress;
+      item.status = 'Awaiting Return'; // If address provided, expect item to be shipped back
+    }
     await item.save();
 
-    // Optionally update order status
-
+    // Update order-level refund summary (but don't cancel yet - wait for item return)
     if (item.order) {
-      item.order.status = 'Cancelled';
-      // Update order-level refund summary
       try {
         item.order.hasRefundRequest = true;
         item.order.latestRefundId = item._id;
-        item.order.latestRefundStatus = 'Approved';
+        item.order.latestRefundStatus = item.status;
         await item.order.save();
       } catch (e) {
         console.warn('[Returns] Failed to update order on approve:', e.message);
       }
     }
+
+    // Send email notification to customer
+    const statusMsg = returnShippingAddress 
+      ? `Your return request has been approved! Please ship the item to the address provided below. Once we receive and inspect it, we will process your refund.`
+      : `Your return request has been approved! We will process your refund shortly.`;
+    await sendRefundStatusEmail(item.user, item, statusMsg);
 
     return res.json({ success: true, data: item });
   } catch (error) {
@@ -152,21 +203,56 @@ exports.approveReturn = async (req, res) => {
   }
 };
 
+// Admin: mark return as received (item shipped back by customer)
+exports.markReceived = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminNotes } = req.body;
+    const item = await RefundRequest.findById(id).populate('user', 'name email');
+    if (!item) return res.status(404).json({ success: false, msg: 'Return request not found' });
+
+    item.status = 'Received';
+    item.receivedAt = new Date();
+    if (adminNotes) item.adminNotes = adminNotes;
+    await item.save();
+
+    // Update order-level refund summary
+    try {
+      const ord = await Order.findById(item.order) || await CustomOrder.findById(item.order);
+      if (ord) {
+        ord.latestRefundStatus = 'Received';
+        await ord.save();
+      }
+    } catch (e) {
+      console.warn('[Returns] Failed to update order on received:', e.message);
+    }
+
+    // Send email notification
+    await sendRefundStatusEmail(item.user, item, 'We have received your returned item. We will inspect it and process your refund soon.');
+
+    return res.json({ success: true, data: item });
+  } catch (error) {
+    console.error('[Returns] markReceived error:', error);
+    return res.status(500).json({ success: false, msg: 'Failed to mark as received' });
+  }
+};
+
 // Admin: reject return
 exports.rejectReturn = async (req, res) => {
   try {
     const { id } = req.params;
     const { adminNotes } = req.body;
-    const item = await RefundRequest.findById(id);
+    const item = await RefundRequest.findById(id).populate('user', 'name email');
     if (!item) return res.status(404).json({ success: false, msg: 'Return request not found' });
 
     item.status = 'Rejected';
     item.adminNotes = adminNotes || '';
+    item.rejectedAt = new Date();
     await item.save();
 
     // Update order-level refund summary if linked
     try {
-      const ord = await Order.findById(item.order);
+      const ord = await Order.findById(item.order) || await CustomOrder.findById(item.order);
       if (ord) {
         ord.hasRefundRequest = true;
         ord.latestRefundId = item._id;
@@ -176,6 +262,9 @@ exports.rejectReturn = async (req, res) => {
     } catch (e) {
       console.warn('[Returns] Failed to update order on reject:', e.message);
     }
+
+    // Send email notification
+    await sendRefundStatusEmail(item.user, item, `Your return request has been rejected. ${adminNotes ? 'Reason: ' + adminNotes : 'Please contact support if you have questions.'}`);
 
     return res.json({ success: true, data: item });
   } catch (error) {
@@ -188,10 +277,16 @@ exports.rejectReturn = async (req, res) => {
 exports.refundReturn = async (req, res) => {
   try {
     const { id } = req.params;
-    const item = await RefundRequest.findById(id).populate('order');
+    const item = await RefundRequest.findById(id).populate('order').populate('user', 'name email');
     if (!item) return res.status(404).json({ success: false, msg: 'Return request not found' });
 
-    if (item.status !== 'Approved') return res.status(400).json({ success: false, msg: 'Return must be approved before refunding' });
+    // Allow refund from Approved, Awaiting Return, or Received status
+    if (!['Approved', 'Awaiting Return', 'Received'].includes(item.status)) {
+      return res.status(400).json({ success: false, msg: 'Return must be approved/received before refunding' });
+    }
+
+    // Use approvedAmount if set, otherwise use original amount
+    const finalRefundAmount = item.approvedAmount || item.amount || (item.order?.totalPrice || 0);
 
     // If the admin requested a PayMongo refund and we have keys, try to perform it
     if (process.env.PAYMONGO_SECRET_KEY && item.order && item.order.paymentIntentId) {
@@ -228,9 +323,9 @@ exports.refundReturn = async (req, res) => {
         return res.status(200).json({ success: false, msg: 'Could not determine PayMongo payment id. Marked for manual refund by admin.', data: item });
       }
 
-      // Call PayMongo Refunds API (best-effort) - attempt to refund full amount or specified amount
-      const refundAmount = item.amount ? Math.round(item.amount * 100) : Math.round((item.order.totalPrice || 0) * 100);
-      const refundPayload = { data: { attributes: { amount: refundAmount, payment: paymentId } } };
+      // Call PayMongo Refunds API (best-effort) - use approved amount for partial refunds
+      const refundAmountCentavos = Math.round(finalRefundAmount * 100);
+      const refundPayload = { data: { attributes: { amount: refundAmountCentavos, payment: paymentId } } };
 
       const refundResp = await fetch(`${PAYMONGO_API_URL}/refunds`, {
         method: 'POST',
@@ -267,6 +362,9 @@ exports.refundReturn = async (req, res) => {
         }
       }
 
+      // Send email notification
+      await sendRefundStatusEmail(item.user, item, `Your refund of ₱${finalRefundAmount.toLocaleString()} has been processed via PayMongo. The amount should appear in your account within 5-7 business days.`);
+
       return res.json({ success: true, data: { refund: refundData, request: item } });
     }
 
@@ -288,6 +386,15 @@ exports.refundReturn = async (req, res) => {
         console.warn('[Returns] Failed to update order on refund (manual):', e.message);
       }
     }
+
+    // Send email notification for manual refund
+    let paymentInfo = '';
+    if (item.refundPaymentMethod === 'gcash' && item.gcashNumber) {
+      paymentInfo = `We will send your refund to GCash ${item.gcashNumber}.`;
+    } else if (item.refundPaymentMethod === 'bank' && item.bankAccountNumber) {
+      paymentInfo = `We will send your refund to ${item.bankName} account ${item.bankAccountNumber}.`;
+    }
+    await sendRefundStatusEmail(item.user, item, `Your refund of ₱${finalRefundAmount.toLocaleString()} has been processed. ${paymentInfo} Please allow 3-7 business days for the transfer to complete.`);
 
     return res.json({ success: true, data: item });
   } catch (error) {

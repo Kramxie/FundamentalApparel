@@ -6,138 +6,279 @@
   <title>Final Payment • Fundamental</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-  <header class="bg-white shadow">
-    <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-      <a href="/client/my-quotes.html" class="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-indigo-600">
+<body class="bg-gray-100 min-h-screen">
+  <header class="bg-white shadow-sm">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="my-quotes.html" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 transition-colors">
         <i class="fas fa-arrow-left"></i>
-        Back to Quotes
+        Back to My Quotes
       </a>
-      <a href="/client/index.html" class="text-indigo-600 font-semibold">Fundamental</a>
+      <a href="index.html" class="text-xl font-bold text-indigo-600">Fundamental</a>
     </div>
   </header>
 
-  <main class="max-w-4xl mx-auto px-6 py-6">
-    <h1 class="text-2xl font-bold text-gray-900 mb-4">Pay Final Payment</h1>
-    <p class="text-sm text-gray-500 mb-6">This page is for paying your remaining balance. Delivery method is locked, but you can update your shipping address below if needed.</p>
-
-    <div id="warn" class="hidden mb-4 p-3 rounded border border-yellow-300 bg-yellow-50 text-sm text-yellow-900"></div>
-
-    <div class="grid md:grid-cols-2 gap-6">
-      <!-- Order Summary -->
-      <section class="bg-white border rounded-xl p-4">
-        <h2 class="text-sm font-semibold text-gray-900 mb-3">Order Summary</h2>
-        <div class="space-y-2 text-sm" id="summary">
-          <div class="flex justify-between"><span class="text-gray-600">Service:</span><span id="sum-service">—</span></div>
-          <div class="flex justify-between"><span class="text-gray-600">Garment:</span><span id="sum-garment">—</span></div>
-          <div class="flex justify-between"><span class="text-gray-600">Quantity:</span><span id="sum-qty">—</span></div>
-          <hr class="my-2">
-          <div class="flex justify-between"><span class="text-gray-600">Items Total:</span><span id="sum-items">₱0</span></div>
-          <div class="flex justify-between"><span class="text-gray-600">Delivery Fee (original):</span><span id="sum-delivery">₱0</span></div>
-          <div class="flex justify-between font-semibold"><span>Total:</span><span id="sum-total">₱0</span></div>
-          <div class="flex justify-between text-green-700"><span>Already Paid:</span><span id="sum-paid">₱0</span></div>
-          <div class="flex justify-between text-purple-700 font-bold text-lg"><span>Final Amount Due:</span><span id="sum-due">₱0</span></div>
-        </div>
-      </section>
-
-      <!-- Delivery & Contact -->
-      <section class="bg-white border rounded-xl p-4">
-        <h2 class="text-sm font-semibold text-gray-900 mb-3">Delivery & Contact</h2>
-        <div class="space-y-3 text-sm">
-          <div><span class="text-gray-600">Delivery Method:</span> <span id="delivery-method" class="font-medium">—</span> <span class="ml-2 text-xs text-gray-500">(locked)</span></div>
-
-          <!-- Address Form (shown for Standard delivery) -->
-          <div id="address-form" class="space-y-2">
-            <div class="text-gray-600">Shipping Address (editable):</div>
-            <div class="grid grid-cols-2 gap-2">
-              <input id="addr-block" type="text" placeholder="Block" class="px-3 py-2 border rounded" />
-              <input id="addr-lot" type="text" placeholder="Lot" class="px-3 py-2 border rounded" />
-              <input id="addr-street" type="text" placeholder="Street" class="px-3 py-2 border rounded col-span-2" />
-              <input id="addr-building" type="text" placeholder="Building / Subdivision" class="px-3 py-2 border rounded col-span-2" />
-              <input id="addr-city" type="text" placeholder="City/Municipality" class="px-3 py-2 border rounded" />
-              <input id="addr-province" type="text" placeholder="Province" class="px-3 py-2 border rounded" />
-              <input id="addr-zip" type="text" placeholder="ZIP" class="px-3 py-2 border rounded" />
-              <input id="addr-phone" type="text" placeholder="Phone" class="px-3 py-2 border rounded" />
-            </div>
-            <p class="text-xs text-gray-500">Tip: Leave fields unchanged to keep your previous address.</p>
-          </div>
-
-          <!-- Placeholder when Pick-Up -->
-          <div id="pickup-note" class="hidden text-sm text-green-700 bg-green-50 rounded p-2">
-            Pickup is selected. No shipping address is required.
-          </div>
-
-          <div><span class="text-gray-600">Contact:</span> <span id="contact" class="font-medium">—</span></div>
-        </div>
-      </section>
+  <main class="max-w-5xl mx-auto px-6 py-8">
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-gray-900">Complete Final Payment</h1>
+      <p class="text-sm text-gray-500 mt-1">Pay your remaining balance to proceed with delivery.</p>
     </div>
 
-    <div class="mt-6 flex items-center justify-between">
-      <div class="text-xs text-gray-500">By continuing, you agree this payment is for the remaining balance of your order.</div>
-      <button id="payBtn" class="px-5 py-3 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50">
-        <i class="fas fa-lock mr-2"></i>Proceed to Secure Payment
-      </button>
+    <div id="warn" class="hidden mb-4 p-4 rounded-lg border border-yellow-300 bg-yellow-50 text-sm text-yellow-800">
+      <i class="fas fa-exclamation-triangle mr-2"></i><span></span>
+    </div>
+
+    <div class="grid md:grid-cols-5 gap-6">
+      <!-- Left Column: Order Details (3 cols) -->
+      <div class="md:col-span-3 space-y-6">
+        <!-- Order Summary Card -->
+        <section class="bg-white rounded-xl shadow-sm border p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fas fa-receipt text-indigo-600"></i>Order Summary
+          </h2>
+          <div class="space-y-3 text-sm" id="summary">
+            <div class="flex justify-between py-2 border-b">
+              <span class="text-gray-600">Service</span>
+              <span id="sum-service" class="font-medium text-gray-900">—</span>
+            </div>
+            <div class="flex justify-between py-2 border-b">
+              <span class="text-gray-600">Item Details</span>
+              <span id="sum-garment" class="font-medium text-gray-900">—</span>
+            </div>
+            <div class="flex justify-between py-2 border-b">
+              <span class="text-gray-600">Quantity</span>
+              <span id="sum-qty" class="font-medium text-gray-900">—</span>
+            </div>
+            <div class="flex justify-between py-2 border-b">
+              <span class="text-gray-600">Order Reference</span>
+              <span id="sum-ref" class="font-mono font-medium text-indigo-600">—</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Delivery & Contact Card -->
+        <section class="bg-white rounded-xl shadow-sm border p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fas fa-truck text-indigo-600"></i>Delivery Information
+          </h2>
+          <div class="space-y-4 text-sm">
+            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <i class="fas fa-shipping-fast text-gray-500"></i>
+              <div>
+                <span class="text-gray-600">Delivery Method:</span>
+                <span id="delivery-method" class="font-medium ml-2">—</span>
+                <span class="ml-2 text-xs text-gray-400">(locked from initial order)</span>
+              </div>
+            </div>
+
+            <!-- Address Form (shown for Standard delivery) -->
+            <div id="address-form" class="space-y-3">
+              <p class="text-gray-600 font-medium">Shipping Address:</p>
+              <div class="grid grid-cols-2 gap-3">
+                <input id="addr-block" type="text" placeholder="Block" class="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                <input id="addr-lot" type="text" placeholder="Lot" class="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                <input id="addr-street" type="text" placeholder="Street" class="col-span-2 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                <input id="addr-building" type="text" placeholder="Building / Subdivision" class="col-span-2 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                <input id="addr-city" type="text" placeholder="City/Municipality" class="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                <input id="addr-province" type="text" placeholder="Province" class="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                <input id="addr-zip" type="text" placeholder="ZIP Code" class="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                <input id="addr-phone" type="text" placeholder="Phone Number" class="px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+              </div>
+              <p class="text-xs text-gray-500"><i class="fas fa-info-circle mr-1"></i>Leave unchanged to use your previous address.</p>
+            </div>
+
+            <!-- Placeholder when Pick-Up -->
+            <div id="pickup-note" class="hidden p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-store text-green-600 text-xl"></i>
+                <div>
+                  <p class="font-medium text-green-800">Store Pickup Selected</p>
+                  <p class="text-sm text-green-700">No shipping address required. Pick up at our store location.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <span class="text-gray-600">Contact:</span>
+              <span id="contact" class="font-medium ml-2">—</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column: Payment Summary (2 cols) -->
+      <aside class="md:col-span-2">
+        <div class="bg-white rounded-xl shadow-sm border p-6 sticky top-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fas fa-calculator text-indigo-600"></i>Billing Summary
+          </h2>
+          
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between py-2">
+              <span class="text-gray-600">Subtotal</span>
+              <span id="sum-items" class="font-medium">₱0</span>
+            </div>
+            <div class="flex justify-between py-2">
+              <span class="text-gray-600">Delivery Fee</span>
+              <span id="sum-delivery" class="font-medium">₱0</span>
+            </div>
+            <div class="flex justify-between py-2">
+              <span class="text-gray-600">VAT (12%)</span>
+              <span id="sum-vat" class="font-medium">₱0</span>
+            </div>
+            
+            <hr class="my-3">
+            
+            <div class="flex justify-between py-2">
+              <span class="text-gray-700 font-medium">Total Order Value</span>
+              <span id="sum-total" class="font-bold text-gray-900">₱0</span>
+            </div>
+            
+            <div class="flex justify-between py-2 text-green-700 bg-green-50 rounded-lg px-3 -mx-1">
+              <span class="font-medium"><i class="fas fa-check-circle mr-1"></i>Already Paid (50%)</span>
+              <span id="sum-paid" class="font-bold">₱0</span>
+            </div>
+            
+            <hr class="my-3">
+            
+            <div class="flex justify-between py-3 bg-indigo-50 rounded-lg px-3 -mx-1">
+              <span class="text-indigo-800 font-semibold">Amount Due Now</span>
+              <span id="sum-due" class="text-xl font-bold text-indigo-700">₱0</span>
+            </div>
+          </div>
+
+          <!-- Security Badge -->
+          <div class="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+            <div class="flex items-start gap-2 text-xs text-blue-800">
+              <i class="fas fa-shield-alt mt-0.5"></i>
+              <span>Secure payment powered by PayMongo. Your payment information is encrypted and protected.</span>
+            </div>
+          </div>
+
+          <button id="payBtn" class="w-full mt-6 px-6 py-3.5 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <i class="fas fa-lock"></i>
+            <span>Proceed to Secure Payment</span>
+          </button>
+          
+          <p class="text-xs text-center text-gray-500 mt-3">
+            By continuing, you agree to pay the remaining balance for your order.
+          </p>
+        </div>
+      </aside>
     </div>
   </main>
 
   <script>
-    const warn = (msg)=>{ const el=document.getElementById('warn'); el.textContent = msg; el.classList.remove('hidden'); };
+    const API_BASE = 'https://fundamental-apparel-backend.onrender.com';
+    const VAT_RATE = 0.12;
 
-    const peso = n => `₱${Number(n||0).toLocaleString()}`;
+    const warn = (msg) => {
+      const el = document.getElementById('warn');
+      el.querySelector('span').textContent = msg;
+      el.classList.remove('hidden');
+    };
+
+    const peso = n => `₱${Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     let checkoutData = null;
 
-    function loadCheckoutData(){
+    function loadCheckoutData() {
       try {
         const raw = localStorage.getItem('pendingServiceCheckout');
         checkoutData = raw ? JSON.parse(raw) : null;
-      } catch(e){ checkoutData = null; }
-      if (!checkoutData){ warn('Missing checkout context. Please start from My Quotes > Pay Final Payment.'); document.getElementById('payBtn').disabled = true; }
+      } catch (e) { checkoutData = null; }
+      
+      if (!checkoutData) {
+        warn('Missing checkout context. Please start from My Quotes > Pay Final Payment.');
+        document.getElementById('payBtn').disabled = true;
+      }
       return checkoutData;
     }
 
-    function computeDue(){
-      // items total is basePrice (price set by admin). Delivery fee is original captured fee.
-      const items = Number(checkoutData?.basePrice || checkoutData?.totalPrice || 0);
+    function computeDue() {
+      // Base price is the item subtotal (admin-set price)
+      const basePrice = Number(checkoutData?.basePrice || checkoutData?.totalPrice || 0);
+      // Previous delivery fee from downpayment
       const delivery = Number(checkoutData?.previousDeliveryFee || 0);
-      const total = items + delivery;
+      
+      // Calculate VAT on subtotal only (not on delivery)
+      const vat = Math.round((basePrice * VAT_RATE + Number.EPSILON) * 100) / 100;
+      
+      // Total = base + delivery + VAT
+      const total = basePrice + delivery + vat;
+      
+      // Already paid amount (50% of total from downpayment)
       let alreadyPaid = Number(checkoutData?.alreadyPaidAmount || 0);
-      // If DB didn't store previous payment yet, infer 50%
-      if (alreadyPaid <= 0){ alreadyPaid = Math.round((total * 0.5) * 100)/100; }
+      if (alreadyPaid <= 0) {
+        // If not stored, calculate 50% of total
+        alreadyPaid = Math.round((total * 0.5 + Number.EPSILON) * 100) / 100;
+      }
+      
       // Remaining due
       let due = Math.max(0, total - alreadyPaid);
-      // Guard against rounding
-      due = Math.round(due * 100)/100;
-      return { items, delivery, total, alreadyPaid, due };
+      due = Math.round((due + Number.EPSILON) * 100) / 100;
+      
+      return { basePrice, delivery, vat, total, alreadyPaid, due };
     }
 
-    function render(){
-      const d = checkoutData; if (!d) return;
-      const { items, delivery, total, alreadyPaid, due } = computeDue();
-      document.getElementById('sum-service').textContent = d.serviceName || 'Custom Service';
-      document.getElementById('sum-garment').textContent = (d.garmentType || 't-shirt') + ' • ' + (d.selectedLocation || 'Front');
-      document.getElementById('sum-qty').textContent = d.quantity || 1;
-      document.getElementById('sum-items').textContent = peso(items);
+    function render() {
+      const d = checkoutData;
+      if (!d) return;
+      
+      const { basePrice, delivery, vat, total, alreadyPaid, due } = computeDue();
+      
+      // Order summary with improved field mapping
+      const serviceLabels = {
+        'customize-jersey': '🎽 Custom Jersey',
+        'layout-creation': '🎨 Layout Creation',
+        'printing-only': '🖨️ Upload Custom Design',
+        'predesign-product': '📦 Pre-Design Product'
+      };
+      const serviceType = d.serviceType || d.serviceName || 'Custom Service';
+      document.getElementById('sum-service').textContent = serviceLabels[serviceType] || serviceType;
+      
+      // Build item details from available fields
+      let itemDetails = [];
+      if (d.productName) itemDetails.push(d.productName);
+      if (d.garmentType) itemDetails.push(d.garmentType);
+      if (d.fabricType) itemDetails.push(d.fabricType);
+      if (d.printingType) itemDetails.push(d.printingType);
+      if (d.selectedLocation && d.selectedLocation !== 'Not specified') {
+        const locLabel = d.selectedLocation.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        itemDetails.push(locLabel);
+      }
+      document.getElementById('sum-garment').textContent = itemDetails.join(' • ') || 'Custom Apparel';
+      
+      document.getElementById('sum-qty').textContent = `${d.quantity || 1} pc(s)`;
+      document.getElementById('sum-ref').textContent = d.orderReference || d.orderId?.slice(-8).toUpperCase() || '—';
+      
+      // Billing summary with VAT
+      document.getElementById('sum-items').textContent = peso(basePrice);
       document.getElementById('sum-delivery').textContent = peso(delivery);
+      document.getElementById('sum-vat').textContent = peso(vat);
       document.getElementById('sum-total').textContent = peso(total);
       document.getElementById('sum-paid').textContent = peso(alreadyPaid);
       document.getElementById('sum-due').textContent = peso(due);
 
       // Delivery & contact
-      const method = (d.shippingMethod || 'Standard');
+      const method = d.shippingMethod || 'Standard';
       document.getElementById('delivery-method').textContent = method;
+      
       const addressForm = document.getElementById('address-form');
       const pickupNote = document.getElementById('pickup-note');
       const isPickup = /pick/i.test(method);
-      if (isPickup){
+      
+      if (isPickup) {
         addressForm.classList.add('hidden');
         pickupNote.classList.remove('hidden');
       } else {
         addressForm.classList.remove('hidden');
         pickupNote.classList.add('hidden');
+        
         const addr = d.quotePayload?.shippingAddress || d.shippingAddress || {};
-        const set = (id, v)=>{ const el = document.getElementById(id); if (el) el.value = v || ''; };
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
         set('addr-block', addr.block);
         set('addr-lot', addr.lot);
         set('addr-street', addr.street);
@@ -145,25 +286,30 @@
         set('addr-city', addr.city);
         set('addr-province', addr.province);
         set('addr-zip', addr.zip);
-        // Prefer existing phone from address; fallback to customer info
+        
         const ciTmp = d.quotePayload?.customerInfo || d.customerInfo || {};
         set('addr-phone', addr.phone || ciTmp.phone);
       }
+      
       const ci = d.quotePayload?.customerInfo || d.customerInfo || {};
-      document.getElementById('contact').textContent = [ci.name, ci.email, ci.phone].filter(Boolean).join(' • ');
+      document.getElementById('contact').textContent = [ci.name, ci.email, ci.phone].filter(Boolean).join(' • ') || '—';
     }
 
-    async function createPaymongoSession(){
+    async function createPaymongoSession() {
       const token = localStorage.getItem('token');
-      if (!token){ warn('You must be logged in to pay the final balance.'); return; }
-      const d = checkoutData; if (!d){ return; }
-      const { items, delivery, total, alreadyPaid, due } = computeDue();
+      if (!token) { warn('You must be logged in to pay the final balance.'); return; }
+      
+      const d = checkoutData;
+      if (!d) return;
+      
+      const { basePrice, delivery, vat, total, alreadyPaid, due } = computeDue();
 
       // Collect shipping address only for delivery methods that require it
       const method = d.shippingMethod || 'Standard';
       let shippingAddress = null;
-      if (!/pick/i.test(method)){
-        const get = (id)=>{ const el = document.getElementById(id); return (el && el.value ? el.value.trim() : ''); };
+      
+      if (!/pick/i.test(method)) {
+        const get = (id) => { const el = document.getElementById(id); return (el && el.value ? el.value.trim() : ''); };
         shippingAddress = {
           block: get('addr-block'),
           lot: get('addr-lot'),
@@ -174,16 +320,16 @@
           zip: get('addr-zip'),
           phone: get('addr-phone')
         };
-        const allEmpty = Object.values(shippingAddress).every(v=>!v);
-        if (allEmpty){ shippingAddress = d.quotePayload?.shippingAddress || d.shippingAddress || null; }
+        const allEmpty = Object.values(shippingAddress).every(v => !v);
+        if (allEmpty) { shippingAddress = d.quotePayload?.shippingAddress || d.shippingAddress || null; }
       }
 
       const payload = {
         orderId: d.orderId,
         orderReference: d.orderReference,
         serviceType: d.serviceType || 'customize-jersey',
-        amount: due,
-        baseAmount: total, // store full for reference
+        amount: due, // This is what we'll pay now
+        baseAmount: basePrice, // Subtotal without VAT/delivery
         deliveryFee: delivery,
         paymentOption: 'balance',
         shippingMethod: d.shippingMethod || 'Standard',
@@ -193,31 +339,45 @@
           serviceName: d.serviceName || 'Custom Service',
           garmentType: d.garmentType || 't-shirt',
           selectedLocation: d.selectedLocation || 'Front',
-          quantity: d.quantity || 1
+          quantity: d.quantity || 1,
+          alreadyPaidAmount: alreadyPaid,
+          previousDeliveryFee: delivery
         }
       };
 
       const btn = document.getElementById('payBtn');
-      const original = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating session...'; btn.disabled = true;
-      try{
-        const res = await fetch('/api/payments/create', {
+      const original = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating session...';
+      btn.disabled = true;
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/payments/create`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' },
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}`, 
+            'ngrok-skip-browser-warning': 'true' 
+          },
           body: JSON.stringify(payload)
         });
         const json = await res.json();
-        if (!json.success){ throw new Error(json.msg || 'Failed to create payment session'); }
+        
+        if (!json.success) { throw new Error(json.msg || 'Failed to create payment session'); }
+        
         // Redirect to PayMongo
         window.location.href = json.data.checkoutUrl;
-      } catch(e){
-        console.error(e); warn(e.message || 'Unable to start payment.');
-        btn.innerHTML = original; btn.disabled = false;
+      } catch (e) {
+        console.error(e);
+        warn(e.message || 'Unable to start payment.');
+        btn.innerHTML = original;
+        btn.disabled = false;
       }
     }
 
-    // init
-    document.addEventListener('DOMContentLoaded', ()=>{
-      if (!loadCheckoutData()) return; render();
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!loadCheckoutData()) return;
+      render();
       document.getElementById('payBtn').addEventListener('click', createPaymongoSession);
     });
   </script>
