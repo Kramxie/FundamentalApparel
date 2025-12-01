@@ -129,8 +129,17 @@ async function getSalesReport(startDate, endDate, options={}){
 exports.exportSalesCsv = async (req, res) => {
   try {
     const q = req.query;
-    const start = q.startDate ? new Date(q.startDate) : null;
-    const end = q.endDate ? new Date(q.endDate) : null;
+    let start = q.startDate ? new Date(q.startDate) : null;
+    let end = q.endDate ? new Date(q.endDate) : null;
+
+    if (q.month) {
+        const [year, month] = q.month.split('-').map(Number);
+        if (year && month) {
+            start = new Date(year, month - 1, 1);
+            end = new Date(year, month, 0);
+        }
+    }
+
     if (start) start.setHours(0,0,0,0);
     if (end) end.setHours(23,59,59,999);
     const includeCustom = q.includeCustom === 'true' || q.includeCustom === true;
@@ -378,56 +387,7 @@ exports.salesReport = async (req, res) => {
 
     // If download CSV requested
     if (req.query.download === 'csv' || req.query.format === 'csv' || q.download === 'csv') {
-      if (reportType === 'product') {
-        const orderDocs = await Order.find(baseMatch).populate('user', 'name email').lean().limit(10000);
-        const rows = orderDocs.map(o => ({
-          orderId: String(o._id),
-          date: o.createdAt ? o.createdAt.toISOString() : '',
-          customer: o.user ? o.user.name : '',
-          email: o.user ? o.user.email : '',
-          status: o.status,
-          totalPrice: o.totalPrice || 0,
-          isPaid: o.isPaid ? 'yes' : 'no'
-        }));
-        const csv = toCSV(rows, ['orderId','date','customer','email','status','totalPrice','isPaid']);
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="sales_report_${Date.now()}.csv"`);
-        return res.send(csv);
-      } else if (reportType === 'predesign' || reportType === 'fabric') {
-        // Export CustomOrder rows
-        const customDocs = await CustomOrder.find(Object.assign({}, (reportType === 'predesign' ? { serviceType: 'predesign-product' } : {}), customMatch)).lean().limit(10000);
-        const rows = customDocs.map(o => ({
-          orderId: String(o._id),
-          date: o.createdAt ? o.createdAt.toISOString() : '',
-          customer: o.user ? String(o.user) : '',
-          productName: o.productName || '',
-          serviceType: o.serviceType || '',
-          fabricType: o.fabricType || '',
-          quantity: o.quantity || 0,
-          totalPrice: o.totalPrice || 0,
-          status: o.status || ''
-        }));
-        const csv = toCSV(rows, ['orderId','date','customer','productName','serviceType','fabricType','quantity','totalPrice','status']);
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="custom_orders_report_${Date.now()}.csv"`);
-        return res.send(csv);
-      } else {
-        // merged: export combined orders (Orders collection)
-        const orderDocs = await Order.find(baseMatch).populate('user', 'name email').lean().limit(10000);
-        const rows = orderDocs.map(o => ({
-          orderId: String(o._id),
-          date: o.createdAt ? o.createdAt.toISOString() : '',
-          customer: o.user ? o.user.name : '',
-          email: o.user ? o.user.email : '',
-          status: o.status,
-          totalPrice: o.totalPrice || 0,
-          isPaid: o.isPaid ? 'yes' : 'no'
-        }));
-        const csv = toCSV(rows, ['orderId','date','customer','email','status','totalPrice','isPaid']);
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="sales_report_${Date.now()}.csv"`);
-        return res.send(csv);
-      }
+      return exports.exportSalesCsv(req, res);
     }
 
     return res.json({ success: true, data: result });

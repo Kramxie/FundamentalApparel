@@ -142,7 +142,12 @@
                     <option value="90">Last 90 days</option>
                     <option value="365">Last 1 year</option>
                     <option value="custom">Custom range</option>
+                    <option value="month">By Month</option>
                   </select>
+                </div>
+                <div id="month-wrap" class="hidden">
+                    <label class="block text-sm text-gray-600">Month</label>
+                    <input id="month" type="month" class="mt-1 block w-full border rounded p-2" />
                 </div>
                 <div id="date-start-wrap" class="hidden">
                   <label class="block text-sm text-gray-600">Start Date</label>
@@ -673,10 +678,23 @@
       const periodSelect = document.getElementById('periodSelect');
       const startWrap = document.getElementById('date-start-wrap');
       const endWrap = document.getElementById('date-end-wrap');
+      const monthWrap = document.getElementById('month-wrap');
       function updateDateInputsVisibility(){
         if (!periodSelect) return;
-        if (periodSelect.value === 'custom') { startWrap.classList.remove('hidden'); endWrap.classList.remove('hidden'); }
-        else { startWrap.classList.add('hidden'); endWrap.classList.add('hidden'); }
+        if (periodSelect.value === 'custom') {
+            startWrap.classList.remove('hidden');
+            endWrap.classList.remove('hidden');
+            monthWrap.classList.add('hidden');
+        } else if (periodSelect.value === 'month') {
+            startWrap.classList.add('hidden');
+            endWrap.classList.add('hidden');
+            monthWrap.classList.remove('hidden');
+        }
+        else {
+            startWrap.classList.add('hidden');
+            endWrap.classList.add('hidden');
+            monthWrap.classList.add('hidden');
+        }
       }
       periodSelect?.addEventListener('change', updateDateInputsVisibility);
       updateDateInputsVisibility();
@@ -838,11 +856,25 @@
     async function exportCurrentViewCSV() {
       // Prefer server-generated CSV that respects the Per-Type filter
       const perType = document.getElementById('perTypeSelect') ? document.getElementById('perTypeSelect').value : 'all';
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
+      const period = document.getElementById('periodSelect').value;
       const token = localStorage.getItem('adminToken');
+      const params = {
+          type: perType,
+          download: 'csv'
+      };
+
+      if (period === 'month') {
+          const month = document.getElementById('month').value;
+          if (month) {
+              params.month = month;
+          }
+      } else {
+          params.startDate = document.getElementById('startDate').value;
+          params.endDate = document.getElementById('endDate').value;
+      }
+
       try {
-        const url = await buildUrl('sales', { startDate, endDate, extra: { type: perType, download: 'csv' } });
+        const url = await buildUrl('sales', { extra: params });
         const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
         if (!res.ok) throw new Error('Failed to get CSV: ' + res.status);
         const blob = await res.blob();

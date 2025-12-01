@@ -3,6 +3,7 @@ const stream = require('stream');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
+const path = require('path');
 const Order = require('../models/Order');
 const CustomOrder = require('../models/CustomOrder');
 
@@ -16,7 +17,6 @@ function _escapeCsvCell(v) {
   return s;
 }
 
-// Truncate text to avoid layout breakage
 function truncate(str, len) {
     if (!str) return '';
     str = String(str);
@@ -53,6 +53,7 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
   // 1. DATA FETCHING LOGIC
   const match = { status: { $ne: 'Cancelled' } };
   
+  // Apply Date Filters (This ensures data is only for the selected period)
   if (startDate) {
     const s = new Date(startDate);
     s.setHours(0,0,0,0);
@@ -88,9 +89,8 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
     }));
   }
 
-  // 2. CSV GENERATION (Kept existing logic)
+  // 2. CSV GENERATION
   let csv = '';
-  // ... (Your existing CSV logic is fine, keeping it brief here to focus on PDF fix)
   if (filterType === 'product' || filterType === 'predesign'){
     const lines = [['Product ID','Name','Category','Qty','Revenue'].join(',')];
     rows.forEach(r => lines.push([r.productId, _escapeCsvCell(r.productName), r.category, r.totalQty, r.revenue].join(',')));
@@ -101,30 +101,53 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
     csv = lines.join('\n');
   }
 
-  // 3. PDF GENERATION (REFACTORED LAYOUT)
+  // 3. PDF GENERATION
   const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
   const passthrough = new stream.PassThrough();
   doc.pipe(passthrough);
 
-  // Layout Constants
+  // --- STANDARD FONT SETUP (No Custom Fonts Needed) ---
+  doc.font('Helvetica');
+
+  // --- Layout Constants ---
   const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
   const startX = doc.page.margins.left;
   
   // -- Branding Header --
-  doc.fontSize(18).font('Helvetica-Bold').text(businessInfo.name, startX, 40);
-  doc.fontSize(10).font('Helvetica').fillColor('#666666').text(businessInfo.address, startX, 65);
+  doc.font('Helvetica-Bold').fontSize(18).text(businessInfo.name, startX, 40);
+  doc.font('Helvetica').fontSize(10).fillColor('#666666').text(businessInfo.address, startX, 65);
   doc.moveDown();
 
-  // -- Report Info (Right Side) --
+  // -- Report Info (Dynamic Headers) --
   const reportTitleY = 40;
-  doc.fontSize(10).fillColor('#000000').text('SALES REPORT', startX, reportTitleY, { align: 'right', width: pageWidth });
-  doc.fontSize(8).text(`Generated: ${new Date().toLocaleString()}`, startX, reportTitleY + 14, { align: 'right', width: pageWidth });
+  doc.fillColor('#000000');
+
+  // CHANGE: Dynamic Title based on what user filtered
+  let titleText = 'SALES REPORT';
+  if (filterType === 'product' || filterType === 'predesign') {
+      titleText = 'PRODUCT SALES SUMMARY';
+  } else {
+      titleText = 'ORDER HISTORY REPORT';
+  }
+
+  doc.font('Helvetica-Bold').fontSize(10).text(titleText, startX, reportTitleY, { align: 'right', width: pageWidth });
+  doc.font('Helvetica').fontSize(8).text(`Generated: ${new Date().toLocaleString()}`, startX, reportTitleY + 14, { align: 'right', width: pageWidth });
   
-  const rangeText = `${startDate ? new Date(startDate).toLocaleDateString() : 'Start'} - ${endDate ? new Date(endDate).toLocaleDateString() : 'End'}`;
+  // CHANGE: Format Date Range nicely to show user the filtered period
+  const startStr = startDate ? new Date(startDate).toLocaleDateString('en-PH') : 'All Time';
+  const endStr = endDate ? new Date(endDate).toLocaleDateString('en-PH') : 'Present';
+  const rangeText = startDate || endDate ? `${startStr} - ${endStr}` : 'All Time History';
+  
   doc.text(`Period: ${rangeText}`, startX, reportTitleY + 26, { align: 'right', width: pageWidth });
 
-  // -- Calculate Summary --
-  const formatter = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+  // -- Currency Formatter Setup (Updated to use PHP code) --
+  const formatter = new Intl.NumberFormat('en-PH', { 
+      style: 'currency', 
+      currency: 'PHP',
+      currencyDisplay: 'code' // This forces "PHP 1,200.00" output
+  });
+
+  // -- Calculate Summary (This works for Month/Week because 'rows' is already filtered) --
   let totalRev = 0;
   let totalCount = 0;
   
@@ -138,16 +161,18 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
 
   // -- Summary Box (KPI) --
   const summaryY = 100;
-  doc.rect(startX, summaryY, pageWidth, 45).fill('#f8f9fa'); // Light gray background
+  doc.rect(startX, summaryY, pageWidth, 45).fill('#f8f9fa');
   doc.fillColor('#000000');
   
-  // Draw KPIs columns
   const kpiY = summaryY + 15;
-  doc.fontSize(8).fillColor('#666666');
+  doc.fontSize(8).fillColor('#666666').font('Helvetica');
   doc.text('TOTAL REVENUE', startX + 20, kpiY);
-  doc.text(filterType === 'product' ? 'TOTAL PRODUCTS SOLD' : 'TOTAL ORDERS', startX + 200, kpiY);
+  // Dynamic label for count
+  doc.text(filterType === 'product' || filterType === 'predesign' ? 'TOTAL ITEMS SOLD' : 'TOTAL ORDERS', startX + 200, kpiY);
   
   doc.fontSize(14).fillColor('#000000').font('Helvetica-Bold');
+  
+  // Display Summary Values
   doc.text(formatter.format(totalRev), startX + 20, kpiY + 12);
   doc.text(String(totalCount), startX + 200, kpiY + 12);
 
@@ -155,7 +180,6 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
   const tableTop = summaryY + 60;
   let currentY = tableTop;
   
-  // Define Columns based on type
   let columns = [];
   if (filterType === 'product' || filterType === 'predesign') {
       columns = [
@@ -176,43 +200,43 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
 
   // Draw Header Function
   const drawHeader = (y) => {
-      doc.rect(startX, y, pageWidth, 20).fill('#333333'); // Dark Header
+      doc.rect(startX, y, pageWidth, 20).fill('#333333');
       let cx = startX;
       doc.fillColor('#FFFFFF').fontSize(8).font('Helvetica-Bold');
       columns.forEach(col => {
           const w = col.width * pageWidth;
-          // Add padding
           doc.text(col.label.toUpperCase(), cx + 5, y + 6, { width: w - 10, align: col.align });
           cx += w;
       });
   };
 
-  // Draw Initial Header
   drawHeader(currentY);
   currentY += 20;
 
   // -- Draw Rows --
-  doc.font('Helvetica').fontSize(9).fillColor('#000000');
+  doc.fontSize(9).fillColor('#000000').font('Helvetica');
   
+  if (rows.length === 0) {
+      doc.moveDown(2);
+      doc.fontSize(10).fillColor('#666666').text('No records found for this period.', { align: 'center' });
+  }
+
   rows.forEach((row, i) => {
-      // Check page overflow
       if (currentY > doc.page.height - 50) {
           doc.addPage();
           currentY = 50;
           drawHeader(currentY);
           currentY += 20;
-          doc.font('Helvetica').fontSize(9).fillColor('#000000');
+          doc.fontSize(9).fillColor('#000000').font('Helvetica');
       }
 
-      // Zebra Striping
       if (i % 2 === 0) {
           doc.rect(startX, currentY, pageWidth, 18).fill('#f9f9f9');
-          doc.fillColor('#000000'); // Reset fill color after rect
+          doc.fillColor('#000000');
       }
 
       let cx = startX;
       
-      // Prepare Data
       let rowData = [];
       if (filterType === 'product' || filterType === 'predesign') {
           rowData = [
@@ -223,15 +247,14 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
           ];
       } else {
           rowData = [
-              truncate(row.orderId, 15), // Shorten ID
-              new Date(row.date).toLocaleDateString(),
+              truncate(row.orderId, 15),
+              new Date(row.date).toLocaleDateString('en-PH'),
               truncate(row.customer, 20),
               row.isPaid ? 'Paid' : 'Unpaid',
               formatter.format(row.totalPrice)
           ];
       }
 
-      // Render Cells
       rowData.forEach((text, idx) => {
           const col = columns[idx];
           const w = col.width * pageWidth;
@@ -239,12 +262,11 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
           cx += w;
       });
 
-      currentY += 18; // Row height
+      currentY += 18;
   });
 
   doc.end();
 
-  // Buffer collection logic...
   const chunks = [];
   const pdfBuffer = await new Promise((resolve, reject) => {
     passthrough.on('data', c => chunks.push(c));
