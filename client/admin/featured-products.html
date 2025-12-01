@@ -237,14 +237,15 @@
       document.getElementById('empty-state').classList.add('hidden');
 
       try {
-        // Fetch from inventory API - get all items (limit high to get all)
-        const res = await fetch(`${API_BASE}/api/admin/inventory?limit=1000`, {
+        // Fetch from inventory API - only get items with type 'product'
+        const res = await fetch(`${API_BASE}/api/admin/inventory?limit=1000&type=product`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Failed to fetch inventory');
         const result = await res.json();
         // API returns { data: [...], pagination: {...}, alerts: {...} }
-        allItems = result.data || [];
+        // Filter to only show product type items (not fabric or pre-design)
+        allItems = (result.data || []).filter(item => item.type === 'product' && !item.isPreDesign);
         
         // Populate category filter
         populateCategoryFilter();
