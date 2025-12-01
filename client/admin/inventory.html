@@ -124,8 +124,10 @@
                             >
                                 <option value="all">All Status</option>
                                 <option value="in_stock">In Stock</option>
-                                <option value="low_stock">Low Stock</option>
-                                <option value="out_of_stock">Out of Stock</option>
+                                <option value="low_stock">Low Stock (Overall)</option>
+                                <option value="out_of_stock">Out of Stock (Overall)</option>
+                                <option value="size_low_stock">Size Low Stock</option>
+                                <option value="size_out_of_stock">Size Out of Stock</option>
                             </select>
                         </div>
 
@@ -1728,6 +1730,50 @@
                 if (sizesPriceEntries.length > 0) {
                     displayPrice = Math.min(...sizesPriceEntries.map(([size, price]) => price));
                 }
+
+                // Normalize sizesStatus (could be object or Map from backend)
+                let sizesStatusObj = item.sizesStatus || {};
+                if (typeof sizesStatusObj === 'string') {
+                    try { sizesStatusObj = JSON.parse(sizesStatusObj); } catch (e) { sizesStatusObj = {}; }
+                }
+
+                // Build per-size status badges
+                const threshold = item.lowStockThreshold || 10;
+                const getSizeStatusBadge = (size, qty) => {
+                    // First check if we have sizesStatus from backend
+                    const sizeStatus = sizesStatusObj[size];
+                    if (sizeStatus === 'out_of_stock' || qty === 0) {
+                        return '<span class="ml-1 px-1.5 py-0.5 text-[10px] font-bold text-red-700 bg-red-100 rounded">OUT</span>';
+                    } else if (sizeStatus === 'low_stock' || (qty > 0 && qty <= threshold)) {
+                        return '<span class="ml-1 px-1.5 py-0.5 text-[10px] font-bold text-yellow-700 bg-yellow-100 rounded">LOW</span>';
+                    }
+                    return '';
+                };
+
+                // Count sizes with issues
+                let lowStockSizesCount = 0;
+                let outOfStockSizesCount = 0;
+                if (item.sizesInventory && Object.keys(item.sizesInventory || {}).length > 0) {
+                    Object.keys(item.sizesInventory).forEach(s => {
+                        const qty = Number(item.sizesInventory[s] || 0);
+                        const sizeStatus = sizesStatusObj[s];
+                        if (sizeStatus === 'out_of_stock' || qty === 0) {
+                            outOfStockSizesCount++;
+                        } else if (sizeStatus === 'low_stock' || (qty > 0 && qty <= threshold)) {
+                            lowStockSizesCount++;
+                        }
+                    });
+                }
+
+                // Build size alert summary
+                let sizeAlertSummary = '';
+                if (outOfStockSizesCount > 0 || lowStockSizesCount > 0) {
+                    const alerts = [];
+                    if (outOfStockSizesCount > 0) alerts.push(`<span class="text-red-600 font-semibold">${outOfStockSizesCount} out</span>`);
+                    if (lowStockSizesCount > 0) alerts.push(`<span class="text-yellow-600 font-semibold">${lowStockSizesCount} low</span>`);
+                    sizeAlertSummary = `<div class="text-xs mt-1">${alerts.join(' · ')}</div>`;
+                }
+
                 return `
                     <tr class="${rowClass}">
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -1743,10 +1789,11 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             ${item.sizesInventory && Object.keys(item.sizesInventory || {}).length > 0 ? `
                                 <div class="text-sm text-gray-900">${Object.keys(item.sizesInventory).reduce((acc, s) => acc + Number(item.sizesInventory[s]||0), 0).toLocaleString()}</div>
+                                ${sizeAlertSummary}
                                 <div class="text-xs text-gray-500 mt-1">
-                                    <span class="sizes-short block max-w-[220px] truncate">${Object.keys(item.sizesInventory).map(s => `${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}`).join(' · ')}</span>
+                                    <span class="sizes-short block max-w-[220px] truncate">${Object.keys(item.sizesInventory).map(s => `${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}${getSizeStatusBadge(s, Number(item.sizesInventory[s]||0))}`).join(' · ')}</span>
                                     <button type="button" class="show-sizes-btn text-indigo-600 text-xs ml-2">Show</button>
-                                    <div class="sizes-full hidden text-xs text-gray-700 mt-1">${Object.keys(item.sizesInventory).map(s => `${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}`).join('<br>')}</div>
+                                    <div class="sizes-full hidden text-xs text-gray-700 mt-1">${Object.keys(item.sizesInventory).map(s => `<div class="flex items-center gap-1 py-0.5">${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}${getSizeStatusBadge(s, Number(item.sizesInventory[s]||0))}</div>`).join('')}</div>
                                 </div>
                             ` : `
                                 <div class="text-sm text-gray-900">${item.quantity.toLocaleString()}</div>
@@ -1842,12 +1889,21 @@
             const banner = document.getElementById('alert-banner');
             const message = document.getElementById('alert-message');
 
-            if (alerts.lowStockCount > 0 || alerts.outOfStockCount > 0) {
+            const hasProductAlerts = alerts.lowStockCount > 0 || alerts.outOfStockCount > 0;
+            const hasSizeAlerts = alerts.sizeLowStockCount > 0 || alerts.sizeOutOfStockCount > 0;
+
+            if (hasProductAlerts || hasSizeAlerts) {
                 const messages = [];
-                if (alerts.lowStockCount > 0) messages.push(`${alerts.lowStockCount} item(s) running low on stock`);
-                if (alerts.outOfStockCount > 0) messages.push(`${alerts.outOfStockCount} item(s) out of stock`);
                 
-                message.innerHTML = `<strong>Alert:</strong> ${messages.join(', ')}`;
+                // Product-level alerts
+                if (alerts.outOfStockCount > 0) messages.push(`<span class="text-red-600 font-semibold">${alerts.outOfStockCount} product(s) out of stock</span>`);
+                if (alerts.lowStockCount > 0) messages.push(`<span class="text-yellow-600 font-semibold">${alerts.lowStockCount} product(s) low stock</span>`);
+                
+                // Size-level alerts
+                if (alerts.sizeOutOfStockCount > 0) messages.push(`<span class="text-red-500">${alerts.sizeOutOfStockCount} size(s) out of stock</span>`);
+                if (alerts.sizeLowStockCount > 0) messages.push(`<span class="text-yellow-500">${alerts.sizeLowStockCount} size(s) low stock</span>`);
+                
+                message.innerHTML = `<strong>Alert:</strong> ${messages.join(' · ')}`;
                 banner.classList.remove('hidden');
             } else {
                 banner.classList.add('hidden');

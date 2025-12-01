@@ -675,3 +675,48 @@ exports.completeOrder = async (req, res) => {
         return res.status(500).json({ success: false, msg: 'Server Error' });
     }
 };
+
+// @desc    Get loyalty progress for the current user
+// @route   GET /api/orders/loyalty-progress
+// @access  Private
+exports.getLoyaltyProgress = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth(); // 0-based
+        const monthStart = new Date(year, month, 1, 0, 0, 0, 0);
+        const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+        // Count completed orders this month
+        const completedOrdersThisMonth = await Order.countDocuments({
+            user: userId,
+            status: { $in: ['Delivered', 'Completed'] },
+            $or: [
+                { deliveredAt: { $gte: monthStart, $lte: monthEnd } },
+                { updatedAt: { $gte: monthStart, $lte: monthEnd } }
+            ]
+        });
+
+        // Check if user already has this month's loyalty voucher
+        const mm = String(month + 1).padStart(2, '0');
+        const loyaltyCode = `LOYALTY-${year}${mm}`;
+        
+        const user = await User.findById(userId).select('vouchers');
+        const hasEarnedLoyaltyVoucherThisMonth = (user?.vouchers || []).some(v => v.code === loyaltyCode);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                completedOrdersThisMonth,
+                threshold: 10,
+                hasEarnedLoyaltyVoucherThisMonth,
+                currentMonth: `${year}-${mm}`,
+                loyaltyVoucherValue: 20
+            }
+        });
+    } catch (error) {
+        console.error('[Loyalty Progress] Error:', error);
+        res.status(500).json({ success: false, msg: 'Failed to get loyalty progress' });
+    }
+};

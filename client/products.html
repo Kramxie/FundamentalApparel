@@ -122,35 +122,12 @@
 
                         <div class="mb-8">
                             <h3 class="font-semibold text-gray-800 mb-3 text-sm uppercase tracking-wide">Category</h3>
-                            <div class="space-y-2.5">
+                            <div id="category-filters" class="space-y-2.5">
                                 <label class="flex items-center cursor-pointer hover:text-indigo-600 transition">
                                     <input type="radio" name="category" value="" class="form-radio text-indigo-600 focus:ring-indigo-600 h-4 w-4" checked>
                                     <span class="ml-3 text-gray-600 text-sm">All Products</span>
                                 </label>
-                                <label class="flex items-center cursor-pointer hover:text-indigo-600 transition">
-                                    <input type="radio" name="category" value="Jersey" class="form-radio text-indigo-600 focus:ring-indigo-600 h-4 w-4">
-                                    <span class="ml-3 text-gray-600 text-sm">Jersey</span>
-                                </label>
-                                <label class="flex items-center cursor-pointer hover:text-indigo-600 transition">
-                                    <input type="radio" name="category" value="Shorts" class="form-radio text-indigo-600 focus:ring-indigo-600 h-4 w-4">
-                                    <span class="ml-3 text-gray-600 text-sm">Shorts</span>
-                                </label>
-                                <label class="flex items-center cursor-pointer hover:text-indigo-600 transition">
-                                    <input type="radio" name="category" value="Outwears" class="form-radio text-indigo-600 focus:ring-indigo-600 h-4 w-4">
-                                    <span class="ml-3 text-gray-600 text-sm">Outwears</span>
-                                </label>
-                                <label class="flex items-center cursor-pointer hover:text-indigo-600 transition">
-                                    <input type="radio" name="category" value="Lab Coats" class="form-radio text-indigo-600 focus:ring-indigo-600 h-4 w-4">
-                                    <span class="ml-3 text-gray-600 text-sm">Lab Coats</span>
-                                </label>
-                                <label class="flex items-center cursor-pointer hover:text-indigo-600 transition">
-                                    <input type="radio" name="category" value="Printing Machine" class="form-radio text-indigo-600 focus:ring-indigo-600 h-4 w-4">
-                                    <span class="ml-3 text-gray-600 text-sm">Printing Machines</span>
-                                </label>
-                                <label class="flex items-center cursor-pointer hover:text-indigo-600 transition">
-                                    <input type="radio" name="category" value="Banner" class="form-radio text-indigo-600 focus:ring-indigo-600 h-4 w-4">
-                                    <span class="ml-3 text-gray-600 text-sm">Banner</span>
-                                </label>
+                                <!-- Categories will be loaded dynamically here -->
                             </div>
                         </div>
 
@@ -240,8 +217,10 @@
             const searchInput = document.getElementById('search');
             const minRatingSelect = document.getElementById('min-rating');
             const clearFiltersBtn = document.getElementById('clear-filters');
+            const categoryFiltersContainer = document.getElementById('category-filters');
 
             let allProducts = [];
+            let allCategories = [];
 
             // --- UI STATE MANAGEMENT ---
             function setLoggedOutUI() {
@@ -295,6 +274,59 @@
             })();
 
             // --- PRODUCT LOGIC ---
+            async function fetchCategories() {
+                try {
+                    const response = await fetch(`${API}/api/categories`);
+                    if (!response.ok) throw new Error('Failed to fetch categories');
+                    const result = await response.json();
+                    
+                    if (result.success && result.data) {
+                        allCategories = result.data;
+                        renderCategoryFilters();
+                    }
+                } catch (error) {
+                    console.error('Error fetching categories:', error);
+                    // Keep the "All Products" option even if fetch fails
+                }
+            }
+
+            function renderCategoryFilters() {
+                if (!categoryFiltersContainer) return;
+                
+                // Keep the "All Products" option and add dynamic categories
+                const allProductsOption = categoryFiltersContainer.querySelector('input[value=""]')?.parentElement;
+                
+                // Clear existing category options (except "All Products")
+                categoryFiltersContainer.innerHTML = '';
+                
+                // Re-add "All Products"
+                if (allProductsOption) {
+                    categoryFiltersContainer.appendChild(allProductsOption);
+                } else {
+                    // Fallback if "All Products" was removed
+                    categoryFiltersContainer.innerHTML = `
+                        <label class="flex items-center cursor-pointer hover:text-indigo-600 transition">
+                            <input type="radio" name="category" value="" class="form-radio text-indigo-600 focus:ring-indigo-600 h-4 w-4" checked>
+                            <span class="ml-3 text-gray-600 text-sm">All Products</span>
+                        </label>
+                    `;
+                }
+                
+                // Add dynamic categories from database
+                allCategories.forEach(category => {
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center cursor-pointer hover:text-indigo-600 transition';
+                    label.innerHTML = `
+                        <input type="radio" name="category" value="${category.name}" class="form-radio text-indigo-600 focus:ring-indigo-600 h-4 w-4">
+                        <span class="ml-3 text-gray-600 text-sm">${category.name}</span>
+                    `;
+                    categoryFiltersContainer.appendChild(label);
+                    
+                    // Add event listener for the new radio button
+                    label.querySelector('input').addEventListener('change', applyFiltersAndSort);
+                });
+            }
+
             async function fetchProducts() {
                 try {
                     // Exclude pre-design products from the public products listing
@@ -463,9 +495,7 @@
                 applyFiltersAndSort();
             });
 
-            document.querySelectorAll('input[name="category"]').forEach(radio => {
-                radio.addEventListener('change', applyFiltersAndSort);
-            });
+            // Note: Category radio buttons are now added dynamically in renderCategoryFilters()
 
             minRatingSelect.addEventListener('change', applyFiltersAndSort);
             sortBy.addEventListener('change', applyFiltersAndSort);
@@ -479,8 +509,11 @@
                 applyFiltersAndSort();
             });
 
-            // Initial Load
-            fetchProducts();
+            // Initial Load - Fetch categories first, then products
+            (async () => {
+                await fetchCategories();
+                await fetchProducts();
+            })();
         });
     </script>
 

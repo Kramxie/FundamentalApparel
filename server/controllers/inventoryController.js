@@ -84,13 +84,23 @@ exports.getAllInventory = async (req, res) => {
 
         // Build query
         let query = {};
+        let filterBySizeStatus = null; // Will be used for post-query filtering
 
         if (type && type !== 'all') {
             query.type = type.toLowerCase();
         }
 
+        // Handle status filter including per-size status filters
         if (status && status !== 'all') {
-            query.status = status.toLowerCase();
+            if (status === 'size_low_stock') {
+                // Will filter in JavaScript after fetching
+                filterBySizeStatus = 'low_stock';
+            } else if (status === 'size_out_of_stock') {
+                // Will filter in JavaScript after fetching
+                filterBySizeStatus = 'out_of_stock';
+            } else {
+                query.status = status.toLowerCase();
+            }
         }
 
         if (search) {
@@ -101,23 +111,61 @@ exports.getAllInventory = async (req, res) => {
             ];
         }
 
-        // Calculate pagination
-        const skip = (parseInt(page) - 1) * parseInt(limit);
         const sortDirection = sortOrder === 'desc' ? -1 : 1;
         const sort = { [sortBy]: sortDirection };
 
-        // Execute query
-        const items = await Inventory.find(query)
-            .sort(sort)
-            .skip(skip)
-            .limit(parseInt(limit));
+        let items;
+        let total;
 
-        const total = await Inventory.countDocuments(query);
+        // If filtering by size status, we need to fetch all matching items first and filter in JS
+        if (filterBySizeStatus) {
+            const allItems = await Inventory.find(query).sort(sort);
+            
+            // Filter items that have at least one size with the target status
+            const filteredItems = allItems.filter(item => {
+                if (!item.sizesStatus || item.sizesStatus.size === 0) return false;
+                let hasMatchingStatus = false;
+                item.sizesStatus.forEach((sizeStatus) => {
+                    if (sizeStatus === filterBySizeStatus) hasMatchingStatus = true;
+                });
+                return hasMatchingStatus;
+            });
+
+            total = filteredItems.length;
+            const skip = (parseInt(page) - 1) * parseInt(limit);
+            items = filteredItems.slice(skip, skip + parseInt(limit));
+        } else {
+            // Regular query with pagination
+            const skip = (parseInt(page) - 1) * parseInt(limit);
+            items = await Inventory.find(query)
+                .sort(sort)
+                .skip(skip)
+                .limit(parseInt(limit));
+            total = await Inventory.countDocuments(query);
+        }
+
         const totalPages = Math.ceil(total / parseInt(limit));
 
-        // Get low stock count
+        // Get low stock count (overall product level)
         const lowStockCount = await Inventory.countDocuments({ status: 'low_stock' });
         const outOfStockCount = await Inventory.countDocuments({ status: 'out_of_stock' });
+
+        // Count per-size stock issues across all inventory items
+        let sizeLowStockCount = 0;
+        let sizeOutOfStockCount = 0;
+        try {
+            const allItems = await Inventory.find({});
+            allItems.forEach(item => {
+                if (item.sizesStatus && item.sizesStatus.size > 0) {
+                    item.sizesStatus.forEach((sizeStatus) => {
+                        if (sizeStatus === 'low_stock') sizeLowStockCount++;
+                        if (sizeStatus === 'out_of_stock') sizeOutOfStockCount++;
+                    });
+                }
+            });
+        } catch (e) {
+            console.error('Error counting per-size alerts:', e);
+        }
 
         res.status(200).json({
             success: true,
@@ -130,7 +178,9 @@ exports.getAllInventory = async (req, res) => {
             },
             alerts: {
                 lowStockCount,
-                outOfStockCount
+                outOfStockCount,
+                sizeLowStockCount,
+                sizeOutOfStockCount
             }
         });
     } catch (error) {

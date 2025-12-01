@@ -125,6 +125,47 @@ async function getSalesReport(startDate, endDate, options={}){
   return rows;
 }
 
+// New: getSalesSummaryReport returns aggregated sales data.
+async function getSalesSummaryReport(startDate, endDate, options = {}) {
+  const match = { status: { $ne: 'Cancelled' } };
+  if (startDate) { match.createdAt = Object.assign({}, match.createdAt || {}, { $gte: startDate }); }
+  if (endDate) { match.createdAt = Object.assign({}, match.createdAt || {}, { $lte: endDate }); }
+
+  const sales = await Order.aggregate([
+    { $match: match },
+    { $unwind: '$orderItems' },
+    {
+      $group: {
+        _id: '$orderItems.product',
+        productName: { $first: '$orderItems.name' },
+        quantitySold: { $sum: '$orderItems.quantity' },
+        totalRevenue: { $sum: { $multiply: ['$orderItems.quantity', '$orderItems.price'] } }
+      }
+    },
+    {
+      $lookup: {
+        from: 'products',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'product'
+      }
+    },
+    {
+      $unwind: { path: '$product', preserveNullAndEmptyArrays: true }
+    },
+    {
+      $project: {
+        'Product ID': '$_id',
+        'Product Name': { $ifNull: ['$product.name', '$productName'] },
+        'Quantity Sold': '$quantitySold',
+        'Total Revenue': '$totalRevenue'
+      }
+    }
+  ]);
+
+  return sales;
+}
+
 // Export handlers
 exports.exportSalesCsv = async (req, res) => {
   try {
@@ -144,8 +185,8 @@ exports.exportSalesCsv = async (req, res) => {
     if (end) end.setHours(23,59,59,999);
     const includeCustom = q.includeCustom === 'true' || q.includeCustom === true;
 
-    const rows = await getSalesReport(start, end, { includeCustom });
-    const columns = ['order_id','order_date','customer_name','product_name','quantity','unit_price','vat','discount','delivery_fee','payment_method','payment_status','order_status','downpayment_amount','balance_amount','total_revenue'];
+    const rows = await getSalesSummaryReport(start, end, { includeCustom });
+    const columns = ['Product ID', 'Product Name', 'Quantity Sold', 'Total Revenue'];
     const csv = jsonToCsv(rows, columns);
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="sales_export_${Date.now()}.csv"`);

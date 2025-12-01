@@ -103,6 +103,12 @@ const inventorySchema = new mongoose.Schema({
         of: Number,
         default: {}
     },
+    // Map of size -> status for per-size inventory (e.g. { "S": "in_stock", "M": "low_stock" })
+    sizesStatus: {
+        type: Map,
+        of: String,
+        default: {}
+    },
     // Map of size -> reserved quantity for that size
     reservedSizes: {
         type: Map,
@@ -145,31 +151,50 @@ inventorySchema.index({ type: 1, status: 1 });
 
 // Auto-update status based on quantity
 inventorySchema.pre('save', function(next) {
-    // If per-size inventory exists, derive overall quantity from sum of sizes
     try {
         const sizesInv = this.sizesInventory || {};
         let derivedTotal = 0;
-        if (sizesInv && typeof sizesInv === 'object' && Object.keys(sizesInv || {}).length > 0) {
-            // sizesInventory may be a Map in mongoose; handle both
-            if (sizesInv instanceof Map) {
-                for (const v of sizesInv.values()) {
-                    derivedTotal += Number(v || 0);
+        
+        // Clear previous size statuses
+        this.sizesStatus = new Map();
+
+        if (sizesInv && typeof sizesInv === 'object' && Object.keys(sizesInv).length > 0) {
+            const processSize = (qty, size) => {
+                derivedTotal += Number(qty || 0);
+                let sizeStatus = 'in_stock';
+                if (qty === 0) {
+                    sizeStatus = 'out_of_stock';
+                } else if (qty <= this.lowStockThreshold) {
+                    sizeStatus = 'low_stock';
                 }
+                this.sizesStatus.set(size, sizeStatus);
+            };
+
+            if (sizesInv instanceof Map) {
+                sizesInv.forEach(processSize);
             } else {
-                for (const k of Object.keys(sizesInv)) {
-                    derivedTotal += Number(sizesInv[k] || 0);
+                for (const size in sizesInv) {
+                    processSize(sizesInv[size], size);
                 }
             }
             this.quantity = derivedTotal;
         }
 
+        // Set overall status based on size statuses
+        const sizeStatuses = Array.from(this.sizesStatus.values());
+
         if (this.quantity === 0) {
             this.status = 'out_of_stock';
+        } else if (sizeStatuses.length > 0 && sizeStatuses.every(s => s === 'out_of_stock')) {
+            this.status = 'out_of_stock';
+        } else if (sizeStatuses.length > 0 && sizeStatuses.some(s => s === 'low_stock')) {
+            this.status = 'low_stock';
         } else if (this.quantity <= this.lowStockThreshold) {
             this.status = 'low_stock';
         } else {
             this.status = 'in_stock';
         }
+
     } catch (e) {
         // Fallback to previous behavior on error
         if (this.quantity === 0) {
@@ -182,5 +207,22 @@ inventorySchema.pre('save', function(next) {
     }
     next();
 });
+
+// Helper to get sizes that are low or out of stock
+inventorySchema.methods.getLowStockSizes = function() {
+    const lowStockSizes = [];
+    if (this.sizesStatus && this.sizesStatus.size > 0) {
+        this.sizesStatus.forEach((status, size) => {
+            if (status === 'low_stock' || status === 'out_of_stock') {
+                lowStockSizes.push({
+                    size,
+                    status,
+                    quantity: this.sizesInventory.get(size) || 0
+                });
+            }
+        });
+    }
+    return lowStockSizes;
+};
 
 module.exports = mongoose.model('Inventory', inventorySchema);

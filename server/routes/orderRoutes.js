@@ -12,7 +12,8 @@ const {
     updateOrderStatus,
     getOrderById,
     cancelOrder // <-- NEW
-    ,completeOrder
+    ,completeOrder,
+    getLoyaltyProgress
 } = require('../controllers/orderController');
 const { createReturnRequest } = require('../controllers/returnController');
 
@@ -73,6 +74,9 @@ router.post('/:id/returns', returnsUpload.fields([{ name: 'videos' }, { name: 'i
 
 // User orders
 router.get('/myorders', getMyOrders);
+
+// Loyalty progress for the logged-in user
+router.get('/loyalty-progress', getLoyaltyProgress);
 
 // Admin routes (literal)
 // Orders listing and status management require permissions
