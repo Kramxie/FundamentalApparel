@@ -219,39 +219,44 @@
         if (okBtn) okBtn.addEventListener('click', ()=>{ try{ if (typeof modalConfirmCallback === 'function') modalConfirmCallback(); }catch(e){ console.error('confirm-cb', e); } finally{ modalConfirmCallback = null; hideOverlay(); } });
       });
 
-      // Edit User modal buttons
+      // Edit User / Role modal buttons - attach after DOM ready because modals are appended later
       let currentEditingUserId = null;
-      document.getElementById('edit-user-cancel').addEventListener('click', ()=>{ currentEditingUserId = null; hideOverlay(); });
-      document.getElementById('edit-user-save').addEventListener('click', async ()=>{
-        try{
-          const name = document.getElementById('edit-user-name').value||'';
-          const email = document.getElementById('edit-user-email').value||'';
-          const role = document.getElementById('edit-user-role').value||'';
-          if (!currentEditingUserId) return showMsg(document.getElementById('edit-user-msg'), 'No user selected', false);
-          const body = {};
-          if (name) body.name = name;
-          if (email) body.email = email;
-          if (role) body.role = role;
-          const res = await fetch(`${API}/api/admin/users/${encodeURIComponent(currentEditingUserId)}`, { method: 'PATCH', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify(body) });
-          const j = await res.json(); if (!res.ok){ showMsg(document.getElementById('edit-user-msg'), j.msg||'Failed update', false); return; }
-          showMsg(document.getElementById('edit-user-msg'), 'Saved', true);
-          hideOverlay(); currentEditingUserId = null; loadStaff();
-        }catch(e){ console.error('saveEditUser', e); showMsg(document.getElementById('edit-user-msg'),'Error saving', false); }
-      });
-
-      // Edit Role modal buttons
       let currentEditingRole = null;
-      document.getElementById('edit-role-cancel').addEventListener('click', ()=>{ currentEditingRole = null; hideOverlay(); });
-      document.getElementById('edit-role-save').addEventListener('click', async ()=>{
-        try{
-          const name = document.getElementById('edit-role-name').value && document.getElementById('edit-role-name').value.trim();
-          const permsRaw = document.getElementById('edit-role-perms').value || '';
-          const perms = permsRaw.split(',').map(p=>p.trim()).filter(Boolean);
-          if (!currentEditingRole) return showMsg(document.getElementById('edit-role-msg'),'No role selected', false);
-          const res = await fetch(`${API}/api/admin/settings/roles/${encodeURIComponent(currentEditingRole)}`, { method: 'PATCH', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ name, permissions: perms }) });
-          const j = await res.json(); if (!res.ok){ showMsg(document.getElementById('edit-role-msg'), j.msg||'Failed update', false); return; }
-          availableRoles = j.data; renderRoles(); hideOverlay(); currentEditingRole = null; showMsg(usersMsg,'Role updated',true); toast('Role updated', true);
-        }catch(e){ console.error('saveRole', e); showMsg(document.getElementById('edit-role-msg'),'Error saving', false); }
+      document.addEventListener('DOMContentLoaded', ()=>{
+        const editUserCancel = document.getElementById('edit-user-cancel');
+        const editUserSave = document.getElementById('edit-user-save');
+        if (editUserCancel) editUserCancel.addEventListener('click', ()=>{ currentEditingUserId = null; hideOverlay(); });
+        if (editUserSave) editUserSave.addEventListener('click', async ()=>{
+          try{
+            const name = document.getElementById('edit-user-name').value||'';
+            const email = document.getElementById('edit-user-email').value||'';
+            const role = document.getElementById('edit-user-role').value||'';
+            if (!currentEditingUserId) return showMsg(document.getElementById('edit-user-msg'), 'No user selected', false);
+            const body = {};
+            if (name) body.name = name;
+            if (email) body.email = email;
+            if (role) body.role = role;
+            const res = await fetch(`${API}/api/admin/users/${encodeURIComponent(currentEditingUserId)}`, { method: 'PATCH', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify(body) });
+            const j = await res.json(); if (!res.ok){ showMsg(document.getElementById('edit-user-msg'), j.msg||'Failed update', false); return; }
+            showMsg(document.getElementById('edit-user-msg'), 'Saved', true);
+            hideOverlay(); currentEditingUserId = null; loadStaff();
+          }catch(e){ console.error('saveEditUser', e); showMsg(document.getElementById('edit-user-msg'),'Error saving', false); }
+        });
+
+        const editRoleCancel = document.getElementById('edit-role-cancel');
+        const editRoleSave = document.getElementById('edit-role-save');
+        if (editRoleCancel) editRoleCancel.addEventListener('click', ()=>{ currentEditingRole = null; hideOverlay(); });
+        if (editRoleSave) editRoleSave.addEventListener('click', async ()=>{
+          try{
+            const name = document.getElementById('edit-role-name').value && document.getElementById('edit-role-name').value.trim();
+            const permsRaw = document.getElementById('edit-role-perms').value || '';
+            const perms = permsRaw.split(',').map(p=>p.trim()).filter(Boolean);
+            if (!currentEditingRole) return showMsg(document.getElementById('edit-role-msg'),'No role selected', false);
+            const res = await fetch(`${API}/api/admin/settings/roles/${encodeURIComponent(currentEditingRole)}`, { method: 'PATCH', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ name, permissions: perms }) });
+            const j = await res.json(); if (!res.ok){ showMsg(document.getElementById('edit-role-msg'), j.msg||'Failed update', false); return; }
+            availableRoles = j.data; renderRoles(); hideOverlay(); currentEditingRole = null; showMsg(usersMsg,'Role updated',true); toast('Role updated', true);
+          }catch(e){ console.error('saveRole', e); showMsg(document.getElementById('edit-role-msg'),'Error saving', false); }
+        });
       });
 
       async function loadContent(key, setters){
