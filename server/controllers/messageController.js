@@ -285,3 +285,78 @@ exports.uploadImage = async (req, res) => {
         });
     }
 };
+
+// @desc    Delete a single message
+// @route   DELETE /api/messages/:id
+// @access  Private/Admin
+exports.deleteMessage = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Only admin can delete messages
+        if (req.user.role !== 'admin' && req.user.role !== 'employee') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to delete messages'
+            });
+        }
+
+        const message = await Message.findById(id);
+        if (!message) {
+            return res.status(404).json({
+                success: false,
+                message: 'Message not found'
+            });
+        }
+
+        await Message.findByIdAndDelete(id);
+
+        res.status(200).json({
+            success: true,
+            message: 'Message deleted successfully'
+        });
+    } catch (error) {
+        console.error('Delete Message Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete message'
+        });
+    }
+};
+
+// @desc    Delete entire conversation with a customer
+// @route   DELETE /api/messages/conversation/:customerId
+// @access  Private/Admin
+exports.deleteConversation = async (req, res) => {
+    try {
+        const { customerId } = req.params;
+        
+        // Only admin can delete conversations
+        if (req.user.role !== 'admin' && req.user.role !== 'employee') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to delete conversations'
+            });
+        }
+
+        // Delete all messages where sender or recipient is the customer
+        const result = await Message.deleteMany({
+            $or: [
+                { sender: customerId },
+                { recipient: customerId }
+            ]
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Deleted ${result.deletedCount} messages`,
+            deletedCount: result.deletedCount
+        });
+    } catch (error) {
+        console.error('Delete Conversation Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete conversation'
+        });
+    }
+};

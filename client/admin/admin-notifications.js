@@ -167,6 +167,18 @@
     document.getElementById('admin-notif-refresh').addEventListener('click', refresh);
   }
 
+  // Check inventory for low stock and create notification if needed
+  async function checkLowStockInventory(){
+    try{
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+      if (!token) return;
+      await fetch(`${API}/api/admin/notifications/check-low-stock`, { 
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` } 
+      });
+    }catch(e){ console.debug('check low stock failed', e); }
+  }
+
   async function fetchNotifications(){
     try{
       const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
@@ -193,11 +205,14 @@
     if(list.length===0){ listEl.innerHTML = '<div class="p-3 text-xs text-gray-500">No notifications</div>'; return; }
     list.forEach(n=>{
       const row = document.createElement('div');
-      row.className = 'p-3 border-b flex items-start gap-2';
+      const isLowStock = n.type === 'low_stock';
+      const isUrgent = isLowStock && !n.read;
+      row.className = `p-3 border-b flex items-start gap-2 ${isUrgent ? 'bg-red-50 border-l-4 border-l-red-500' : ''}`;
+      const icon = isLowStock ? '<i class="fas fa-exclamation-triangle text-red-500 mr-1"></i>' : '';
       row.innerHTML = `
         <div class="flex-1">
           <div class="flex items-center justify-between">
-            <div class="text-sm font-semibold">${escapeHtml(n.title)}</div>
+            <div class="text-sm font-semibold ${isLowStock ? 'text-red-700' : ''}">${icon}${escapeHtml(n.title)}</div>
             <div class="text-xs text-gray-400">${new Date(n.createdAt).toLocaleString()}</div>
           </div>
           <div class="text-xs text-gray-700 mt-1">${escapeHtml(stripHtml(n.body || ''))}</div>
@@ -227,6 +242,9 @@
   function escapeHtml(s){ return String(s||'').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
 
   async function refresh(){
+    // First check inventory for low stock items (creates notification if needed)
+    await checkLowStockInventory();
+    // Then fetch all notifications
     const list = await fetchNotifications();
     renderNotifications(list);
   }
@@ -236,7 +254,8 @@
     try{
       createNotificationUi();
       refresh();
-      setInterval(refresh, 60000);
+      // Check every 5 minutes for low stock
+      setInterval(refresh, 300000);
     }catch(e){ console.debug('admin-notif init failed', e); }
   }
 

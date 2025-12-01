@@ -41,6 +41,102 @@ async function notifyLowStock(items) {
   }
 }
 
+// Check inventory for low stock items and create notification if any found
+// This can be called on dashboard load to ensure admins see current low stock status
+async function checkAndNotifyLowStock() {
+  try {
+    const Inventory = require('../models/Inventory');
+    
+    // Find all items with low_stock or out_of_stock status
+    const lowStockItems = await Inventory.find({ 
+      status: { $in: ['low_stock', 'out_of_stock'] },
+      type: 'product' // Only products, not fabric
+    }).select('name quantity sizesInventory sizesStatus lowStockThreshold reservedSizes');
+    
+    if (lowStockItems.length === 0) return { created: false, count: 0 };
+    
+    // Build items array with per-size details
+    const itemsToNotify = [];
+    lowStockItems.forEach(item => {
+      const sizesInv = item.sizesInventory instanceof Map 
+        ? Object.fromEntries(item.sizesInventory) 
+        : (item.sizesInventory || {});
+      const reserved = item.reservedSizes instanceof Map
+        ? Object.fromEntries(item.reservedSizes)
+        : (item.reservedSizes || {});
+      const sizesStatus = item.sizesStatus instanceof Map
+        ? Object.fromEntries(item.sizesStatus)
+        : (item.sizesStatus || {});
+      
+      const threshold = item.lowStockThreshold || 5;
+      
+      if (Object.keys(sizesInv).length > 0) {
+        // Per-size inventory
+        Object.keys(sizesInv).forEach(sz => {
+          const total = Number(sizesInv[sz] || 0);
+          const resv = Number(reserved[sz] || 0);
+          const avail = Math.max(0, total - resv);
+          const sizeStatus = sizesStatus[sz];
+          // Only notify if status is explicitly low/out OR available is at or below threshold
+          if (sizeStatus === 'low_stock' || sizeStatus === 'out_of_stock' || avail <= threshold) {
+            itemsToNotify.push({ 
+              id: item._id, 
+              name: item.name, 
+              size: sz, 
+              available: total, // Show actual stock, not available after reserved
+              reserved: resv,
+              status: avail === 0 ? 'out_of_stock' : 'low_stock'
+            });
+          }
+        });
+      } else {
+        // Total quantity only
+        itemsToNotify.push({ 
+          id: item._id, 
+          name: item.name, 
+          available: item.quantity || 0,
+          status: item.status
+        });
+      }
+    });
+    
+    if (itemsToNotify.length === 0) return { created: false, count: 0 };
+    
+    // Check if we already have a recent unread low_stock notification (within last hour)
+    const recentNotif = await Notification.findOne({ 
+      type: 'low_stock', 
+      read: false,
+      createdAt: { $gte: new Date(Date.now() - 60 * 60 * 1000) } // Last hour
+    });
+    
+    if (recentNotif) {
+      // Update existing notification with current data
+      const title = 'Low stock alert';
+      const bodyLines = itemsToNotify.map(it => {
+        const statusLabel = it.status === 'out_of_stock' ? '⚠️ OUT OF STOCK' : '⚠️ Low';
+        if(it.size) return `${it.name} — size ${it.size}: ${statusLabel} (${it.available} available)`;
+        return `${it.name}: ${statusLabel} (${it.available} available)`;
+      });
+      const body = `<p>The following inventory items need attention:</p><ul>${bodyLines.map(l=>`<li>${l}</li>`).join('')}</ul>`;
+      
+      recentNotif.body = body;
+      recentNotif.meta = { items: itemsToNotify };
+      recentNotif.updatedAt = new Date();
+      await recentNotif.save();
+      
+      return { created: false, updated: true, count: itemsToNotify.length };
+    }
+    
+    // Create new notification
+    await notifyLowStock(itemsToNotify);
+    return { created: true, count: itemsToNotify.length };
+    
+  } catch (e) {
+    console.error('[Notifications] checkAndNotifyLowStock error', e && e.message);
+    return { error: e.message };
+  }
+}
+
 // Helper: Notify admin of new order
 async function notifyNewOrder(order) {
   try {
@@ -194,12 +290,26 @@ exports.notifyNewOrder = notifyNewOrder;
 exports.notifyPaymentReceived = notifyPaymentReceived;
 exports.notifyNewQuote = notifyNewQuote;
 exports.sendDailySummary = sendDailySummary;
+exports.checkAndNotifyLowStock = checkAndNotifyLowStock;
 
 
-// Admin: list notifications (most recent first)
+// Admin: list notifications (prioritize low_stock alerts, unread first, then by date)
 exports.listAdminNotifications = async (req, res) => {
   try {
     const items = await Notification.find({ $or: [ { targetRole: 'admin' }, { targetUser: req.user._id } ] }).sort({ createdAt: -1 }).limit(200);
+    
+    // Sort: unread first, then low_stock type first, then by date descending
+    items.sort((a, b) => {
+      // Unread first
+      if (a.read !== b.read) return a.read ? 1 : -1;
+      // Low stock priority
+      const aIsLowStock = a.type === 'low_stock' ? 1 : 0;
+      const bIsLowStock = b.type === 'low_stock' ? 1 : 0;
+      if (aIsLowStock !== bIsLowStock) return bIsLowStock - aIsLowStock;
+      // Then by date
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    
     return res.json({ success: true, data: items });
   } catch (e) {
     console.error('[Notifications] listAdminNotifications', e);

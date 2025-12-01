@@ -10,7 +10,9 @@ const {
     sendMessage,
     markAsRead,
     getUnreadCount,
-    uploadImage
+    uploadImage,
+    deleteMessage,
+    deleteConversation
 } = require('../controllers/messageController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -65,5 +67,11 @@ router.get('/unread-count', getUnreadCount);
 
 // Upload image for message
 router.post('/upload', upload.single('image'), uploadImage);
+
+// Delete entire conversation with a customer (admin/employee only) - MUST be before /:id
+router.delete('/conversation/:customerId', authorize('admin', 'employee'), deleteConversation);
+
+// Delete a single message (admin/employee only)
+router.delete('/:id', authorize('admin', 'employee'), deleteMessage);
 
 module.exports = router;
