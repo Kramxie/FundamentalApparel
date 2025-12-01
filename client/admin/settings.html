@@ -3,49 +3,31 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Admin Settings</title>
+  <title>Admin Settings - About Us Editor</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style> body { font-family: 'Inter', sans-serif; } .thumb { width: 96px; height: 96px; object-fit: cover; }</style>
   <!-- Quill WYSIWYG editor -->
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .ql-editor { min-height: 120px; }
+    .thumb { width: 200px; height: 150px; object-fit: cover; }
+  </style>
 </head>
 <body class="bg-gray-100">
   <div class="flex min-h-screen bg-gray-100">
+    <!-- Desktop Sidebar -->
     <div id="admin-sidebar" class="hidden md:flex flex-col w-64 bg-white shadow-lg">
       <div class="flex items-center justify-center h-16 bg-white shadow-md"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
       <div class="flex flex-col flex-grow p-4">
         <nav class="flex-grow space-y-2">
           <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
           <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span></a>
-          <a href="manage-categories.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-                        <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Manage Categories</span>
-                    </a>
+          <a href="manage-categories.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-folder w-6"></i><span class="ml-3">Manage Categories</span></a>
           <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span></a>
           <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span></a>
-          <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span></a>
-          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span></a>
-          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span></a>
-          <a href="settings.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
-        <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span></a>
-        </nav>
-      </div>
-    </div>
-
-    <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform -translate-x-full transition-transform z-50 md:hidden">
-      <div class="flex items-center justify-between h-16 bg-white shadow-md px-3">
-        <div class="flex items-center"><span class="text-2xl font-bold text-indigo-600">Admin Panel</span></div>
-        <button id="mobile-sidebar-close" class="p-2 rounded-md hover:bg-gray-100 text-gray-700"><i class="fas fa-times"></i></button>
-      </div>
-      <div class="flex flex-col flex-grow p-4">
-        <nav class="flex-grow space-y-2">
-            <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
-          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span></a>
-          <!-- Manage Products removed from sidebar -->
-          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span></a>
-          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span></a>
-          <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span></a>
+          <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-chart-line w-6"></i><span class="ml-3">Reports & Sales</span></a>
           <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span></a>
           <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span></a>
           <a href="settings.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
@@ -54,723 +36,348 @@
       </div>
     </div>
 
+    <!-- Mobile Sidebar -->
+    <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform -translate-x-full transition-transform z-50 md:hidden">
+      <div class="flex items-center justify-between h-16 bg-white shadow-md px-3">
+        <span class="text-2xl font-bold text-indigo-600">Admin Panel</span>
+        <button id="mobile-sidebar-close" class="p-2 rounded-md hover:bg-gray-100 text-gray-700"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span></a>
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span></a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span></a>
+          <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-chart-line w-6"></i><span class="ml-3">Reports & Sales</span></a>
+          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span></a>
+          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span></a>
+          <a href="settings.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
+          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md"><i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span></a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <header class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
         <div class="flex items-center gap-3">
           <button id="sidebar-toggle" class="md:hidden p-2 rounded bg-gray-100"><i class="fas fa-bars"></i></button>
-          <h1 class="text-lg font-semibold">Settings</h1>
+          <h1 class="text-lg font-semibold">Website Settings</h1>
         </div>
         <div class="flex items-center gap-4">
           <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"><i class="fas fa-sign-out-alt mr-2"></i>Logout</button>
         </div>
       </header>
 
-      <main class="p-6 bg-gray-50 min-h-screen">
-        <div class="max-w-5xl mx-auto space-y-6">
-          <!-- Settings submenu -->
-          <div class="bg-white p-4 rounded shadow mb-4">
-            <nav class="flex gap-3">
-              <button id="settings-store-tab" class="px-4 py-2 bg-gray-100 text-gray-700 rounded">Store Info</button>
-              <button id="settings-users-tab" class="px-4 py-2 bg-gray-100 text-gray-700 rounded">User & Roles</button>
-              <button id="settings-about-tab" class="px-4 py-2 bg-gray-100 text-gray-700 rounded">Website Content</button>
-            </nav>
-          </div>
-
-          <div id="store-panel" class="hidden bg-white p-6 rounded shadow">
-            <h2 class="text-lg font-semibold mb-3">Store Information</h2>
-            <div id="store-message" class="hidden p-3 rounded mb-3"></div>
-            <label class="block text-sm font-medium text-gray-700">Store Name</label>
-            <input id="store-name" class="w-full border p-2 rounded mb-3" />
-            <label class="block text-sm font-medium text-gray-700">Contact Email</label>
-            <input id="store-email" class="w-full border p-2 rounded mb-3" />
-            <label class="block text-sm font-medium text-gray-700">Phone</label>
-            <input id="store-phone" class="w-full border p-2 rounded mb-3" />
-            <label class="block text-sm font-medium text-gray-700">Address</label>
-            <textarea id="store-address" class="w-full border p-3 rounded h-24 mb-3"></textarea>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+      <main class="p-6 bg-gray-50 min-h-screen overflow-auto">
+        <div class="max-w-4xl mx-auto space-y-6">
+          
+          <!-- About Us Editor Panel -->
+          <div class="bg-white p-6 rounded-lg shadow">
+            <div class="flex items-center justify-between mb-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700">Logo</label>
-                <input id="store-logo-input" type="file" accept="image/*" class="mb-2" />
-                <div id="store-logo-preview"></div>
+                <h2 class="text-xl font-semibold text-gray-800">About Us Page Editor</h2>
+                <p class="text-sm text-gray-500">Edit the content displayed on your website's About Us page.</p>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Banner</label>
-                <input id="store-banner-input" type="file" accept="image/*" class="mb-2" />
-                <div id="store-banner-preview"></div>
+              <a href="../about-us.html" target="_blank" class="text-sm text-indigo-600 hover:underline flex items-center gap-1">
+                <i class="fas fa-external-link-alt"></i> View Live Page
+              </a>
+            </div>
+            
+            <div id="about-message" class="hidden p-3 rounded mb-4"></div>
+
+            <!-- Introduction Section -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-paragraph mr-1"></i> Introduction
+              </label>
+              <p class="text-xs text-gray-500 mb-2">This text appears at the top of the About Us page, describing your business mission.</p>
+              <div id="intro-editor" class="bg-white border rounded"></div>
+            </div>
+
+            <!-- Our Story Section -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-book-open mr-1"></i> Our Story
+              </label>
+              <p class="text-xs text-gray-500 mb-2">Tell customers about your company's history and journey.</p>
+              <div id="story-editor" class="bg-white border rounded"></div>
+            </div>
+
+            <!-- Main Image Section -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-image mr-1"></i> Main Image
+              </label>
+              <p class="text-xs text-gray-500 mb-3">The primary image displayed on the About Us page.</p>
+              <div class="flex flex-col sm:flex-row gap-4 items-start">
+                <div id="main-image-preview" class="border rounded p-2 bg-gray-50 min-w-[200px]">
+                  <img id="preview-img" src="" alt="Preview" class="thumb rounded hidden">
+                  <div id="no-image-msg" class="text-sm text-gray-400 p-4 text-center">No image uploaded</div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <input id="main-image-input" type="file" accept="image/*" class="text-sm">
+                  <button id="remove-image-btn" class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 w-fit">
+                    <i class="fas fa-trash mr-1"></i> Remove Image
+                  </button>
+                </div>
               </div>
             </div>
-            <div id="roles-section" class="mt-4 border p-3 rounded">
-              <h3 class="font-semibold mb-2">Roles</h3>
-              <div id="roles-list" class="mb-3"></div>
-              <div id="add-role-form" class="flex gap-2 items-center">
-                <input id="new-role-name" placeholder="Role name" class="border p-2 rounded" />
-                <input id="new-role-perms" placeholder="Comma-separated permissions" class="border p-2 rounded" />
-                <button id="add-role-btn" class="px-3 py-2 bg-indigo-600 text-white rounded">Add Role</button>
-              </div>
-            </div>
-              <!-- Modals removed from here and moved to end of document so overlay works across panels -->
-            <div class="flex justify-end gap-3">
-              <button id="store-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save Store</button>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
+              <button id="cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                <i class="fas fa-times mr-1"></i> Cancel Changes
+              </button>
+              <button id="save-btn" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                <i class="fas fa-save mr-1"></i> Save Changes
+              </button>
             </div>
           </div>
 
-          <div id="users-panel" class="hidden bg-white p-6 rounded shadow">
-            <h2 class="text-lg font-semibold mb-3">User & Role Management</h2>
-            <div id="users-message" class="hidden p-3 rounded mb-3"></div>
-            <div class="mb-4">
-              <button id="refresh-staff" class="px-3 py-2 bg-gray-100 rounded mr-2">Refresh</button>
-              <button id="show-add-staff" class="px-3 py-2 bg-indigo-600 text-white rounded">Add Staff</button>
-            </div>
-            <div id="staff-list" class="overflow-auto max-h-64 border rounded mb-4 p-3"></div>
-            <div id="add-staff-form" class="hidden border p-4 rounded">
-              <label class="block text-sm font-medium text-gray-700">Name</label>
-              <input id="staff-name" class="w-full border p-2 rounded mb-3" />
-              <label class="block text-sm font-medium text-gray-700">Email</label>
-              <input id="staff-email" class="w-full border p-2 rounded mb-3" />
-              <label class="block text-sm font-medium text-gray-700">Role</label>
-              <select id="staff-role" class="w-full border p-2 rounded mb-3"><option value="">Select role</option></select>
-              <div class="flex justify-end gap-3">
-                <button id="staff-cancel" class="px-3 py-2 bg-gray-200 rounded">Cancel</button>
-                <button id="staff-save" class="px-3 py-2 bg-indigo-600 text-white rounded">Save Staff</button>
-              </div>
-            </div>
-          </div>
-
-          <div id="about-panel" class="bg-white p-6 rounded shadow">
-            <h2 class="text-lg font-semibold mb-3">About Us (Mirror & Edit)</h2>
-            <div id="about-message" class="hidden p-3 rounded mb-3"></div>
-
-            <!-- Mirrored About Us layout (full page content inserted here). -->
-            <div id="about-mirror-wrapper" class="mb-4">
-              <div id="about-mirror" class="bg-white border p-3 rounded min-h-[320px]"></div>
-            </div>
-
-            <!-- Save/Cancel -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div class="flex-1">
-                <button id="about-cancel" class="w-full sm:w-auto px-4 py-2 bg-gray-200 rounded">Cancel</button>
-              </div>
-              <div class="flex-1 sm:flex sm:justify-end">
-                <button id="about-save" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
-              </div>
-            </div>
-          </div>
-
-          <div id="contact-panel" class="hidden bg-white p-6 rounded shadow">
-            <h2 class="text-lg font-semibold mb-3">Contact</h2>
-            <div id="contact-message" class="hidden p-3 rounded mb-3"></div>
-            <label class="block text-sm font-medium text-gray-700">Title</label>
-            <input id="contact-title" class="w-full border p-2 rounded mb-3" />
-            <label class="block text-sm font-medium text-gray-700">Content</label>
-            <textarea id="contact-body" class="w-full border p-3 rounded h-40 mb-3"></textarea>
-            <label class="block text-sm font-medium text-gray-700">Images</label>
-            <div id="contact-images" class="flex gap-3 items-center mb-3"></div>
-            <input id="contact-images-input" type="file" accept="image/*" multiple class="mb-3" />
-            <div class="flex gap-3">
-              <button id="contact-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save Contact</button>
-              <button id="contact-replace" class="px-4 py-2 bg-gray-200 rounded">Replace Images on Save</button>
-            </div>
-          </div>
         </div>
       </main>
     </div>
   </div>
 
-  <script>
+  <!-- Quill JS -->
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
   
-    (function(){
-      const API = ''; // relative to same origin
-      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-      function showMsg(el, msg, ok=true){ el.className = `p-3 rounded mb-3 ${ok? 'bg-green-100 text-green-800':'bg-red-100 text-red-800'}`; el.textContent = msg; el.classList.remove('hidden'); setTimeout(()=>el.classList.add('hidden'),3500); }
-
-      // Modal helpers
-      let modalConfirmCallback = null;
-      function showOverlay(){ const ov = document.getElementById('modal-overlay'); if (!ov) return; ov.classList.remove('hidden'); ov.classList.add('flex'); }
-      function hideOverlay(){ const ov = document.getElementById('modal-overlay'); if (!ov) return; ov.classList.add('hidden'); ov.classList.remove('flex'); // hide internal modals as well
-        ['edit-user-modal','edit-role-modal','confirm-modal','create-staff-modal'].forEach(id=>{ const m=document.getElementById(id); if(m) m.classList.add('hidden'); });
-      }
-
-      // Toast helper (floating toasts)
-      function toast(message, ok=true, ms=3500){
-        try{
-          const t = document.createElement('div'); t.className = `fixed right-4 top-6 z-60 max-w-sm p-3 rounded shadow-lg ${ok? 'bg-green-100 text-green-900':'bg-red-100 text-red-900'}`;
-          t.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)'; t.textContent = message || '';
-          document.body.appendChild(t);
-          setTimeout(()=>{ t.style.transition='opacity 300ms ease'; t.style.opacity='0'; setTimeout(()=>t.remove(),300); }, ms);
-        }catch(e){ console.error('toast', e); }
-      }
-
-      function openConfirm(title, message, onConfirm){
-        modalConfirmCallback = onConfirm || null;
-        const ov = document.getElementById('modal-overlay'); const cm = document.getElementById('confirm-modal');
-        if (!ov || !cm) return;
-        document.getElementById('confirm-title').textContent = title || 'Confirm';
-        document.getElementById('confirm-message').textContent = message || '';
-        showOverlay(); cm.classList.remove('hidden');
-      }
-
-      // Roles helper: fetch roles from server and populate selects
-      async function fetchRoles(){
-        try{
-          const res = await fetch(`${API}/api/admin/settings/roles`, { headers });
-          if (!res.ok){
-            const txt = await res.text().catch(()=>'<no body>');
-            console.error('fetchRoles failed', res.status, txt);
-            return;
-          }
-          const j = await res.json(); if (!j.success){ console.error('fetchRoles returned success:false', j); return; }
-          availableRoles = j.data || [];
-          populateRoleSelects();
-        }catch(e){ console.error('fetchRoles', e); }
-      }
-
-      function populateRoleSelects(){
-        try{
-          const roleSelect = document.getElementById('staff-role');
-          const createRoleSelect = document.getElementById('create-staff-role');
-          const editUserRole = document.getElementById('edit-user-role');
-          [roleSelect, createRoleSelect, editUserRole].forEach(sel=>{
-            if (!sel) return;
-            sel.innerHTML = '<option value="">Select role</option>';
-            (availableRoles||[]).forEach(r=>{ const opt = document.createElement('option'); opt.value = r.name; opt.textContent = r.name; sel.appendChild(opt); });
-          });
-        }catch(e){ console.error('populateRoleSelects', e); }
-      }
-
-      // Attach confirm modal handlers after DOM is ready (modals are inserted later)
-      document.addEventListener('DOMContentLoaded', () => {
-        const cancelBtn = document.getElementById('confirm-cancel');
-        const okBtn = document.getElementById('confirm-ok');
-        if (cancelBtn) cancelBtn.addEventListener('click', ()=>{ modalConfirmCallback = null; hideOverlay(); });
-        if (okBtn) okBtn.addEventListener('click', ()=>{ try{ if (typeof modalConfirmCallback === 'function') modalConfirmCallback(); }catch(e){ console.error('confirm-cb', e); } finally{ modalConfirmCallback = null; hideOverlay(); } });
-      });
-
-      // Edit User / Role modal buttons - attach after DOM ready because modals are appended later
-      let currentEditingUserId = null;
-      let currentEditingRole = null;
-      document.addEventListener('DOMContentLoaded', ()=>{
-        const editUserCancel = document.getElementById('edit-user-cancel');
-        const editUserSave = document.getElementById('edit-user-save');
-        if (editUserCancel) editUserCancel.addEventListener('click', ()=>{ currentEditingUserId = null; hideOverlay(); });
-        if (editUserSave) editUserSave.addEventListener('click', async ()=>{
-          try{
-            const name = document.getElementById('edit-user-name').value||'';
-            const email = document.getElementById('edit-user-email').value||'';
-            const role = document.getElementById('edit-user-role').value||'';
-            if (!currentEditingUserId) return showMsg(document.getElementById('edit-user-msg'), 'No user selected', false);
-            const body = {};
-            if (name) body.name = name;
-            if (email) body.email = email;
-            if (role) body.role = role;
-            const res = await fetch(`${API}/api/admin/users/${encodeURIComponent(currentEditingUserId)}`, { method: 'PATCH', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify(body) });
-            const j = await res.json(); if (!res.ok){ showMsg(document.getElementById('edit-user-msg'), j.msg||'Failed update', false); return; }
-            showMsg(document.getElementById('edit-user-msg'), 'Saved', true);
-            hideOverlay(); currentEditingUserId = null; loadStaff();
-          }catch(e){ console.error('saveEditUser', e); showMsg(document.getElementById('edit-user-msg'),'Error saving', false); }
-        });
-
-        const editRoleCancel = document.getElementById('edit-role-cancel');
-        const editRoleSave = document.getElementById('edit-role-save');
-        if (editRoleCancel) editRoleCancel.addEventListener('click', ()=>{ currentEditingRole = null; hideOverlay(); });
-        if (editRoleSave) editRoleSave.addEventListener('click', async ()=>{
-          try{
-            const name = document.getElementById('edit-role-name').value && document.getElementById('edit-role-name').value.trim();
-            const permsRaw = document.getElementById('edit-role-perms').value || '';
-            const perms = permsRaw.split(',').map(p=>p.trim()).filter(Boolean);
-            if (!currentEditingRole) return showMsg(document.getElementById('edit-role-msg'),'No role selected', false);
-            const res = await fetch(`${API}/api/admin/settings/roles/${encodeURIComponent(currentEditingRole)}`, { method: 'PATCH', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ name, permissions: perms }) });
-            const j = await res.json(); if (!res.ok){ showMsg(document.getElementById('edit-role-msg'), j.msg||'Failed update', false); return; }
-            availableRoles = j.data; renderRoles(); hideOverlay(); currentEditingRole = null; showMsg(usersMsg,'Role updated',true); toast('Role updated', true);
-          }catch(e){ console.error('saveRole', e); showMsg(document.getElementById('edit-role-msg'),'Error saving', false); }
-        });
-      });
-
-      async function loadContent(key, setters){
-        try{
-          const res = await fetch(`${API}/api/admin/content/${encodeURIComponent(key)}`, { headers });
-          const j = await res.json();
-          if (!j.success) throw new Error(j.msg || 'Failed');
-          const data = j.data || {};
-          setters.title.value = data.title || '';
-          setters.body.value = data.body || '';
-          const imagesDiv = setters.imagesDiv;
-          imagesDiv.innerHTML = '';
-          (data.images||[]).forEach(img => {
-            const imgEl = document.createElement('div'); imgEl.className='flex flex-col items-center';
-            imgEl.innerHTML = `<img src="${img.url}" class="thumb rounded border" /><div class="text-xs mt-1">${img.filename||''}</div>`;
-            imagesDiv.appendChild(imgEl);
-          });
-        }catch(e){ console.error('loadContent',e); }
-      }
-
-      async function saveContent(key, titleEl, bodyEl, filesInput, replaceImagesFlag, msgEl){
-        try{
-          const fd = new FormData();
-          fd.append('title', titleEl.value||'');
-          fd.append('body', bodyEl.value||'');
-          if (replaceImagesFlag) fd.append('replaceImages','true');
-          const files = filesInput.files || [];
-          for (let i=0;i<files.length;i++) fd.append('images', files[i]);
-          const res = await fetch(`${API}/api/admin/content/${encodeURIComponent(key)}`, { method: 'PUT', headers: { 'Authorization': headers['Authorization'] }, body: fd });
-          const j = await res.json();
-          if (!res.ok) { showMsg(msgEl, j.msg||'Failed to save', false); return; }
-          showMsg(msgEl, 'Saved successfully', true);
-          loadContent(key, { title: titleEl, body: bodyEl, imagesDiv: key==='about-us'? document.getElementById('about-images') : document.getElementById('contact-images') });
-        }catch(e){ console.error(e); showMsg(msgEl, 'Error saving content', false); }
-      }
-
-      document.addEventListener('DOMContentLoaded', ()=>{
-        // Tabs and panels
-        const storeTabBtn = document.getElementById('settings-store-tab');
-        const usersTabBtn = document.getElementById('settings-users-tab');
-        const contentTabBtn = document.getElementById('settings-about-tab');
-        const storePanel = document.getElementById('store-panel');
-        const usersPanel = document.getElementById('users-panel');
-        const aboutPanel = document.getElementById('about-panel');
-        const contactPanel = document.getElementById('contact-panel');
-
-        function clearTabStyles(){
-          [storeTabBtn, usersTabBtn, contentTabBtn].forEach(b=>{ b.classList.remove('bg-indigo-600','text-white'); b.classList.add('bg-gray-100','text-gray-700'); });
-        }
-        function hideAllPanels(){ storePanel.classList.add('hidden'); usersPanel.classList.add('hidden'); aboutPanel.classList.add('hidden'); contactPanel.classList.add('hidden'); }
-
-        function showStore(){ clearTabStyles(); storeTabBtn.classList.add('bg-indigo-600','text-white'); hideAllPanels(); storePanel.classList.remove('hidden'); loadStore(); }
-        function showUsers(){ clearTabStyles(); usersTabBtn.classList.add('bg-indigo-600','text-white'); hideAllPanels(); usersPanel.classList.remove('hidden'); loadStaff(); }
-        function showContent(){ clearTabStyles(); contentTabBtn.classList.add('bg-indigo-600','text-white'); hideAllPanels(); aboutPanel.classList.remove('hidden'); contactPanel.classList.remove('hidden'); loadAbout(); }
-
-        storeTabBtn.addEventListener('click', ()=> showStore());
-        usersTabBtn.addEventListener('click', ()=> showUsers());
-        contentTabBtn.addEventListener('click', ()=> showContent());
-
-        // fetch roles early so dropdowns are populated, then show Store Info
-        fetchRoles();
-        showStore();
-
-        // --------- Store handlers ---------
-        const storeMsg = document.getElementById('store-message');
-        const storeNameEl = document.getElementById('store-name');
-        const storeEmailEl = document.getElementById('store-email');
-        const storePhoneEl = document.getElementById('store-phone');
-        const storeAddressEl = document.getElementById('store-address');
-        const storeLogoInput = document.getElementById('store-logo-input');
-        const storeBannerInput = document.getElementById('store-banner-input');
-        const storeLogoPreview = document.getElementById('store-logo-preview');
-        const storeBannerPreview = document.getElementById('store-banner-preview');
-
-        async function loadStore(){
-          try{
-            const res = await fetch(`${API}/api/admin/settings`, { headers });
-            if (!res.ok) return;
-            const j = await res.json(); if (!j.success) return;
-            const s = j.data && j.data.store ? j.data.store : {};
-            storeNameEl.value = s.name||''; storeEmailEl.value = s.email||''; storePhoneEl.value = s.phone||''; storeAddressEl.value = s.address||'';
-            storeLogoPreview.innerHTML = s.logoUrl ? `<img src="${s.logoUrl}" class="thumb rounded border" />` : '';
-            storeBannerPreview.innerHTML = s.bannerUrl ? `<img src="${s.bannerUrl}" class="w-full h-28 object-cover rounded border" />` : '';
-          }catch(e){ console.error('loadStore',e); }
-        }
-
-        document.getElementById('store-save').addEventListener('click', async ()=>{
-          try{
-            const fd = new FormData();
-            fd.append('name', storeNameEl.value||''); fd.append('email', storeEmailEl.value||''); fd.append('phone', storePhoneEl.value||''); fd.append('address', storeAddressEl.value||'');
-            if (storeLogoInput.files && storeLogoInput.files[0]) fd.append('logo', storeLogoInput.files[0]);
-            if (storeBannerInput.files && storeBannerInput.files[0]) fd.append('banner', storeBannerInput.files[0]);
-            const res = await fetch(`${API}/api/admin/settings/store`, { method: 'PUT', headers: { 'Authorization': headers['Authorization'] }, body: fd });
-            const j = await res.json(); if (!res.ok){ showMsg(storeMsg, j.msg||'Failed', false); return; }
-            showMsg(storeMsg, 'Store saved', true); loadStore();
-          }catch(e){ console.error('saveStore', e); showMsg(storeMsg, 'Error saving', false); }
-        });
-
-        // preview selected images
-        storeLogoInput.addEventListener('change', ()=>{ const f=storeLogoInput.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>storeLogoPreview.innerHTML=`<img src="${e.target.result}" class="thumb rounded border" />`; r.readAsDataURL(f); });
-        storeBannerInput.addEventListener('change', ()=>{ const f=storeBannerInput.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>storeBannerPreview.innerHTML=`<img src="${e.target.result}" class="w-full h-28 object-cover rounded border" />`; r.readAsDataURL(f); });
-
-        // --------- Staff handlers ---------
-        const usersMsg = document.getElementById('users-message');
-        const staffListDiv = document.getElementById('staff-list');
-        const addStaffForm = document.getElementById('add-staff-form');
-        const showAddStaffBtn = document.getElementById('show-add-staff');
-        const refreshStaffBtn = document.getElementById('refresh-staff');
-        const staffCancelBtn = document.getElementById('staff-cancel');
-        const staffSaveBtn = document.getElementById('staff-save');
-
-        showAddStaffBtn.addEventListener('click', async ()=>{
-          // fetch roles and then open create staff modal so role select is populated
-          try{
-            if (!(availableRoles && availableRoles.length)) await fetchRoles();
-          }catch(e){ console.error('roles prefetch failed', e); }
-          // open create staff modal
-          document.getElementById('create-staff-name').value = '';
-          document.getElementById('create-staff-email').value = '';
-          const cs = document.getElementById('create-staff-role'); if (cs) cs.value = '';
-          // if no roles are available, show message to user
-          if (!availableRoles || !availableRoles.length){ showMsg(document.getElementById('create-staff-msg'), 'No roles defined. Please add a role first.', false); }
-          showOverlay(); document.getElementById('create-staff-modal').classList.remove('hidden');
-        });
-        staffCancelBtn.addEventListener('click', ()=> addStaffForm.classList.add('hidden'));
-        refreshStaffBtn.addEventListener('click', ()=> loadStaff());
-
-        let availableRoles = [];
-        async function loadStaff(){
-          try{
-            staffListDiv.innerHTML = '<div class="p-3 text-sm text-gray-600">Loading...</div>';
-            const res = await fetch(`${API}/api/admin/settings/staff`, { headers });
-            const j = await res.json(); if (!j.success){ staffListDiv.innerHTML = '<div class="p-3 text-sm text-red-600">Failed to load staff</div>'; return; }
-            const rows = j.data && j.data.staff ? j.data.staff : [];
-            availableRoles = j.data && j.data.roles ? j.data.roles : [];
-            // populate role selects (staff inline, create-staff modal)
-            const roleSelect = document.getElementById('staff-role');
-            const createRoleSelect = document.getElementById('create-staff-role');
-            if (roleSelect){
-              roleSelect.innerHTML = '<option value="">Select role</option>';
-              availableRoles.forEach(r=>{ const opt = document.createElement('option'); opt.value = r.name; opt.textContent = r.name; roleSelect.appendChild(opt); });
-            }
-            if (createRoleSelect){
-              createRoleSelect.innerHTML = '<option value="">Select role</option>';
-              availableRoles.forEach(r=>{ const opt = document.createElement('option'); opt.value = r.name; opt.textContent = r.name; createRoleSelect.appendChild(opt); });
-            }
-            if (!rows.length){ staffListDiv.innerHTML = '<div class="p-3 text-sm text-gray-600">No staff defined.</div>'; return; }
-            staffListDiv.innerHTML = '';
-            rows.forEach(s=>{
-              const id = s._id || s.id || '';
-              const userId = s.userId || s.userId?._id || s.userId || '';
-              const r = document.createElement('div'); r.className='flex items-center justify-between p-2 border-b';
-              // build actions: show Delete for settings entries or for user-based fallback rows (delete user)
-              let actionsHtml = '<div class="flex gap-2 items-center staff-actions">';
-              if (id) {
-                actionsHtml += `<button data-id="${id}" class="px-2 py-1 bg-red-600 text-white text-xs rounded staff-delete">Delete</button>`;
-              } else if (userId) {
-                // no settings id -> entry came from User collection fallback; allow deleting the underlying user
-                actionsHtml += `<button data-uid="${userId}" class="px-2 py-1 bg-red-600 text-white text-xs rounded staff-delete">Delete</button>`;
-              }
-              if (userId) {
-                actionsHtml += `<button data-uid="${userId}" class="px-2 py-1 bg-blue-600 text-white text-xs rounded staff-edit">Edit</button>`;
-                actionsHtml += `<button data-uid="${userId}" class="px-2 py-1 bg-yellow-600 text-white text-xs rounded staff-toggle">Toggle Active</button>`;
-              }
-              actionsHtml += '</div>';
-              r.innerHTML = `<div class="staff-main"><div class="font-medium">${s.name||''}</div><div class="text-xs text-gray-600 staff-meta">${s.email||''} • ${s.role||''}</div></div>` + actionsHtml;
-              staffListDiv.appendChild(r);
-            });
-
-            // Attach event listeners
-            Array.from(staffListDiv.querySelectorAll('.staff-delete')).forEach(btn=> btn.addEventListener('click', (ev)=>{
-              const sid = btn.getAttribute('data-id');
-              const uid = btn.getAttribute('data-uid');
-              if (sid) {
-                openConfirm('Delete staff','Are you sure you want to delete this staff entry?', async ()=>{
-                  try{
-                    const dres = await fetch(`${API}/api/admin/settings/staff/${encodeURIComponent(sid)}`, { method: 'DELETE', headers: { 'Authorization': headers['Authorization'] } });
-                    const jd = await dres.json();
-                    if (!dres.ok){ showMsg(usersMsg, jd.msg||'Failed delete', false); toast(jd.msg||'Failed delete', false); return; }
-                    showMsg(usersMsg, 'Deleted', true); toast('Staff entry deleted', true); loadStaff();
-                  }catch(e){ console.error('delStaff',e); showMsg(usersMsg,'Error',false); toast('Error deleting staff', false); }
-                });
-                return;
-              }
-              if (uid){
-                openConfirm('Delete user','This will permanently delete the user account. Continue?', async ()=>{
-                  try{
-                    const dres = await fetch(`${API}/api/admin/users/${encodeURIComponent(uid)}`, { method: 'DELETE', headers: { 'Authorization': headers['Authorization'] } });
-                    const jd = await dres.json();
-                    if (!dres.ok){ showMsg(usersMsg, jd.msg||'Failed delete user', false); toast(jd.msg||'Failed delete user', false); return; }
-                    showMsg(usersMsg, 'User deleted', true); toast('User account deleted', true); loadStaff();
-                  }catch(e){ console.error('delUser', e); showMsg(usersMsg, 'Error deleting user', false); toast('Error deleting user', false); }
-                });
-                return;
-              }
-              toast('No identifier for delete', false);
-            }));
-
-            Array.from(staffListDiv.querySelectorAll('.staff-edit')).forEach(btn => btn.addEventListener('click', async ()=>{
-              const uid = btn.getAttribute('data-uid');
-              if (!uid) return;
-              // open modal and populate
-              (async function(){
-                try{
-                  if (!(availableRoles && availableRoles.length)) await fetchRoles();
-                  const res = await fetch(`${API}/api/admin/users/${encodeURIComponent(uid)}`, { headers });
-                  if (!res.ok) return showMsg(usersMsg, 'Failed to load user', false);
-                  const j = await res.json(); const user = j.data || {};
-                  currentEditingUserId = uid;
-                  document.getElementById('edit-user-name').value = user.name || '';
-                  document.getElementById('edit-user-email').value = user.email || '';
-                  // populate role select
-                  const sel = document.getElementById('edit-user-role'); sel.innerHTML = '<option value="">Select role</option>';
-                  (availableRoles||[]).forEach(r=>{ const o=document.createElement('option'); o.value=r.name; o.textContent=r.name; if (user.role && String(user.role)===String(r.name)) o.selected=true; sel.appendChild(o); });
-                  showOverlay(); document.getElementById('edit-user-modal').classList.remove('hidden');
-                }catch(e){ console.error('openEditUser', e); showMsg(usersMsg,'Error opening edit user', false); }
-              })();
-            }));
-
-            Array.from(staffListDiv.querySelectorAll('.staff-toggle')).forEach(btn => btn.addEventListener('click', (ev)=>{
-              const uid = btn.getAttribute('data-uid'); if (!uid) return;
-              openConfirm('Toggle Active','Toggle active state for this user?', async ()=>{
-                try{
-                  const curRes = await fetch(`${API}/api/admin/users/${encodeURIComponent(uid)}`, { headers });
-                  if (!curRes.ok) { showMsg(usersMsg, 'Failed to read user', false); return; }
-                  const curobj = await curRes.json(); const cur = curobj.data && curobj.data.isActive;
-                  const res = await fetch(`${API}/api/admin/users/${encodeURIComponent(uid)}/active`, { method: 'PATCH', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ isActive: !cur }) });
-                  const j = await res.json(); if (!res.ok){ showMsg(usersMsg, j.msg||'Failed toggle', false); return; }
-                  showMsg(usersMsg, `User is now ${j.data.isActive? 'active':'disabled'}`, true); loadStaff();
-                }catch(e){ console.error('toggleUser', e); showMsg(usersMsg, 'Error toggling user', false); }
-              });
-            }));
-          }catch(e){ console.error('loadStaff', e); staffListDiv.innerHTML = '<div class="p-3 text-sm text-red-600">Error loading</div>'; }
-        }
-
-        staffSaveBtn.addEventListener('click', async ()=>{
-          try{
-            const name = document.getElementById('staff-name').value||'';
-            const email = document.getElementById('staff-email').value||'';
-            const role = document.getElementById('staff-role').value||'';
-            if (!name || !email){ showMsg(usersMsg, 'Name and email required', false); return; }
-            if (!role){ showMsg(usersMsg, 'Role is required', false); return; }
-            const res = await fetch(`${API}/api/admin/settings/staff`, { method: 'POST', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ name, email, role }) });
-            const j = await res.json(); if (!res.ok){ showMsg(usersMsg, j.msg||'Failed', false); return; }
-            showMsg(usersMsg, 'Saved', true); toast('Staff added', true); addStaffForm.classList.add('hidden'); document.getElementById('staff-name').value=''; document.getElementById('staff-email').value=''; document.getElementById('staff-role').value=''; loadStaff();
-          }catch(e){ console.error('addStaff',e); showMsg(usersMsg,'Error',false); }
-        });
-
-        // Create-staff modal handlers
-        document.getElementById('create-staff-cancel').addEventListener('click', ()=>{ hideOverlay(); });
-        document.getElementById('create-staff-save').addEventListener('click', async ()=>{
-          try{
-            const name = document.getElementById('create-staff-name').value.trim();
-            const email = document.getElementById('create-staff-email').value.trim();
-            const role = document.getElementById('create-staff-role').value || '';
-            if (!name) return showMsg(document.getElementById('create-staff-msg'), 'Name is required', false);
-            if (!email || !/^\S+@\S+\.\S+$/.test(email)) return showMsg(document.getElementById('create-staff-msg'), 'Valid email required', false);
-            if (!role) return showMsg(document.getElementById('create-staff-msg'), 'Role is required', false);
-            const res = await fetch(`${API}/api/admin/settings/staff`, { method: 'POST', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ name, email, role }) });
-            const j = await res.json(); if (!res.ok){ showMsg(document.getElementById('create-staff-msg'), j.msg||'Failed', false); toast(j.msg||'Failed to add staff', false); return; }
-            showMsg(document.getElementById('create-staff-msg'),'Saved', true); toast('Staff created', true);
-            hideOverlay(); document.getElementById('create-staff-name').value=''; document.getElementById('create-staff-email').value=''; if(document.getElementById('create-staff-role')) document.getElementById('create-staff-role').value=''; loadStaff();
-          }catch(e){ console.error('createStaff', e); showMsg(document.getElementById('create-staff-msg'),'Error', false); toast('Error creating staff', false); }
-        });
-
-        // Roles UI handlers
-        const rolesListDiv = document.getElementById('roles-list');
-        const addRoleBtn = document.getElementById('add-role-btn');
-        const newRoleName = document.getElementById('new-role-name');
-        const newRolePerms = document.getElementById('new-role-perms');
-
-        function renderRoles(){
-          rolesListDiv.innerHTML = '';
-          availableRoles.forEach(r=>{
-            const div = document.createElement('div'); div.className='flex items-center justify-between p-2 border-b';
-            div.innerHTML = `<div><div class="font-medium">${r.name}</div><div class="text-xs text-gray-600">${(r.permissions||[]).join(', ')}</div></div><div class="flex gap-2"><button data-name="${r.name}" class="px-2 py-1 bg-yellow-600 text-white text-xs rounded role-edit">Edit</button><button data-name="${r.name}" class="px-2 py-1 bg-red-600 text-white text-xs rounded role-delete">Delete</button></div>`;
-            rolesListDiv.appendChild(div);
-          });
-          Array.from(rolesListDiv.querySelectorAll('.role-delete')).forEach(btn => {
-            btn.addEventListener('click', () => {
-              const name = btn.getAttribute('data-name');
-              openConfirm('Delete role', 'Delete role "' + name + '"? This will not change existing users but will remove the role from the list.', async () => {
-                try {
-                  const res = await fetch(`${API}/api/admin/settings/roles/${encodeURIComponent(name)}`, { method: 'DELETE', headers: { 'Authorization': headers['Authorization'] } });
-                  const j = await res.json();
-                  if (!res.ok) { showMsg(usersMsg, j.msg || 'Failed delete', false); return; }
-                  availableRoles = j.data; renderRoles();
-                  const roleSelect = document.getElementById('staff-role');
-                  if (roleSelect) {
-                    roleSelect.innerHTML = '<option value="">Select role</option>';
-                    availableRoles.forEach(r => { const opt = document.createElement('option'); opt.value = r.name; opt.textContent = r.name; roleSelect.appendChild(opt); });
-                  }
-                  showMsg(usersMsg, 'Role deleted', true); toast('Role deleted', true);
-                } catch (e) { console.error('delRole', e); showMsg(usersMsg, 'Error', false); }
-              });
-            });
-          });
-          Array.from(rolesListDiv.querySelectorAll('.role-edit')).forEach(btn=> btn.addEventListener('click', ()=>{
-            const name = btn.getAttribute('data-name');
-            // open edit-role modal
-            const roleObj = availableRoles.find(x=>x.name===name) || { name, permissions: [] };
-            currentEditingRole = name;
-            document.getElementById('edit-role-name').value = roleObj.name || '';
-            document.getElementById('edit-role-perms').value = (roleObj.permissions||[]).join(', ');
-            showOverlay(); document.getElementById('edit-role-modal').classList.remove('hidden');
-          }));
-        }
-
-        addRoleBtn.addEventListener('click', async ()=>{
-          const name = newRoleName.value && newRoleName.value.trim();
-          const perms = newRolePerms.value && newRolePerms.value.split(',').map(p=>p.trim()).filter(Boolean);
-          if (!name){ showMsg(usersMsg,'Role name required', false); return; }
-          try{
-            const res = await fetch(`${API}/api/admin/settings/roles`, { method: 'POST', headers: Object.assign({'Content-Type':'application/json'}, headers), body: JSON.stringify({ name, permissions: perms }) });
-            const j = await res.json(); if (!res.ok){ showMsg(usersMsg, j.msg||'Failed add', false); return; }
-            availableRoles = j.data; newRoleName.value=''; newRolePerms.value=''; renderRoles(); const roleSelect = document.getElementById('staff-role'); if (roleSelect){ roleSelect.innerHTML = '<option value="">Select role</option>'; availableRoles.forEach(r=>{ const opt = document.createElement('option'); opt.value = r.name; opt.textContent = r.name; roleSelect.appendChild(opt); }); } showMsg(usersMsg,'Role added', true); toast('Role added', true);
-          }catch(e){ console.error('addRole', e); showMsg(usersMsg,'Error', false); }
-        });
-
-
-        // --------- About & Contact (existing) ---------
-        const aboutMsg = document.getElementById('about-message');
-        const mirror = document.getElementById('about-mirror');
-        let loadedAbout = null;
-        const imageState = {};
-
-        // existing helper functions makeEditable, setupImageControls, loadAbout, save handlers remain unchanged below
-        // make textual elements editable inside the mirror
-        function makeEditable(root){
-          const selectors = 'h1,h2,h3,h4,p,li,blockquote,figcaption,span';
-          const nodes = root.querySelectorAll(selectors);
-          let idCounter = 0;
-          nodes.forEach(n => {
-            if (n.closest('nav') || n.closest('button') || n.closest('form')) return;
-            if (!n.dataset.editId){ n.dataset.editId = 'edit-' + (++idCounter); n.contentEditable = 'true'; n.classList.add('outline-none','focus:ring','focus:ring-indigo-200'); }
-          });
-        }
-
-        // add inline image controls for every image in the mirror
-        function setupImageControls(root){
-          const imgs = Array.from(root.querySelectorAll('img'));
-          imgs.forEach((img, idx) => {
-            const id = img.dataset.adminId || ('img-' + idx + '-' + Date.now());
-            img.dataset.adminId = id;
-            if (!imageState[id]) imageState[id] = { originalSrc: img.src, deleted: false, replaceFile: null };
-            if (!img.parentElement.classList.contains('admin-img-wrap')){
-              const wrap = document.createElement('div'); wrap.className = 'admin-img-wrap relative inline-block';
-              img.parentElement.insertBefore(wrap, img); wrap.appendChild(img);
-              const ctrl = document.createElement('div'); ctrl.className = 'absolute top-1 right-1 flex gap-1 z-20';
-              const del = document.createElement('button'); del.className='px-2 py-1 bg-red-600 text-white text-xs rounded'; del.textContent='Delete';
-              del.addEventListener('click', ()=>{ if (!confirm('Delete this image from About Us?')) return; imageState[id].deleted = true; img.style.opacity = '0.4'; });
-              const replLabel = document.createElement('label'); replLabel.className='px-2 py-1 bg-gray-200 text-xs rounded cursor-pointer'; replLabel.textContent='Replace';
-              const replInput = document.createElement('input'); replInput.type='file'; replInput.accept='image/*'; replInput.className='hidden';
-              replInput.addEventListener('change', ()=>{ const f = replInput.files && replInput.files[0]; if (!f) return; imageState[id].replaceFile = f; imageState[id].deleted = false; const reader = new FileReader(); reader.onload = (e)=>{ img.src = e.target.result; img.style.opacity='1'; }; reader.readAsDataURL(f); });
-              replLabel.appendChild(replInput); replLabel.addEventListener('click', ()=> replInput.click()); ctrl.appendChild(del); ctrl.appendChild(replLabel); wrap.appendChild(ctrl);
-            }
-          });
-        }
-
-        async function loadAbout(){
-          try{
-            const res = await fetch(`${API}/api/admin/content/about-us`, { headers });
-            if (!res.ok){ const htmlRes = await fetch('/client/about-us.html'); if (!htmlRes.ok){ loadedAbout = { body:'', images:[] }; mirror.innerHTML = '<div class="p-4 text-sm text-gray-600">No About content found.</div>'; return; } const text = await htmlRes.text(); const parser = new DOMParser(); const doc = parser.parseFromString(text, 'text/html'); let aboutEl = null; const headings = doc.querySelectorAll('h1,h2,h3'); for (let h of headings) if (/about\s*us/i.test(h.textContent||'')){ aboutEl = h; break; } const container = aboutEl ? (aboutEl.closest('section') || aboutEl.parentElement) : doc.body; loadedAbout = { title:'', body: container.innerHTML, images: Array.from(container.querySelectorAll('img')).map(im=>({ filename: im.getAttribute('data-filename')||'', url: im.src })) }; mirror.innerHTML = loadedAbout.body || ''; makeEditable(mirror); setupImageControls(mirror); return; }
-            const j = await res.json(); if (!j.success){ loadedAbout = { body:'', images:[] }; mirror.innerHTML = '<div class="p-4 text-sm text-gray-600">No About content available.</div>'; return; }
-            loadedAbout = j.data || { body:'', images:[] };
-            try{ const staticRes = await fetch('/client/about-us.html'); if (staticRes.ok){ const staticText = await staticRes.text(); const parser = new DOMParser(); const staticDoc = parser.parseFromString(staticText, 'text/html'); const staticImgCount = (staticDoc.querySelectorAll('img')||[]).length; const jsonImgCount = ((loadedAbout.body||'').match(/<img\b/gi)||[]).length; if (staticImgCount > jsonImgCount){ mirror.innerHTML = staticDoc.body.innerHTML || (loadedAbout.body || ''); loadedAbout.body = mirror.innerHTML; makeEditable(mirror); setupImageControls(mirror); return; } } }catch(e){}
-            mirror.innerHTML = loadedAbout.body || '';
-            makeEditable(mirror);
-            try{ const imgsRes = await fetch(`${API}/api/admin/content/about-us/images`, { headers }); if (imgsRes.ok){ const imgsJson = await imgsRes.json(); const files = imgsJson && imgsJson.data ? imgsJson.data : []; if (files.length){ let panel = mirror.querySelector('.admin-images-panel'); if (!panel){ panel = document.createElement('div'); panel.className = 'admin-images-panel grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6'; mirror.appendChild(panel); } files.forEach(f => { if (!mirror.querySelector(`img[src="${f.url}"]`)){ const wrap = document.createElement('div'); wrap.className = 'border p-2 rounded'; const im = document.createElement('img'); im.src = f.url; im.className = 'w-full h-auto'; im.setAttribute('data-filename', f.filename); wrap.appendChild(im); panel.appendChild(wrap); } }); } } }catch(e){}
-            setupImageControls(mirror);
-          }catch(e){ console.error('loadAbout', e); showMsg(aboutMsg, 'Failed to load About content', false); }
-        }
-
-        // initial about load will be triggered by showContent when needed
-
-        // Save: collect mirrored HTML and image replacements/deletions
-        document.getElementById('about-save').addEventListener('click', async ()=>{
-          const saveBtn = document.getElementById('about-save');
-          const cancelBtn = document.getElementById('about-cancel');
-          saveBtn.disabled = true; cancelBtn.disabled = true; saveBtn.classList.add('opacity-50');
-          try{
-            const deletions = Object.keys(imageState).filter(k=>imageState[k].deleted).map(k=>imageState[k].originalSrc);
-            const fd = new FormData();
-            const bodyHtml = mirror.innerHTML || '';
-            fd.append('body', bodyHtml);
-            // append deletions as JSON
-            if (deletions.length) fd.append('deleted', JSON.stringify(deletions));
-            Object.keys(imageState).forEach(key => {
-              const s = imageState[key]; if (s.replaceFile) fd.append('images', s.replaceFile);
-            });
-
-            const res = await fetch(`${API}/api/admin/content/about-us`, { method: 'PUT', headers: { 'Authorization': headers['Authorization'] }, body: fd });
-            const j = await res.json();
-            if (!res.ok){ showMsg(aboutMsg, j.msg||'Failed to save', false); return; }
-            showMsg(aboutMsg, 'Saved successfully', true);
-            // reload latest from server
-            for (let k of Object.keys(imageState)) delete imageState[k];
-            await loadAbout();
-            fetch('/client/about-us.html?preview=' + Date.now()).catch(()=>{});
-          }catch(e){ console.error('saveAbout', e); showMsg(aboutMsg, 'Error saving content', false); }
-          finally{ saveBtn.disabled = false; cancelBtn.disabled = false; saveBtn.classList.remove('opacity-50'); }
-        });
-
-        // Cancel: restore mirror to last loaded state
-        document.getElementById('about-cancel').addEventListener('click', ()=>{
-          if (!loadedAbout) return;
-          mirror.innerHTML = loadedAbout.body || '';
-          for (let k of Object.keys(imageState)) delete imageState[k];
-          makeEditable(mirror); setupImageControls(mirror);
-          showMsg(aboutMsg, 'Reverted changes', true);
-        });
-
-        // Contact
-        const contactTitle = document.getElementById('contact-title');
-        const contactBody = document.getElementById('contact-body');
-        const contactImagesInput = document.getElementById('contact-images-input');
-        const contactImagesDiv = document.getElementById('contact-images');
-        const contactMsg = document.getElementById('contact-message');
-        loadContent('contact', { title: contactTitle, body: contactBody, imagesDiv: contactImagesDiv });
-        document.getElementById('contact-save').addEventListener('click', ()=> saveContent('contact', contactTitle, contactBody, contactImagesInput, false, contactMsg));
-        document.getElementById('contact-replace').addEventListener('click', ()=> saveContent('contact', contactTitle, contactBody, contactImagesInput, true, contactMsg));
-
-        // Sidebar toggle for mobile
-        document.getElementById('sidebar-toggle')?.addEventListener('click', ()=> document.getElementById('admin-sidebar')?.classList.toggle('hidden'));
-        document.getElementById('mobile-sidebar-close')?.addEventListener('click', ()=> document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full'));
-      });
+  <script>
+  (function(){
+    const API_BASE = (function(){
+      try {
+        const origin = window.location.origin;
+        const port = window.location.port;
+        const host = window.location.hostname;
+        if (port === '5500' || host === '127.0.0.1') return 'http://localhost:5000';
+        return origin;
+      } catch (e) { return 'http://localhost:5000'; }
     })();
+    
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    
+    // State
+    let originalData = null;
+    let mainImageFile = null;
+    let removeMainImage = false;
+    
+    // Initialize Quill editors
+    const introEditor = new Quill('#intro-editor', {
+      theme: 'snow',
+      placeholder: 'Write your introduction here...',
+      modules: {
+        toolbar: [
+          ['bold', 'italic', 'underline'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          ['clean']
+        ]
+      }
+    });
+    
+    const storyEditor = new Quill('#story-editor', {
+      theme: 'snow',
+      placeholder: 'Tell your story here...',
+      modules: {
+        toolbar: [
+          ['bold', 'italic', 'underline'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          ['clean']
+        ]
+      }
+    });
+    
+    // Helper functions
+    function showMsg(msg, ok = true) {
+      const el = document.getElementById('about-message');
+      el.className = `p-3 rounded mb-4 ${ok ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 4000);
+    }
+    
+    function updateImagePreview(url) {
+      const img = document.getElementById('preview-img');
+      const noMsg = document.getElementById('no-image-msg');
+      if (url) {
+        img.src = url;
+        img.classList.remove('hidden');
+        noMsg.classList.add('hidden');
+      } else {
+        img.src = '';
+        img.classList.add('hidden');
+        noMsg.classList.remove('hidden');
+      }
+    }
+    
+    // Load About Us content
+    async function loadContent() {
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/content/about-us`, { headers });
+        if (!res.ok) throw new Error('Failed to load content');
+        const json = await res.json();
+        if (!json.success) throw new Error(json.msg || 'Failed');
+        
+        const data = json.data || {};
+        originalData = data;
+        
+        // Set introduction
+        if (data.body) {
+          introEditor.root.innerHTML = data.body;
+        }
+        
+        // Set story
+        if (data.story) {
+          storyEditor.root.innerHTML = data.story;
+        }
+        
+        // Set main image
+        if (data.images && data.images.length > 0) {
+          updateImagePreview(data.images[0].url);
+        } else if (data.mainImage) {
+          updateImagePreview(data.mainImage);
+        }
+        
+      } catch (e) {
+        console.error('Load content failed:', e);
+        // Try to load from static HTML as fallback
+        try {
+          const htmlRes = await fetch('../about-us.html');
+          if (htmlRes.ok) {
+            const text = await htmlRes.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+            
+            // Extract intro from #about-body
+            const aboutBody = doc.getElementById('about-body');
+            if (aboutBody) {
+              introEditor.root.innerHTML = aboutBody.innerHTML;
+            }
+            
+            // Extract story from #about-story
+            const aboutStory = doc.getElementById('about-story');
+            if (aboutStory) {
+              storyEditor.root.innerHTML = aboutStory.innerHTML;
+            }
+            
+            // Extract main image
+            const mainImg = doc.getElementById('about-main-image');
+            if (mainImg && mainImg.src) {
+              // Convert relative path to full URL
+              const imgSrc = mainImg.getAttribute('src');
+              if (imgSrc) {
+                const fullUrl = imgSrc.startsWith('http') ? imgSrc : `${window.location.origin}/client/${imgSrc.replace('../', '')}`;
+                updateImagePreview(fullUrl);
+              }
+            }
+          }
+        } catch (fallbackErr) {
+          console.error('Fallback load failed:', fallbackErr);
+        }
+      }
+    }
+    
+    // Save content
+    async function saveContent() {
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving...';
+      
+      try {
+        const fd = new FormData();
+        fd.append('body', introEditor.root.innerHTML);
+        fd.append('story', storyEditor.root.innerHTML);
+        
+        if (removeMainImage) {
+          fd.append('removeMainImage', 'true');
+        }
+        
+        if (mainImageFile) {
+          fd.append('images', mainImageFile);
+        }
+        
+        const res = await fetch(`${API_BASE}/api/admin/content/about-us`, {
+          method: 'PUT',
+          headers: { 'Authorization': headers['Authorization'] },
+          body: fd
+        });
+        
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.msg || 'Failed to save');
+        
+        showMsg('Changes saved successfully!', true);
+        mainImageFile = null;
+        removeMainImage = false;
+        
+        // Reload to get fresh data
+        await loadContent();
+        
+      } catch (e) {
+        console.error('Save failed:', e);
+        showMsg('Failed to save: ' + e.message, false);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save mr-1"></i> Save Changes';
+      }
+    }
+    
+    // Cancel changes
+    function cancelChanges() {
+      if (!confirm('Discard all changes?')) return;
+      mainImageFile = null;
+      removeMainImage = false;
+      loadContent();
+      showMsg('Changes discarded', true);
+    }
+    
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      // Logout
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        localStorage.removeItem('adminToken');
+        window.location.href = 'login.html';
+      });
+      
+      // Sidebar toggles
+      document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
+        document.getElementById('mobile-sidebar')?.classList.toggle('-translate-x-full');
+      });
+      document.getElementById('mobile-sidebar-close')?.addEventListener('click', () => {
+        document.getElementById('mobile-sidebar')?.classList.add('-translate-x-full');
+      });
+      
+      // Image input
+      document.getElementById('main-image-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        mainImageFile = file;
+        removeMainImage = false;
+        const reader = new FileReader();
+        reader.onload = (ev) => updateImagePreview(ev.target.result);
+        reader.readAsDataURL(file);
+      });
+      
+      // Remove image
+      document.getElementById('remove-image-btn').addEventListener('click', () => {
+        if (!confirm('Remove the main image?')) return;
+        removeMainImage = true;
+        mainImageFile = null;
+        document.getElementById('main-image-input').value = '';
+        updateImagePreview(null);
+      });
+      
+      // Save button
+      document.getElementById('save-btn').addEventListener('click', saveContent);
+      
+      // Cancel button  
+      document.getElementById('cancel-btn').addEventListener('click', cancelChanges);
+      
+      // Load content on page load
+      loadContent();
+    });
+  })();
   </script>
-  <!-- Modals (moved here so overlay is global and works regardless of which settings panel is visible) -->
-  <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
-    <!-- Edit User Modal -->
-    <div id="edit-user-modal" class="bg-white rounded shadow-lg w-full max-w-xl p-6 hidden">
-      <h3 class="text-lg font-semibold mb-4">Edit User</h3>
-      <div id="edit-user-msg" class="hidden p-2 rounded mb-3"></div>
-      <label class="block text-sm font-medium text-gray-700">Name</label>
-      <input id="edit-user-name" class="w-full border p-2 rounded mb-3" />
-      <label class="block text-sm font-medium text-gray-700">Email</label>
-      <input id="edit-user-email" class="w-full border p-2 rounded mb-3" />
-      <label class="block text-sm font-medium text-gray-700">Role</label>
-      <select id="edit-user-role" class="w-full border p-2 rounded mb-4"><option value="">Select role</option></select>
-      <div class="flex justify-end gap-3">
-        <button id="edit-user-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-        <button id="edit-user-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
-      </div>
-    </div>
-
-    <!-- Create Staff Modal -->
-    <div id="create-staff-modal" class="bg-white rounded shadow-lg w-full max-w-xl p-6 hidden">
-      <h3 class="text-lg font-semibold mb-4">Add Staff</h3>
-      <div id="create-staff-msg" class="hidden p-2 rounded mb-3"></div>
-      <label class="block text-sm font-medium text-gray-700">Name</label>
-      <input id="create-staff-name" class="w-full border p-2 rounded mb-3" />
-      <label class="block text-sm font-medium text-gray-700">Email</label>
-      <input id="create-staff-email" class="w-full border p-2 rounded mb-3" />
-      <label class="block text-sm font-medium text-gray-700">Role</label>
-      <select id="create-staff-role" class="w-full border p-2 rounded mb-4"><option value="">Select role</option></select>
-      <div class="flex justify-end gap-3">
-        <button id="create-staff-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-        <button id="create-staff-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Create Staff</button>
-      </div>
-    </div>
-
-    <!-- Edit Role Modal -->
-    <div id="edit-role-modal" class="bg-white rounded shadow-lg w-full max-w-lg p-6 hidden">
-      <h3 class="text-lg font-semibold mb-4">Edit Role</h3>
-      <div id="edit-role-msg" class="hidden p-2 rounded mb-3"></div>
-      <label class="block text-sm font-medium text-gray-700">Role Name</label>
-      <input id="edit-role-name" class="w-full border p-2 rounded mb-3" />
-      <label class="block text-sm font-medium text-gray-700">Permissions (comma separated)</label>
-      <input id="edit-role-perms" class="w-full border p-2 rounded mb-4" />
-      <div class="flex justify-end gap-3">
-        <button id="edit-role-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-        <button id="edit-role-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save Role</button>
-      </div>
-    </div>
-
-    <!-- Confirm Modal -->
-    <div id="confirm-modal" class="bg-white rounded shadow-lg w-full max-w-md p-6 hidden">
-      <h3 id="confirm-title" class="text-lg font-semibold mb-2">Confirm</h3>
-      <p id="confirm-message" class="mb-4 text-sm text-gray-700"></p>
-      <div class="flex justify-end gap-3">
-        <button id="confirm-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-        <button id="confirm-ok" class="px-4 py-2 bg-red-600 text-white rounded">Confirm</button>
-      </div>
-    </div>
-  </div>
   <script src="admin-notifications.js"></script>
 </body>
 </html>

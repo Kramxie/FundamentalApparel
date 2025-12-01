@@ -19,7 +19,7 @@ exports.getContent = async (req, res) => {
 exports.updateContent = async (req, res) => {
   try {
     const { key } = req.params;
-    const { title, body } = req.body;
+    const { title, body, story, removeMainImage } = req.body;
 
     // Build images array: keep existing images unless replaced; append new uploads
     const existing = await Content.findOne({ key });
@@ -27,6 +27,9 @@ exports.updateContent = async (req, res) => {
 
     // If client sends `replaceImages` = 'true', we clear existing images before adding uploaded
     if (req.body.replaceImages === 'true') images = [];
+    
+    // If client sends `removeMainImage` = 'true', clear all images
+    if (removeMainImage === 'true') images = [];
 
     if (req.files && Array.isArray(req.files)) {
       for (const f of req.files) {
@@ -34,7 +37,12 @@ exports.updateContent = async (req, res) => {
       }
     }
 
-    const update = { title: title || (existing && existing.title) || '', body: body || (existing && existing.body) || '', images };
+    const update = { 
+      title: title || (existing && existing.title) || '', 
+      body: body || (existing && existing.body) || '', 
+      story: story || (existing && existing.story) || '',
+      images 
+    };
 
     const opts = { upsert: true, new: true, setDefaultsOnInsert: true };
     const saved = await Content.findOneAndUpdate({ key }, update, opts);

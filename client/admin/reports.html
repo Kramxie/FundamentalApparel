@@ -163,12 +163,9 @@
               <div>
                 <label class="block text-sm text-gray-600">Report Type</label>
                 <select id="reportType" class="mt-1 block w-full border rounded p-2">
-                  <option value="sales">Sales Summary</option>
-                  <option value="orders">Order Export</option>
-                  <option value="inventory">Inventory</option>
-                  <option value="revenue-by-category">Revenue by Category</option>
+                  <option value="sales">Sales Overview</option>
+                  <option value="inventory">Inventory Report</option>
                   <option value="refunds">Refunds & Returns</option>
-                  <option value="sales-by-cohort">Sales by Customer Cohort</option>
                 </select>
               </div>
               <div>
@@ -219,7 +216,6 @@
 
             <div class="mt-4 flex flex-wrap gap-2 items-center">
               <button id="generate" class="px-4 py-2 bg-indigo-600 text-white rounded">Generate Report</button>
-              <button id="preview" class="px-4 py-2 bg-gray-200 rounded">Preview (JSON)</button>
               <button id="export-csv" class="px-4 py-2 bg-green-600 text-white rounded">Export as CSV</button>
               <button id="export-pdf" class="px-4 py-2 bg-red-600 text-white rounded">Export as PDF</button>
               <div id="report-status" class="ml-3 text-sm text-gray-500">&nbsp;</div>
@@ -394,11 +390,6 @@
               </div>
             </div>
 
-            <!-- Preview/output -->
-            <div id="output" class="bg-white p-4 rounded shadow">
-              <h2 class="text-lg font-medium mb-2">Preview</h2>
-              <pre id="previewArea" class="text-sm text-gray-700 overflow-auto max-h-96"></pre>
-            </div>
         </div>
       </div>
     </div>
@@ -688,8 +679,7 @@
         document.getElementById('report-status').textContent = '';
       } catch (err) {
         console.error('Failed to load reports', err);
-        document.getElementById('previewArea').textContent = 'Failed to load reports: ' + err.message;
-        document.getElementById('report-status').textContent = 'Failed to load';
+        document.getElementById('report-status').textContent = 'Failed to load: ' + err.message;
       }
     }
 
@@ -732,25 +722,14 @@
           const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
           if (!res.ok) throw new Error('Server error: ' + res.status);
           const json = await res.json();
-          document.getElementById('previewArea').textContent = JSON.stringify(json, null, 2);
-          // Optionally populate table/summary for well-known types
+          // Show status for refunds report
           if (type === 'refunds' || type.indexOf('refund') !== -1 || type === 'refunds & returns') {
-            // if backend returns a refunds array, show count in report-status
             const count = (json.data && Array.isArray(json.data)) ? json.data.length : (json.count||0);
             document.getElementById('report-status').textContent = `${count} refund records found`;
+          } else if (type === 'inventory') {
+            document.getElementById('report-status').textContent = 'Inventory report generated';
           }
         } catch (e) { alert('Failed to generate: ' + e.message); }
-      });
-
-      document.getElementById('preview').addEventListener('click', async () => {
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-        const type = document.getElementById('reportType').value;
-        const perType = document.getElementById('perTypeSelect') ? document.getElementById('perTypeSelect').value : 'all';
-        const token = localStorage.getItem('adminToken');
-        if (!token) { alert('Not authenticated'); return; }
-        const url = await buildUrl(type, { startDate, endDate, extra: { type: perType } });
-        try { const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } }); const json = await res.json(); document.getElementById('previewArea').textContent = JSON.stringify(json, null, 2); } catch (e){ alert('Preview failed: '+e.message); }
       });
 
       // Period select behavior (show/hide custom date inputs)
@@ -1059,7 +1038,18 @@
   <script>
     (function(){
       const LOW_STOCK_THRESHOLD = 5; // items at or below this per-size will be considered low
-      const API_BASE = (typeof API !== 'undefined') ? API : '';
+      // Use the main API_BASE defined earlier, or detect dynamically
+      const API_BASE_LOW = (function(){
+        try {
+          const origin = window.location.origin;
+          const port = window.location.port;
+          const host = window.location.hostname;
+          if (port === '5500' || host === '127.0.0.1') return 'http://localhost:5000';
+          return origin;
+        } catch (e) {
+          return 'http://localhost:5000';
+        }
+      })();
       const lowstockCountEl = document.getElementById('low-stock-count');
       const viewBtn = document.getElementById('view-lowstock');
       const notifyBtn = document.getElementById('notify-lowstock');
@@ -1072,7 +1062,7 @@
 
       async function fetchVariants(){
         try{
-          const res = await fetch(`${API_BASE}/api/admin/inventory/public/variants`);
+          const res = await fetch(`${API_BASE_LOW}/api/admin/inventory/public/variants`);
           if(!res.ok) return [];
           const json = await res.json();
           return json.success ? (json.data || []) : [];
@@ -1083,7 +1073,7 @@
       async function fetchAvailabilityByName(name, token){
         try{
           const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-          const res = await fetch(`${API_BASE}/api/admin/inventory/availability?name=${encodeURIComponent(name)}`, { headers });
+          const res = await fetch(`${API_BASE_LOW}/api/admin/inventory/availability?name=${encodeURIComponent(name)}`, { headers });
           if(!res.ok) return null;
           const json = await res.json();
           return json.success ? json.data : null;
@@ -1159,9 +1149,9 @@
 
       async function notifyLowStock(items){
         if(!items || !items.length) { alert('No items to notify.'); return; }
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
         try{
-          const res = await fetch(`${API_BASE}/api/admin/notifications/low-stock`, {
+          const res = await fetch(`${API_BASE_LOW}/api/admin/notifications/low-stock`, {
             method: 'POST',
             headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { 'Authorization': `Bearer ${token}` } : {}),
             body: JSON.stringify({ items })

@@ -212,22 +212,31 @@
         const j = await res.json();
         if (!j.success || !j.data) return;
         const data = j.data;
-        // If body contains HTML, render it; otherwise, set text
+        
+        // Load introduction/body content
         const aboutBody = document.getElementById('about-body');
-        if (aboutBody) {
-          // allow HTML from admin (if you plan to use rich editor), but sanitize in production
-          aboutBody.innerHTML = data.body || '';
+        if (aboutBody && data.body) {
+          aboutBody.innerHTML = data.body;
         }
+        
+        // Load story content
+        const aboutStory = document.getElementById('about-story');
+        if (aboutStory && data.story) {
+          aboutStory.innerHTML = data.story;
+        }
+        
+        // Load main image
         const aboutMainImage = document.getElementById('about-main-image');
         const imagesContainer = document.getElementById('about-images-container');
         if (Array.isArray(data.images) && data.images.length) {
           // set the first image as main
           if (aboutMainImage) aboutMainImage.src = data.images[0].url;
-          // render other images
-          if (imagesContainer) {
+          // render other images if any
+          if (imagesContainer && data.images.length > 1) {
             imagesContainer.innerHTML = '';
             data.images.forEach(img => {
-              const wrapper = document.createElement('div'); wrapper.className = 'w-full md:w-1/3 flex items-center justify-center bg-gray-100 rounded overflow-hidden shadow-sm';
+              const wrapper = document.createElement('div'); 
+              wrapper.className = 'w-full md:w-1/3 flex items-center justify-center bg-gray-100 rounded overflow-hidden shadow-sm';
               wrapper.innerHTML = `<img src="${img.url}" class="w-full h-auto max-h-[420px] object-contain" alt="">`;
               imagesContainer.appendChild(wrapper);
             });

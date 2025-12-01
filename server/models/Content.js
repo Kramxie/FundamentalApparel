@@ -9,6 +9,7 @@ const ContentSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true, index: true },
   title: { type: String, default: '' },
   body: { type: String, default: '' },
+  story: { type: String, default: '' },
   images: { type: [ImageSchema], default: [] }
 }, { timestamps: true });
 
