@@ -211,8 +211,13 @@
         showOverlay(); cm.classList.remove('hidden');
       }
 
-      document.getElementById('confirm-cancel').addEventListener('click', ()=>{ modalConfirmCallback = null; hideOverlay(); });
-      document.getElementById('confirm-ok').addEventListener('click', ()=>{ try{ if (typeof modalConfirmCallback === 'function') modalConfirmCallback(); }catch(e){ console.error('confirm-cb', e); } finally{ modalConfirmCallback = null; hideOverlay(); } });
+      // Attach confirm modal handlers after DOM is ready (modals are inserted later)
+      document.addEventListener('DOMContentLoaded', () => {
+        const cancelBtn = document.getElementById('confirm-cancel');
+        const okBtn = document.getElementById('confirm-ok');
+        if (cancelBtn) cancelBtn.addEventListener('click', ()=>{ modalConfirmCallback = null; hideOverlay(); });
+        if (okBtn) okBtn.addEventListener('click', ()=>{ try{ if (typeof modalConfirmCallback === 'function') modalConfirmCallback(); }catch(e){ console.error('confirm-cb', e); } finally{ modalConfirmCallback = null; hideOverlay(); } });
+      });
 
       // Edit User modal buttons
       let currentEditingUserId = null;
