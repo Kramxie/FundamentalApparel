@@ -211,6 +211,29 @@
         showOverlay(); cm.classList.remove('hidden');
       }
 
+      // Roles helper: fetch roles from server and populate selects
+      async function fetchRoles(){
+        try{
+          const res = await fetch(`${API}/api/admin/settings/roles`, { headers });
+          if (!res.ok) return; const j = await res.json(); if (!j.success) return;
+          availableRoles = j.data || [];
+          populateRoleSelects();
+        }catch(e){ console.error('fetchRoles', e); }
+      }
+
+      function populateRoleSelects(){
+        try{
+          const roleSelect = document.getElementById('staff-role');
+          const createRoleSelect = document.getElementById('create-staff-role');
+          const editUserRole = document.getElementById('edit-user-role');
+          [roleSelect, createRoleSelect, editUserRole].forEach(sel=>{
+            if (!sel) return;
+            sel.innerHTML = '<option value="">Select role</option>';
+            (availableRoles||[]).forEach(r=>{ const opt = document.createElement('option'); opt.value = r.name; opt.textContent = r.name; sel.appendChild(opt); });
+          });
+        }catch(e){ console.error('populateRoleSelects', e); }
+      }
+
       // Attach confirm modal handlers after DOM is ready (modals are inserted later)
       document.addEventListener('DOMContentLoaded', () => {
         const cancelBtn = document.getElementById('confirm-cancel');
@@ -316,7 +339,8 @@
         usersTabBtn.addEventListener('click', ()=> showUsers());
         contentTabBtn.addEventListener('click', ()=> showContent());
 
-        // default: show Store Info so admin sees the new features
+        // fetch roles early so dropdowns are populated, then show Store Info
+        fetchRoles();
         showStore();
 
         // --------- Store handlers ---------
@@ -448,12 +472,13 @@
               toast('No identifier for delete', false);
             }));
 
-            Array.from(staffListDiv.querySelectorAll('.staff-edit')).forEach(btn => btn.addEventListener('click', ()=>{
+            Array.from(staffListDiv.querySelectorAll('.staff-edit')).forEach(btn => btn.addEventListener('click', async ()=>{
               const uid = btn.getAttribute('data-uid');
               if (!uid) return;
               // open modal and populate
               (async function(){
                 try{
+                  if (!(availableRoles && availableRoles.length)) await fetchRoles();
                   const res = await fetch(`${API}/api/admin/users/${encodeURIComponent(uid)}`, { headers });
                   if (!res.ok) return showMsg(usersMsg, 'Failed to load user', false);
                   const j = await res.json(); const user = j.data || {};
