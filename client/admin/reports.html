@@ -100,17 +100,20 @@
           <a href="reports.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
             <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
           </a>
-          <a href="vouchers.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
-            <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
+          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
           </a>
-          <a href="messages.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
-            <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
+          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
+          </a>
+          <a href="employees.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-users-cog w-6"></i><span class="ml-3">Employees</span>
           </a>
           <a href="settings.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
             <i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span>
           </a>
-          <a href="profile.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
-            <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
+          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
           </a>
         </nav>
       </div>
@@ -133,7 +136,7 @@
         <div class="p-6 space-y-6">
           <!-- Filters and actions -->
           <div class="bg-white p-4 rounded shadow mb-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 <div>
                   <label class="block text-sm text-gray-600">Period</label>
                   <select id="periodSelect" class="mt-1 block w-full border rounded p-2">
@@ -158,7 +161,7 @@
                   <input id="endDate" type="date" class="mt-1 block w-full border rounded p-2" />
                 </div>
               <div>
-                <label class="block text-sm text-gray-600">Filter</label>
+                <label class="block text-sm text-gray-600">Report Type</label>
                 <select id="reportType" class="mt-1 block w-full border rounded p-2">
                   <option value="sales">Sales Summary</option>
                   <option value="orders">Order Export</option>
@@ -178,15 +181,43 @@
                 </select>
               </div>
               <div>
-                <label class="block text-sm text-gray-600">Format</label>
+                <label class="block text-sm text-gray-600">Payment Status</label>
+                <select id="paymentStatusFilter" class="mt-1 block w-full border rounded p-2">
+                  <option value="all">All</option>
+                  <option value="paid">Paid</option>
+                  <option value="unpaid">Unpaid</option>
+                  <option value="partial">Partial Payment</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600">Order Status</label>
+                <select id="orderStatusFilter" class="mt-1 block w-full border rounded p-2">
+                  <option value="all">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Processing">Processing</option>
+                  <option value="Shipped">Shipped</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600">Export Type</label>
+                <select id="exportType" class="mt-1 block w-full border rounded p-2">
+                  <option value="summary">Product Summary</option>
+                  <option value="detailed">Detailed Orders</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600">Export Format</label>
                 <select id="format" class="mt-1 block w-full border rounded p-2">
                   <option value="csv">CSV</option>
-                  <option value="json">JSON</option>
+                  <option value="pdf">PDF</option>
                 </select>
               </div>
             </div>
 
-            <div class="mt-4 flex gap-2 items-center">
+            <div class="mt-4 flex flex-wrap gap-2 items-center">
               <button id="generate" class="px-4 py-2 bg-indigo-600 text-white rounded">Generate Report</button>
               <button id="preview" class="px-4 py-2 bg-gray-200 rounded">Preview (JSON)</button>
               <button id="export-csv" class="px-4 py-2 bg-green-600 text-white rounded">Export as CSV</button>
@@ -271,10 +302,32 @@
               <div class="chart-wrapper" id="categoryChartWrapper"><canvas id="categoryChart"></canvas></div>
             </div>
             <div class="bg-white p-6 rounded-lg shadow-md">
-              <h2 class="text-lg font-semibold text-gray-800 mb-4">KPIs</h2>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="p-4 border rounded"><p class="text-sm text-gray-500">Average Order Value</p><p id="aov" class="text-xl font-bold">₱0</p></div>
-                <div class="p-4 border rounded"><p class="text-sm text-gray-500">Conversion Rate</p><p id="conversion-rate" class="text-xl font-bold">0%</p></div>
+              <h2 class="text-lg font-semibold text-gray-800 mb-4">Key Performance Indicators</h2>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="p-4 border rounded bg-blue-50">
+                  <p class="text-sm text-gray-500">Average Order Value</p>
+                  <p id="aov" class="text-xl font-bold text-blue-700">₱0</p>
+                </div>
+                <div class="p-4 border rounded bg-green-50">
+                  <p class="text-sm text-gray-500">Conversion Rate</p>
+                  <p id="conversion-rate" class="text-xl font-bold text-green-700">0%</p>
+                </div>
+                <div class="p-4 border rounded bg-purple-50">
+                  <p class="text-sm text-gray-500">Repeat Customers</p>
+                  <p id="repeat-customers" class="text-xl font-bold text-purple-700">0%</p>
+                </div>
+                <div class="p-4 border rounded bg-orange-50">
+                  <p class="text-sm text-gray-500">Return Rate</p>
+                  <p id="return-rate" class="text-xl font-bold text-orange-700">0%</p>
+                </div>
+                <div class="p-4 border rounded bg-pink-50">
+                  <p class="text-sm text-gray-500">Best Category</p>
+                  <p id="best-category" class="text-lg font-bold text-pink-700 truncate">-</p>
+                </div>
+                <div class="p-4 border rounded bg-teal-50">
+                  <p class="text-sm text-gray-500">Growth vs Last Period</p>
+                  <p id="growth-rate" class="text-xl font-bold text-teal-700">-</p>
+                </div>
               </div>
             </div>
           </div>
@@ -589,14 +642,40 @@
           const catLabels = (data.salesByCategory||[]).map(x=>x._id);
           const catValues = (data.salesByCategory||[]).map(x=>x.total || 0);
           drawCategoryChart(catLabels, catValues);
+          // Find best category
+          if (catLabels.length > 0 && catValues.length > 0) {
+            const maxIdx = catValues.indexOf(Math.max(...catValues));
+            document.getElementById('best-category').textContent = catLabels[maxIdx] || '-';
+          }
         } else {
           try{ if (categoryChart) { categoryChart.destroy(); categoryChart = null; } }catch(e){}
+          document.getElementById('best-category').textContent = '-';
         }
 
         // KPIs
         const aov = data.averageOrderValue || (data.totalRevenue && data.totalOrders ? (data.totalRevenue / Math.max(1, data.totalOrders)) : 0);
         document.getElementById('aov').textContent = '₱' + Number(aov||0).toLocaleString(undefined,{minimumFractionDigits:2});
         document.getElementById('conversion-rate').textContent = (Number(data.conversionRate||0)*100).toFixed(2) + '%';
+        
+        // Repeat customers rate (if available from server or calculate)
+        const repeatRate = data.repeatCustomerRate || 0;
+        document.getElementById('repeat-customers').textContent = (Number(repeatRate)*100).toFixed(1) + '%';
+        
+        // Return rate
+        const returnRate = data.returnRate || 0;
+        document.getElementById('return-rate').textContent = (Number(returnRate)*100).toFixed(1) + '%';
+        
+        // Growth rate (compare to previous period)
+        const growthRate = data.growthRate || null;
+        const growthEl = document.getElementById('growth-rate');
+        if (growthRate !== null) {
+          const sign = growthRate >= 0 ? '+' : '';
+          growthEl.textContent = sign + (growthRate * 100).toFixed(1) + '%';
+          growthEl.classList.toggle('text-green-700', growthRate >= 0);
+          growthEl.classList.toggle('text-red-600', growthRate < 0);
+        } else {
+          growthEl.textContent = '-';
+        }
 
         // Fetch and render Orders table for the selected range (paginated)
         try {
@@ -856,11 +935,13 @@
     async function exportCurrentViewCSV() {
       // Prefer server-generated CSV that respects the Per-Type filter
       const perType = document.getElementById('perTypeSelect') ? document.getElementById('perTypeSelect').value : 'all';
+      const exportType = document.getElementById('exportType') ? document.getElementById('exportType').value : 'summary';
       const period = document.getElementById('periodSelect').value;
       const token = localStorage.getItem('adminToken');
       const params = {
           type: perType,
-          download: 'csv'
+          download: 'csv',
+          detailed: exportType === 'detailed' ? 'true' : 'false'
       };
 
       if (period === 'month') {
@@ -872,6 +953,11 @@
           params.startDate = document.getElementById('startDate').value;
           params.endDate = document.getElementById('endDate').value;
       }
+      
+      // Include custom orders for detailed export
+      if (exportType === 'detailed' || perType === 'all') {
+        params.includeCustom = 'true';
+      }
 
       try {
         const url = await buildUrl('sales', { extra: params });
@@ -880,7 +966,7 @@
         const blob = await res.blob();
         // derive filename from header if present
         const cd = res.headers.get('content-disposition') || '';
-        let filename = `reports_${Date.now()}.csv`;
+        let filename = exportType === 'detailed' ? `orders_detailed_${Date.now()}.csv` : `sales_summary_${Date.now()}.csv`;
         const m = cd.match(/filename\*=UTF-8''(.+)$|filename="?([^";]+)"?/);
         if (m) filename = decodeURIComponent(m[1] || m[2] || filename);
         const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = filename; document.body.appendChild(link); link.click(); link.remove();

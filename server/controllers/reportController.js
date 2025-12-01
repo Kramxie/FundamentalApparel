@@ -184,7 +184,19 @@ exports.exportSalesCsv = async (req, res) => {
     if (start) start.setHours(0,0,0,0);
     if (end) end.setHours(23,59,59,999);
     const includeCustom = q.includeCustom === 'true' || q.includeCustom === true;
+    const detailedExport = q.detailed === 'true' || q.type === 'orders';
 
+    // Detailed export: order-level with all fields
+    if (detailedExport) {
+      const rows = await getSalesReport(start, end, { includeCustom });
+      const columns = ['order_id', 'order_date', 'customer_name', 'product_name', 'quantity', 'unit_price', 'vat', 'discount', 'delivery_fee', 'payment_method', 'payment_status', 'order_status', 'downpayment_amount', 'balance_amount', 'total_revenue'];
+      const csv = jsonToCsv(rows, columns);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="orders_detailed_${Date.now()}.csv"`);
+      return res.send(csv);
+    }
+
+    // Default: product summary
     const rows = await getSalesSummaryReport(start, end, { includeCustom });
     const columns = ['Product ID', 'Product Name', 'Quantity Sold', 'Total Revenue'];
     const csv = jsonToCsv(rows, columns);
@@ -424,6 +436,54 @@ exports.salesReport = async (req, res) => {
         topPreDesigns: topPreDesigns,
         topFabrics: topFabricsCustom
       };
+    }
+
+    // Calculate additional KPIs
+    try {
+      // Repeat customers: users with more than 1 order
+      const repeatCustomersAgg = await Order.aggregate([
+        { $match: baseMatch },
+        { $group: { _id: '$user', orderCount: { $sum: 1 } } },
+        { $match: { orderCount: { $gt: 1 } } },
+        { $count: 'repeatCustomers' }
+      ]);
+      const totalCustomersAgg = await Order.aggregate([
+        { $match: baseMatch },
+        { $group: { _id: '$user' } },
+        { $count: 'totalCustomers' }
+      ]);
+      const repeatCustomers = repeatCustomersAgg[0]?.repeatCustomers || 0;
+      const totalCustomers = totalCustomersAgg[0]?.totalCustomers || 1;
+      result.repeatCustomerRate = repeatCustomers / totalCustomers;
+      
+      // Return rate: refunds / total orders
+      const refundCount = await RefundRequest.countDocuments(Object.assign({}, baseMatch, { status: { $in: ['approved', 'completed'] } })).catch(() => 0);
+      result.returnRate = refundCount / Math.max(1, result.totalOrders);
+      
+      // Growth rate: compare current period revenue to previous period
+      if (start && end) {
+        const periodLength = end - start;
+        const prevEnd = new Date(start.getTime() - 1);
+        const prevStart = new Date(prevEnd.getTime() - periodLength);
+        
+        const prevTotals = await Order.aggregate([
+          { $match: { createdAt: { $gte: prevStart, $lte: prevEnd }, status: { $ne: 'Cancelled' } } },
+          { $group: { _id: null, totalRevenue: { $sum: '$totalPrice' } } }
+        ]);
+        const prevRevenue = prevTotals[0]?.totalRevenue || 0;
+        if (prevRevenue > 0) {
+          result.growthRate = (result.totalRevenue - prevRevenue) / prevRevenue;
+        } else {
+          result.growthRate = result.totalRevenue > 0 ? 1 : 0; // 100% growth if no previous data
+        }
+      }
+      
+      // Best category
+      if (result.salesByCategory || (data && data.byCategory)) {
+        // already included in result
+      }
+    } catch (kpiErr) {
+      console.debug('KPI calculation error:', kpiErr.message);
     }
 
     // If download CSV requested
