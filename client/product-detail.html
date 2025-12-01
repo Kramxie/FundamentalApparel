@@ -395,9 +395,12 @@
                     </div>
 
                     <!-- You May Also Like: related products shown under product details and reviews -->
-                    <div class="mt-12">
-                        <h3 class="text-xl font-semibold text-gray-900 mb-4 text-center">You May Also Like</h3>
-                        <div id="related-products" class="flex justify-center"></div>
+                    <div class="mt-12 border-t pt-10">
+                        <div class="text-center mb-8">
+                            <h3 class="text-2xl font-bold text-gray-900">You May Also Like</h3>
+                            <p class="text-gray-500 mt-2">Discover more products you'll love</p>
+                        </div>
+                        <div id="related-products"></div>
                     </div>
                 </div>
             `;
@@ -619,20 +622,19 @@
                         if (vals.length>0) dp = Math.min(...vals);
                     } catch (e) {}
                     return `
-                    <a href="product-detail.html?id=${p._id}" class="block bg-white p-3 rounded-lg border hover:shadow-md transition flex flex-col justify-between w-full max-w-[220px]">
-                        <div class="w-full overflow-hidden rounded-md mb-3">
-                            <div class="w-full h-40 sm:h-44 md:h-48 lg:h-52 overflow-hidden rounded-md bg-gray-50 flex items-center justify-center">
-                                <img src="${p.imageUrl || (p.gallery&&p.gallery[0]) || ''}" class="w-full h-full object-cover" alt="${(p.name||'')}">
-                            </div>
+                    <a href="product-detail.html?id=${p._id}" class="group block bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all duration-300">
+                        <div class="relative overflow-hidden bg-gray-50">
+                            <img src="${p.imageUrl || (p.gallery&&p.gallery[0]) || ''}" class="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500" alt="${(p.name||'')}">
                         </div>
-                        <div class="mt-2">
-                            <div class="text-sm font-medium text-gray-900 truncate">${p.name}</div>
-                            <div class="text-sm text-gray-500 mt-1">₱${Number(dp||0).toLocaleString()}</div>
+                        <div class="p-4">
+                            <h4 class="text-base font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition">${p.name}</h4>
+                            <p class="text-sm text-gray-500 mt-1">${p.category || 'Apparel'}</p>
+                            <p class="text-lg font-bold text-indigo-600 mt-2">₱${Number(dp||0).toLocaleString()}</p>
                         </div>
                     </a>
                 `; }).join('');
-                // Responsive grid: 2 cols mobile, 3 small, 4 medium+, center and constrain width
-                container.innerHTML = `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6 mx-auto max-w-6xl justify-items-center">${cards}</div>`;
+                // Responsive grid with better sizing
+                container.innerHTML = `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 sm:gap-6 w-full">${cards}</div>`;
             }
 
             // kick off related rendering (container exists in-page under tabs)
@@ -649,5 +651,6 @@
   <script src="js/footer.js"></script>
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script src="js/chat.js"></script>
+  <script src="js/idle-timeout.js"></script>
 </body>
 </html>

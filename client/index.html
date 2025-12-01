@@ -209,6 +209,28 @@
         </div>
     </section>
 
+    <!-- Featured Products Section -->
+    <section id="featured-products" class="py-16 bg-gray-50 border-t border-gray-100">
+        <div class="container mx-auto px-4 md:px-6">
+            <div class="text-center mb-10">
+                <span class="text-indigo-600 font-bold tracking-wider text-xs uppercase mb-2 block">Handpicked for You</span>
+                <h2 class="text-3xl font-bold text-gray-900">Featured Products</h2>
+                <p class="text-gray-500 mt-2">Our most popular and recommended items</p>
+            </div>
+
+            <div id="featured-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                <p id="featured-loading" class="col-span-full text-center text-gray-500 py-12">Loading featured products...</p>
+            </div>
+
+            <div class="mt-10 flex justify-center">
+                <a href="products.html" class="group inline-flex items-center px-8 py-3.5 text-base font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full shadow-lg hover:shadow-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:-translate-y-1">
+                    <span>View All Products</span>
+                    <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // Hamburger Menu Toggle
@@ -470,7 +492,97 @@
                 });
             }
 
+            // Featured Products
+            async function fetchFeaturedProducts() {
+                const featuredContainer = document.getElementById('featured-container');
+                const featuredLoading = document.getElementById('featured-loading');
+                
+                try {
+                    const response = await fetch(`${API}/api/products?placement=featured&type=regular&limit=8`);
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const result = await response.json();
+
+                    if (result.success && result.data.length > 0) {
+                        renderFeaturedProducts(result.data);
+                    } else {
+                        // If no featured products, hide the section or show message
+                        featuredContainer.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">No featured products available yet.</p>';
+                    }
+                } catch (error) {
+                    featuredContainer.innerHTML = '<p class="col-span-full text-center text-gray-400 py-8">Featured products coming soon...</p>';
+                } finally {
+                    if (featuredLoading) featuredLoading.style.display = 'none';
+                }
+            }
+
+            function renderFeaturedProducts(products) {
+                const featuredContainer = document.getElementById('featured-container');
+                featuredContainer.innerHTML = '';
+                
+                products.forEach(product => {
+                    const imageUrl = product.imageUrl || 'https://placehold.co/400x400/e2e8f0/cccccc?text=N/A';
+                    
+                    // Determine display price
+                    let displayPrice = Number(product.price || 0);
+                    try {
+                        let spo = product.sizesPrice || {};
+                        if (typeof spo === 'string') {
+                            try { spo = JSON.parse(spo); } catch(e) { spo = {}; }
+                        }
+                        const vals = Object.values(spo || {}).map(v => Number(v||0)).filter(v=>v>0);
+                        if (vals.length > 0) displayPrice = Math.min(...vals);
+                    } catch (e) { /* ignore */ }
+
+                    const productCard = document.createElement('div');
+                    productCard.className = 'group bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-xl hover:border-indigo-200 transition-all duration-300 flex flex-col';
+
+                    productCard.innerHTML = `
+                        <a href="product-detail.html?id=${product._id}" class="block relative">
+                            <div class="absolute top-3 left-3 z-10">
+                                <span class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                                    <i class="fas fa-star mr-1"></i> Featured
+                                </span>
+                            </div>
+                            <div class="relative w-full h-48 md:h-56 lg:h-64 bg-gray-100 overflow-hidden">
+                                <img src="${imageUrl}" alt="${product.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            </div>
+                        </a>
+                        
+                        <div class="p-4 flex-1 flex flex-col justify-between">
+                            <div class="mb-3">
+                                <h3 class="text-sm md:text-base font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition" title="${product.name}">${product.name}</h3>
+                                <p class="text-xs text-gray-500 mt-1">${product.category || 'Apparel'}</p>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between items-center mb-3">
+                                    <p class="text-lg md:text-xl font-bold text-indigo-600">₱${Number(displayPrice || 0).toLocaleString()}</p>
+                                </div>
+
+                                <div class="flex gap-2">
+                                    <button class="featured-add-btn bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-2 rounded-lg hover:from-indigo-700 hover:to-purple-700 text-xs md:text-sm flex-1 transition font-medium shadow-sm" data-id="${product._id}">
+                                        <i class="fas fa-shopping-bag mr-1"></i> Add to Cart
+                                    </button>
+                                    <a href="product-detail.html?id=${product._id}" class="px-3 py-2 border border-gray-200 rounded-lg text-xs md:text-sm text-gray-600 hover:bg-gray-50 hover:border-indigo-200 transition flex items-center justify-center">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    featuredContainer.appendChild(productCard);
+                });
+
+                // Attach cart event listeners
+                document.querySelectorAll('.featured-add-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        addToCart(btn.dataset.id, btn);
+                    });
+                });
+            }
+
             fetchProducts();
+            fetchFeaturedProducts();
         });
     </script>
 
@@ -479,5 +591,6 @@
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="js/chat.js"></script>
+    <script src="js/idle-timeout.js"></script>
 </body>
 </html>
