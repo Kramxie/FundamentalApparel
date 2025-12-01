@@ -108,63 +108,7 @@
                 <button id="add-role-btn" class="px-3 py-2 bg-indigo-600 text-white rounded">Add Role</button>
               </div>
             </div>
-              <!-- Modals -->
-              <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
-                <!-- Edit User Modal -->
-                <div id="edit-user-modal" class="bg-white rounded shadow-lg w-full max-w-xl p-6 hidden">
-                  <h3 class="text-lg font-semibold mb-4">Edit User</h3>
-                  <div id="edit-user-msg" class="hidden p-2 rounded mb-3"></div>
-                  <label class="block text-sm font-medium text-gray-700">Name</label>
-                  <input id="edit-user-name" class="w-full border p-2 rounded mb-3" />
-                  <label class="block text-sm font-medium text-gray-700">Email</label>
-                  <input id="edit-user-email" class="w-full border p-2 rounded mb-3" />
-                  <label class="block text-sm font-medium text-gray-700">Role</label>
-                  <select id="edit-user-role" class="w-full border p-2 rounded mb-4"><option value="">Select role</option></select>
-                  <div class="flex justify-end gap-3">
-                    <button id="edit-user-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-                    <button id="edit-user-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
-                  </div>
-                </div>
-
-                <!-- Create Staff Modal -->
-                <div id="create-staff-modal" class="bg-white rounded shadow-lg w-full max-w-xl p-6 hidden">
-                  <h3 class="text-lg font-semibold mb-4">Add Staff</h3>
-                  <div id="create-staff-msg" class="hidden p-2 rounded mb-3"></div>
-                  <label class="block text-sm font-medium text-gray-700">Name</label>
-                  <input id="create-staff-name" class="w-full border p-2 rounded mb-3" />
-                  <label class="block text-sm font-medium text-gray-700">Email</label>
-                  <input id="create-staff-email" class="w-full border p-2 rounded mb-3" />
-                  <label class="block text-sm font-medium text-gray-700">Role</label>
-                  <select id="create-staff-role" class="w-full border p-2 rounded mb-4"><option value="">Select role</option></select>
-                  <div class="flex justify-end gap-3">
-                    <button id="create-staff-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-                    <button id="create-staff-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Create Staff</button>
-                  </div>
-                </div>
-                <!-- Edit Role Modal -->
-                <div id="edit-role-modal" class="bg-white rounded shadow-lg w-full max-w-lg p-6 hidden">
-                  <h3 class="text-lg font-semibold mb-4">Edit Role</h3>
-                  <div id="edit-role-msg" class="hidden p-2 rounded mb-3"></div>
-                  <label class="block text-sm font-medium text-gray-700">Role Name</label>
-                  <input id="edit-role-name" class="w-full border p-2 rounded mb-3" />
-                  <label class="block text-sm font-medium text-gray-700">Permissions (comma separated)</label>
-                  <input id="edit-role-perms" class="w-full border p-2 rounded mb-4" />
-                  <div class="flex justify-end gap-3">
-                    <button id="edit-role-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-                    <button id="edit-role-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save Role</button>
-                  </div>
-                </div>
-
-                <!-- Confirm Modal -->
-                <div id="confirm-modal" class="bg-white rounded shadow-lg w-full max-w-md p-6 hidden">
-                  <h3 id="confirm-title" class="text-lg font-semibold mb-2">Confirm</h3>
-                  <p id="confirm-message" class="mb-4 text-sm text-gray-700"></p>
-                  <div class="flex justify-end gap-3">
-                    <button id="confirm-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-                    <button id="confirm-ok" class="px-4 py-2 bg-red-600 text-white rounded">Confirm</button>
-                  </div>
-                </div>
-              </div>
+              <!-- Modals removed from here and moved to end of document so overlay works across panels -->
             <div class="flex justify-end gap-3">
               <button id="store-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save Store</button>
             </div>
@@ -721,6 +665,64 @@
       });
     })();
   </script>
+  <!-- Modals (moved here so overlay is global and works regardless of which settings panel is visible) -->
+  <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+    <!-- Edit User Modal -->
+    <div id="edit-user-modal" class="bg-white rounded shadow-lg w-full max-w-xl p-6 hidden">
+      <h3 class="text-lg font-semibold mb-4">Edit User</h3>
+      <div id="edit-user-msg" class="hidden p-2 rounded mb-3"></div>
+      <label class="block text-sm font-medium text-gray-700">Name</label>
+      <input id="edit-user-name" class="w-full border p-2 rounded mb-3" />
+      <label class="block text-sm font-medium text-gray-700">Email</label>
+      <input id="edit-user-email" class="w-full border p-2 rounded mb-3" />
+      <label class="block text-sm font-medium text-gray-700">Role</label>
+      <select id="edit-user-role" class="w-full border p-2 rounded mb-4"><option value="">Select role</option></select>
+      <div class="flex justify-end gap-3">
+        <button id="edit-user-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+        <button id="edit-user-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
+      </div>
+    </div>
+
+    <!-- Create Staff Modal -->
+    <div id="create-staff-modal" class="bg-white rounded shadow-lg w-full max-w-xl p-6 hidden">
+      <h3 class="text-lg font-semibold mb-4">Add Staff</h3>
+      <div id="create-staff-msg" class="hidden p-2 rounded mb-3"></div>
+      <label class="block text-sm font-medium text-gray-700">Name</label>
+      <input id="create-staff-name" class="w-full border p-2 rounded mb-3" />
+      <label class="block text-sm font-medium text-gray-700">Email</label>
+      <input id="create-staff-email" class="w-full border p-2 rounded mb-3" />
+      <label class="block text-sm font-medium text-gray-700">Role</label>
+      <select id="create-staff-role" class="w-full border p-2 rounded mb-4"><option value="">Select role</option></select>
+      <div class="flex justify-end gap-3">
+        <button id="create-staff-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+        <button id="create-staff-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Create Staff</button>
+      </div>
+    </div>
+
+    <!-- Edit Role Modal -->
+    <div id="edit-role-modal" class="bg-white rounded shadow-lg w-full max-w-lg p-6 hidden">
+      <h3 class="text-lg font-semibold mb-4">Edit Role</h3>
+      <div id="edit-role-msg" class="hidden p-2 rounded mb-3"></div>
+      <label class="block text-sm font-medium text-gray-700">Role Name</label>
+      <input id="edit-role-name" class="w-full border p-2 rounded mb-3" />
+      <label class="block text-sm font-medium text-gray-700">Permissions (comma separated)</label>
+      <input id="edit-role-perms" class="w-full border p-2 rounded mb-4" />
+      <div class="flex justify-end gap-3">
+        <button id="edit-role-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+        <button id="edit-role-save" class="px-4 py-2 bg-indigo-600 text-white rounded">Save Role</button>
+      </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="bg-white rounded shadow-lg w-full max-w-md p-6 hidden">
+      <h3 id="confirm-title" class="text-lg font-semibold mb-2">Confirm</h3>
+      <p id="confirm-message" class="mb-4 text-sm text-gray-700"></p>
+      <div class="flex justify-end gap-3">
+        <button id="confirm-cancel" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+        <button id="confirm-ok" class="px-4 py-2 bg-red-600 text-white rounded">Confirm</button>
+      </div>
+    </div>
+  </div>
   <script src="admin-notifications.js"></script>
 </body>
 </html>
