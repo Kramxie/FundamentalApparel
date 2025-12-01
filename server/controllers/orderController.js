@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const notify = require('../utils/notify');
 const { allocateInventoryBySizes, findInventoryByName } = require('../utils/inventory');
 const { checkAndAwardLoyaltyVoucher } = require('../utils/loyalty');
+const { notifyNewOrder, notifyPaymentReceived } = require('./notificationController');
 
 function escapeRegex(text) {
     return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -191,6 +192,13 @@ exports.createOrderWithReceipt = async (req, res) => {
             totalPrice,
             isPaid: false
         });
+
+        // Notify admin of new order
+        try {
+            await notifyNewOrder(order);
+        } catch (notifyErr) {
+            console.error('[Create Order] Notification error:', notifyErr.message);
+        }
 
         if (itemIds && Array.isArray(itemIds) && itemIds.length > 0) {
             cart.items = cart.items.filter(item => !itemIds.includes(item._id.toString()));
@@ -548,6 +556,13 @@ exports.createOrder = async (req, res) => {
       totalPrice,
       isPaid: false
     });
+
+    // Notify admin of new order
+    try {
+        await notifyNewOrder(order);
+    } catch (notifyErr) {
+        console.error('[Create Order] Notification error:', notifyErr.message);
+    }
 
     if (itemIds && Array.isArray(itemIds) && itemIds.length > 0) {
         cart.items = cart.items.filter(item => !itemIds.includes(item._id.toString()));

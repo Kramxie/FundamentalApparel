@@ -31,6 +31,7 @@ const returnRoutes = require('./routes/returnRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const contentRoutes = require('./routes/contentRoutes');
 const publicContentRoutes = require('./routes/publicContentRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
 const notifyUtil = require('./utils/notify');
 
 connectDB();
@@ -132,6 +133,7 @@ app.use('/api/admin/reports', reportRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/admin/notifications', notificationRoutes);
 app.use('/api/admin/content', contentRoutes);
+app.use('/api/admin/employees', employeeRoutes);
 // Public content endpoints (no auth) used by customer-facing pages
 app.use('/api/content', publicContentRoutes);
 

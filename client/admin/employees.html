@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Employee Management - Fundamental Apparel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="flex min-h-screen bg-gray-100">
+    <!-- Sidebar Navigation -->
+    <div class="hidden md:flex flex-col w-64 bg-white shadow-lg">
+      <div class="flex items-center justify-center h-16 bg-white shadow-md">
+        <span class="text-2xl font-bold text-indigo-600">Admin Panel</span>
+      </div>
+      <div class="flex flex-col flex-grow p-4">
+        <nav class="flex-grow space-y-2">
+          <a href="index.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+          </a>
+          <a href="add-product.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Add Product</span>
+          </a>
+          <a href="manage-categories.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-plus-circle w-6"></i><span class="ml-3">Manage Categories</span>
+          </a>
+          <a href="inventory.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-warehouse w-6"></i><span class="ml-3">Inventory</span>
+          </a>
+          <a href="orders.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
+          </a>
+          <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-file-chart-column w-6"></i><span class="ml-3">Reports & Sales</span>
+          </a>
+          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
+          </a>
+          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
+          </a>
+          <a href="employees.html" class="flex items-center px-4 py-2 text-white bg-indigo-600 rounded-md">
+            <i class="fas fa-users-cog w-6"></i><span class="ml-3">Employees</span>
+          </a>
+          <a href="settings.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span>
+          </a>
+          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+            <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex flex-col flex-1 overflow-hidden">
+      <!-- Header -->
+      <div class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
+        <h1 class="text-xl font-semibold text-gray-800">Employee Management</h1>
+        <div class="flex items-center gap-4">
+          <button id="add-employee-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center gap-2">
+            <i class="fas fa-plus"></i>
+            Add Employee
+          </button>
+          <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+          </button>
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500">Total Employees</p>
+                <p class="text-2xl font-bold text-gray-800" id="stat-total">0</p>
+              </div>
+              <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
+                <i class="fas fa-users text-indigo-600 text-xl"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500">With Accounts</p>
+                <p class="text-2xl font-bold text-green-600" id="stat-with-account">0</p>
+              </div>
+              <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <i class="fas fa-user-check text-green-600 text-xl"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500">Without Accounts</p>
+                <p class="text-2xl font-bold text-orange-600" id="stat-no-account">0</p>
+              </div>
+              <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                <i class="fas fa-user-times text-orange-600 text-xl"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500">Active</p>
+                <p class="text-2xl font-bold text-blue-600" id="stat-active">0</p>
+              </div>
+              <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <i class="fas fa-user-clock text-blue-600 text-xl"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+          <div class="flex flex-wrap gap-4 items-center">
+            <div class="flex-1 min-w-64">
+              <div class="relative">
+                <input type="text" id="search-input" placeholder="Search by name, email, or position..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+              </div>
+            </div>
+            <select id="status-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="with-account">With Account</option>
+              <option value="no-account">No Account</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Employee Table -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="employees-table" class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p>Loading employees...</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Pagination -->
+          <div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
+            <div class="text-sm text-gray-700">
+              Showing <span id="showing-from">0</span> to <span id="showing-to">0</span> of <span id="total-count">0</span> employees
+            </div>
+            <div class="flex gap-2" id="pagination"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Employee Modal -->
+  <div id="employee-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <h3 class="text-lg font-semibold text-gray-900" id="modal-title">Add Employee</h3>
+        <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <form id="employee-form">
+          <input type="hidden" id="employee-id">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+              <input type="text" id="emp-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Juan Dela Cruz">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+              <input type="email" id="emp-email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="juan@company.com">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+              <input type="text" id="emp-contact" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="09XX XXX XXXX">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Position</label>
+              <input type="text" id="emp-position" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Staff">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea id="emp-notes" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Optional notes about this employee..."></textarea>
+            </div>
+          </div>
+          <div id="form-error" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
+          <div class="flex gap-3 mt-6">
+            <button type="submit" class="flex-1 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+              <i class="fas fa-save mr-2"></i>Save Employee
+            </button>
+            <button type="button" id="cancel-form" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Account Modal -->
+  <div id="account-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <h3 class="text-lg font-semibold text-gray-900">Create Account</h3>
+        <button id="close-account-modal" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <p class="text-sm text-gray-600 mb-4">Create a login account for <strong id="account-emp-name"></strong> (<span id="account-emp-email"></span>)</p>
+        <form id="account-form">
+          <input type="hidden" id="account-emp-id">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Password <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <input type="password" id="account-password" required minlength="8" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10" placeholder="Minimum 8 characters">
+              <button type="button" id="toggle-account-password" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          <div class="mb-4">
+            <button type="button" id="generate-password" class="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+              <i class="fas fa-magic"></i> Generate Random Password
+            </button>
+          </div>
+          <div id="account-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
+          <div class="flex gap-3">
+            <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+              <i class="fas fa-user-plus mr-2"></i>Create Account
+            </button>
+            <button type="button" id="cancel-account" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Send Message Modal -->
+  <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <h3 class="text-lg font-semibold text-gray-900">Send Message</h3>
+        <button id="close-message-modal" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <p class="text-sm text-gray-600 mb-4">Send an email to <strong id="message-emp-name"></strong> (<span id="message-emp-email"></span>)</p>
+        <form id="message-form">
+          <input type="hidden" id="message-emp-id">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <input type="text" id="message-subject" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Message from Fundamental Apparel">
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Message <span class="text-red-500">*</span></label>
+            <textarea id="message-body" required rows="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Write your message here..."></textarea>
+          </div>
+          
+          <!-- Include Credentials Section -->
+          <div class="mb-4 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="include-credentials" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+              <span class="text-sm font-medium text-indigo-800">Include Login Credentials</span>
+            </label>
+            <p class="text-xs text-indigo-600 mt-1">Check this to include email and password in the message</p>
+            
+            <div id="credentials-section" class="hidden mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Password to Send <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <input type="text" id="credentials-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Enter or generate password">
+              </div>
+              <button type="button" id="generate-cred-password" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                <i class="fas fa-magic"></i> Generate Random Password
+              </button>
+            </div>
+          </div>
+          
+          <div id="message-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"></div>
+          <div class="flex gap-3">
+            <button type="submit" class="flex-1 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+              <i class="fas fa-paper-plane mr-2"></i>Send Message
+            </button>
+            <button type="button" id="cancel-message" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div class="p-6 text-center">
+        <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-trash-alt text-red-600 text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete Employee?</h3>
+        <p class="text-gray-600 mb-6">Are you sure you want to delete <strong id="delete-emp-name"></strong>? This action cannot be undone.</p>
+        <input type="hidden" id="delete-emp-id">
+        <div class="flex gap-3 justify-center">
+          <button id="confirm-delete" class="px-6 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors">
+            <i class="fas fa-trash-alt mr-2"></i>Delete
+          </button>
+          <button id="cancel-delete" class="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://fundamental-apparel-backend.onrender.com';
+    let currentPage = 1;
+    let allEmployees = [];
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
+      loadEmployees();
+      setupEventListeners();
+    });
+    
+    function checkAuth() {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+    }
+    
+    function getAuthHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+        'ngrok-skip-browser-warning': 'true'
+      };
+    }
+    
+    async function loadEmployees(page = 1) {
+      try {
+        const search = document.getElementById('search-input').value;
+        const status = document.getElementById('status-filter').value;
+        
+        const params = new URLSearchParams({ page, limit: 20 });
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        
+        const response = await fetch(`${API}/api/admin/employees?${params}`, {
+          headers: getAuthHeaders()
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          allEmployees = result.data;
+          renderEmployees(result.data);
+          renderPagination(result.pagination);
+          updateStats();
+        } else {
+          showTableError(result.msg || 'Failed to load employees');
+        }
+      } catch (error) {
+        console.error('Load employees error:', error);
+        showTableError('Failed to load employees');
+      }
+    }
+    
+    function renderEmployees(employees) {
+      const tbody = document.getElementById('employees-table');
+      
+      if (employees.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+              <i class="fas fa-users text-4xl mb-2 text-gray-300"></i>
+              <p>No employees found</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tbody.innerHTML = employees.map(emp => `
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4">
+            <div class="flex items-center">
+              <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+                <span class="text-indigo-600 font-medium">${emp.name.charAt(0).toUpperCase()}</span>
+              </div>
+              <div>
+                <div class="font-medium text-gray-900">${escapeHtml(emp.name)}</div>
+                <div class="text-sm text-gray-500">${escapeHtml(emp.email)}</div>
+              </div>
+            </div>
+          </td>
+          <td class="px-6 py-4 text-gray-600">${emp.contactNumber || '-'}</td>
+          <td class="px-6 py-4">
+            <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">${escapeHtml(emp.position || 'Staff')}</span>
+          </td>
+          <td class="px-6 py-4">
+            ${emp.hasAccount 
+              ? `<span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700"><i class="fas fa-check-circle mr-1"></i>Has Account</span>`
+              : `<span class="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-700"><i class="fas fa-times-circle mr-1"></i>No Account</span>`
+            }
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-500">${formatDate(emp.createdAt)}</td>
+          <td class="px-6 py-4">
+            <div class="flex gap-2">
+              ${!emp.hasAccount ? `
+                <button onclick="openAccountModal('${emp._id}', '${escapeHtml(emp.name)}', '${escapeHtml(emp.email)}')" class="p-2 text-green-600 hover:bg-green-50 rounded-md" title="Create Account">
+                  <i class="fas fa-user-plus"></i>
+                </button>
+              ` : ''}
+              <button onclick="openMessageModal('${emp._id}', '${escapeHtml(emp.name)}', '${escapeHtml(emp.email)}')" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-md" title="Send Message">
+                <i class="fas fa-envelope"></i>
+              </button>
+              <button onclick="editEmployee('${emp._id}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-md" title="Edit">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button onclick="openDeleteModal('${emp._id}', '${escapeHtml(emp.name)}')" class="p-2 text-red-600 hover:bg-red-50 rounded-md" title="Delete">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    function renderPagination(pagination) {
+      const { currentPage, totalPages, totalItems, itemsPerPage } = pagination;
+      const from = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+      const to = Math.min(currentPage * itemsPerPage, totalItems);
+      
+      document.getElementById('showing-from').textContent = from;
+      document.getElementById('showing-to').textContent = to;
+      document.getElementById('total-count').textContent = totalItems;
+      
+      const paginationDiv = document.getElementById('pagination');
+      if (totalPages <= 1) {
+        paginationDiv.innerHTML = '';
+        return;
+      }
+      
+      let html = '';
+      if (currentPage > 1) {
+        html += `<button onclick="loadEmployees(${currentPage - 1})" class="px-3 py-1 border rounded-md hover:bg-gray-100"><i class="fas fa-chevron-left"></i></button>`;
+      }
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === currentPage) {
+          html += `<button class="px-3 py-1 bg-indigo-600 text-white rounded-md">${i}</button>`;
+        } else {
+          html += `<button onclick="loadEmployees(${i})" class="px-3 py-1 border rounded-md hover:bg-gray-100">${i}</button>`;
+        }
+      }
+      if (currentPage < totalPages) {
+        html += `<button onclick="loadEmployees(${currentPage + 1})" class="px-3 py-1 border rounded-md hover:bg-gray-100"><i class="fas fa-chevron-right"></i></button>`;
+      }
+      paginationDiv.innerHTML = html;
+    }
+    
+    function updateStats() {
+      const total = allEmployees.length;
+      const withAccount = allEmployees.filter(e => e.hasAccount).length;
+      const noAccount = allEmployees.filter(e => !e.hasAccount).length;
+      const active = allEmployees.filter(e => e.isActive).length;
+      
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-with-account').textContent = withAccount;
+      document.getElementById('stat-no-account').textContent = noAccount;
+      document.getElementById('stat-active').textContent = active;
+    }
+    
+    function showTableError(message) {
+      document.getElementById('employees-table').innerHTML = `
+        <tr>
+          <td colspan="6" class="px-6 py-8 text-center text-red-500">
+            <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
+            <p>${message}</p>
+          </td>
+        </tr>
+      `;
+    }
+    
+    function setupEventListeners() {
+      // Logout
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        localStorage.removeItem('adminToken');
+        window.location.href = 'login.html';
+      });
+      
+      // Add Employee
+      document.getElementById('add-employee-btn').addEventListener('click', () => {
+        document.getElementById('modal-title').textContent = 'Add Employee';
+        document.getElementById('employee-form').reset();
+        document.getElementById('employee-id').value = '';
+        document.getElementById('form-error').classList.add('hidden');
+        document.getElementById('employee-modal').classList.remove('hidden');
+        document.getElementById('employee-modal').classList.add('flex');
+      });
+      
+      // Close modals
+      ['close-modal', 'cancel-form'].forEach(id => {
+        document.getElementById(id).addEventListener('click', closeEmployeeModal);
+      });
+      ['close-account-modal', 'cancel-account'].forEach(id => {
+        document.getElementById(id).addEventListener('click', closeAccountModal);
+      });
+      ['close-message-modal', 'cancel-message'].forEach(id => {
+        document.getElementById(id).addEventListener('click', closeMessageModal);
+      });
+      ['cancel-delete'].forEach(id => {
+        document.getElementById(id).addEventListener('click', closeDeleteModal);
+      });
+      
+      // Search and filter
+      let searchTimeout;
+      document.getElementById('search-input').addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => loadEmployees(1), 300);
+      });
+      document.getElementById('status-filter').addEventListener('change', () => loadEmployees(1));
+      
+      // Employee form
+      document.getElementById('employee-form').addEventListener('submit', handleEmployeeSubmit);
+      
+      // Account form
+      document.getElementById('account-form').addEventListener('submit', handleAccountSubmit);
+      document.getElementById('toggle-account-password').addEventListener('click', () => {
+        const input = document.getElementById('account-password');
+        const icon = document.querySelector('#toggle-account-password i');
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+          input.type = 'password';
+          icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+      });
+      document.getElementById('generate-password').addEventListener('click', () => {
+        document.getElementById('account-password').value = generatePassword();
+        document.getElementById('account-password').type = 'text';
+        document.querySelector('#toggle-account-password i').classList.replace('fa-eye', 'fa-eye-slash');
+      });
+      
+      // Message form
+      document.getElementById('message-form').addEventListener('submit', handleMessageSubmit);
+      document.getElementById('include-credentials').addEventListener('change', (e) => {
+        document.getElementById('credentials-section').classList.toggle('hidden', !e.target.checked);
+      });
+      document.getElementById('generate-cred-password').addEventListener('click', () => {
+        document.getElementById('credentials-password').value = generatePassword();
+      });
+      
+      // Delete confirmation
+      document.getElementById('confirm-delete').addEventListener('click', handleDelete);
+    }
+    
+    function closeEmployeeModal() {
+      document.getElementById('employee-modal').classList.add('hidden');
+      document.getElementById('employee-modal').classList.remove('flex');
+    }
+    
+    function closeAccountModal() {
+      document.getElementById('account-modal').classList.add('hidden');
+      document.getElementById('account-modal').classList.remove('flex');
+      document.getElementById('account-form').reset();
+    }
+    
+    function closeMessageModal() {
+      document.getElementById('message-modal').classList.add('hidden');
+      document.getElementById('message-modal').classList.remove('flex');
+      document.getElementById('message-form').reset();
+      document.getElementById('credentials-section').classList.add('hidden');
+    }
+    
+    function closeDeleteModal() {
+      document.getElementById('delete-modal').classList.add('hidden');
+      document.getElementById('delete-modal').classList.remove('flex');
+    }
+    
+    async function handleEmployeeSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('employee-id').value;
+      const data = {
+        name: document.getElementById('emp-name').value.trim(),
+        email: document.getElementById('emp-email').value.trim(),
+        contactNumber: document.getElementById('emp-contact').value.trim(),
+        position: document.getElementById('emp-position').value.trim() || 'Staff',
+        notes: document.getElementById('emp-notes').value.trim()
+      };
+      
+      try {
+        const url = id ? `${API}/api/admin/employees/${id}` : `${API}/api/admin/employees`;
+        const method = id ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+          method,
+          headers: getAuthHeaders(),
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          closeEmployeeModal();
+          loadEmployees(currentPage);
+          showToast(result.msg || 'Employee saved successfully', 'success');
+        } else {
+          document.getElementById('form-error').textContent = result.msg || 'Failed to save employee';
+          document.getElementById('form-error').classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('Save employee error:', error);
+        document.getElementById('form-error').textContent = 'Failed to save employee';
+        document.getElementById('form-error').classList.remove('hidden');
+      }
+    }
+    
+    function editEmployee(id) {
+      const emp = allEmployees.find(e => e._id === id);
+      if (!emp) return;
+      
+      document.getElementById('modal-title').textContent = 'Edit Employee';
+      document.getElementById('employee-id').value = emp._id;
+      document.getElementById('emp-name').value = emp.name;
+      document.getElementById('emp-email').value = emp.email;
+      document.getElementById('emp-contact').value = emp.contactNumber || '';
+      document.getElementById('emp-position').value = emp.position || '';
+      document.getElementById('emp-notes').value = emp.notes || '';
+      document.getElementById('form-error').classList.add('hidden');
+      
+      document.getElementById('employee-modal').classList.remove('hidden');
+      document.getElementById('employee-modal').classList.add('flex');
+    }
+    
+    function openAccountModal(id, name, email) {
+      document.getElementById('account-emp-id').value = id;
+      document.getElementById('account-emp-name').textContent = name;
+      document.getElementById('account-emp-email').textContent = email;
+      document.getElementById('account-password').value = '';
+      document.getElementById('account-error').classList.add('hidden');
+      
+      document.getElementById('account-modal').classList.remove('hidden');
+      document.getElementById('account-modal').classList.add('flex');
+    }
+    
+    async function handleAccountSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('account-emp-id').value;
+      const password = document.getElementById('account-password').value;
+      
+      try {
+        const response = await fetch(`${API}/api/admin/employees/${id}/create-account`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ password })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          closeAccountModal();
+          loadEmployees(currentPage);
+          showToast('Account created successfully!', 'success');
+          
+          // Offer to send credentials
+          if (confirm('Account created! Would you like to send the login credentials to this employee?')) {
+            const emp = allEmployees.find(e => e._id === id);
+            if (emp) {
+              openMessageModal(id, emp.name, emp.email);
+              document.getElementById('include-credentials').checked = true;
+              document.getElementById('credentials-section').classList.remove('hidden');
+              document.getElementById('credentials-password').value = password;
+              document.getElementById('message-body').value = 'Welcome to Fundamental Apparel! Your admin account has been created. Below are your login credentials.';
+            }
+          }
+        } else {
+          document.getElementById('account-error').textContent = result.msg || 'Failed to create account';
+          document.getElementById('account-error').classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('Create account error:', error);
+        document.getElementById('account-error').textContent = 'Failed to create account';
+        document.getElementById('account-error').classList.remove('hidden');
+      }
+    }
+    
+    function openMessageModal(id, name, email) {
+      document.getElementById('message-emp-id').value = id;
+      document.getElementById('message-emp-name').textContent = name;
+      document.getElementById('message-emp-email').textContent = email;
+      document.getElementById('message-subject').value = '';
+      document.getElementById('message-body').value = '';
+      document.getElementById('include-credentials').checked = false;
+      document.getElementById('credentials-section').classList.add('hidden');
+      document.getElementById('credentials-password').value = '';
+      document.getElementById('message-error').classList.add('hidden');
+      
+      document.getElementById('message-modal').classList.remove('hidden');
+      document.getElementById('message-modal').classList.add('flex');
+    }
+    
+    async function handleMessageSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('message-emp-id').value;
+      const includeCredentials = document.getElementById('include-credentials').checked;
+      
+      const data = {
+        subject: document.getElementById('message-subject').value.trim(),
+        message: document.getElementById('message-body').value.trim(),
+        includeCredentials,
+        password: includeCredentials ? document.getElementById('credentials-password').value : null
+      };
+      
+      if (includeCredentials && !data.password) {
+        document.getElementById('message-error').textContent = 'Please enter a password to include in credentials';
+        document.getElementById('message-error').classList.remove('hidden');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API}/api/admin/employees/${id}/send-message`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          closeMessageModal();
+          showToast('Message sent successfully!', 'success');
+        } else {
+          document.getElementById('message-error').textContent = result.msg || 'Failed to send message';
+          document.getElementById('message-error').classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('Send message error:', error);
+        document.getElementById('message-error').textContent = 'Failed to send message';
+        document.getElementById('message-error').classList.remove('hidden');
+      }
+    }
+    
+    function openDeleteModal(id, name) {
+      document.getElementById('delete-emp-id').value = id;
+      document.getElementById('delete-emp-name').textContent = name;
+      document.getElementById('delete-modal').classList.remove('hidden');
+      document.getElementById('delete-modal').classList.add('flex');
+    }
+    
+    async function handleDelete() {
+      const id = document.getElementById('delete-emp-id').value;
+      
+      try {
+        const response = await fetch(`${API}/api/admin/employees/${id}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          closeDeleteModal();
+          loadEmployees(currentPage);
+          showToast('Employee deleted successfully', 'success');
+        } else {
+          showToast(result.msg || 'Failed to delete employee', 'error');
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+        showToast('Failed to delete employee', 'error');
+      }
+    }
+    
+    function generatePassword(length = 12) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+      let password = '';
+      for (let i = 0; i < length; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    }
+    
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+    
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'} text-white flex items-center gap-2`;
+      toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+  </script>
+  <script src="admin-notifications.js"></script>
+</body>
+</html>

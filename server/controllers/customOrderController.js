@@ -2,6 +2,7 @@ const CustomOrder = require("../models/CustomOrder");
 const User = require("../models/User");
 const sendEmail = require("../utils/sendEmail");
 const notify = require('../utils/notify');
+const { notifyNewQuote } = require('./notificationController');
 const path = require("path");
 const mongoose = require("mongoose"); // <-- Siguraduhin na na-import ito
 const { allocateInventory, releaseInventory, findInventoryByName } = require('../utils/inventory');
@@ -378,6 +379,9 @@ exports.submitCustomOrder = async (req, res) => {
         targetRole: 'admin',
         meta: { orderId: customOrder._id, userId: req.user._id }
       });
+      
+      // Also send email notification to admin
+      await notifyNewQuote(customOrder);
     } catch (e) {
       console.warn('[submitCustomOrder] notify failed:', e && e.message);
     }

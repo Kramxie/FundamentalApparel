@@ -95,7 +95,8 @@ exports.loginUser = async (req, res) => {
         const isMatch = await user.matchPassword(password);
         if (!isMatch) return res.status(401).json({ success: false, msg: 'Invalid credentials' });
 
-        if (!user.isVerified && user.role !== 'admin') {
+        // Skip verification check for admin and employee roles (admin-created accounts are auto-verified)
+        if (!user.isVerified && user.role !== 'admin' && user.role !== 'employee') {
             return res.status(401).json({ success: false, verificationRequired: true, email: user.email, msg: 'Account not verified. Please check your email.' });
         }
 
