@@ -25,7 +25,7 @@
             </div>
             <div class="mb-6">
                 <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                <input type="password" id="password" name="password" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                <input type="password" id="password" name="password" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
             </div>
             <div class="mb-4 text-right">
                 <a href="#" id="forgot-password-link" class="text-sm text-indigo-600 hover:text-indigo-800">Forgot Password?</a>
@@ -167,6 +167,15 @@
                     });
 
                     const result = await response.json();
+
+                    // If server indicates this account needs to set a password (no password on record),
+                    // redirect to the reset-password page with the provided token so admin can set a password.
+                    if (result && result.needsSetPassword) {
+                        const token = result.token;
+                        const emailParam = encodeURIComponent(result.email || data.email || '');
+                        window.location.href = `../reset-password.html?token=${encodeURIComponent(token)}&email=${emailParam}`;
+                        return;
+                    }
 
                     if (response.ok && result.success) {
                         if (result.user && (result.user.role === 'admin' || result.user.role === 'employee')) {

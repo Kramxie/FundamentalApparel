@@ -72,7 +72,10 @@ exports.loginUser = async (req, res) => {
         const emailLC = String(email || '').trim().toLowerCase();
 
         // Allow attempts with empty password to trigger "set-password" flow
-        const user = await User.findOne({ email: emailLC }).select('+password');
+        // Use case-insensitive email lookup to avoid issues with stored email casing
+        const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const emailQuery = { email: { $regex: '^' + escapeRegex(String(email || '').trim() ) + '$', $options: 'i' } };
+        const user = await User.findOne(emailQuery).select('+password');
         if (!user) return res.status(401).json({ success: false, msg: 'Invalid credentials' });
 
         // If user exists but has no password set, and the client submitted an empty password,
