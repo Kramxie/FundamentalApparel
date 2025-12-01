@@ -1,5 +1,8 @@
 const PDFDocument = require('pdfkit');
 const stream = require('stream');
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
 const Order = require('../models/Order');
 const CustomOrder = require('../models/CustomOrder');
 const mongoose = require('mongoose');
@@ -101,48 +104,127 @@ async function generateSalesReport({ startDate=null, endDate=null, reportType='s
   const doc = new PDFDocument({ size: 'A4', margin: 40 });
   const passthrough = new stream.PassThrough();
   doc.pipe(passthrough);
+  // Helper: fetch image buffer from URL or file
+  async function fetchImageBuffer(src){
+    if (!src) return null;
+    try{
+      if (/^data:/.test(src)){
+        // data URL
+        const comma = src.indexOf(',');
+        const meta = src.substring(0, comma);
+        const isBase64 = /;base64/.test(meta);
+        const data = src.substring(comma+1);
+        return Buffer.from(data, isBase64 ? 'base64' : 'utf8');
+      }
+      if (/^https?:\/\//i.test(src)){
+        return await new Promise((resolve, reject) => {
+          const lib = src.startsWith('https') ? https : http;
+          lib.get(src, (res) => {
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location){
+              // follow redirects
+              fetchImageBuffer(res.headers.location).then(resolve).catch(reject);
+              return;
+            }
+            const chunks = [];
+            res.on('data', c => chunks.push(c));
+            res.on('end', () => resolve(Buffer.concat(chunks)));
+            res.on('error', reject);
+          }).on('error', reject);
+        });
+      }
+      // treat as local path
+      return await fs.promises.readFile(src);
+    }catch(e){
+      return null;
+    }
+  }
 
-  // Header / Branding
-  doc.fontSize(14).text(businessInfo.name || 'Fundamental Apparel', { align: 'left' });
-  doc.fontSize(9).text(businessInfo.address || '[Insert Address Here]', { align: 'left' });
-  doc.moveDown(0.2);
-  doc.fontSize(9).text(`Generated: ${new Date().toLocaleString()}`, { align: 'right' });
-  doc.moveDown(0.5);
+  // Header / Branding with optional logo
+  const logoBuf = businessInfo.logoUrl ? await fetchImageBuffer(businessInfo.logoUrl) : null;
+  const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const headerYStart = doc.y;
+  if (logoBuf){
+    try{
+      doc.image(logoBuf, doc.x, doc.y, { width: 80, height: 40 });
+    }catch(e){ /* ignore image errors */ }
+  }
+  // Text to the right of logo
+  const textX = doc.x + (logoBuf ? 90 : 0);
+  const textWidth = pageWidth - (logoBuf ? 90 : 0);
+  doc.fontSize(14).text(businessInfo.name || 'Fundamental Apparel', textX, doc.y, { width: textWidth, align: 'left' });
+  doc.fontSize(9).text(businessInfo.address || '[Insert Address Here]', { width: textWidth, align: 'left' });
+  // generated date on right
+  doc.fontSize(9).text(`Generated: ${new Date().toLocaleString()}`, doc.x, headerYStart, { align: 'right', width: pageWidth });
+  doc.moveDown(0.6);
   doc.fontSize(12).text('Sales Report', { align: 'center' });
   const rangeText = `${startDate ? (new Date(startDate)).toISOString().split('T')[0] : 'All'} to ${endDate ? (new Date(endDate)).toISOString().split('T')[0] : 'All'}`;
   doc.fontSize(9).text(`Date Range: ${rangeText}`, { align: 'center' });
   doc.moveDown(0.5);
 
-  // Table header depending on mode
+  // Currency formatter
+  const currency = businessInfo.currency || 'PHP';
+  const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2 });
+
+  // Table drawing helpers
+  function ensurePageFor(heightNeeded){ if (doc.y + heightNeeded > doc.page.height - doc.page.margins.bottom) { doc.addPage(); } }
+
+  // Column widths (fractions of pageWidth)
+  const cols = (filterType === 'product' || filterType === 'predesign') ? [0.45,0.20,0.12,0.23] : [0.22,0.18,0.30,0.15,0.15];
+  const colWidths = cols.map(f => Math.floor(f * pageWidth));
+
   if (filterType === 'product' || filterType === 'predesign'){
-    const headers = filterType === 'product' ? ['Product Name','Category','Quantity','Revenue'] : ['Product Name','Category','Quantity','Revenue'];
-    // print headers
-    doc.fontSize(10).fillColor('#000').text(headers.join('    '));
-    doc.moveDown(0.2);
+    // header row
+    ensurePageFor(24);
+    const startX = doc.x;
+    let cx = startX;
+    const headerHeight = 20;
+    doc.save();
+    doc.rect(startX, doc.y, pageWidth, headerHeight).fill('#f3f4f6');
+    doc.fillColor('#000').fontSize(10);
+    const headers = ['Product Name','Category','Quantity','Revenue'];
+    for (let i=0;i<headers.length;i++){
+      doc.fillColor('#000').text(headers[i], cx + 4, doc.y + 4, { width: colWidths[i]-8, align: 'left' });
+      cx += colWidths[i];
+    }
+    // border
+    doc.lineWidth(0.5).strokeColor('#d1d5db').rect(startX, doc.y, pageWidth, headerHeight).stroke();
+    doc.restore();
+    doc.moveDown(1.6);
+
     let totalQty = 0; let totalRevenue = 0;
     for (const r of rows){
+      ensurePageFor(18);
+      const rowY = doc.y;
+      let x = startX;
+      const values = [ r.productName || (r.productId||''), r.category || '', String(r.totalQty||0), formatter.format(Number(r.revenue)||0) ];
+      for (let i=0;i<values.length;i++){
+        doc.fontSize(9).fillColor('#111').text(values[i], x + 4, rowY + 3, { width: colWidths[i]-8, align: i===2? 'right' : (i===3? 'right' : 'left') });
+        x += colWidths[i];
+      }
+      // row border
+      doc.lineWidth(0.3).strokeColor('#e5e7eb').rect(startX, rowY, pageWidth, 18).stroke();
+      doc.moveDown(1.1);
       totalQty += (r.totalQty||0);
       totalRevenue += (r.revenue||0);
-      const line = `${r.productName || (r.productId||'')}    ${r.category||''}    ${r.totalQty||0}    ${ (Number(r.revenue)||0).toFixed(2) }`;
-      doc.fontSize(9).fillColor('#111').text(line, { continued: false, ellipsis: true });
-      doc.moveDown(0.1);
-      if (doc.y > doc.page.height - 80) doc.addPage();
     }
-    doc.moveDown(0.5);
-    doc.fontSize(10).text('Total Summary', { underline: true });
+    doc.moveDown(0.6);
+    doc.fontSize(11).fillColor('#000').text('Total Summary', { underline: true });
+    doc.moveDown(0.2);
     doc.fontSize(9).text(`Products: ${rows.length}`);
     doc.fontSize(9).text(`Total Quantity: ${totalQty}`);
-    doc.fontSize(9).text(`Total Revenue: ${totalRevenue.toFixed(2)}`);
+    doc.fontSize(9).text(`Total Revenue: ${formatter.format(totalRevenue)}`);
   } else {
-    // Order level
+    // Order level with borders
+    ensurePageFor(24);
+    const startX = doc.x;
+    let cx = startX; const headerHeight = 20;
+    doc.save(); doc.rect(startX, doc.y, pageWidth, headerHeight).fill('#f3f4f6'); doc.fillColor('#000').fontSize(10);
     const headers = ['Order ID','Date','Customer','Total','Paid'];
-    doc.fontSize(10).text(headers.join('    '));
-    doc.moveDown(0.2);
-    for (const r of rows){
-      const line = `${r.orderId}    ${(r.date||'').split('T')[0]}    ${r.customer||''}    ${(Number(r.totalPrice)||0).toFixed(2)}    ${r.isPaid? 'yes':'no'}`;
-      doc.fontSize(9).text(line);
-      doc.moveDown(0.1);
-      if (doc.y > doc.page.height - 80) doc.addPage();
+    for (let i=0;i<headers.length;i++){ doc.text(headers[i], cx + 4, doc.y + 4, { width: colWidths[i]-8, align: 'left' }); cx += colWidths[i]; }
+    doc.lineWidth(0.5).strokeColor('#d1d5db').rect(startX, doc.y, pageWidth, headerHeight).stroke(); doc.restore(); doc.moveDown(1.6);
+    for (const r of rows){ ensurePageFor(18); const rowY = doc.y; let x = startX; const values = [ r.orderId||'', (r.date||'').split('T')[0]||'', r.customer||'', formatter.format(Number(r.totalPrice)||0), r.isPaid? 'Yes':'No' ];
+      for (let i=0;i<values.length;i++){ doc.fontSize(9).fillColor('#111').text(values[i], x + 4, rowY + 3, { width: colWidths[i]-8, align: i>=3? 'right' : 'left' }); x += colWidths[i]; }
+      doc.lineWidth(0.3).strokeColor('#e5e7eb').rect(startX, rowY, pageWidth, 18).stroke(); doc.moveDown(1.1);
     }
   }
 

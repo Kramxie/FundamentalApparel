@@ -149,65 +149,31 @@ exports.exportSalesCsv = async (req, res) => {
 
 exports.exportSalesPdf = async (req, res) => {
   try {
-    if (!PDFDocument) return res.status(500).json({ success: false, msg: 'PDF library not installed (pdfkit). Please install pdfkit.' });
+    // Use the new reusable generateSalesReport util for consistent, data-driven PDFs
+    const { generateSalesReport } = require('../utils/generateSalesReport');
+    const Setting = require('../models/Setting');
+
     const q = req.query;
-    const start = q.startDate ? new Date(q.startDate) : null;
-    const end = q.endDate ? new Date(q.endDate) : null;
-    if (start) start.setHours(0,0,0,0);
-    if (end) end.setHours(23,59,59,999);
+    const startDate = q.startDate || null;
+    const endDate = q.endDate || null;
+    const filterType = (q.type || 'product').toString();
     const includeCustom = q.includeCustom === 'true' || q.includeCustom === true;
 
-    const rows = await getSalesReport(start, end, { includeCustom });
-    // summary
-    const totalOrders = new Set(rows.map(r=>r.order_id)).size;
-    const totalRevenue = rows.reduce((s,r)=> s + Number(r.total_revenue || 0), 0);
-    const aov = totalOrders ? (totalRevenue / totalOrders) : 0;
+    // Fetch store branding info if available
+    let businessInfo = { name: 'Fundamental Apparel', address: '[Insert Address Here]' };
+    try {
+      const s = await Setting.findOne().lean();
+      if (s && s.store) {
+        businessInfo.name = s.store.name || businessInfo.name;
+        businessInfo.address = s.store.address || businessInfo.address;
+      }
+    } catch (e) { /* ignore */ }
 
-    // Create PDF stream
-    const doc = new PDFDocument({ size: 'A4', margin: 40 });
-    const passThrough = new stream.PassThrough();
+    const report = await generateSalesReport({ startDate, endDate, reportType: 'sales_summary', filterType, includeCustom, businessInfo });
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="sales_export_${Date.now()}.pdf"`);
-    doc.pipe(passThrough);
-
-    // Title
-    doc.fontSize(18).text('Sales Report', { align: 'center' });
-    doc.moveDown(0.5);
-    const rangeText = `${start ? start.toISOString().split('T')[0] : 'All'} to ${end ? end.toISOString().split('T')[0] : 'All'}`;
-    doc.fontSize(10).text(`Date Range: ${rangeText}`, { align: 'center' });
-    doc.moveDown(1);
-
-    // Summary
-    doc.fontSize(12).text('Summary', { underline: true });
-    doc.fontSize(10).text(`Total Orders: ${totalOrders}`);
-    doc.fontSize(10).text(`Total Revenue: ${totalRevenue.toFixed(2)}`);
-    doc.fontSize(10).text(`Average Order Value: ${aov.toFixed(2)}`);
-    doc.moveDown(0.5);
-
-    // Table header
-    const columns = ['Order ID','Date','Customer','Product','Qty','Unit Price','VAT','Discount','Delivery','Payment Method','Payment Status','Order Status','Downpayment','Balance','Total'];
-    const colWidths = [70,60,80,100,30,50,40,50,50,70,60,60,50,50,60];
-
-    // Simple table drawing: header
-    let x = doc.x;
-    doc.fontSize(9).fillColor('black');
-    columns.forEach((h, idx) => {
-      doc.text(h, { continued: idx !== columns.length -1, width: colWidths[idx], ellipsis: true });
-    });
-    doc.moveDown(0.25);
-
-    // Rows
-    for (const r of rows) {
-      const vals = [r.order_id, r.order_date.split('T')[0] || r.order_date, r.customer_name, r.product_name, String(r.quantity), r.unit_price, r.vat, r.discount, r.delivery_fee, r.payment_method, r.payment_status, r.order_status, r.downpayment_amount, r.balance_amount, r.total_revenue];
-      vals.forEach((v, idx) => {
-        doc.fontSize(8).text(String(v), { continued: idx !== vals.length-1, width: colWidths[idx], ellipsis: true });
-      });
-      doc.moveDown(0.25);
-      if (doc.y > doc.page.height - 80) doc.addPage();
-    }
-
-    doc.end();
-    passThrough.pipe(res);
+    return res.send(report.pdfBuffer);
   } catch (err) {
     console.error('exportSalesPdf error', err);
     return res.status(500).json({ success: false, msg: 'Failed to generate PDF' });

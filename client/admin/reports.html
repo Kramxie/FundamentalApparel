@@ -871,24 +871,40 @@
     }
 
     async function exportCurrentViewPDF() {
-      // Capture the report area (charts + summary + table)
-      const reportArea = document.querySelector('.p-6.space-y-6'); // main content wrapper
-      if (!reportArea) throw new Error('Report content not found');
-      // Ensure charts are fully rendered
-      await new Promise(r=>setTimeout(r,250));
-      // Use html2canvas to capture
-      const canvas = await html2canvas(reportArea, { scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('landscape', 'pt', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      // fit image to page while preserving aspect
-      const imgProps = { width: canvas.width, height: canvas.height };
-      const ratio = Math.min(pageWidth / imgProps.width, pageHeight / imgProps.height);
-      const imgWidth = imgProps.width * ratio; const imgHeight = imgProps.height * ratio;
-      pdf.addImage(imgData, 'PNG', (pageWidth - imgWidth)/2, 20, imgWidth, imgHeight);
-      pdf.save(`reports_${Date.now()}.pdf`);
+      // Request a server-generated, data-driven PDF using active filters
+      const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+      const period = document.getElementById('periodSelect')?.value || '30';
+      let startDate = '';
+      let endDate = '';
+      if (period === 'custom') {
+        startDate = document.getElementById('startDate')?.value || '';
+        endDate = document.getElementById('endDate')?.value || '';
+      } else {
+        // calculate endDate = today, startDate = today - (period-1)
+        const days = parseInt(period || '30', 10);
+        const e = new Date();
+        const s = new Date(); s.setDate(e.getDate() - (days - 1));
+        startDate = s.toISOString().slice(0,10);
+        endDate = e.toISOString().slice(0,10);
+      }
+      const perType = document.getElementById('perTypeSelect')?.value || 'all';
+      const reportType = document.getElementById('reportType')?.value || 'sales';
+      const qs = new URLSearchParams();
+      if (startDate) qs.set('startDate', startDate);
+      if (endDate) qs.set('endDate', endDate);
+      if (perType) qs.set('type', perType);
+      // include custom orders when perType is 'all' or when needed
+      if (perType === 'all') qs.set('includeCustom', 'true');
+
+      const url = API_BASE + '/api/admin/reports/sales/pdf' + (qs.toString() ? `?${qs.toString()}` : '');
+      const res = await fetch(url, { headers: Object.assign({}, token ? { 'Authorization': 'Bearer ' + token } : {}) });
+      if (!res.ok) {
+        const text = await res.text().catch(()=>res.statusText||'');
+        throw new Error('Server failed to generate PDF: ' + (text || res.status));
+      }
+      const blob = await res.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = downloadUrl; a.download = `reports_${Date.now()}.pdf`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(downloadUrl);
     }
   </script>
 
