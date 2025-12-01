@@ -36,6 +36,9 @@
       <a href="add-product.html" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-white/20 text-white font-medium">
         <i class="fas fa-plus-circle w-5 text-center"></i><span>Add Product</span>
       </a>
+      <a href="add-predisign-product.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-indigo-100 hover:bg-white/10 transition-colors">
+        <i class="fas fa-tshirt w-5 text-center"></i><span>Add Pre-Design</span>
+      </a>
       <a href="manage-categories.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-indigo-100 hover:bg-white/10 transition-colors">
         <i class="fas fa-folder w-5 text-center"></i><span>Manage Categories</span>
       </a>
@@ -84,7 +87,6 @@
         <h1 class="text-xl font-semibold text-gray-800">Add Product</h1>
       </div>
       <div class="flex items-center gap-4">
-        <button class="relative p-2 rounded-lg hover:bg-gray-100 text-gray-600"><i class="fas fa-bell text-xl"></i></button>
         <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold">A</div>
         <button id="logout-btn" class="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors">
           <i class="fas fa-sign-out-alt"></i><span class="hidden sm:inline">Logout</span>
@@ -92,48 +94,7 @@
       </div>
     </header>
 
-    <main class="p-6">
-            <i class="fas fa-clipboard-list w-6"></i><span class="ml-3">Orders</span>
-          </a>
-          <a href="returns.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-undo w-6"></i><span class="ml-3">Returns & Refunds</span>
-          </a>
-          <a href="reports.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span>
-          </a>
-          <a href="vouchers.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-ticket-alt w-6"></i><span class="ml-3">Vouchers</span>
-          </a>
-          <a href="messages.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-comments w-6"></i><span class="ml-3">Messages</span>
-          </a>
-          <a href="settings.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span>
-          </a>
-          <a href="profile.html" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
-            <i class="fas fa-user-circle w-6"></i><span class="ml-3">Profile</span>
-          </a>
-        </nav>
-      </div>
-    </div>
-
-    <!-- Main -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-      <header class="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-6">
-        <div class="flex items-center gap-3">
-          <button id="sidebar-toggle" class="md:hidden p-2 rounded bg-gray-100">
-            <i class="fas fa-bars"></i>
-          </button>
-          <h1 class="text-lg font-semibold">Add New Product</h1>
-        </div>
-        <div class="flex items-center gap-4">
-          <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
-            <i class="fas fa-sign-out-alt mr-2"></i>Logout
-          </button>
-        </div>
-      </header>
-
-      <main class="p-6 bg-gray-50 min-h-screen">
+    <main class="p-6 bg-gray-50 min-h-screen">
         <div id="message" class="hidden mb-4 p-3 rounded-md"></div>
         
         <form id="product-form" enctype="multipart/form-data" class="max-w-[1400px] mx-auto">
@@ -1225,7 +1186,6 @@
         <button id="confirm-modal-yes" type="button" class="px-4 py-2 bg-red-600 text-white rounded-md">Remove</button>
       </div>
     </div>
-  </div>
   </div>
   <script src="admin-notifications.js"></script>
 </body>
