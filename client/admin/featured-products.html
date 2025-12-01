@@ -212,10 +212,10 @@
 
   <script>
     const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:5000/api'
-      : 'https://fundamental-apparel-backend.onrender.com/api';
+      ? 'http://localhost:5000'
+      : 'https://fundamental-apparel-backend.onrender.com';
 
-    let allProducts = [];
+    let allItems = [];
     let currentTab = 'all'; // 'all' or 'featured'
 
     // Show message
@@ -227,7 +227,7 @@
       setTimeout(() => container.classList.add('hidden'), 4000);
     }
 
-    // Fetch all products
+    // Fetch all inventory items
     async function fetchProducts() {
       const token = localStorage.getItem('adminToken');
       if (!token) { window.location.href = 'login.html'; return; }
@@ -237,12 +237,14 @@
       document.getElementById('empty-state').classList.add('hidden');
 
       try {
-        const res = await fetch(`${API_BASE}/products?limit=1000`, {
+        // Fetch from inventory API - get all items (limit high to get all)
+        const res = await fetch(`${API_BASE}/api/admin/inventory?limit=1000`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error('Failed to fetch products');
-        const data = await res.json();
-        allProducts = data.products || data || [];
+        if (!res.ok) throw new Error('Failed to fetch inventory');
+        const result = await res.json();
+        // API returns { data: [...], pagination: {...}, alerts: {...} }
+        allItems = result.data || [];
         
         // Populate category filter
         populateCategoryFilter();
@@ -253,7 +255,7 @@
         // Render products
         renderProducts();
       } catch (err) {
-        showMessage('Error loading products: ' + err.message, true);
+        showMessage('Error loading inventory: ' + err.message, true);
       } finally {
         document.getElementById('loading').classList.add('hidden');
       }
@@ -261,7 +263,7 @@
 
     // Populate category filter
     function populateCategoryFilter() {
-      const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+      const categories = [...new Set(allItems.map(p => p.category).filter(Boolean))];
       const select = document.getElementById('category-filter');
       select.innerHTML = '<option value="">All Categories</option>';
       categories.forEach(cat => {
@@ -274,8 +276,8 @@
 
     // Update stats
     function updateStats() {
-      const total = allProducts.length;
-      const featured = allProducts.filter(p => p.placements?.featured).length;
+      const total = allItems.length;
+      const featured = allItems.filter(p => p.placements?.featured).length;
       document.getElementById('total-products').textContent = total;
       document.getElementById('featured-count').textContent = featured;
       document.getElementById('non-featured-count').textContent = total - featured;
@@ -286,7 +288,7 @@
       const searchTerm = document.getElementById('search-input').value.toLowerCase();
       const category = document.getElementById('category-filter').value;
       
-      let filtered = allProducts;
+      let filtered = allItems;
       
       // Filter by tab
       if (currentTab === 'featured') {
@@ -316,7 +318,7 @@
       }
 
       emptyState.classList.add('hidden');
-      grid.innerHTML = filtered.map(product => createProductCard(product)).join('');
+      grid.innerHTML = filtered.map(item => createProductCard(item)).join('');
 
       // Attach toggle handlers
       grid.querySelectorAll('.toggle-featured-btn').forEach(btn => {
@@ -325,27 +327,32 @@
     }
 
     // Create product card HTML
-    function createProductCard(product) {
-      const isFeatured = product.placements?.featured || false;
-      const imageUrl = product.images && product.images.length > 0 
-        ? product.images[0] 
-        : 'https://via.placeholder.com/200x200?text=No+Image';
+    function createProductCard(item) {
+      const isFeatured = item.placements?.featured || false;
+      const imageUrl = item.image || (item.images && item.images.length > 0 ? item.images[0] : null) 
+        || 'https://via.placeholder.com/200x200?text=No+Image';
+      // Get price - could be base price or first size price
+      let price = item.price || item.basePrice || 0;
+      if (!price && item.sizesPrice) {
+        const prices = Object.values(item.sizesPrice);
+        if (prices.length > 0) price = prices[0];
+      }
       
       return `
         <div class="bg-white border rounded-lg overflow-hidden hover:shadow-lg transition-shadow ${isFeatured ? 'ring-2 ring-yellow-400' : ''}">
           <div class="relative">
-            <img src="${imageUrl}" alt="${product.name || 'Product'}" class="w-full h-40 object-cover" onerror="this.src='https://via.placeholder.com/200x200?text=No+Image'">
+            <img src="${imageUrl}" alt="${item.name || 'Item'}" class="w-full h-40 object-cover" onerror="this.src='https://via.placeholder.com/200x200?text=No+Image'">
             ${isFeatured ? '<span class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full"><i class="fas fa-star mr-1"></i>Featured</span>' : ''}
           </div>
           <div class="p-4">
-            <h3 class="font-semibold text-gray-800 truncate" title="${product.name || 'Unnamed'}">${product.name || 'Unnamed Product'}</h3>
-            <p class="text-sm text-gray-500 mt-1">${product.category || 'No category'}</p>
-            <p class="text-indigo-600 font-bold mt-2">₱${(product.price || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+            <h3 class="font-semibold text-gray-800 truncate" title="${item.name || 'Unnamed'}">${item.name || 'Unnamed Item'}</h3>
+            <p class="text-sm text-gray-500 mt-1">${item.category || 'No category'}</p>
+            <p class="text-indigo-600 font-bold mt-2">₱${Number(price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
             <button 
               class="toggle-featured-btn w-full mt-3 px-4 py-2 rounded-lg font-medium transition-colors ${isFeatured 
                 ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
                 : 'bg-yellow-400 text-yellow-900 hover:bg-yellow-500'}"
-              data-id="${product._id}"
+              data-id="${item._id}"
               data-featured="${isFeatured}">
               <i class="fas ${isFeatured ? 'fa-star-half-alt' : 'fa-star'} mr-2"></i>
               ${isFeatured ? 'Remove from Featured' : 'Add to Featured'}
@@ -356,12 +363,12 @@
     }
 
     // Toggle featured status
-    async function toggleFeatured(productId, currentlyFeatured) {
+    async function toggleFeatured(itemId, currentlyFeatured) {
       const token = localStorage.getItem('adminToken');
       if (!token) { window.location.href = 'login.html'; return; }
 
       try {
-        const res = await fetch(`${API_BASE}/products/${productId}`, {
+        const res = await fetch(`${API_BASE}/api/admin/inventory/${itemId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -372,20 +379,20 @@
           })
         });
 
-        if (!res.ok) throw new Error('Failed to update product');
+        if (!res.ok) throw new Error('Failed to update item');
 
         // Update local state
-        const product = allProducts.find(p => p._id === productId);
-        if (product) {
-          if (!product.placements) product.placements = {};
-          product.placements.featured = !currentlyFeatured;
+        const item = allItems.find(p => p._id === itemId);
+        if (item) {
+          if (!item.placements) item.placements = {};
+          item.placements.featured = !currentlyFeatured;
         }
 
         updateStats();
         renderProducts();
-        showMessage(`Product ${currentlyFeatured ? 'removed from' : 'added to'} featured!`);
+        showMessage(`Item ${currentlyFeatured ? 'removed from' : 'added to'} featured!`);
       } catch (err) {
-        showMessage('Error updating product: ' + err.message, true);
+        showMessage('Error updating item: ' + err.message, true);
       }
     }
 
