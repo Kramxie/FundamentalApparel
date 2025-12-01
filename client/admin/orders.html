@@ -70,18 +70,35 @@
     .nav-link {
       display: flex;
       align-items: center;
-      padding: 0.75rem 1rem;
+      gap: 12px;
+      padding: 10px 16px;
       color: rgba(255,255,255,0.7);
-      border-radius: 0.5rem;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
       transition: all 0.2s;
+      margin-bottom: 2px;
     }
     .nav-link:hover {
       background: rgba(255,255,255,0.1);
       color: white;
     }
     .nav-link.active {
-      background: rgba(255,255,255,0.2);
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
       color: white;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+    .nav-link i { width: 20px; text-align: center; }
+    
+    .nav-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.4);
+      padding: 0 16px;
+      margin-bottom: 8px;
+      margin-top: 16px;
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -90,90 +107,119 @@
 <body class="bg-gray-100">
   <div id="dev-error-banner" class="hidden fixed top-16 left-1/2 transform -translate-x-1/2 z-50 bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded-md text-sm"></div>
   
-  <!-- Mobile Sidebar Overlay -->
-  <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
-  
   <!-- Fixed Sidebar -->
-  <aside class="admin-sidebar">
-    <div class="p-6">
-      <div class="flex items-center gap-3 mb-8">
-        <div class="bg-white rounded-lg p-2">
-          <i class="fas fa-store text-indigo-600 text-xl"></i>
+  <aside class="admin-sidebar hidden md:flex flex-col">
+    <!-- Logo -->
+    <div class="p-5 border-b border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-xl flex items-center justify-center">
+          <i class="fas fa-tshirt text-white text-lg"></i>
         </div>
         <div>
-          <h1 class="text-white font-bold text-lg">BBT Admin</h1>
-          <p class="text-indigo-300 text-xs">Management Panel</p>
+          <span class="text-white font-bold text-lg">Fundamental</span>
+          <span class="block text-xs text-indigo-300">Admin Panel</span>
         </div>
       </div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="flex-1 p-3">
+      <div class="nav-section-title">Main</div>
+      <a href="index.html" class="nav-link">
+        <i class="fas fa-th-large"></i><span>Dashboard</span>
+      </a>
+      <a href="orders.html" class="nav-link active">
+        <i class="fas fa-shopping-bag"></i><span>Orders</span>
+      </a>
+      <a href="returns.html" class="nav-link">
+        <i class="fas fa-undo"></i><span>Returns & Refunds</span>
+      </a>
+      <a href="messages.html" class="nav-link">
+        <i class="fas fa-comments"></i><span>Messages</span>
+      </a>
       
-      <nav class="space-y-1">
-        <p class="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3">Main</p>
-        <a href="index.html" class="nav-link">
-          <i class="fas fa-tachometer-alt w-5"></i>
-          <span class="ml-3">Dashboard</span>
-        </a>
-        <a href="orders.html" class="nav-link active">
-          <i class="fas fa-shopping-cart w-5"></i>
-          <span class="ml-3">Orders</span>
-        </a>
-        <a href="messages.html" class="nav-link">
-          <i class="fas fa-comments w-5"></i>
-          <span class="ml-3">Messages</span>
-        </a>
-        
-        <p class="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">Products</p>
-        <a href="add-product.html" class="nav-link">
-          <i class="fas fa-plus-circle w-5"></i>
-          <span class="ml-3">Add Product</span>
-        </a>
-        <a href="add-predisign-product.html" class="nav-link">
-          <i class="fas fa-tshirt w-5"></i>
-          <span class="ml-3">Add Pre-Design</span>
-        </a>
-        <a href="inventory.html" class="nav-link">
-          <i class="fas fa-boxes w-5"></i>
-          <span class="ml-3">Inventory</span>
-        </a>
-        <a href="manage-categories.html" class="nav-link">
-          <i class="fas fa-tags w-5"></i>
-          <span class="ml-3">Categories</span>
-        </a>
-        <a href="featured-products.html" class="nav-link">
-          <i class="fas fa-star w-5"></i>
-          <span class="ml-3">Featured</span>
-        </a>
-        
-        <p class="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">Analytics</p>
-        <a href="reports.html" class="nav-link">
-          <i class="fas fa-chart-bar w-5"></i>
-          <span class="ml-3">Reports</span>
-        </a>
-        <a href="vouchers.html" class="nav-link">
-          <i class="fas fa-ticket-alt w-5"></i>
-          <span class="ml-3">Vouchers</span>
-        </a>
-        <a href="returns.html" class="nav-link">
-          <i class="fas fa-undo w-5"></i>
-          <span class="ml-3">Returns</span>
-        </a>
-        
-        <p class="text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-3 mt-6">Admin</p>
-        <a href="employees.html" class="nav-link">
-          <i class="fas fa-users w-5"></i>
-          <span class="ml-3">Employees</span>
-        </a>
-      </nav>
+      <div class="nav-section-title">Products</div>
+      <a href="add-product.html" class="nav-link">
+        <i class="fas fa-plus-circle"></i><span>Add Product</span>
+      </a>
+      <a href="add-predisign-product.html" class="nav-link">
+        <i class="fas fa-tshirt"></i><span>Add Pre-Design</span>
+      </a>
+      <a href="inventory.html" class="nav-link">
+        <i class="fas fa-boxes"></i><span>Inventory</span>
+      </a>
+      <a href="manage-categories.html" class="nav-link">
+        <i class="fas fa-folder"></i><span>Categories</span>
+      </a>
+      <a href="featured-products.html" class="nav-link">
+        <i class="fas fa-star"></i><span>Featured Products</span>
+      </a>
       
-      <div class="mt-8 pt-6 border-t border-indigo-700">
-        <a href="settings.html" class="nav-link">
-          <i class="fas fa-cog w-5"></i>
-          <span class="ml-3">Settings</span>
-        </a>
-        <a href="profile.html" class="nav-link">
-          <i class="fas fa-user-circle w-5"></i>
-          <span class="ml-3">Profile</span>
-        </a>
+      <div class="nav-section-title">Analytics</div>
+      <a href="reports.html" class="nav-link">
+        <i class="fas fa-chart-bar"></i><span>Reports & Sales</span>
+      </a>
+      <a href="vouchers.html" class="nav-link">
+        <i class="fas fa-ticket-alt"></i><span>Vouchers</span>
+      </a>
+      
+      <div class="nav-section-title">Admin</div>
+      <a href="employees.html" class="nav-link">
+        <i class="fas fa-users"></i><span>Employees</span>
+      </a>
+    </nav>
+    
+    <!-- Bottom Section -->
+    <div class="p-3 border-t border-white/10 mt-auto">
+      <a href="settings.html" class="nav-link">
+        <i class="fas fa-cog"></i><span>Settings</span>
+      </a>
+      <a href="profile.html" class="nav-link">
+        <i class="fas fa-user-circle"></i><span>Profile</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Mobile Sidebar Overlay -->
+  <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/50 z-30 md:hidden"></div>
+  
+  <!-- Mobile Sidebar -->
+  <aside id="mobile-sidebar" class="admin-sidebar md:hidden">
+    <div class="p-4 border-b border-white/10 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-lg flex items-center justify-center">
+          <i class="fas fa-tshirt text-white"></i>
+        </div>
+        <span class="text-white font-bold">Admin Panel</span>
       </div>
+      <button id="mobile-sidebar-close" class="text-white/70 hover:text-white p-2">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    <nav class="flex-1 p-3">
+      <div class="nav-section-title">Main</div>
+      <a href="index.html" class="nav-link"><i class="fas fa-th-large"></i><span>Dashboard</span></a>
+      <a href="orders.html" class="nav-link active"><i class="fas fa-shopping-bag"></i><span>Orders</span></a>
+      <a href="returns.html" class="nav-link"><i class="fas fa-undo"></i><span>Returns & Refunds</span></a>
+      <a href="messages.html" class="nav-link"><i class="fas fa-comments"></i><span>Messages</span></a>
+      
+      <div class="nav-section-title">Products</div>
+      <a href="add-product.html" class="nav-link"><i class="fas fa-plus-circle"></i><span>Add Product</span></a>
+      <a href="add-predisign-product.html" class="nav-link"><i class="fas fa-tshirt"></i><span>Add Pre-Design</span></a>
+      <a href="inventory.html" class="nav-link"><i class="fas fa-boxes"></i><span>Inventory</span></a>
+      <a href="manage-categories.html" class="nav-link"><i class="fas fa-folder"></i><span>Categories</span></a>
+      <a href="featured-products.html" class="nav-link"><i class="fas fa-star"></i><span>Featured Products</span></a>
+      
+      <div class="nav-section-title">Analytics</div>
+      <a href="reports.html" class="nav-link"><i class="fas fa-chart-bar"></i><span>Reports & Sales</span></a>
+      <a href="vouchers.html" class="nav-link"><i class="fas fa-ticket-alt"></i><span>Vouchers</span></a>
+      
+      <div class="nav-section-title">Admin</div>
+      <a href="employees.html" class="nav-link"><i class="fas fa-users"></i><span>Employees</span></a>
+    </nav>
+    <div class="p-3 border-t border-white/10">
+      <a href="settings.html" class="nav-link"><i class="fas fa-cog"></i><span>Settings</span></a>
+      <a href="profile.html" class="nav-link"><i class="fas fa-user-circle"></i><span>Profile</span></a>
     </div>
   </aside>
   
@@ -191,21 +237,18 @@
             <p class="text-sm text-gray-500">Manage customer orders</p>
           </div>
         </div>
-        <div class="flex items-center gap-4">
-          <button id="notif-btn" class="relative p-2 rounded-lg hover:bg-gray-100">
-            <i class="fas fa-bell text-gray-600"></i>
-            <span id="notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
-          </button>
-          <div class="flex items-center gap-3 pl-4 border-l border-gray-200">
-            <img id="user-avatar" src="../images/default-avatar.png" alt="User" class="w-9 h-9 rounded-full object-cover">
-            <div class="hidden sm:block">
-              <p id="user-name" class="text-sm font-medium text-gray-700">Admin</p>
+        <div class="flex items-center gap-3">
+          <div class="hidden sm:flex items-center gap-3 pl-3 border-l border-gray-200">
+            <div class="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm" id="user-avatar">A</div>
+            <div class="hidden md:block">
+              <p class="text-sm font-medium text-gray-800" id="user-name">Admin</p>
               <p class="text-xs text-gray-500">Administrator</p>
             </div>
-            <button id="logout-btn" class="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Logout">
-              <i class="fas fa-sign-out-alt"></i>
-            </button>
           </div>
+          <button id="logout-btn" class="ml-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="hidden sm:inline">Logout</span>
+          </button>
         </div>
       </div>
     </header>
