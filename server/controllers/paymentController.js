@@ -364,7 +364,10 @@ exports.createOrderPaymentSession = async (req, res) => {
     } = req.body;
 
     console.log('[PayMongo] Creating checkout session for product order, user:', userId);
-    console.log('[PayMongo] Received voucherCode:', voucherCode);
+    console.log('[PayMongo] === VOUCHER DEBUG START ===');
+    console.log('[PayMongo] req.body.voucherCode:', req.body.voucherCode);
+    console.log('[PayMongo] voucherCode variable:', voucherCode);
+    console.log('[PayMongo] === VOUCHER DEBUG END ===');
 
     // Validation
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -527,6 +530,12 @@ exports.createOrderPaymentSession = async (req, res) => {
       discount: discount > 0 ? discount : undefined
     });
 
+    console.log('[PayMongo] === ORDER SAVE DEBUG ===');
+    console.log('[PayMongo] appliedVoucher before save:', appliedVoucher);
+    console.log('[PayMongo] discount before save:', discount);
+    console.log('[PayMongo] order.voucher:', order.voucher);
+    console.log('[PayMongo] order.discount:', order.discount);
+    
     await order.save();
     console.log('[PayMongo] Order created:', order._id, 'Voucher:', order.voucher ? order.voucher.code : 'NONE', 'Discount:', order.discount || 0);
 

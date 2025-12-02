@@ -252,6 +252,7 @@
     let savedUserEmail = '';
     let savedUserName = '';
     let cartItems = [];
+    let appliedVoucher = null; // Moved to global scope to persist across async operations
 
     document.addEventListener('DOMContentLoaded', () => {
       const token = localStorage.getItem('token');
@@ -490,7 +491,7 @@
           placeOrderBtn.disabled = true;
         }
       }
-      let appliedVoucher = null;
+      // appliedVoucher is now declared globally above
       function updateTotals(subtotal) {
         // Helpers
         function round2(v){ return Math.round((v + Number.EPSILON) * 100) / 100; }
@@ -545,6 +546,7 @@
                 const json = await res.json();
                 if (!res.ok || !json.success) throw new Error(json.msg || 'Invalid voucher');
                 appliedVoucher = json.data;
+                console.log('[Voucher] Applied voucher stored:', appliedVoucher);
                 voucherMsg.textContent = `Voucher applied: ${appliedVoucher.description}`;
                 voucherMsg.className = 'text-sm text-green-600 ml-2';
                 // Recompute totals
@@ -552,6 +554,7 @@
                 updateTotals(subtotal);
               } catch (err) {
                 appliedVoucher = null;
+                console.log('[Voucher] Apply failed, cleared:', err.message);
                 voucherMsg.textContent = err.message || 'Invalid voucher code.';
                 voucherMsg.className = 'text-sm text-red-600 ml-2';
                 document.getElementById('discount').textContent = '0';
