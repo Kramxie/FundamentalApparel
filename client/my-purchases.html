@@ -115,13 +115,17 @@
           tin: order.tin || ('SYNTH-' + order._id.slice(-8).toUpperCase()),
           createdAt: order.createdAt,
           logoUrl: '/images/logo.png',
-          items: (order.items || []).map(it => ({ name: it.name || it.productName || 'Item', quantity: it.quantity || it.qty || 1, price: it.price || it.unitPrice || it.variantPrice || 0 })),
+          items: (order.items || []).map(it => ({ name: it.name || it.productName || 'Item', quantity: it.quantity || it.qty || 1, price: it.price || it.unitPrice || it.variantPrice || 0, size: it.size || '', color: it.color || '' })),
           subtotal: order.subtotal || order.totalPrice || 0,
           deliveryFee: order.deliveryFee || order.shippingFee || 0,
           voucherDiscount: order.voucherDiscount || order.voucher || 0,
           total: (typeof order.totalPrice === 'number') ? order.totalPrice : undefined,
           customerName: (order.user && order.user.name) ? order.user.name : (order.customerName || ''),
-          customerAddress: order.shippingAddress || order.address || ''
+          customerEmail: (order.user && order.user.email) ? order.user.email : (order.customerEmail || order.email || ''),
+          customerPhone: order.shippingAddress?.phone || (order.user && order.user.phone) || order.phone || '',
+          customerAddress: order.shippingAddress || order.address || '',
+          paymentStatus: order.paymentStatus || 'Pending',
+          paymentMethod: order.paymentMethod || ''
         };
 
         if (openInline) {

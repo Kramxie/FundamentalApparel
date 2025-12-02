@@ -13,6 +13,28 @@
         .low-stock-row { background-color: #fee2e2 !important; }
         .out-of-stock-row { background-color: #fecaca !important; }
         
+        /* Modal overlay - highest z-index */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 100%;
+            max-width: 48rem;
+            margin: auto;
+        }
+        
         /* Fixed Sidebar Styles */
         .admin-sidebar {
             position: fixed;
@@ -37,6 +59,11 @@
             }
             .admin-sidebar.open { transform: translateX(0); }
             .admin-main { margin-left: 0; }
+            .modal-content {
+                max-width: 100%;
+                margin: 0.5rem;
+                max-height: 95vh;
+            }
         }
 
         /* Nav Link Styles */
@@ -759,17 +786,19 @@
             document.getElementById('add-fabric-btn')?.addEventListener('click', () => {
                 // Open the standalone fabric modal (new) and hide the inventory modal
                 document.getElementById('inventory-modal')?.classList.add('hidden');
-                document.getElementById('fabric-modal-standalone')?.classList.remove('hidden');
-                document.getElementById('fabric-modal-standalone')?.classList.add('flex');
-                // show footer inside standalone modal
-                document.getElementById('fabric-standalone-footer')?.classList.remove('hidden');
+                const modal = document.getElementById('fabric-modal-standalone');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'flex';
+                }
             });
             document.getElementById('open-fabric-standalone-btn')?.addEventListener('click', () => {
                 document.getElementById('fabric-modal')?.classList.add('hidden');
-                document.getElementById('fabric-modal-standalone')?.classList.remove('hidden');
-                document.getElementById('fabric-modal-standalone')?.classList.add('flex');
-                // show footer inside standalone modal
-                document.getElementById('fabric-standalone-footer')?.classList.remove('hidden');
+                const modal = document.getElementById('fabric-modal-standalone');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'flex';
+                }
             });
             document.getElementById('close-modal-btn').addEventListener('click', closeModal);
             document.getElementById('cancel-btn').addEventListener('click', closeModal);
@@ -783,6 +812,9 @@
                     if (inv && !inv.classList.contains('hidden')) closeModal();
                     const fm = document.getElementById('fabric-modal');
                     if (fm && !fm.classList.contains('hidden')) fm.classList.add('hidden');
+                    // Also close fabric standalone modal
+                    const fms = document.getElementById('fabric-modal-standalone');
+                    if (fms && !fms.classList.contains('hidden')) closeFabricStandaloneModal();
                 }
             });
 
@@ -1254,11 +1286,7 @@
 
             // Handlers for standalone fabric modal
             document.getElementById('fabric-standalone-cancel')?.addEventListener('click', () => {
-                // Close the standalone Fabric modal and keep the main inventory list visible.
-                document.getElementById('fabric-modal-standalone')?.classList.add('hidden');
-                document.getElementById('fabric-modal-standalone')?.classList.remove('flex');
-                // hide footer again
-                document.getElementById('fabric-standalone-footer')?.classList.add('hidden');
+                closeFabricStandaloneModal();
             });
 
             document.getElementById('fabric-standalone-save')?.addEventListener('click', async () => {
@@ -1308,10 +1336,7 @@
                     await res.json().catch(() => null);
                     // Close the standalone Fabric modal and refresh inventory only.
                     showSuccess('Inventory item added');
-                    document.getElementById('fabric-modal-standalone')?.classList.add('hidden');
-                    document.getElementById('fabric-modal-standalone')?.classList.remove('flex');
-                    // hide footer as well
-                    document.getElementById('fabric-standalone-footer')?.classList.add('hidden');
+                    closeFabricStandaloneModal();
                     // Keep main inventory modal hidden — admin stays on the inventory list.
                     loadInventory();
                 } catch (e) {
@@ -1319,6 +1344,15 @@
                     showError('Failed to add inventory item');
                 }
             });
+
+            // Helper function to close the fabric standalone modal (make global for inline onclick)
+            window.closeFabricStandaloneModal = function() {
+                const modal = document.getElementById('fabric-modal-standalone');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                }
+            }
 
             // --- Standalone fabric modal helpers (combined rows: size + qty + price) ---
             function createFabricRow(size = '', qty = 0, price = 0) {
@@ -2814,9 +2848,14 @@
     </script>
 
     <!-- Standalone Fabric&Garment Modal (placed as direct child of body) -->
-    <div id="fabric-modal-standalone" class="hidden fixed inset-0 bg-black/40 items-center justify-center p-4 z-70">
-        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 max-h-[85vh] overflow-y-auto">
-            <h3 class="text-lg font-semibold mb-4 text-center">Fabric&Garment</h3>
+    <div id="fabric-modal-standalone" class="hidden modal-overlay" onclick="if(event.target === this) closeFabricStandaloneModal()">
+        <div class="modal-content p-6" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Fabric & Garment</h3>
+                <button type="button" onclick="closeFabricStandaloneModal()" class="text-gray-400 hover:text-gray-600 p-2 rounded hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
 
             <div class="mb-3">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Choose a Fabric with Garment</label>
@@ -2892,13 +2931,17 @@
                 <input id="fabric-sku-standalone" type="text" class="w-full px-3 py-2 border rounded" />
             </div>
 
-            <div id="fabric-standalone-footer" class="flex justify-end gap-3 hidden">
-                <button id="fabric-standalone-cancel" type="button" class="px-4 py-2 border rounded">Cancel</button>
-                <button id="fabric-standalone-save" type="button" class="px-4 py-2 bg-black text-white rounded">Save</button>
+            <div id="fabric-standalone-footer" class="flex justify-end gap-3 pt-4 border-t">
+                <button id="fabric-standalone-cancel" type="button" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-times mr-2"></i>Cancel
+                </button>
+                <button id="fabric-standalone-save" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>Save
+                </button>
             </div>
-                </div>
-                </div>
-    </main>
+        </div>
+    </div>
+    <!-- End Standalone Fabric&Garment Modal -->
 
     <!-- Mobile Sidebar Script -->
     <script>

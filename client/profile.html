@@ -1252,7 +1252,7 @@
                                 const ordRes = await apiRequest(`/api/orders/${encodeURIComponent(orderId)}`);
                                 if (ordRes && ordRes.success && ordRes.data) {
                                     const order = ordRes.data;
-                                    const items = (order.orderItems || []).map(it => ({ name: it.name || it.productName || 'Item', size: it.size || '', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0 }));
+                                    const items = (order.orderItems || []).map(it => ({ name: it.name || it.productName || 'Item', size: it.size || '', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0, color: it.color || '' }));
                                     return {
                                         _id: `synth-${order._id}`,
                                         createdAt: order.createdAt,
@@ -1261,7 +1261,12 @@
                                         deliveryFee: order.deliveryFee || 0,
                                         voucherDiscount: order.voucherDiscount || order.voucherAmount || 0,
                                         preparedByName: order.acceptedByName || '',
-                                        customerName: (order.user && order.user.name) ? order.user.name : (order.shippingAddress ? (order.shippingAddress.contact || '') : '')
+                                        customerName: (order.user && order.user.name) ? order.user.name : (order.shippingAddress ? (order.shippingAddress.contact || '') : ''),
+                                        customerEmail: (order.user && order.user.email) ? order.user.email : '',
+                                        customerPhone: order.shippingAddress?.phone || (order.user && order.user.phone) || '',
+                                        customerAddress: order.shippingAddress || '',
+                                        paymentStatus: order.paymentStatus || 'Pending',
+                                        paymentMethod: order.paymentMethod || ''
                                     };
                                 }
                             } catch (e) { console.error('order fallback failed', e); }
