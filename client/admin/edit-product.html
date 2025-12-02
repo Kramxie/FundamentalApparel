@@ -196,7 +196,12 @@
                                                                                             <button id="apply-qty-btn" type="button" class="px-3 py-2 bg-blue-600 text-white rounded-md">Apply to selected sizes</button>
                                                                                             <span class="text-xs text-gray-500">Select sizes and apply one quantity to all selected.</span>
                                                                                         </div>
-                                                                                        <div id="sizes-rows" class="space-y-2 mt-2"></div>
+                                                                                        <!-- Select All for Inventory -->
+                                                                                        <div class="flex items-center gap-2 px-2 py-1.5 mt-2 bg-gray-100 border border-gray-200 rounded-t-lg">
+                                                                                            <input type="checkbox" id="select-all-inventory" class="h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer">
+                                                                                            <label for="select-all-inventory" class="text-xs font-semibold text-gray-600 cursor-pointer select-none">Select All</label>
+                                                                                        </div>
+                                                                                        <div id="sizes-rows" class="space-y-2 p-1 border border-gray-100 rounded-b-lg bg-gray-50"></div>
                                                                                         <div class="flex gap-2">
                                                                                             <button id="add-size-row" type="button" class="px-3 py-2 bg-green-600 text-white rounded-md">Add Size</button>
                                                                                             <button id="clear-sizes" type="button" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md">Clear</button>
@@ -217,7 +222,12 @@
                                                                                                                                                                             <button id="apply-price-btn" type="button" class="px-3 py-2 bg-blue-600 text-white rounded-md">Apply to selected sizes</button>
                                                                                                                                                                             <span class="text-xs text-gray-500">Select sizes and apply one price to all selected.</span>
                                                                                                                                                                         </div>
-                                                                                                                                                                        <div id="prices-rows" class="space-y-2 mt-2"></div>
+                                                                                                                                                                        <!-- Select All for Prices -->
+                                                                                                                                                                        <div class="flex items-center gap-2 px-2 py-1.5 mt-2 bg-gray-100 border border-gray-200 rounded-t-lg">
+                                                                                                                                                                            <input type="checkbox" id="select-all-prices" class="h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer">
+                                                                                                                                                                            <label for="select-all-prices" class="text-xs font-semibold text-gray-600 cursor-pointer select-none">Select All</label>
+                                                                                                                                                                        </div>
+                                                                                                                                                                        <div id="prices-rows" class="space-y-2 p-1 border border-gray-100 rounded-b-lg bg-gray-50"></div>
                                                                                                                                                                         <div class="flex gap-2">
                                                                                                                                                                             <button id="add-price-row" type="button" class="px-3 py-2 bg-green-600 text-white rounded-md">Add Price Row</button>
                                                                                                                                                                             <button id="clear-prices" type="button" class="px-3 py-2 bg-gray-200 text-gray-800 rounded-md">Clear</button>
@@ -485,6 +495,9 @@
             const obj = {};
             sizes.forEach(s => { obj[s] = obj[s] || 0; });
             renderSizeRows(obj);
+            // Reset Select All checkbox
+            const selectAllInv = document.getElementById('select-all-inventory');
+            if (selectAllInv) { selectAllInv.checked = false; selectAllInv.indeterminate = false; }
         });
 
         addSizeRowBtn?.addEventListener('click', () => {
@@ -495,6 +508,9 @@
 
         clearSizesBtn?.addEventListener('click', () => {
             if (sizesRowsContainer) sizesRowsContainer.innerHTML = '';
+            // Reset Select All checkbox
+            const selectAllInv = document.getElementById('select-all-inventory');
+            if (selectAllInv) { selectAllInv.checked = false; selectAllInv.indeterminate = false; }
         });
 
         // Batch apply quantity to selected sizes
@@ -553,6 +569,9 @@
             const obj = {};
             sizes.forEach(s => { obj[s] = obj[s] || 0; });
             renderPriceRows(obj);
+            // Reset Select All checkbox
+            const selectAllPrc = document.getElementById('select-all-prices');
+            if (selectAllPrc) { selectAllPrc.checked = false; selectAllPrc.indeterminate = false; }
         });
 
         addPriceRowBtn?.addEventListener('click', () => {
@@ -563,6 +582,9 @@
 
         clearPricesBtn?.addEventListener('click', () => {
             if (pricesRowsContainer) pricesRowsContainer.innerHTML = '';
+            // Reset Select All checkbox
+            const selectAllPrc = document.getElementById('select-all-prices');
+            if (selectAllPrc) { selectAllPrc.checked = false; selectAllPrc.indeterminate = false; }
         });
 
         // Batch apply price to selected sizes
@@ -578,6 +600,56 @@
                     priceInput.value = Number(v.toFixed(2));
                 }
             });
+        });
+
+        // --- SELECT ALL CHECKBOX LOGIC ---
+        const selectAllInventory = document.getElementById('select-all-inventory');
+        const selectAllPrices = document.getElementById('select-all-prices');
+
+        // Select All for Inventory
+        selectAllInventory?.addEventListener('change', function() {
+            const isChecked = this.checked;
+            const rows = sizesRowsContainer?.querySelectorAll('div') || [];
+            rows.forEach(r => {
+                const chk = r.querySelector('input[type="checkbox"]');
+                if (chk) chk.checked = isChecked;
+            });
+        });
+
+        // Select All for Prices
+        selectAllPrices?.addEventListener('change', function() {
+            const isChecked = this.checked;
+            const rows = pricesRowsContainer?.querySelectorAll('div') || [];
+            rows.forEach(r => {
+                const chk = r.querySelector('input[type="checkbox"]');
+                if (chk) chk.checked = isChecked;
+            });
+        });
+
+        // Update "Select All" state when individual checkboxes change (for inventory)
+        sizesRowsContainer?.addEventListener('change', function(e) {
+            if (e.target.type === 'checkbox' && !e.target.id) {
+                const allCheckboxes = sizesRowsContainer.querySelectorAll('input[type="checkbox"]');
+                const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+                const someChecked = Array.from(allCheckboxes).some(cb => cb.checked);
+                if (selectAllInventory) {
+                    selectAllInventory.checked = allChecked;
+                    selectAllInventory.indeterminate = someChecked && !allChecked;
+                }
+            }
+        });
+
+        // Update "Select All" state when individual checkboxes change (for prices)
+        pricesRowsContainer?.addEventListener('change', function(e) {
+            if (e.target.type === 'checkbox' && !e.target.id) {
+                const allCheckboxes = pricesRowsContainer.querySelectorAll('input[type="checkbox"]');
+                const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+                const someChecked = Array.from(allCheckboxes).some(cb => cb.checked);
+                if (selectAllPrices) {
+                    selectAllPrices.checked = allChecked;
+                    selectAllPrices.indeterminate = someChecked && !allChecked;
+                }
+            }
         });
 
         // New arrival presets handling

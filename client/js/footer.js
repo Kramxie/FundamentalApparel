@@ -25,7 +25,7 @@
         <div>
           <h3 class="text-gray-900 font-semibold mb-3">Customer Care</h3>
           <ul class="space-y-2">
-            <li><a href="#" class="hover:text-indigo-600">Contact Us</a></li>
+            <li><a href="contact.html" class="hover:text-indigo-600">Contact Us</a></li>
             <li><a href="#" class="hover:text-indigo-600">Payment Method</a></li>
             <li><a href="#" class="hover:text-indigo-600">Bonus Point</a></li>
             <li><a href="faqs.html" class="hover:text-indigo-600">FAQ</a></li>
@@ -34,9 +34,9 @@
         <div>
           <h3 class="text-gray-900 font-semibold mb-3">Business Information</h3>
           <ul class="space-y-2">
-            <li><span class="text-gray-900 font-medium">Fundamentals</span></li>
-            <li><span class="text-gray-500">Address:</span> <span>—</span></li>
-            <li><span class="text-gray-500">Email: fundamental@apparel.com</span> <span></span></li>
+            <li><span class="text-gray-900 font-medium">Fundamental Apparel</span></li>
+            <li><span class="text-gray-500">Address:</span> <span>Imus, Philippines · Pasay City, Philippines</span></li>
+            <li><span class="text-gray-500">Email:</span> <span>fundamentalapparel7@gmail.com</span></li>
           </ul>
         </div>
       </div>
@@ -45,8 +45,12 @@
         <div class="flex items-center gap-4">
           <span class="text-gray-900 font-semibold">Find us on</span>
           <div class="flex items-center gap-4 text-gray-700">
-            <i class="fab fa-facebook text-xl"></i>
-            <i class="fab fa-tiktok text-xl"></i>
+            <a href="https://www.facebook.com/fundamentalapparel" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600 transition">
+              <i class="fab fa-facebook text-xl"></i>
+            </a>
+            <a href="https://www.tiktok.com/@fundamental.apparel?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener noreferrer" class="hover:text-gray-900 transition">
+              <i class="fab fa-tiktok text-xl"></i>
+            </a>
           </div>
         </div>
         <div class="md:text-right">
@@ -65,7 +69,7 @@
       <hr class="my-8">
       <div class="text-xs text-gray-500">
         <div class="flex flex-col items-center justify-center gap-1 text-center">
-          <p>© <span id="footer-year">${year}</span> Fundamental. All rights reserved.</p>
+          <p>© <span id="footer-year">${year}</span> Fundamental Apparel. All rights reserved.</p>
           <a href="#" id="footer-privacy" class="hover:text-indigo-600">Privacy Policy</a>
           <a href="#" id="footer-terms" class="hover:text-indigo-600">Terms & Conditions</a>
         </div>

@@ -841,6 +841,56 @@
             </div>
           </div>
         </div>
+
+        <!-- Pre-Design Product Details -->
+        <div id="custom-modal-predesign-section" class="hidden space-y-3">
+          <div class="border-t pt-3">
+            <h4 class="font-semibold text-gray-800 mb-2">👕 Pre-Design Product Details</h4>
+            <div class="space-y-3 text-sm">
+              <!-- Product Info with Image -->
+              <div class="flex gap-4">
+                <div id="predesign-product-image-wrap" class="hidden">
+                  <img id="predesign-product-image" src="" alt="product" class="w-24 h-24 object-contain border rounded bg-white" />
+                </div>
+                <div class="flex-1 space-y-1">
+                  <p><strong>Product:</strong> <span id="predesign-product-name">N/A</span></p>
+                  <p><strong>Printing Type:</strong> <span id="predesign-printing-type">N/A</span></p>
+                  <p><strong>Placement:</strong> <span id="predesign-placement">N/A</span></p>
+                  <p><strong>Size:</strong> <span id="predesign-size">N/A</span></p>
+                </div>
+              </div>
+              
+              <!-- Single Buyer Info (when not Team Mode) -->
+              <div id="predesign-single-buyer-section" class="hidden bg-blue-50 p-3 rounded border border-blue-200">
+                <h5 class="font-semibold text-blue-900 mb-2">👤 Customer Customization</h5>
+                <div class="grid grid-cols-2 gap-2">
+                  <p><strong>Team Name:</strong> <span id="predesign-team-name">N/A</span></p>
+                  <p><strong>Name:</strong> <span id="predesign-member-name">N/A</span></p>
+                  <p><strong>Jersey Number:</strong> <span id="predesign-jersey-number">N/A</span></p>
+                </div>
+              </div>
+              
+              <!-- Team Mode Entries -->
+              <div id="predesign-team-section" class="hidden bg-green-50 p-3 rounded border border-green-200">
+                <h5 class="font-semibold text-green-900 mb-2">👥 Team Mode - Member List</h5>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full text-xs border">
+                    <thead class="bg-green-100">
+                      <tr>
+                        <th class="border px-2 py-1 text-left">#</th>
+                        <th class="border px-2 py-1 text-left">Name</th>
+                        <th class="border px-2 py-1 text-left">Jersey #</th>
+                        <th class="border px-2 py-1 text-left">Size</th>
+                      </tr>
+                    </thead>
+                    <tbody id="predesign-team-tbody" class="bg-white"></tbody>
+                  </table>
+                </div>
+                <p class="text-xs text-green-700 mt-2">Total members: <span id="predesign-team-count">0</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
           </div>
           <!-- END LEFT COLUMN -->
 
@@ -2961,6 +3011,75 @@
         }
       }
 
+      // --- Function to display Pre-Design Product details ---
+      function showPredesignSection(order) {
+        const section = document.getElementById('custom-modal-predesign-section');
+        if (!section) return;
+        section.classList.remove('hidden');
+        
+        // Product info
+        const productName = document.getElementById('predesign-product-name');
+        const printingType = document.getElementById('predesign-printing-type');
+        const placement = document.getElementById('predesign-placement');
+        const sizeEl = document.getElementById('predesign-size');
+        const imageWrap = document.getElementById('predesign-product-image-wrap');
+        const imageEl = document.getElementById('predesign-product-image');
+        
+        if (productName) productName.textContent = order.productName || 'N/A';
+        if (printingType) printingType.textContent = order.printingType || 'N/A';
+        if (placement) placement.textContent = order.selectedLocation || 'N/A';
+        if (sizeEl) sizeEl.textContent = order.garmentSize || 'N/A';
+        
+        // Show product image if available
+        const imgSrc = order.productImage || order.imageUrl || order.designFileUrl;
+        if (imgSrc && imageWrap && imageEl) {
+          imageEl.src = imgSrc;
+          imageWrap.classList.remove('hidden');
+        } else if (imageWrap) {
+          imageWrap.classList.add('hidden');
+        }
+        
+        // Check if Team Mode (has teamMembers)
+        const hasTeamMembers = order.includeTeamMembers && Array.isArray(order.teamMembers) && order.teamMembers.length > 0;
+        const singleBuyerSection = document.getElementById('predesign-single-buyer-section');
+        const teamSection = document.getElementById('predesign-team-section');
+        
+        if (hasTeamMembers) {
+          // Show Team Mode section
+          if (singleBuyerSection) singleBuyerSection.classList.add('hidden');
+          if (teamSection) {
+            teamSection.classList.remove('hidden');
+            const tbody = document.getElementById('predesign-team-tbody');
+            const countEl = document.getElementById('predesign-team-count');
+            
+            if (tbody) {
+              tbody.innerHTML = order.teamMembers.map((m, i) => `
+                <tr>
+                  <td class="border px-2 py-1">${i + 1}</td>
+                  <td class="border px-2 py-1">${escapeHtml(m.name || '-')}</td>
+                  <td class="border px-2 py-1">${escapeHtml(m.jerseyNumber || '-')}</td>
+                  <td class="border px-2 py-1">${escapeHtml(m.size || '-')}</td>
+                </tr>
+              `).join('');
+            }
+            if (countEl) countEl.textContent = order.teamMembers.length;
+          }
+        } else {
+          // Show Single Buyer section
+          if (teamSection) teamSection.classList.add('hidden');
+          if (singleBuyerSection) {
+            singleBuyerSection.classList.remove('hidden');
+            const teamNameEl = document.getElementById('predesign-team-name');
+            const memberNameEl = document.getElementById('predesign-member-name');
+            const jerseyNumEl = document.getElementById('predesign-jersey-number');
+            
+            if (teamNameEl) teamNameEl.textContent = order.teamName || 'N/A';
+            if (memberNameEl) memberNameEl.textContent = order.memberName || 'N/A';
+            if (jerseyNumEl) jerseyNumEl.textContent = order.jerseyNumber || 'N/A';
+          }
+        }
+      }
+
       // --- NEW: Functions for Custom Order Modal ---
       async function openCustomModal(order) {
         selectedCustomOrder = order;
@@ -2997,15 +3116,24 @@
         } else if (serviceType === 'printing-only') {
           serviceBadge.textContent = '🖨️ Upload Custom Design';
           serviceBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800';
+        } else if (serviceType === 'predesign-product') {
+          serviceBadge.textContent = '👕 Pre-Design Product';
+          serviceBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-semibold bg-orange-100 text-orange-800';
         }
 
         // Hide all service sections first
         document.getElementById('custom-modal-customize-jersey-section').classList.add('hidden');
         document.getElementById('custom-modal-layout-section').classList.add('hidden');
         document.getElementById('custom-modal-printing-section').classList.add('hidden');
+        // Also hide predesign section if it exists
+        const predesignSection = document.getElementById('custom-modal-predesign-section');
+        if (predesignSection) predesignSection.classList.add('hidden');
 
         // Show relevant section based on service type
-        if (serviceType === 'customize-jersey') {
+        if (serviceType === 'predesign-product') {
+          // Show pre-design product details
+          showPredesignSection(order);
+        } else if (serviceType === 'customize-jersey') {
           const section = document.getElementById('custom-modal-customize-jersey-section');
           section.classList.remove('hidden');
 

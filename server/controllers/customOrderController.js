@@ -186,6 +186,42 @@ exports.submitCustomOrder = async (req, res) => {
     // Route based on serviceType
     switch(serviceType) {
 
+      case 'predesign-product':
+        // Pre-Design Product: customer selects an existing pre-made design and customizes text
+        orderData.customType = 'Template'; // Required field for model
+        orderData.serviceType = 'predesign-product';
+        orderData.designDetails = `Pre-Design Product: ${productName || 'Unknown'}`;
+        
+        // Copy pre-design specific fields
+        if (teamName) orderData.teamName = teamName;
+        if (memberName) orderData.memberName = memberName;
+        if (jerseyNumber) orderData.jerseyNumber = jerseyNumber;
+        if (printingType) orderData.printingType = printingType.toLowerCase().replace(/\s+/g, '-');
+        if (req.body.placement) orderData.selectedLocation = req.body.placement;
+        
+        // Handle team entries (Team Mode)
+        if (req.body.teamEntries) {
+          try {
+            const entries = typeof req.body.teamEntries === 'string' 
+              ? JSON.parse(req.body.teamEntries) 
+              : req.body.teamEntries;
+            if (Array.isArray(entries) && entries.length > 0) {
+              orderData.includeTeamMembers = true;
+              // Map teamEntries to teamMembers format (name, jerseyNumber, size)
+              orderData.teamMembers = entries.map(e => ({
+                name: e.name || '',
+                jerseyNumber: e.number || '',
+                size: e.size || ''
+              }));
+              // Update quantity to match team entries count
+              orderData.quantity = entries.length;
+            }
+          } catch (e) {
+            console.error('Error parsing team entries:', e);
+          }
+        }
+        break;
+
       case 'layout-creation':
         // Require inspiration image for layout creation
         if (!orderData.designFileUrl) {
