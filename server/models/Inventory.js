@@ -35,6 +35,18 @@ const inventorySchema = new mongoose.Schema({
         required: [true, 'Price is required'],
         min: [0, 'Price cannot be negative']
     },
+    // Cost price (what you pay supplier) - for profit tracking
+    costPrice: {
+        type: Number,
+        default: 0,
+        min: [0, 'Cost price cannot be negative']
+    },
+    // Color/variant for materials (e.g., ink color, thread color)
+    color: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     status: {
         type: String,
         enum: ['in_stock', 'low_stock', 'out_of_stock'],

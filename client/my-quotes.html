@@ -100,6 +100,16 @@
           class="mt-2 text-[11px] leading-tight bg-indigo-50 border border-indigo-200 rounded p-2 whitespace-pre-wrap hidden"
           data-breakdown></pre>
       </div>
+      <!-- Price Notice -->
+      <div class="hidden bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs" data-price-notice>
+        <div class="flex items-start gap-2">
+          <i class="fas fa-info-circle text-amber-600 mt-0.5"></i>
+          <div>
+            <p class="font-medium text-amber-800">Note: Final price may vary</p>
+            <p class="text-amber-700 mt-1">Shipping fee will be calculated at checkout based on your delivery location.</p>
+          </div>
+        </div>
+      </div>
       <div class="border-t pt-3 mt-auto" data-actions></div>
     </div>
   </template>
@@ -140,6 +150,22 @@
       if (addr.zip) parts.push(addr.zip);
       if (addr.phone) parts.push(`Tel: ${addr.phone}`);
       return parts.length ? parts.join(', ') : 'Your address';
+    }
+
+    // Generate tracking URL based on courier service
+    function getTrackingUrl(courier, trackingNumber) {
+      if (!courier || !trackingNumber) return null;
+      const courierUrls = {
+        'J&T Express': `https://www.jtexpress.ph/trajectoryQuery?billcode=${trackingNumber}`,
+        'LBC Express': `https://www.lbcexpress.com/track?tracking_no=${trackingNumber}`,
+        'Ninja Van': `https://www.ninjavan.co/en-ph/tracking?id=${trackingNumber}`,
+        'Flash Express': `https://www.flashexpress.com/tracking/?se=${trackingNumber}`,
+        'JRS Express': `https://www.jrs-express.com/track?code=${trackingNumber}`,
+        '2GO Express': `https://www.2go.com.ph/track/${trackingNumber}`,
+        'Lalamove': null, // Lalamove doesn't have public tracking
+        'Grab Express': null // Grab doesn't have public tracking
+      };
+      return courierUrls[courier] || null;
     }
 
     const API_BASE = 'https://fundamental-apparel-backend.onrender.com';
@@ -328,6 +354,12 @@
           bd.classList.toggle('hidden', !expanded);
           bdToggle.innerHTML = expanded ? '<i class="fas fa-list"></i> Hide Pricing Breakdown' : '<i class="fas fa-list"></i> View Pricing Breakdown';
         });
+        
+        // Show price notice for Quote Sent status (before checkout)
+        const priceNotice = tpl.querySelector('[data-price-notice]');
+        if (priceNotice && (order.status === 'Quote Sent' || order.status === 'Quote Accepted')) {
+          priceNotice.classList.remove('hidden');
+        }
       }
 
       const actions = tpl.querySelector('[data-actions]');
@@ -502,9 +534,22 @@
                 <strong>Delivery Address:</strong>
               </div>
               <p class="text-gray-700 ml-6">${getDisplayAddress(order)}</p>
-              ${order.trackingNumber ? `
+              ${order.courier ? `
                 <div class="mt-2 ml-6">
-                  <span class="text-xs text-gray-600">Tracking: <strong>${order.trackingNumber}</strong></span>
+                  <span class="text-xs text-gray-600">Courier: <strong>${order.courier}</strong></span>
+                </div>
+              ` : ''}
+              ${order.trackingNumber ? `
+                <div class="mt-2 ml-6 bg-white rounded p-2 border border-green-300">
+                  <span class="text-xs text-gray-600">Tracking: <strong class="font-mono">${order.trackingNumber}</strong></span>
+                  <button onclick="navigator.clipboard.writeText('${order.trackingNumber}'); this.innerHTML='✓'; setTimeout(() => this.innerHTML='📋', 2000)" 
+                          class="text-xs ml-2 px-1 hover:bg-gray-100 rounded" title="Copy">📋</button>
+                  ${getTrackingUrl(order.courier, order.trackingNumber) ? `
+                    <a href="${getTrackingUrl(order.courier, order.trackingNumber)}" target="_blank" 
+                       class="text-xs text-green-600 hover:text-green-800 underline ml-2">
+                      Track →
+                    </a>
+                  ` : ''}
                 </div>
               ` : ''}
             </div>
@@ -566,8 +611,14 @@
               <div class="flex-1">
                 <p class="text-xs text-gray-600">Tracking Number:</p>
                 <p class="text-gray-900 font-mono font-bold">${order.trackingNumber}</p>
+                ${getTrackingUrl(order.courier, order.trackingNumber) ? `
+                  <a href="${getTrackingUrl(order.courier, order.trackingNumber)}" target="_blank" 
+                     class="text-xs text-blue-600 hover:text-blue-800 underline mt-1 inline-flex items-center gap-1">
+                    <i class="fas fa-external-link-alt"></i> Track your package
+                  </a>
+                ` : ''}
               </div>
-              <button onclick="navigator.clipboard.writeText('${order.trackingNumber}')" class="text-blue-600 hover:text-blue-800 px-2">
+              <button onclick="navigator.clipboard.writeText('${order.trackingNumber}'); this.innerHTML='<i class=\\'fas fa-check text-green-600\\'></i>'; setTimeout(() => this.innerHTML='<i class=\\'fas fa-copy\\'></i>', 2000)" class="text-blue-600 hover:text-blue-800 px-2" title="Copy tracking number">
                 <i class="fas fa-copy"></i>
               </button>
             </div>

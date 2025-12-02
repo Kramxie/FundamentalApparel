@@ -967,6 +967,53 @@ exports.verifyDownPayment = async (req, res) => {
         }
       }
 
+      // =====================================================
+      // DEDUCT MATERIALS FROM INVENTORY (from quoteMaterials)
+      // =====================================================
+      if (order.quoteMaterials && Array.isArray(order.quoteMaterials) && order.quoteMaterials.length > 0) {
+        console.log('[verifyDownPayment] Deducting materials from quoteMaterials:', order.quoteMaterials.length, 'items');
+        const materialsDeducted = [];
+        
+        for (const mat of order.quoteMaterials) {
+          if (!mat.inventoryId || !mat.qtyUsed || mat.qtyUsed <= 0) continue;
+          
+          try {
+            const invItem = await Inventory.findById(mat.inventoryId).session(session);
+            if (!invItem) {
+              console.warn('[verifyDownPayment] Material not found in inventory:', mat.name, mat.inventoryId);
+              continue;
+            }
+            
+            const currentQty = Number(invItem.quantity || 0);
+            const qtyToDeduct = Number(mat.qtyUsed || 0);
+            const newQty = Math.max(0, currentQty - qtyToDeduct);
+            
+            console.log(`[verifyDownPayment] Deducting material: ${invItem.name} | Before: ${currentQty} | Deduct: ${qtyToDeduct} | After: ${newQty}`);
+            
+            invItem.quantity = newQty;
+            await invItem.save({ session });
+            
+            materialsDeducted.push({
+              inventoryId: invItem._id,
+              name: invItem.name,
+              qtyDeducted: qtyToDeduct,
+              unit: mat.unit || invItem.unit
+            });
+          } catch (matErr) {
+            console.error('[verifyDownPayment] Failed to deduct material:', mat.name, matErr.message);
+          }
+        }
+        
+        // Add materials to allocatedItems for audit trail
+        if (materialsDeducted.length > 0) {
+          order.allocatedItems = [
+            ...(order.allocatedItems || []),
+            ...materialsDeducted.map(m => ({ inventoryId: m.inventoryId, name: m.name, qty: m.qtyDeducted, type: 'material' }))
+          ];
+          console.log('[verifyDownPayment] Materials deducted successfully:', materialsDeducted.length, 'items');
+        }
+      }
+
       // Update the order
       order.status = "In Production";
       order.downPaymentPaid = true;
@@ -1330,6 +1377,61 @@ exports.verifyFinalPayment = async (req, res) => {
               const invDoc = await allocateInventory({ name: foundInv.name, qty: order.quantity, orderId: order._id, adminId: req.user._id, session });
               order.inventoryAllocated = true;
               order.allocatedItems = [{ inventoryId: invDoc._id, name: invDoc.name, qty: order.quantity }];
+            }
+          }
+
+          // =====================================================
+          // DEDUCT MATERIALS FROM INVENTORY (from quoteMaterials)
+          // This runs during final payment verification if not already deducted
+          // =====================================================
+          if (order.quoteMaterials && Array.isArray(order.quoteMaterials) && order.quoteMaterials.length > 0) {
+            // Check if materials were already deducted (during downpayment)
+            const alreadyDeducted = (order.allocatedItems || []).some(item => item.type === 'material');
+            
+            if (!alreadyDeducted) {
+              console.log('[verifyFinalPayment] Deducting materials from quoteMaterials:', order.quoteMaterials.length, 'items');
+              const materialsDeducted = [];
+              
+              for (const mat of order.quoteMaterials) {
+                if (!mat.inventoryId || !mat.qtyUsed || mat.qtyUsed <= 0) continue;
+                
+                try {
+                  const invItem = await Inventory.findById(mat.inventoryId).session(session);
+                  if (!invItem) {
+                    console.warn('[verifyFinalPayment] Material not found in inventory:', mat.name, mat.inventoryId);
+                    continue;
+                  }
+                  
+                  const currentQty = Number(invItem.quantity || 0);
+                  const qtyToDeduct = Number(mat.qtyUsed || 0);
+                  const newQty = Math.max(0, currentQty - qtyToDeduct);
+                  
+                  console.log(`[verifyFinalPayment] Deducting material: ${invItem.name} | Before: ${currentQty} | Deduct: ${qtyToDeduct} | After: ${newQty}`);
+                  
+                  invItem.quantity = newQty;
+                  await invItem.save({ session });
+                  
+                  materialsDeducted.push({
+                    inventoryId: invItem._id,
+                    name: invItem.name,
+                    qtyDeducted: qtyToDeduct,
+                    unit: mat.unit || invItem.unit
+                  });
+                } catch (matErr) {
+                  console.error('[verifyFinalPayment] Failed to deduct material:', mat.name, matErr.message);
+                }
+              }
+              
+              // Add materials to allocatedItems for audit trail
+              if (materialsDeducted.length > 0) {
+                order.allocatedItems = [
+                  ...(order.allocatedItems || []),
+                  ...materialsDeducted.map(m => ({ inventoryId: m.inventoryId, name: m.name, qty: m.qtyDeducted, type: 'material' }))
+                ];
+                console.log('[verifyFinalPayment] Materials deducted successfully:', materialsDeducted.length, 'items');
+              }
+            } else {
+              console.log('[verifyFinalPayment] Materials already deducted during downpayment, skipping');
             }
           }
 

@@ -1021,34 +1021,72 @@
             </div>
             
             <!-- For Delivery -->
-            <div id="fulfillment-delivery-fields" class="hidden space-y-2">
+            <div id="fulfillment-delivery-fields" class="hidden space-y-3">
               <!-- Show delivery address -->
-              <div id="fulfillment-delivery-address" class="bg-white p-2 rounded border text-sm">
-                <span class="font-medium text-gray-700">Delivery Address:</span>
-                <p id="delivery-address-text" class="text-gray-900 mt-1"></p>
+              <div id="fulfillment-delivery-address" class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <div class="flex items-center gap-2 mb-1">
+                  <i class="fas fa-map-marker-alt text-blue-600"></i>
+                  <span class="font-medium text-gray-700 text-sm">Delivery Address:</span>
+                </div>
+                <p id="delivery-address-text" class="text-gray-900 text-sm"></p>
+              </div>
+              
+              <!-- Courier Selection with Auto-generate -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  <i class="fas fa-truck text-gray-500 mr-1"></i> Select Courier
+                </label>
+                <select id="fulfillment-courier" class="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                  <option value="">-- Select Courier --</option>
+                  <option value="Lalamove">🏍️ Lalamove (Same-Day)</option>
+                  <option value="Grab Express">🟢 Grab Express (Same-Day)</option>
+                  <option value="J&T Express">📦 J&T Express (1-3 Days)</option>
+                  <option value="LBC Express">📦 LBC Express (1-3 Days)</option>
+                  <option value="Ninja Van">📦 Ninja Van (1-3 Days)</option>
+                  <option value="Flash Express">⚡ Flash Express (1-3 Days)</option>
+                  <option value="JRS Express">📦 JRS Express (2-5 Days)</option>
+                  <option value="2GO Express">📦 2GO Express (3-5 Days)</option>
+                </select>
+                <p id="fulfillment-courier-recommendation" class="text-xs text-green-600 mt-1">
+                  <i class="fas fa-lightbulb"></i> Recommended: J&T Express (reliable for Luzon deliveries)
+                </p>
+              </div>
+              
+              <!-- Auto-generated Tracking Number -->
+              <div id="fulfillment-tracking-section" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  <i class="fas fa-barcode text-gray-500 mr-1"></i> Tracking Number
+                </label>
+                <div class="relative">
+                  <input id="fulfillment-tracking" type="text" readonly
+                    class="w-full border rounded-lg px-3 py-2.5 text-sm font-mono bg-gray-50 pr-28">
+                  <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium">
+                    <i class="fas fa-check-circle"></i> Auto-generated
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Tracking URL -->
+              <div id="fulfillment-url-section" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  <i class="fas fa-link text-gray-500 mr-1"></i> Tracking URL
+                </label>
+                <div class="flex items-center gap-2">
+                  <input id="fulfillment-tracking-url" type="text" readonly
+                    class="flex-1 border rounded-lg px-3 py-2 text-xs font-mono bg-gray-50 text-gray-600 truncate">
+                  <button id="fulfillment-copy-url" type="button"
+                    class="px-3 py-2 bg-gray-100 hover:bg-gray-200 border rounded-lg text-sm transition-colors" title="Copy URL">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Customer can use this link to track their order</p>
               </div>
               
               <div>
-                <label class="block text-sm font-medium mb-1">Courier Service</label>
-                <select id="fulfillment-courier" class="w-full border rounded px-3 py-2 text-sm">
-                  <option value="">Select Courier</option>
-                  <option value="J&T Express">J&T Express</option>
-                  <option value="LBC">LBC</option>
-                  <option value="JRS Express">JRS Express</option>
-                  <option value="Grab Express">Grab Express</option>
-                  <option value="Lalamove">Lalamove</option>
-                  <option value="Ninja Van">Ninja Van</option>
-                  <option value="Flash Express">Flash Express</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium mb-1">Tracking Number</label>
-                <input id="fulfillment-tracking" type="text" class="w-full border rounded px-3 py-2 text-sm" placeholder="Enter tracking number">
-              </div>
-              <div>
-                <label class="block text-sm font-medium mb-1">Estimated Delivery Date</label>
-                <input id="fulfillment-delivery-date" type="date" class="w-full border rounded px-3 py-2 text-sm">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  <i class="fas fa-calendar-alt text-gray-500 mr-1"></i> Estimated Delivery Date
+                </label>
+                <input id="fulfillment-delivery-date" type="date" class="w-full border rounded-lg px-3 py-2 text-sm">
               </div>
             </div>
 
@@ -4126,6 +4164,69 @@
           } else {
             if (deliveryFields) deliveryFields.classList.add('hidden');
             if (pickupFields) pickupFields.classList.add('hidden');
+          }
+        });
+      }
+
+      // =====================================================
+      // CUSTOM ORDER FULFILLMENT - Auto-generate Tracking Numbers
+      // Uses same tracking formats as Regular Orders for consistency
+      // =====================================================
+      const fulfillmentCourierSelect = document.getElementById('fulfillment-courier');
+      const fulfillmentTrackingInput = document.getElementById('fulfillment-tracking');
+      const fulfillmentTrackingSection = document.getElementById('fulfillment-tracking-section');
+      const fulfillmentUrlSection = document.getElementById('fulfillment-url-section');
+      const fulfillmentTrackingUrl = document.getElementById('fulfillment-tracking-url');
+      const fulfillmentCopyUrlBtn = document.getElementById('fulfillment-copy-url');
+
+      // Handle courier selection - auto-generate tracking number (same as regular orders)
+      if (fulfillmentCourierSelect) {
+        fulfillmentCourierSelect.addEventListener('change', () => {
+          const courier = fulfillmentCourierSelect.value;
+          
+          if (!courier) {
+            // No courier selected - hide tracking fields
+            if (fulfillmentTrackingSection) fulfillmentTrackingSection.classList.add('hidden');
+            if (fulfillmentUrlSection) fulfillmentUrlSection.classList.add('hidden');
+            if (fulfillmentTrackingInput) fulfillmentTrackingInput.value = '';
+            if (fulfillmentTrackingUrl) fulfillmentTrackingUrl.value = '';
+            return;
+          }
+          
+          // Generate tracking number using same function as regular orders
+          const trackingCode = generateTrackingNumber(courier);
+          const trackingUrl = generateTrackingUrl(courier, trackingCode);
+          
+          // Show tracking number section and populate
+          if (fulfillmentTrackingSection) fulfillmentTrackingSection.classList.remove('hidden');
+          if (fulfillmentTrackingInput) fulfillmentTrackingInput.value = trackingCode;
+          
+          // Show tracking URL if available
+          if (trackingUrl) {
+            if (fulfillmentUrlSection) fulfillmentUrlSection.classList.remove('hidden');
+            if (fulfillmentTrackingUrl) fulfillmentTrackingUrl.value = trackingUrl;
+          } else {
+            if (fulfillmentUrlSection) fulfillmentUrlSection.classList.add('hidden');
+            if (fulfillmentTrackingUrl) fulfillmentTrackingUrl.value = '';
+          }
+        });
+      }
+
+      // Copy tracking URL to clipboard
+      if (fulfillmentCopyUrlBtn) {
+        fulfillmentCopyUrlBtn.addEventListener('click', () => {
+          const url = fulfillmentTrackingUrl?.value;
+          if (url) {
+            navigator.clipboard.writeText(url).then(() => {
+              // Show feedback
+              const originalHtml = fulfillmentCopyUrlBtn.innerHTML;
+              fulfillmentCopyUrlBtn.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+              setTimeout(() => {
+                fulfillmentCopyUrlBtn.innerHTML = originalHtml;
+              }, 2000);
+            }).catch(err => {
+              console.error('Failed to copy:', err);
+            });
           }
         });
       }
