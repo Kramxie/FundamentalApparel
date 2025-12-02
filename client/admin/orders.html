@@ -520,6 +520,108 @@
       </div>
     </div>
   </div>
+
+  <!-- Ship Order Modal - NEW -->
+  <div id="ship-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-lg shadow max-w-lg w-full overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b bg-gradient-to-r from-indigo-600 to-purple-600">
+        <h3 class="font-semibold text-white flex items-center gap-2">
+          <i class="fas fa-shipping-fast"></i> Ship Order
+        </h3>
+        <button id="ship-modal-close" class="text-white/80 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="p-5 space-y-4">
+        <!-- Order Info -->
+        <div class="bg-gray-50 p-3 rounded-lg border">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-600">Order ID:</span>
+            <span id="ship-modal-order-id" class="font-mono text-sm font-semibold text-indigo-600"></span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-gray-600">Customer:</span>
+            <span id="ship-modal-customer" class="text-sm font-medium"></span>
+          </div>
+        </div>
+
+        <!-- Shipping Address -->
+        <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="fas fa-map-marker-alt text-blue-600"></i>
+            <span class="text-sm font-semibold text-gray-700">Delivery Address:</span>
+          </div>
+          <div id="ship-modal-address" class="text-sm text-gray-700"></div>
+          <div id="ship-modal-distance" class="text-xs text-blue-600 mt-1 hidden">
+            <i class="fas fa-route"></i> <span></span>
+          </div>
+        </div>
+
+        <!-- Courier Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            <i class="fas fa-truck text-gray-500 mr-1"></i> Select Courier
+          </label>
+          <select id="ship-modal-courier" class="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="">-- Select Courier --</option>
+            <option value="Lalamove">🏍️ Lalamove (Same-Day)</option>
+            <option value="Grab Express">🟢 Grab Express (Same-Day)</option>
+            <option value="J&T Express">📦 J&T Express (1-3 Days)</option>
+            <option value="LBC Express">📦 LBC Express (1-3 Days)</option>
+            <option value="Ninja Van">📦 Ninja Van (1-3 Days)</option>
+            <option value="Flash Express">⚡ Flash Express (1-3 Days)</option>
+            <option value="JRS Express">📦 JRS Express (2-5 Days)</option>
+            <option value="2GO Express">📦 2GO Express (3-5 Days)</option>
+          </select>
+          <p id="ship-modal-courier-recommendation" class="text-xs text-green-600 mt-1 hidden">
+            <i class="fas fa-lightbulb"></i> <span></span>
+          </p>
+        </div>
+
+        <!-- Tracking Number (Auto-generated) -->
+        <div id="ship-modal-tracking-section" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            <i class="fas fa-barcode text-gray-500 mr-1"></i> Tracking Number
+          </label>
+          <div class="relative">
+            <input id="ship-modal-tracking" type="text" readonly
+              class="w-full border rounded-lg px-3 py-2.5 text-sm font-mono bg-gray-50 pr-20">
+            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium">
+              <i class="fas fa-check-circle"></i> Auto-generated
+            </span>
+          </div>
+        </div>
+
+        <!-- Tracking URL -->
+        <div id="ship-modal-url-section" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            <i class="fas fa-link text-gray-500 mr-1"></i> Tracking URL
+          </label>
+          <div class="flex items-center gap-2">
+            <input id="ship-modal-tracking-url" type="text" readonly
+              class="flex-1 border rounded-lg px-3 py-2 text-xs font-mono bg-gray-50 text-gray-600 truncate">
+            <button id="ship-modal-copy-url" type="button"
+              class="px-3 py-2 bg-gray-100 hover:bg-gray-200 border rounded-lg text-sm transition-colors">
+              <i class="fas fa-copy"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Error message -->
+        <p id="ship-modal-error" class="text-sm text-red-600 hidden"></p>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-5 py-3 border-t bg-gray-50 flex items-center justify-end gap-3">
+        <button id="ship-modal-cancel" class="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
+          Cancel
+        </button>
+        <button id="ship-modal-confirm" disabled
+          class="px-5 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium rounded-lg text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+          <i class="fas fa-check"></i> Confirm Shipment
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Mobile sidebar handlers (enable on pages that include mobile sidebar markup)
     (function(){
@@ -1316,6 +1418,24 @@
         modalAdminCancelReasonBox: document.getElementById('modal-admin-cancel-reason-box'),
         formCancellationReason: document.getElementById('form-cancellationReason'),
 
+        // Ship Modal Selectors
+        shipModal: document.getElementById('ship-modal'),
+        shipModalClose: document.getElementById('ship-modal-close'),
+        shipModalOrderId: document.getElementById('ship-modal-order-id'),
+        shipModalCustomer: document.getElementById('ship-modal-customer'),
+        shipModalAddress: document.getElementById('ship-modal-address'),
+        shipModalDistance: document.getElementById('ship-modal-distance'),
+        shipModalCourier: document.getElementById('ship-modal-courier'),
+        shipModalCourierRecommendation: document.getElementById('ship-modal-courier-recommendation'),
+        shipModalTrackingSection: document.getElementById('ship-modal-tracking-section'),
+        shipModalTracking: document.getElementById('ship-modal-tracking'),
+        shipModalUrlSection: document.getElementById('ship-modal-url-section'),
+        shipModalTrackingUrl: document.getElementById('ship-modal-tracking-url'),
+        shipModalCopyUrl: document.getElementById('ship-modal-copy-url'),
+        shipModalError: document.getElementById('ship-modal-error'),
+        shipModalCancel: document.getElementById('ship-modal-cancel'),
+        shipModalConfirm: document.getElementById('ship-modal-confirm'),
+
         // Tab Selectors
         tabsContainer: document.getElementById('tabs-container'),
         tabContentRegular: document.getElementById('tab-content-regular'),
@@ -1412,7 +1532,197 @@
       let allCustomOrders = [];
       let selectedOrder = null; // Para sa regular order
       let selectedCustomOrder = null; // Para sa custom order
+      let shipOrderTarget = null; // Order being shipped via Ship Modal
       // Payment modal removed; payment info is shown directly in Order Details modal
+
+      // =====================================================
+      // SHIP ORDER MODAL - Auto-generate Tracking Numbers
+      // =====================================================
+      
+      // Tracking number formats for each courier (simulated/mock)
+      const courierTrackingFormats = {
+        'Lalamove': { prefix: 'LLM', digits: 8, url: (code) => null }, // Lalamove has no public tracking
+        'Grab Express': { prefix: 'GRB', digits: 8, url: (code) => null }, // Grab has no public tracking
+        'J&T Express': { prefix: '820', digits: 9, url: (code) => `https://www.jtexpress.ph/trajectoryQuery?billcode=${code}` },
+        'LBC Express': { prefix: 'LBC', digits: 10, url: (code) => `https://www.lbcexpress.com/track?tracking_no=${code}` },
+        'Ninja Van': { prefix: 'NV', digits: 12, url: (code) => `https://www.ninjavan.co/en-ph/tracking?id=${code}` },
+        'Flash Express': { prefix: 'FL', digits: 10, url: (code) => `https://www.flashexpress.com/tracking/?se=${code}` },
+        'JRS Express': { prefix: 'JRS', digits: 9, url: (code) => `https://www.jrs-express.com/track?code=${code}` },
+        '2GO Express': { prefix: '2GO', digits: 9, url: (code) => `https://www.2go.com.ph/track/${code}` },
+      };
+
+      // Generate a mock tracking number for a given courier
+      function generateTrackingNumber(courier) {
+        const format = courierTrackingFormats[courier];
+        if (!format) return '';
+        const digits = Array.from({ length: format.digits }, () => Math.floor(Math.random() * 10)).join('');
+        return format.prefix + digits;
+      }
+
+      // Generate tracking URL for a courier and tracking code
+      function generateTrackingUrl(courier, trackingCode) {
+        const format = courierTrackingFormats[courier];
+        if (!format || !format.url) return null;
+        return format.url(trackingCode);
+      }
+
+      // Recommend courier based on shipping method and distance (if available)
+      function recommendCourier(order) {
+        // If Pick-Up, no courier needed
+        if (order.shippingMethod === 'Pick-Up') return null;
+        
+        // For Standard shipping, recommend based on distance or default to J&T
+        // In the future, can integrate distance from shipping calculator
+        // For now, default recommendation is J&T Express for reliability
+        return 'J&T Express';
+      }
+
+      // Open Ship Order Modal
+      function openShipModal(order) {
+        shipOrderTarget = order;
+        
+        // Reset modal state
+        els.shipModalCourier.value = '';
+        els.shipModalTracking.value = '';
+        els.shipModalTrackingUrl.value = '';
+        els.shipModalTrackingSection.classList.add('hidden');
+        els.shipModalUrlSection.classList.add('hidden');
+        els.shipModalError.classList.add('hidden');
+        els.shipModalConfirm.disabled = true;
+        
+        // Populate order info
+        els.shipModalOrderId.textContent = order._id.slice(-8).toUpperCase();
+        els.shipModalCustomer.textContent = order.user?.name || order.user?.email || 'Customer';
+        
+        // Populate address
+        const addr = order.shippingAddress || {};
+        els.shipModalAddress.innerHTML = `
+          <div>${[addr.block, addr.lot].filter(Boolean).join(' ')} ${addr.street || ''}</div>
+          <div>${addr.building || ''}</div>
+          <div class="font-medium">${addr.city || ''}, ${addr.province || ''} ${addr.zip || ''}</div>
+          <div class="text-gray-500">${addr.phone || ''}</div>
+        `;
+        
+        // Show courier recommendation
+        const recommended = recommendCourier(order);
+        if (recommended) {
+          els.shipModalCourierRecommendation.querySelector('span').textContent = `Recommended: ${recommended} (reliable for Luzon deliveries)`;
+          els.shipModalCourierRecommendation.classList.remove('hidden');
+        } else {
+          els.shipModalCourierRecommendation.classList.add('hidden');
+        }
+        
+        // Show modal
+        els.shipModal.classList.remove('hidden');
+        els.shipModal.classList.add('flex');
+      }
+
+      // Close Ship Order Modal
+      function closeShipModal() {
+        els.shipModal.classList.add('hidden');
+        els.shipModal.classList.remove('flex');
+        shipOrderTarget = null;
+      }
+
+      // Handle courier selection - auto-generate tracking number
+      function onCourierSelect() {
+        const courier = els.shipModalCourier.value;
+        
+        if (!courier) {
+          els.shipModalTrackingSection.classList.add('hidden');
+          els.shipModalUrlSection.classList.add('hidden');
+          els.shipModalConfirm.disabled = true;
+          return;
+        }
+        
+        // Auto-generate tracking number
+        const trackingNumber = generateTrackingNumber(courier);
+        els.shipModalTracking.value = trackingNumber;
+        els.shipModalTrackingSection.classList.remove('hidden');
+        
+        // Auto-generate tracking URL
+        const trackingUrl = generateTrackingUrl(courier, trackingNumber);
+        if (trackingUrl) {
+          els.shipModalTrackingUrl.value = trackingUrl;
+          els.shipModalUrlSection.classList.remove('hidden');
+        } else {
+          els.shipModalTrackingUrl.value = '';
+          els.shipModalUrlSection.classList.add('hidden');
+        }
+        
+        // Enable confirm button
+        els.shipModalConfirm.disabled = false;
+      }
+
+      // Copy tracking URL to clipboard
+      function copyTrackingUrl() {
+        const url = els.shipModalTrackingUrl.value;
+        if (!url) return;
+        
+        navigator.clipboard.writeText(url).then(() => {
+          const btn = els.shipModalCopyUrl;
+          const originalHtml = btn.innerHTML;
+          btn.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+          btn.classList.add('bg-green-100');
+          setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove('bg-green-100');
+          }, 2000);
+        }).catch(() => {
+          alert('Failed to copy. Please copy manually: ' + url);
+        });
+      }
+
+      // Confirm shipment - update order status to Shipped with courier and tracking info
+      async function confirmShipment() {
+        if (!shipOrderTarget) return;
+        
+        const courier = els.shipModalCourier.value;
+        const trackingNumber = els.shipModalTracking.value;
+        const trackingUrl = els.shipModalTrackingUrl.value;
+        
+        if (!courier || !trackingNumber) {
+          els.shipModalError.textContent = 'Please select a courier to generate tracking number.';
+          els.shipModalError.classList.remove('hidden');
+          return;
+        }
+        
+        els.shipModalConfirm.disabled = true;
+        els.shipModalConfirm.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        els.shipModalError.classList.add('hidden');
+        
+        try {
+          const body = {
+            status: 'Shipped',
+            shippingService: courier,
+            trackingCode: trackingNumber,
+            trackingUrl: trackingUrl || ''
+          };
+          
+          const res = await fetch(`${API}/api/orders/${shipOrderTarget._id}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(body)
+          });
+          
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to ship order');
+          
+          // Update local orders array
+          const idx = allOrders.findIndex(o => o._id === shipOrderTarget._id);
+          if (idx >= 0) allOrders[idx] = data.data;
+          
+          renderRegularOrders();
+          closeShipModal();
+          showMessage(`Order shipped successfully! Tracking: ${trackingNumber}`, 'success');
+          
+        } catch (err) {
+          els.shipModalError.textContent = err.message;
+          els.shipModalError.classList.remove('hidden');
+          els.shipModalConfirm.disabled = false;
+          els.shipModalConfirm.innerHTML = '<i class="fas fa-check"></i> Confirm Shipment';
+        }
+      }
 
       // Payment Info modal removed; no modal helpers needed
 
@@ -1862,7 +2172,12 @@
           const [label, cls] = map[status] || [status, 'bg-gray-100 text-gray-800'];
           return `<span class="px-2 py-1 text-xs rounded-full ${cls}">${label}</span>`;
         };
-        const rows = filteredOrders.map(o => `
+        const rows = filteredOrders.map(o => {
+          // Show Ship button for orders that are Accepted and not Pick-Up
+          const canShip = o.status === 'Accepted' && o.shippingMethod !== 'Pick-Up' && o.paymentStatus === 'Received';
+          const shipButton = canShip ? `<button data-id="${o._id}" class="ship-btn text-green-600 hover:text-green-800 ml-2" title="Ship Order"><i class="fas fa-shipping-fast"></i></button>` : '';
+          
+          return `
           <tr>
             <td class="px-4 py-3">${shortId(o._id)} ${o.hasRefundRequest ? `<span data-refund-id="${o.latestRefundId || ''}" class="inline-block ml-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 refund-badge">Refund: ${o.latestRefundStatus || 'Pending'}</span>` : ''}</td>
             <td class="px-4 py-3">${new Date(o.createdAt).toLocaleDateString()}</td>
@@ -1871,14 +2186,15 @@
             <td class="px-4 py-3">${(o.orderItems || []).reduce((n, i) => n + (i.quantity || 0), 0)}</td>
             <td class="px-4 py-3">${o.user?.name || '-'}</td>
             <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
-            <td class="px-4 py-3">${o.trackingCode || '-'}</td>
+            <td class="px-4 py-3">${o.trackingCode ? `<span class="font-mono text-xs">${o.trackingCode}</span>` : '-'}</td>
             <td class="px-4 py-3 text-right">
               <div class="inline-flex gap-3 items-center justify-end">
+                ${shipButton}
                 <button data-id="${o._id}" class="edit-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
               </div>
             </td>
           </tr>
-        `).join('');
+        `}).join('');
         els.tbody.innerHTML = rows || '<tr><td colspan="9" class="px-4 py-6 text-center text-gray-500">No orders found.</td></tr>';
         els.count.textContent = filteredOrders.length;
 
@@ -1902,9 +2218,10 @@
                   <div class="mt-3 text-sm text-gray-700">
                     <div><strong>Customer:</strong> ${o.user?.name || '-'}</div>
                     <div class="mt-1"><strong>Shipping:</strong> ${o.shippingMethod || '-'}</div>
-                    <div class="mt-1"><strong>Tracking:</strong> ${o.trackingCode || '-'}</div>
+                    <div class="mt-1"><strong>Tracking:</strong> ${o.trackingCode ? `<span class="font-mono text-xs">${o.trackingCode}</span>` : '-'}</div>
                   </div>
                   <div class="mt-3 flex items-center justify-end gap-2">
+                    ${(o.status === 'Accepted' && o.shippingMethod !== 'Pick-Up' && o.paymentStatus === 'Received') ? `<button data-id="${o._id}" class="ship-btn px-3 py-1 text-sm bg-green-50 text-green-700 rounded flex items-center gap-1"><i class="fas fa-shipping-fast"></i> Ship</button>` : ''}
                     <button data-id="${o._id}" class="edit-btn px-3 py-1 text-sm bg-indigo-50 text-indigo-700 rounded">View</button>
                   </div>
                 </div>
@@ -3650,6 +3967,13 @@
             const order = allOrders.find(o => o._id === id);
             if (order) openModal(order);
           }
+          // Handle Ship button on mobile cards
+          const shipBtn = e.target.closest('.ship-btn');
+          if (shipBtn) {
+            const id = shipBtn.dataset.id;
+            const order = allOrders.find(o => o._id === id);
+            if (order) openShipModal(order);
+          }
         });
       }
 
@@ -3724,6 +4048,24 @@
       els.customModalVerifyDp?.addEventListener('click', verifyDownPayment); // Para sa Phase 4
       els.customModalRequestFinal?.addEventListener('click', requestFinalPayment); // Para sa Phase 5.1
       els.customModalVerifyFinal?.addEventListener('click', verifyFinalPayment);
+
+      // --- NEW: Ship Modal Events ---
+      els.shipModalClose?.addEventListener('click', closeShipModal);
+      els.shipModalCancel?.addEventListener('click', closeShipModal);
+      els.shipModal?.addEventListener('click', (e) => { if (e.target === els.shipModal) closeShipModal(); });
+      els.shipModalCourier?.addEventListener('change', onCourierSelect);
+      els.shipModalCopyUrl?.addEventListener('click', copyTrackingUrl);
+      els.shipModalConfirm?.addEventListener('click', confirmShipment);
+
+      // Handle Ship Order button clicks from the orders table
+      els.tbody?.addEventListener('click', (e) => {
+        const shipBtn = e.target.closest('.ship-btn');
+        if (shipBtn) {
+          const id = shipBtn.dataset.id;
+          const order = allOrders.find(o => o._id === id);
+          if (order) openShipModal(order);
+        }
+      });
 
       // --- NEW: Save Fulfillment Details ---
       async function saveFulfillmentDetails() {

@@ -95,6 +95,8 @@ const orderSchema = new mongoose.Schema({
     // Optional logistics info
     shippingService: { type: String },
     trackingCode: { type: String },
+    trackingUrl: { type: String },
+    shippedAt: { type: Date },
 
     // Admin who accepted the order (prepared by)
     acceptedBy: { type: mongoose.Schema.ObjectId, ref: 'User' },

@@ -1186,8 +1186,8 @@
                                             class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs transition-all">
                                         <i class="fas fa-copy"></i> Copy
                                     </button>
-                                    ${order.shippingService && getTrackingUrl(order.shippingService, order.trackingCode) ? `
-                                    <a href="${getTrackingUrl(order.shippingService, order.trackingCode)}" 
+                                    ${(order.trackingUrl || (order.shippingService && getTrackingUrl(order.shippingService, order.trackingCode))) ? `
+                                    <a href="${order.trackingUrl || getTrackingUrl(order.shippingService, order.trackingCode)}" 
                                        target="_blank" 
                                        class="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs transition-all">
                                         <i class="fas fa-external-link-alt"></i> Track Order

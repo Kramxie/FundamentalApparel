@@ -433,6 +433,11 @@ exports.updateOrderStatus = async (req, res) => {
                     updates.cancellationReason = req.body.cancellationReason;
                 }
             }
+
+            // NEW: If admin ships the order, record shippedAt timestamp
+            if (req.body.status === 'Shipped') {
+                updates.shippedAt = new Date();
+            }
         }
 
         if (typeof req.body.shippingService !== 'undefined') {
@@ -440,6 +445,9 @@ exports.updateOrderStatus = async (req, res) => {
         }
         if (typeof req.body.trackingCode !== 'undefined') {
             updates.trackingCode = req.body.trackingCode;
+        }
+        if (typeof req.body.trackingUrl !== 'undefined') {
+            updates.trackingUrl = req.body.trackingUrl;
         }
 
         const updatedOrder = await Order.findByIdAndUpdate(id, updates, { new: true });
