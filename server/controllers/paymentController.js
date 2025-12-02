@@ -389,9 +389,11 @@ exports.createOrderPaymentSession = async (req, res) => {
     let discount = 0;
     if (voucherCode && typeof voucherCode === 'string' && voucherCode.trim()) {
       console.log('[PayMongo] Processing voucher code:', voucherCode.trim());
-      const user = await require('../models/User').findById(userId);
-      if (user) {
-        const v = user.vouchers.find(v => v.code.toLowerCase() === voucherCode.trim().toLowerCase());
+      const user = await User.findById(userId);
+      console.log('[PayMongo] User found:', user ? user.email : 'NOT FOUND');
+      console.log('[PayMongo] User vouchers count:', user?.vouchers?.length || 0);
+      if (user && user.vouchers && user.vouchers.length > 0) {
+        const v = user.vouchers.find(v => v.code && v.code.toLowerCase() === voucherCode.trim().toLowerCase());
         console.log('[PayMongo] Found voucher in user vouchers:', v ? v.code : 'NOT FOUND');
         if (v) {
           if (v.used) {
@@ -417,7 +419,11 @@ exports.createOrderPaymentSession = async (req, res) => {
             console.log('[PayMongo] Discount calculated:', discount);
           }
         }
+      } else {
+        console.log('[PayMongo] User has no vouchers or user not found');
       }
+    } else {
+      console.log('[PayMongo] No voucherCode provided in request');
     }
     // Compute subtotal
     const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0);
