@@ -711,12 +711,17 @@ exports.getLoyaltyProgress = async (req, res) => {
         const monthStart = new Date(year, month, 1, 0, 0, 0, 0);
         const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
 
-        // Count completed orders this month based on createdAt (when order was placed)
-        // An order is "completed" if status is Delivered or Completed
+        // Count orders that reached Delivered/Completed STATUS in this month.
+        // Use deliveredAt when available, otherwise updatedAt — this captures orders
+        // that were completed/marked delivered during the current month.
+        // This aligns with the loyalty voucher awarding logic in loyalty.js
         const completedOrdersThisMonth = await Order.countDocuments({
             user: userId,
             status: { $in: ['Delivered', 'Completed'] },
-            createdAt: { $gte: monthStart, $lte: monthEnd }
+            $or: [
+                { deliveredAt: { $gte: monthStart, $lte: monthEnd } },
+                { updatedAt: { $gte: monthStart, $lte: monthEnd } }
+            ]
         });
 
         // Check if user already has this month's loyalty voucher

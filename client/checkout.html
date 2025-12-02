@@ -105,9 +105,9 @@
               <label class="block text-sm text-gray-700">Phone <span class="text-red-500">*</span></label>
               <div class="flex mt-1">
                 <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-100 text-gray-600 text-sm">+63</span>
-                <input id="ship-phone" type="tel" class="w-full border rounded-r-md px-3 py-2" placeholder="912 345 6789" maxlength="12" pattern="[0-9\s]{10,12}">
+                <input id="ship-phone" type="tel" class="w-full border rounded-r-md px-3 py-2" placeholder="9XX XXX XXXX" maxlength="12" pattern="[0-9\s]{10,12}">
               </div>
-              <p id="phone-error" class="text-red-500 text-xs mt-1 hidden">Please enter a valid Philippine phone number</p>
+              <p id="phone-error" class="text-red-500 text-xs mt-1 hidden">Phone number must start with 9 and be 10 digits</p>
             </div>
           </form>
         </section>
@@ -302,9 +302,9 @@
       }
 
       function validatePhone(phone) {
-        // Remove spaces and check if it's 10 digits
+        // Remove spaces and check if it's 10 digits starting with 9
         const digits = phone.replace(/\D/g, '');
-        return digits.length === 10 && /^[89]\d{9}$/.test(digits);
+        return digits.length === 10 && /^9\d{9}$/.test(digits);
       }
 
       function getFullPhoneNumber() {

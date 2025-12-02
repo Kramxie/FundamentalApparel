@@ -246,9 +246,14 @@
                                     <div><label class="block text-sm text-gray-700 mb-1">Email</label><input id="email"
                                             name="email" class="w-full border px-3 py-2 rounded bg-gray-100" disabled />
                                     </div>
-                                    <div><label class="block text-sm text-gray-700 mb-1">Phone Number</label><input
-                                            id="contactNumber" name="contactNumber"
-                                            class="w-full border px-3 py-2 rounded" /></div>
+                                    <div><label class="block text-sm text-gray-700 mb-1">Phone Number</label>
+                                        <div class="flex">
+                                            <span class="inline-flex items-center px-3 rounded-l border border-r-0 border-gray-300 bg-gray-100 text-gray-600 text-sm">+63</span>
+                                            <input id="contactNumber" name="contactNumber" type="tel" placeholder="9XX XXX XXXX" maxlength="12"
+                                                class="w-full border rounded-r px-3 py-2" />
+                                        </div>
+                                        <p id="contact-phone-error" class="text-red-500 text-xs mt-1 hidden">Phone number must start with 9 and be 10 digits</p>
+                                    </div>
                                     <div><label class="block text-sm text-gray-700 mb-1">Gender</label>
                                         <div class="flex items-center gap-6 mt-2"><label
                                                 class="flex items-center gap-2"><input type="radio" name="gender"
@@ -333,9 +338,13 @@
                                     <div><label class="block text-sm text-gray-700">Zip/Postal Code</label><input
                                             id="addr-zipCode" class="mt-1 block w-full border px-3 py-2 rounded"
                                             placeholder="4103" required /></div>
-                                    <div><label class="block text-sm text-gray-700">Phone</label><input
-                                            id="addr-phone" class="mt-1 block w-full border px-3 py-2 rounded"
-                                            placeholder="+63 912 345 6789" /></div>
+                                    <div><label class="block text-sm text-gray-700">Phone</label>
+                                        <div class="flex mt-1">
+                                            <span class="inline-flex items-center px-3 rounded-l border border-r-0 border-gray-300 bg-gray-100 text-gray-600 text-sm">+63</span>
+                                            <input id="addr-phone" type="tel" class="w-full border rounded-r px-3 py-2" placeholder="9XX XXX XXXX" maxlength="12" />
+                                        </div>
+                                        <p id="addr-phone-error" class="text-red-500 text-xs mt-1 hidden">Phone number must start with 9 and be 10 digits</p>
+                                    </div>
                                 </div>
                                 <div class="flex justify-end gap-3"><button type="button" id="cancel-address-btn"
                                         class="px-4 py-2 rounded bg-gray-200 text-gray-800">Cancel</button><button
@@ -638,6 +647,35 @@
                 let currentUserId = null;
                 let currentCancelOrderId = null;
 
+                // Phone validation for profile
+                const contactNumberInput = document.getElementById('contactNumber');
+                const contactPhoneError = document.getElementById('contact-phone-error');
+                
+                function formatPhoneNumber(value) {
+                    const digits = value.replace(/\D/g, '');
+                    if (digits.length <= 3) return digits;
+                    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+                    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+                }
+                
+                function validatePhoneNumber(phone) {
+                    const digits = phone.replace(/\D/g, '');
+                    return digits.length === 10 && /^9\d{9}$/.test(digits);
+                }
+                
+                if (contactNumberInput) {
+                    contactNumberInput.addEventListener('input', (e) => {
+                        e.target.value = formatPhoneNumber(e.target.value);
+                        if (e.target.value && !validatePhoneNumber(e.target.value)) {
+                            contactPhoneError.classList.remove('hidden');
+                            contactNumberInput.classList.add('border-red-500');
+                        } else {
+                            contactPhoneError.classList.add('hidden');
+                            contactNumberInput.classList.remove('border-red-500');
+                        }
+                    });
+                }
+
                     function getTrackingUrl(courier, trackingCode) {
                 const courierUrls = {
                     'Lalamove': null, // Lalamove doesn't have public tracking URL
@@ -739,7 +777,12 @@
                 profileForm.querySelector('#username').value = user.username || '';
                 profileForm.querySelector('#name').value = user.name || '';
                 profileForm.querySelector('#email').value = user.email || '';
-                profileForm.querySelector('#contactNumber').value = user.contactNumber || '';
+                // Format phone for +63 prefix display (remove +63 or 63 prefix if present)
+                let phoneVal = user.contactNumber || '';
+                phoneVal = phoneVal.replace(/^\+?63/, '').replace(/^0/, '');
+                profileForm.querySelector('#contactNumber').value = formatPhoneNumber(phoneVal);
+                if (contactPhoneError) contactPhoneError.classList.add('hidden');
+                if (contactNumberInput) contactNumberInput.classList.remove('border-red-500');
                 document.querySelectorAll('input[name="gender"]').forEach(radio => {
                     radio.checked = (radio.value === user.gender);
                 });
@@ -758,10 +801,25 @@
            
             profileForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                
+                // Validate phone number before submitting
+                const phoneVal = profileForm.querySelector('#contactNumber').value;
+                if (phoneVal && !validatePhoneNumber(phoneVal)) {
+                    contactPhoneError.classList.remove('hidden');
+                    contactNumberInput.classList.add('border-red-500');
+                    contactNumberInput.focus();
+                    showMessage(profileMessageContainer, 'Please enter a valid phone number starting with 9', 'error');
+                    return;
+                }
+                
+                // Format phone with +63 prefix for storage
+                const phoneDigits = phoneVal.replace(/\D/g, '');
+                const formattedPhone = phoneDigits ? `+63${phoneDigits}` : '';
+                
                 const data = {
                     username: profileForm.querySelector('#username').value,
                     name: profileForm.querySelector('#name').value,
-                    contactNumber: profileForm.querySelector('#contactNumber').value,
+                    contactNumber: formattedPhone,
                     gender: document.querySelector('input[name="gender"]:checked')?.value || '',
                 };
                 const day = document.getElementById('dob-day').value;
@@ -851,6 +909,23 @@
                 </div>`;
                 }).join('');
             }
+            
+            // Address phone input validation
+            const addrPhoneInputEl = document.getElementById('addr-phone');
+            const addrPhoneErrorEl = document.getElementById('addr-phone-error');
+            if (addrPhoneInputEl) {
+                addrPhoneInputEl.addEventListener('input', (e) => {
+                    e.target.value = formatPhoneNumber(e.target.value);
+                    if (e.target.value && !validatePhoneNumber(e.target.value)) {
+                        addrPhoneErrorEl.classList.remove('hidden');
+                        addrPhoneInputEl.classList.add('border-red-500');
+                    } else {
+                        addrPhoneErrorEl.classList.add('hidden');
+                        addrPhoneInputEl.classList.remove('border-red-500');
+                    }
+                });
+            }
+            
             addAddressBtn.addEventListener('click', () => {
                 addressForm.reset();
                 document.getElementById('address-form-title').textContent = 'Add New Address';
@@ -866,6 +941,24 @@
             });
             addressForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                
+                // Get and validate address phone
+                const addrPhoneInput = document.getElementById('addr-phone');
+                const addrPhoneError = document.getElementById('addr-phone-error');
+                const addrPhoneVal = addrPhoneInput.value.trim();
+                
+                if (addrPhoneVal && !validatePhoneNumber(addrPhoneVal)) {
+                    addrPhoneError.classList.remove('hidden');
+                    addrPhoneInput.classList.add('border-red-500');
+                    addrPhoneInput.focus();
+                    showMessage(addressMessageContainer, 'Please enter a valid phone number starting with 9', 'error');
+                    return;
+                }
+                
+                // Format phone with +63 prefix
+                const phoneDigits = addrPhoneVal.replace(/\D/g, '');
+                const formattedAddrPhone = phoneDigits ? `+63${phoneDigits}` : '';
+                
                 const data = {
                     block: document.getElementById('addr-block').value.trim(),
                     lot: document.getElementById('addr-lot').value.trim(),
@@ -874,7 +967,7 @@
                     city: document.getElementById('addr-city').value.trim(),
                     province: document.getElementById('addr-province').value,
                     zipCode: document.getElementById('addr-zipCode').value.trim(),
-                    phone: document.getElementById('addr-phone').value.trim()
+                    phone: formattedAddrPhone
                 };
                 
                 // Validate required fields
@@ -1004,7 +1097,7 @@
                         const myReview = p.reviews.find(r => r.user && r.user.toString() === currentUserId.toString());
                         if (myReview) {
                             o.userHasReview = true;
-                            o.userReview = { productId: it.product, rating: myReview.rating, comment: myReview.comment, userName: myReview.userName };
+                            o.userReview = { productId: it.product, rating: myReview.rating, comment: myReview.comment, userName: myReview.userName, images: myReview.images || [] };
                             break;
                         }
                     }
@@ -1436,6 +1529,10 @@
                 feedbackRating.value = '5';
                 feedbackComment.value = '';
                 feedbackError.classList.add('hidden');
+                
+                // Show the image upload input when submitting new review
+                if (feedbackImagesInput) feedbackImagesInput.style.display = '';
+                feedbackImagePreviews.innerHTML = '';
 
                 const header = feedbackModal.querySelector('h3'); if (header) header.textContent = 'Product Feedback';
                 feedbackRating.disabled = false; feedbackComment.disabled = false; feedbackSubmit.style.display = '';
@@ -1454,6 +1551,22 @@
                 feedbackRating.disabled = true;
                 feedbackComment.disabled = true;
                 feedbackSubmit.style.display = 'none';
+                
+                // Hide the image upload input when viewing
+                if (feedbackImagesInput) feedbackImagesInput.style.display = 'none';
+                
+                // Display uploaded review images if any
+                feedbackImagePreviews.innerHTML = '';
+                if (reviewObj.images && reviewObj.images.length > 0) {
+                    reviewObj.images.forEach(imgUrl => {
+                        const img = document.createElement('img');
+                        img.src = imgUrl.startsWith('http') ? imgUrl : `${API}${imgUrl}`;
+                        img.className = 'w-20 h-20 object-cover rounded border cursor-pointer';
+                        img.onclick = () => window.open(img.src, '_blank');
+                        feedbackImagePreviews.appendChild(img);
+                    });
+                }
+                
                 feedbackModal.classList.remove('hidden');
                 feedbackModal.classList.add('flex');
             }

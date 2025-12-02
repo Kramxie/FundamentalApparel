@@ -124,7 +124,11 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Phone <span class="text-red-500">*</span></label>
-                <input id="ship-phone" type="tel" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="+63 912 345 6789" required>
+                <div class="flex">
+                  <span class="inline-flex items-center px-3 rounded-l border border-r-0 border-gray-300 bg-gray-100 text-gray-600 text-sm">+63</span>
+                  <input id="ship-phone" type="tel" class="w-full border border-gray-300 rounded-r px-3 py-2 text-sm" placeholder="9XX XXX XXXX" maxlength="12" required>
+                </div>
+                <p id="ship-phone-error" class="text-red-500 text-xs mt-1 hidden">Phone number must start with 9 and be 10 digits</p>
               </div>
             </form>
           </section>
@@ -272,7 +276,11 @@
               </div>
               <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Phone <span class="text-red-500">*</span></label>
-                <input id="contact-phone" type="tel" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="+63 912 345 6789">
+                <div class="flex">
+                  <span class="inline-flex items-center px-3 rounded-l border border-r-0 border-gray-300 bg-gray-100 text-gray-600 text-sm">+63</span>
+                  <input id="contact-phone" type="tel" required class="w-full border border-gray-300 rounded-r px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="9XX XXX XXXX" maxlength="12">
+                </div>
+                <p id="contact-phone-error" class="text-red-500 text-xs mt-1 hidden">Phone number must start with 9 and be 10 digits</p>
               </div>
             </div>
 
@@ -331,6 +339,29 @@
       return location.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
 
+    // Phone validation helpers
+    function formatPhoneNumber(value) {
+      const digits = value.replace(/\D/g, '');
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
+    }
+    
+    function validatePhoneNumber(phone) {
+      const digits = phone.replace(/\D/g, '');
+      return digits.length === 10 && /^9\d{9}$/.test(digits);
+    }
+    
+    function stripPhonePrefix(phone) {
+      // Remove +63 or 63 prefix if present, and leading 0
+      return (phone || '').replace(/^\+?63/, '').replace(/^0/, '');
+    }
+    
+    function getFullPhoneNumber(phone) {
+      const digits = phone.replace(/\D/g, '');
+      return digits ? `+63${digits}` : '';
+    }
+
     // State
     let serviceData = null;
     let orderReference = null;
@@ -356,6 +387,9 @@
       
       // Fetch user profile to pre-fill contact form and address
       fetchUserProfile();
+      
+      // Setup phone input validation
+      setupPhoneValidation();
 
       // Setup shipping address mode toggle
       setupShippingAddressToggle();
@@ -396,6 +430,33 @@
       defaultRadio.addEventListener('change', updateAddressFields);
       newRadio.addEventListener('change', updateAddressFields);
       updateAddressFields(); // Initial state
+    }
+
+    /**
+     * Setup phone input validation for both contact and shipping phone fields
+     */
+    function setupPhoneValidation() {
+      const shipPhone = document.getElementById('ship-phone');
+      const shipPhoneError = document.getElementById('ship-phone-error');
+      const contactPhone = document.getElementById('contact-phone');
+      const contactPhoneError = document.getElementById('contact-phone-error');
+      
+      function setupPhoneInput(input, errorEl) {
+        if (!input) return;
+        input.addEventListener('input', (e) => {
+          e.target.value = formatPhoneNumber(e.target.value);
+          if (e.target.value && !validatePhoneNumber(e.target.value)) {
+            if (errorEl) errorEl.classList.remove('hidden');
+            input.classList.add('border-red-500');
+          } else {
+            if (errorEl) errorEl.classList.add('hidden');
+            input.classList.remove('border-red-500');
+          }
+        });
+      }
+      
+      setupPhoneInput(shipPhone, shipPhoneError);
+      setupPhoneInput(contactPhone, contactPhoneError);
     }
 
     /**
@@ -1048,7 +1109,9 @@
           // Fill contact information
           document.getElementById('contact-name').value = user.name || '';
           document.getElementById('contact-email').value = user.email || '';
-          document.getElementById('contact-phone').value = user.contactNumber || '';
+          // Format contact phone for +63 prefix field
+          const contactPhoneVal = stripPhonePrefix(user.contactNumber || '');
+          document.getElementById('contact-phone').value = formatPhoneNumber(contactPhoneVal);
           
           // Fill shipping address if available
             if (user.address) {
@@ -1067,7 +1130,9 @@
             }
             document.getElementById('ship-city').value = user.address.city || '';
             document.getElementById('ship-zip').value = user.address.zip || '';
-            document.getElementById('ship-phone').value = user.address.phone || user.contactNumber || '';
+            // Format shipping phone for +63 prefix field
+            const shipPhoneVal = stripPhonePrefix(user.address.phone || user.contactNumber || '');
+            document.getElementById('ship-phone').value = formatPhoneNumber(shipPhoneVal);
           }
         }
       } catch (err) {
@@ -1245,6 +1310,8 @@
       const email = document.getElementById('contact-email').value.trim();
       const phone = document.getElementById('contact-phone').value.trim();
       const agreeTerms = document.getElementById('agree-terms').checked;
+      const contactPhoneError = document.getElementById('contact-phone-error');
+      const shipPhoneError = document.getElementById('ship-phone-error');
 
       if (!name) {
         showError('Please enter your full name.');
@@ -1260,6 +1327,15 @@
 
       if (!phone) {
         showError('Please enter your phone number.');
+        document.getElementById('contact-phone').focus();
+        return false;
+      }
+      
+      // Validate contact phone format (must start with 9)
+      if (!validatePhoneNumber(phone)) {
+        showError('Phone number must start with 9 and be 10 digits.');
+        if (contactPhoneError) contactPhoneError.classList.remove('hidden');
+        document.getElementById('contact-phone').classList.add('border-red-500');
         document.getElementById('contact-phone').focus();
         return false;
       }
@@ -1302,6 +1378,15 @@
         
         if (!shipPhone) {
           showError('Please enter your contact number for delivery.');
+          document.getElementById('ship-phone').focus();
+          return false;
+        }
+        
+        // Validate shipping phone format (must start with 9)
+        if (!validatePhoneNumber(shipPhone)) {
+          showError('Shipping phone number must start with 9 and be 10 digits.');
+          if (shipPhoneError) shipPhoneError.classList.remove('hidden');
+          document.getElementById('ship-phone').classList.add('border-red-500');
           document.getElementById('ship-phone').focus();
           return false;
         }
