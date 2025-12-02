@@ -326,7 +326,12 @@ const CustomOrderSchema = new mongoose.Schema({
         inventoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Inventory' },
         name: String,
         qty: Number
-    }]
+    }],
+    
+    // Archive system - hide completed orders from main view
+    isArchived: { type: Boolean, default: false },
+    archivedAt: { type: Date },
+    archivedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, {
     timestamps: true
 });

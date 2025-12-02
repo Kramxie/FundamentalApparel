@@ -418,9 +418,24 @@ exports.submitCustomOrder = async (req, res) => {
 // @access  Private/Admin
 exports.getAdminCustomOrders = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, archived } = req.query;
     const filter = {};
-    if (status) {
+    
+    // Handle archived filter - by default exclude archived orders
+    if (archived === 'true' || archived === '1' || archived === 'only') {
+      filter.isArchived = true;
+    } else if (status === 'archived') {
+      // Special status filter for archived orders
+      filter.isArchived = true;
+    } else {
+      // Default: exclude archived orders
+      filter.$or = [{ isArchived: false }, { isArchived: { $exists: false } }];
+    }
+    
+    if (status && status !== 'archived') {
+      // Remove $or when specific status filter is applied
+      delete filter.$or;
+      filter.isArchived = { $ne: true };
       filter.status = status;
     }
 
@@ -2096,6 +2111,129 @@ exports.rejectCustomOrderQuote = async (req, res) => {
     }
   } catch (error) {
     console.error('Reject Quote Error:', error);
+    res.status(500).json({ success: false, msg: 'Server Error' });
+  }
+};
+
+// =====================================================
+// ARCHIVE SYSTEM FOR CUSTOM ORDERS
+// =====================================================
+
+// @desc    Archive a completed custom order
+// @route   PUT /api/custom-orders/:id/archive
+// @access  Private/Admin
+exports.archiveCustomOrder = async (req, res) => {
+  try {
+    const order = await CustomOrder.findById(req.params.id);
+    
+    if (!order) {
+      return res.status(404).json({ success: false, msg: 'Custom order not found' });
+    }
+    
+    // Only allow archiving completed or cancelled orders
+    if (!['Completed', 'Cancelled'].includes(order.status)) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: 'Only completed or cancelled custom orders can be archived' 
+      });
+    }
+    
+    order.isArchived = true;
+    order.archivedAt = new Date();
+    order.archivedBy = req.user._id;
+    
+    await order.save();
+    
+    res.status(200).json({ 
+      success: true, 
+      msg: 'Custom order archived successfully',
+      data: order 
+    });
+  } catch (error) {
+    console.error('[Archive Custom Order] Error:', error);
+    res.status(500).json({ success: false, msg: 'Server Error' });
+  }
+};
+
+// @desc    Restore an archived custom order
+// @route   PUT /api/custom-orders/:id/restore
+// @access  Private/Admin
+exports.restoreCustomOrder = async (req, res) => {
+  try {
+    const order = await CustomOrder.findById(req.params.id);
+    
+    if (!order) {
+      return res.status(404).json({ success: false, msg: 'Custom order not found' });
+    }
+    
+    if (!order.isArchived) {
+      return res.status(400).json({ success: false, msg: 'Custom order is not archived' });
+    }
+    
+    order.isArchived = false;
+    order.archivedAt = undefined;
+    order.archivedBy = undefined;
+    
+    await order.save();
+    
+    res.status(200).json({ 
+      success: true, 
+      msg: 'Custom order restored successfully',
+      data: order 
+    });
+  } catch (error) {
+    console.error('[Restore Custom Order] Error:', error);
+    res.status(500).json({ success: false, msg: 'Server Error' });
+  }
+};
+
+// @desc    Permanently delete an archived custom order
+// @route   DELETE /api/custom-orders/:id/permanent
+// @access  Private/Admin
+exports.deleteCustomOrderPermanently = async (req, res) => {
+  try {
+    const order = await CustomOrder.findById(req.params.id);
+    
+    if (!order) {
+      return res.status(404).json({ success: false, msg: 'Custom order not found' });
+    }
+    
+    // Only allow deleting archived orders
+    if (!order.isArchived) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: 'Only archived custom orders can be permanently deleted. Archive the order first.' 
+      });
+    }
+    
+    await CustomOrder.findByIdAndDelete(req.params.id);
+    
+    res.status(200).json({ 
+      success: true, 
+      msg: 'Custom order permanently deleted' 
+    });
+  } catch (error) {
+    console.error('[Delete Custom Order Permanently] Error:', error);
+    res.status(500).json({ success: false, msg: 'Server Error' });
+  }
+};
+
+// @desc    Get all archived custom orders (Admin)
+// @route   GET /api/custom-orders/admin/archived
+// @access  Private/Admin
+exports.getArchivedCustomOrders = async (req, res) => {
+  try {
+    const orders = await CustomOrder.find({ isArchived: true })
+      .populate('user', 'name email')
+      .sort({ archivedAt: -1 });
+    
+    res.status(200).json({ 
+      success: true, 
+      count: orders.length,
+      data: orders 
+    });
+  } catch (error) {
+    console.error('[Get Archived Custom Orders] Error:', error);
     res.status(500).json({ success: false, msg: 'Server Error' });
   }
 };

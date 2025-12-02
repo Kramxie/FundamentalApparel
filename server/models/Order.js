@@ -113,7 +113,12 @@ const orderSchema = new mongoose.Schema({
 
     totalPrice: { type: Number, required: true, default: 0.0 },
     // Link to generated receipt (if any)
-    receiptId: { type: mongoose.Schema.ObjectId, ref: 'Receipt' }
+    receiptId: { type: mongoose.Schema.ObjectId, ref: 'Receipt' },
+    
+    // Archive system - hide completed orders from main view
+    isArchived: { type: Boolean, default: false },
+    archivedAt: { type: Date },
+    archivedBy: { type: mongoose.Schema.ObjectId, ref: 'User' }
 }, {
     timestamps: true
 });

@@ -275,6 +275,7 @@
                   <option value="to-receive">To Receive</option>
                   <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
+                  <option value="archived">📦 Archived</option>
                 </select>
                 <select id="filter-payment" class="border rounded-md px-3 py-2 text-sm">
                   <option value="">Payment</option>
@@ -336,6 +337,7 @@
                   <option value="Out for Delivery">🚚 Out for Delivery</option>
                   <option value="Completed">✅ Completed</option>
                   <option value="Cancelled">❌ Cancelled</option>
+                  <option value="archived">📦 Archived</option>
                 </select>
                 <select id="custom-filter-type" class="border rounded-md px-3 py-2 text-sm">
                   <option value="">Type</option>
@@ -2151,7 +2153,8 @@
         const filteredOrders = allOrders.filter(o => {
           const hay = [o._id, o.user?.name, o.trackingCode, o.shippingService].join(' ').toLowerCase();
           if (q && !hay.includes(q)) return false;
-          if (s) {
+          // Skip status filter if viewing archived (server already filtered by isArchived)
+          if (s && s !== 'archived') {
             if (s === 'to-pay') {
               // "To Pay" means order is in Processing and payment is still Pending
               if (!(o.status === 'Processing' && (!o.paymentStatus || o.paymentStatus === 'Pending'))) return false;
@@ -2180,14 +2183,27 @@
           const [label, cls] = map[status] || [status, 'bg-gray-100 text-gray-800'];
           return `<span class="px-2 py-1 text-xs rounded-full ${cls}">${label}</span>`;
         };
+
+        // Check if viewing archived
+        const isViewingArchived = els.filterStatus.value === 'archived';
+
         const rows = filteredOrders.map(o => {
           // Show Ship button for orders that are Accepted and not Pick-Up
           const canShip = o.status === 'Accepted' && o.shippingMethod !== 'Pick-Up' && o.paymentStatus === 'Received';
           const shipButton = canShip ? `<button data-id="${o._id}" class="ship-btn text-green-600 hover:text-green-800 ml-2" title="Ship Order"><i class="fas fa-shipping-fast"></i></button>` : '';
           
+          // Archive/Restore/Delete buttons
+          const canArchive = !o.isArchived && ['Delivered', 'Cancelled'].includes(o.status);
+          const archiveButton = canArchive ? `<button data-id="${o._id}" class="archive-btn text-gray-500 hover:text-gray-700 ml-2" title="Archive Order"><i class="fas fa-archive"></i></button>` : '';
+          const restoreButton = o.isArchived ? `<button data-id="${o._id}" class="restore-btn text-green-600 hover:text-green-800 ml-2" title="Restore Order"><i class="fas fa-undo"></i></button>` : '';
+          const deleteButton = o.isArchived ? `<button data-id="${o._id}" class="delete-permanent-btn text-red-600 hover:text-red-800 ml-2" title="Delete Permanently"><i class="fas fa-trash-alt"></i></button>` : '';
+          
+          // Show archived badge if archived
+          const archivedBadge = o.isArchived ? `<span class="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-600 ml-2">Archived</span>` : '';
+
           return `
-          <tr>
-            <td class="px-4 py-3">${shortId(o._id)} ${o.hasRefundRequest ? `<span data-refund-id="${o.latestRefundId || ''}" class="inline-block ml-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 refund-badge">Refund: ${o.latestRefundStatus || 'Pending'}</span>` : ''}</td>
+          <tr class="${o.isArchived ? 'bg-gray-50' : ''}">
+            <td class="px-4 py-3">${shortId(o._id)} ${archivedBadge} ${o.hasRefundRequest ? `<span data-refund-id="${o.latestRefundId || ''}" class="inline-block ml-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 refund-badge">Refund: ${o.latestRefundStatus || 'Pending'}</span>` : ''}</td>
             <td class="px-4 py-3">${new Date(o.createdAt).toLocaleDateString()}</td>
             <td class="px-4 py-3">${paymentBadge(o.paymentStatus)}</td>
             <td class="px-4 py-3">${statusBadge(o)}</td>
@@ -2199,6 +2215,9 @@
               <div class="inline-flex gap-3 items-center justify-end">
                 ${shipButton}
                 <button data-id="${o._id}" class="edit-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
+                ${archiveButton}
+                ${restoreButton}
+                ${deleteButton}
               </div>
             </td>
           </tr>
@@ -2263,6 +2282,9 @@
         const dFrom = els.customDateFrom?.value ? new Date(els.customDateFrom.value) : null;
         const dTo = els.customDateTo?.value ? new Date(els.customDateTo.value) : null;
 
+        // Check if viewing archived (fStatus === 'archived' means server returned archived orders)
+        const isViewingArchived = fStatus === 'archived';
+
         const filtered = allCustomOrders.filter(o => {
           // text search across common fields
           const hay = [
@@ -2277,7 +2299,8 @@
             o.fulfillmentMethod
           ].filter(Boolean).join(' ').toLowerCase();
           if (q && !hay.includes(q)) return false;
-          if (fStatus && o.status !== fStatus) return false;
+          // Skip status filter if viewing archived (server already filtered)
+          if (fStatus && fStatus !== 'archived' && o.status !== fStatus) return false;
           if (fType && typeLabel(o.customType)(o) !== fType) return false;
           if (fShip && (o.shippingMethod || '') !== fShip) return false;
           if (fFull && (o.fulfillmentMethod || '') !== fFull) return false;
@@ -2360,6 +2383,12 @@
           }
           // --- END BADGE LOGIC ---
 
+          // Archive/Restore/Delete buttons for custom orders
+          const canArchiveCustom = !o.isArchived && ['Completed', 'Cancelled'].includes(o.status);
+          const archiveCustomBtn = canArchiveCustom ? `<button data-id="${o._id}" class="archive-custom-btn text-gray-500 hover:text-gray-700 ml-2" title="Archive"><i class="fas fa-archive"></i></button>` : '';
+          const restoreCustomBtn = o.isArchived ? `<button data-id="${o._id}" class="restore-custom-btn text-green-600 hover:text-green-800 ml-2" title="Restore"><i class="fas fa-undo"></i></button>` : '';
+          const deleteCustomBtn = o.isArchived ? `<button data-id="${o._id}" class="delete-custom-permanent-btn text-red-600 hover:text-red-800 ml-2" title="Delete Permanently"><i class="fas fa-trash-alt"></i></button>` : '';
+          const archivedCustomBadge = o.isArchived ? `<span class="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-600 ml-1">Archived</span>` : '';
           // If this order contains team members, render a single row with Qty = order.quantity
           // and include a concise team summary in the Details column. The View/Edit button
           // still opens the parent order modal for full details.
@@ -2377,29 +2406,35 @@
                   <td class="px-4 py-3">${o.user?.name || 'N/A'}</td>
                   <td class="px-4 py-3">${typeLabel(o.customType)(o)}</td>
                   <td class="px-4 py-3">${o.quantity}</td>
-                  <td class="px-4 py-3">${statusBadge}</td>
+                  <td class="px-4 py-3">${statusBadge}${archivedCustomBadge}</td>
                   <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
                   <td class="px-4 py-3 text-xs max-w-xs truncate">${summaryText || details}</td>
                     <td class="px-4 py-3 text-right">
                       <div class="inline-flex gap-3 items-center justify-end">
                         <button data-id="${o._id}" class="edit-custom-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
+                        ${archiveCustomBtn}
+                        ${restoreCustomBtn}
+                        ${deleteCustomBtn}
                       </div>
                     </td>
               </tr>
             `);
           } else {
             rowsArr.push(`
-              <tr>
+              <tr class="${o.isArchived ? 'bg-gray-50' : ''}">
                   <td class="px-4 py-3">${new Date(o.createdAt).toLocaleDateString()}</td>
                   <td class="px-4 py-3">${o.user?.name || 'N/A'}</td>
                   <td class="px-4 py-3">${typeLabel(o.customType)(o)}</td>
                   <td class="px-4 py-3">${o.quantity}</td>
-                  <td class="px-4 py-3">${statusBadge}</td>
+                  <td class="px-4 py-3">${statusBadge}${archivedCustomBadge}</td>
                   <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
                   <td class="px-4 py-3 text-xs max-w-xs truncate">${details}</td>
                     <td class="px-4 py-3 text-right">
                       <div class="inline-flex gap-3 items-center justify-end">
                         <button data-id="${o._id}" class="edit-custom-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
+                        ${archiveCustomBtn}
+                        ${restoreCustomBtn}
+                        ${deleteCustomBtn}
                       </div>
                     </td>
               </tr>
@@ -2431,7 +2466,12 @@
           const q = (els.search.value || '').trim();
           const df = els.dateFrom?.value;
           const dt = els.dateTo?.value;
-          if (s) params.set('status', s);
+          // Handle archived filter
+          if (s === 'archived') {
+            params.set('archived', 'true');
+          } else {
+            if (s) params.set('status', s);
+          }
           if (p) params.set('paymentStatus', p);
           if (sm) params.set('shippingMethod', sm);
           if (q) params.set('search', q);
@@ -2516,7 +2556,14 @@
 
       async function loadCustomOrders() {
         try {
-          const res = await fetch(`${API}/api/custom-orders/admin`, { headers: { 'Authorization': `Bearer ${token}` } });
+          // Check if archived filter is selected
+          const fStatus = els.customFilterStatus?.value || '';
+          const params = new URLSearchParams();
+          if (fStatus === 'archived') {
+            params.set('archived', 'true');
+          }
+          const url = `${API}/api/custom-orders/admin${params.toString() ? ('?' + params.toString()) : ''}`;
+          const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
           if (res.status === 401) {
             localStorage.removeItem('adminToken');
             window.location.href = 'login.html';
@@ -2529,7 +2576,7 @@
           // Bind filter events once after initial load
           const reb = renderCustomOrders;
             els.customSearch?.addEventListener('input', reb);
-              els.customFilterStatus?.addEventListener('change', reb);
+              els.customFilterStatus?.addEventListener('change', () => loadCustomOrders());
               els.customFilterType?.addEventListener('change', reb);
               els.customFilterShipMethod?.addEventListener('change', reb);
               els.customFilterFulfillment?.addEventListener('change', reb);
@@ -3977,13 +4024,31 @@
         });
       }
 
-      // MODIFIED: Custom order edit
+      // MODIFIED: Custom order edit and archive actions
       els.customOrdersBody?.addEventListener('click', (e) => {
         const editBtn = e.target.closest('.edit-custom-btn');
         if (editBtn) {
           const id = editBtn.dataset.id;
           const order = allCustomOrders.find(o => o._id === id);
           if (order) openCustomModal(order);
+        }
+        // Archive button for custom orders
+        const archiveBtn = e.target.closest('.archive-custom-btn');
+        if (archiveBtn) {
+          const id = archiveBtn.dataset.id;
+          archiveOrder(id, 'custom');
+        }
+        // Restore button for custom orders
+        const restoreBtn = e.target.closest('.restore-custom-btn');
+        if (restoreBtn) {
+          const id = restoreBtn.dataset.id;
+          restoreOrder(id, 'custom');
+        }
+        // Delete permanently button for custom orders
+        const deleteBtn = e.target.closest('.delete-custom-permanent-btn');
+        if (deleteBtn) {
+          const id = deleteBtn.dataset.id;
+          deleteOrderPermanently(id, 'custom');
         }
       });
 
@@ -4063,7 +4128,81 @@
           const order = allOrders.find(o => o._id === id);
           if (order) openShipModal(order);
         }
+        // Archive button
+        const archiveBtn = e.target.closest('.archive-btn');
+        if (archiveBtn) {
+          const id = archiveBtn.dataset.id;
+          archiveOrder(id, 'regular');
+        }
+        // Restore button
+        const restoreBtn = e.target.closest('.restore-btn');
+        if (restoreBtn) {
+          const id = restoreBtn.dataset.id;
+          restoreOrder(id, 'regular');
+        }
+        // Delete permanently button
+        const deleteBtn = e.target.closest('.delete-permanent-btn');
+        if (deleteBtn) {
+          const id = deleteBtn.dataset.id;
+          deleteOrderPermanently(id, 'regular');
+        }
       });
+
+      // --- Archive/Restore/Delete Functions ---
+      async function archiveOrder(id, type) {
+        if (!confirm('Archive this order? It will be moved to the Archived filter.')) return;
+        try {
+          const endpoint = type === 'custom' ? `/api/custom-orders/${id}/archive` : `/api/orders/${id}/archive`;
+          const res = await fetch(`${API}${endpoint}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to archive order');
+          showMessage('Order archived successfully', 'success');
+          if (type === 'custom') loadCustomOrders();
+          else loadRegularOrders();
+        } catch (err) {
+          showMessage(err.message, 'error');
+        }
+      }
+
+      async function restoreOrder(id, type) {
+        if (!confirm('Restore this order from archive?')) return;
+        try {
+          const endpoint = type === 'custom' ? `/api/custom-orders/${id}/restore` : `/api/orders/${id}/restore`;
+          const res = await fetch(`${API}${endpoint}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to restore order');
+          showMessage('Order restored successfully', 'success');
+          if (type === 'custom') loadCustomOrders();
+          else loadRegularOrders();
+        } catch (err) {
+          showMessage(err.message, 'error');
+        }
+      }
+
+      async function deleteOrderPermanently(id, type) {
+        if (!confirm('⚠️ PERMANENTLY DELETE this order? This action cannot be undone!')) return;
+        if (!confirm('Are you absolutely sure? All order data will be lost forever.')) return;
+        try {
+          const endpoint = type === 'custom' ? `/api/custom-orders/${id}/permanent` : `/api/orders/${id}/permanent`;
+          const res = await fetch(`${API}${endpoint}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to delete order');
+          showMessage('Order permanently deleted', 'success');
+          if (type === 'custom') loadCustomOrders();
+          else loadRegularOrders();
+        } catch (err) {
+          showMessage(err.message, 'error');
+        }
+      }
 
       // --- NEW: Save Fulfillment Details ---
       async function saveFulfillmentDetails() {

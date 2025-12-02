@@ -11,9 +11,14 @@ const {
     getAllOrders,
     updateOrderStatus,
     getOrderById,
-    cancelOrder // <-- NEW
-    ,completeOrder,
-    getLoyaltyProgress
+    cancelOrder,
+    completeOrder,
+    getLoyaltyProgress,
+    // Archive system
+    archiveOrder,
+    restoreOrder,
+    deleteOrderPermanently,
+    getArchivedOrders
 } = require('../controllers/orderController');
 const { createReturnRequest } = require('../controllers/returnController');
 
@@ -81,6 +86,12 @@ router.get('/loyalty-progress', getLoyaltyProgress);
 // Admin routes (literal)
 // Orders listing and status management require permissions
 router.get('/admin', requirePermission('manage_orders'), getAllOrders);
+router.get('/admin/archived', requirePermission('manage_orders'), getArchivedOrders);
+
+// --- Archive system routes ---
+router.put('/:id/archive', requirePermission('manage_orders'), archiveOrder);
+router.put('/:id/restore', requirePermission('manage_orders'), restoreOrder);
+router.delete('/:id/permanent', requirePermission('manage_orders'), deleteOrderPermanently);
 
 // --- NEW ROUTE for user to cancel ---
 router.put('/:id/cancel', cancelOrder);

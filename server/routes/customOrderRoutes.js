@@ -21,7 +21,12 @@ const {
     rejectCustomOrderQuote,
     getSingleCustomOrder,
     confirmReceipt,
-    cancelQuote
+    cancelQuote,
+    // Archive system
+    archiveCustomOrder,
+    restoreCustomOrder,
+    deleteCustomOrderPermanently,
+    getArchivedCustomOrders
 } = require('../controllers/customOrderController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -112,6 +117,10 @@ router.route('/:id/final-payment')
 router.route('/admin')
     .get(protect, authorize('admin','employee'), getAdminCustomOrders);
 
+// Admin route: Get archived custom orders
+router.route('/admin/archived')
+    .get(protect, authorize('admin','employee'), getArchivedCustomOrders);
+
 router.route('/:id/quote')
     .put(protect, authorize('admin','employee'), updateCustomOrderQuote);
 
@@ -155,5 +164,15 @@ router.post('/:id/returns', returnsUpload.fields([{ name: 'videos' }, { name: 'i
 // Customer cancels quote
 router.route('/:id/cancel')
     .put(protect, cancelQuote);
+
+// --- Archive system routes ---
+router.route('/:id/archive')
+    .put(protect, authorize('admin','employee'), archiveCustomOrder);
+
+router.route('/:id/restore')
+    .put(protect, authorize('admin','employee'), restoreCustomOrder);
+
+router.route('/:id/permanent')
+    .delete(protect, authorize('admin','employee'), deleteCustomOrderPermanently);
 
 module.exports = router;

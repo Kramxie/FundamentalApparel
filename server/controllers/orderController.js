@@ -219,11 +219,27 @@ exports.createOrderWithReceipt = async (req, res) => {
 // @access  Private/Admin
 exports.getAllOrders = async (req, res) => {
     try {
-        const { status, paymentStatus, search, dateFrom, dateTo, shippingMethod } = req.query;
+        const { status, paymentStatus, search, dateFrom, dateTo, shippingMethod, archived } = req.query;
         const query = {};
+
+        // Handle archived filter - by default exclude archived orders
+        if (archived === 'true' || archived === '1') {
+            query.isArchived = true;
+        } else if (archived === 'only') {
+            query.isArchived = true;
+        } else {
+            // Default: exclude archived orders
+            query.$or = [{ isArchived: false }, { isArchived: { $exists: false } }];
+        }
 
         // map friendly status filters from admin UI
         if (status) {
+            // Remove the $or for isArchived when status filter is applied
+            if (archived !== 'true' && archived !== '1' && archived !== 'only') {
+                delete query.$or;
+                query.isArchived = { $ne: true };
+            }
+            
             if (status === 'to-pay') {
                 query.status = 'Processing';
                 query.paymentStatus = { $in: [null, 'Pending'] };
@@ -235,6 +251,10 @@ exports.getAllOrders = async (req, res) => {
                 query.status = { $in: ['Delivered', 'Completed'] };
             } else if (status === 'cancelled') {
                 query.status = 'Cancelled';
+            } else if (status === 'archived') {
+                // Special filter for archived orders
+                delete query.isArchived;
+                query.isArchived = true;
             } else {
                 // allow direct DB status names
                 query.status = status;
@@ -744,5 +764,128 @@ exports.getLoyaltyProgress = async (req, res) => {
     } catch (error) {
         console.error('[Loyalty Progress] Error:', error);
         res.status(500).json({ success: false, msg: 'Failed to get loyalty progress' });
+    }
+};
+
+// =====================================================
+// ARCHIVE SYSTEM FOR ORDERS
+// =====================================================
+
+// @desc    Archive a completed order
+// @route   PUT /api/orders/:id/archive
+// @access  Private/Admin
+exports.archiveOrder = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        
+        if (!order) {
+            return res.status(404).json({ success: false, msg: 'Order not found' });
+        }
+        
+        // Only allow archiving completed or cancelled orders
+        if (!['Completed', 'Delivered', 'Cancelled'].includes(order.status)) {
+            return res.status(400).json({ 
+                success: false, 
+                msg: 'Only completed or cancelled orders can be archived' 
+            });
+        }
+        
+        order.isArchived = true;
+        order.archivedAt = new Date();
+        order.archivedBy = req.user._id;
+        
+        await order.save();
+        
+        res.status(200).json({ 
+            success: true, 
+            msg: 'Order archived successfully',
+            data: order 
+        });
+    } catch (error) {
+        console.error('[Archive Order] Error:', error);
+        res.status(500).json({ success: false, msg: 'Server Error' });
+    }
+};
+
+// @desc    Restore an archived order
+// @route   PUT /api/orders/:id/restore
+// @access  Private/Admin
+exports.restoreOrder = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        
+        if (!order) {
+            return res.status(404).json({ success: false, msg: 'Order not found' });
+        }
+        
+        if (!order.isArchived) {
+            return res.status(400).json({ success: false, msg: 'Order is not archived' });
+        }
+        
+        order.isArchived = false;
+        order.archivedAt = undefined;
+        order.archivedBy = undefined;
+        
+        await order.save();
+        
+        res.status(200).json({ 
+            success: true, 
+            msg: 'Order restored successfully',
+            data: order 
+        });
+    } catch (error) {
+        console.error('[Restore Order] Error:', error);
+        res.status(500).json({ success: false, msg: 'Server Error' });
+    }
+};
+
+// @desc    Permanently delete an archived order
+// @route   DELETE /api/orders/:id/permanent
+// @access  Private/Admin
+exports.deleteOrderPermanently = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        
+        if (!order) {
+            return res.status(404).json({ success: false, msg: 'Order not found' });
+        }
+        
+        // Only allow deleting archived orders
+        if (!order.isArchived) {
+            return res.status(400).json({ 
+                success: false, 
+                msg: 'Only archived orders can be permanently deleted. Archive the order first.' 
+            });
+        }
+        
+        await Order.findByIdAndDelete(req.params.id);
+        
+        res.status(200).json({ 
+            success: true, 
+            msg: 'Order permanently deleted' 
+        });
+    } catch (error) {
+        console.error('[Delete Order Permanently] Error:', error);
+        res.status(500).json({ success: false, msg: 'Server Error' });
+    }
+};
+
+// @desc    Get all archived orders (Admin)
+// @route   GET /api/orders/admin/archived
+// @access  Private/Admin
+exports.getArchivedOrders = async (req, res) => {
+    try {
+        const orders = await Order.find({ isArchived: true })
+            .populate('user', 'name email')
+            .sort({ archivedAt: -1 });
+        
+        res.status(200).json({ 
+            success: true, 
+            count: orders.length,
+            data: orders 
+        });
+    } catch (error) {
+        console.error('[Get Archived Orders] Error:', error);
+        res.status(500).json({ success: false, msg: 'Server Error' });
     }
 };
