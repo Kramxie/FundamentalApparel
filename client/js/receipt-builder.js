@@ -70,6 +70,20 @@
     const isAdminPage = window.location.pathname.includes('/admin/');
     const logoPath = isAdminPage ? '../images/logo.png' : 'images/logo.png';
     
+    // Check if order is unpaid/pending - don't show receipt for pending orders
+    const isPending = r && (r.paymentStatus === 'Pending' || r.status === 'Pending') && !r.isPaid && !r.paidAt;
+    if (isPending) {
+      return `
+      <div style="font-family: 'Inter', 'Segoe UI', Arial, sans-serif; padding: 40px; text-align: center; color: #6b7280;">
+        <img src="${logoPath}" alt="Fundamental Apparel" style="height: 60px; margin-bottom: 20px;" onerror="this.style.display='none'">
+        <h2 style="font-weight: 600; margin-bottom: 12px; color: #111827;">FUNDAMENTAL APPAREL</h2>
+        <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+          <p style="color: #92400e; font-weight: 500; margin: 0;">⏳ Payment Pending</p>
+          <p style="color: #b45309; font-size: 14px; margin: 8px 0 0 0;">Receipt will be available after payment is confirmed.</p>
+        </div>
+      </div>`;
+    }
+    
     if (!r || (!hasItems && !hasAmounts && !r._id && !r.createdAt)) {
       return `
       <div style="font-family: 'Inter', 'Segoe UI', Arial, sans-serif; padding: 40px; text-align: center; color: #6b7280;">
@@ -84,11 +98,36 @@
     const invoiceNo = generateInvoiceNumber(r._id || r.orderId || r.paymentIntentId);
     const tinNumber = generateTIN(r._id || r.orderId || r.paymentIntentId);
     
-    // Get customer info
-    const customerName = escapeHtml(r.customerName || r.name || (r.user && r.user.name) || 'Customer');
-    const customerEmail = escapeHtml(r.customerEmail || r.email || (r.user && r.user.email) || '');
-    const customerPhone = escapeHtml(r.customerPhone || r.phone || r.contactNumber || (r.user && r.user.phone) || '');
+    // Get customer info - try multiple sources to get actual name/email
+    const customerName = escapeHtml(
+      r.customerName || 
+      r.name || 
+      (r.user && r.user.name) || 
+      (r.shippingAddress && r.shippingAddress.name) ||
+      (r.shippingAddress && r.shippingAddress.contact) ||
+      r.billingName ||
+      'N/A'
+    );
+    const customerEmail = escapeHtml(
+      r.customerEmail || 
+      r.email || 
+      (r.user && r.user.email) || 
+      r.billingEmail ||
+      ''
+    );
+    const customerPhone = escapeHtml(
+      r.customerPhone || 
+      r.phone || 
+      r.contactNumber || 
+      (r.user && r.user.phone) || 
+      (r.shippingAddress && r.shippingAddress.phone) ||
+      ''
+    );
     const customerAddress = escapeHtml(formatAddress(r.customerAddress || r.shippingAddress || r.address || (r.user && r.user.address)));
+
+    // Get voucher info
+    const voucherCode = r.voucherCode || r.voucher || r.discountCode || '';
+    const voucherDiscount = Number(r.voucherDiscount || r.discount || r.discountAmount || 0);
 
     // Get payment date (paidAt, deliveredAt, or createdAt)
     const paymentDate = r.paidAt || r.deliveredAt || r.createdAt;
@@ -97,7 +136,7 @@
     const summary = calculateSummary(r);
     const subtotal = summary.subtotal;
     const delivery = summary.delivery;
-    const voucherAmt = summary.voucher;
+    const voucherAmt = voucherDiscount > 0 ? voucherDiscount : summary.voucher;
     const vat = summary.vat;
     const total = summary.total;
 
@@ -192,25 +231,28 @@
 
         <!-- Totals Section -->
         <div style="display: flex; justify-content: flex-end; page-break-inside: avoid;">
-          <div style="width: 280px;">
+          <div style="width: 300px;">
             <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
               <span style="font-size: 14px; color: #6b7280;">Subtotal</span>
               <span style="font-size: 14px; color: #111827;">${formatCurrency(subtotal)}</span>
             </div>
             ${voucherAmt > 0 ? `
-            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-              <span style="font-size: 14px; color: #059669;">Discount</span>
-              <span style="font-size: 14px; color: #059669;">-${formatCurrency(voucherAmt)}</span>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6; background: #ecfdf5; margin: 0 -8px; padding-left: 8px; padding-right: 8px;">
+              <span style="font-size: 14px; color: #059669;">
+                <span style="font-weight: 500;">Voucher Discount</span>
+                ${voucherCode ? `<br><span style="font-size: 11px; color: #10b981;">Code: ${escapeHtml(voucherCode)}</span>` : ''}
+              </span>
+              <span style="font-size: 14px; color: #059669; font-weight: 500;">-${formatCurrency(voucherAmt)}</span>
             </div>` : ''}
             <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-              <span style="font-size: 14px; color: #6b7280;">Shipping</span>
+              <span style="font-size: 14px; color: #6b7280;">Shipping Fee</span>
               <span style="font-size: 14px; color: #111827;">${formatCurrency(delivery)}</span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-              <span style="font-size: 14px; color: #6b7280;">Tax (12% VAT)</span>
+              <span style="font-size: 14px; color: #6b7280;">VAT (12%)</span>
               <span style="font-size: 14px; color: #111827;">${formatCurrency(vat)}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; padding: 16px 0 0 0;">
+            <div style="display: flex; justify-content: space-between; padding: 16px 0 0 0; margin-top: 8px; border-top: 2px solid #111827;">
               <span style="font-size: 16px; font-weight: 700; color: #111827;">Total Paid</span>
               <span style="font-size: 18px; font-weight: 700; color: #111827;">${formatCurrency(total)}</span>
             </div>

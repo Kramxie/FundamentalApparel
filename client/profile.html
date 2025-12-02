@@ -577,23 +577,31 @@
                         function esc(s){ if (s===null||typeof s==='undefined') return ''; return String(s).replace(/[&<>"]+/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]||c)); }
                         function fmt(n){ return '₱' + Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2}); }
                         window.buildReceiptHtml = function(r){
+                            // Check if pending - don't show receipt
+                            const isPending = r && (r.paymentStatus === 'Pending' || r.status === 'Pending') && !r.isPaid && !r.paidAt;
+                            if (isPending) {
+                                return `<div class="p-6 text-center"><h2 class="font-semibold mb-2">FUNDAMENTAL APPAREL</h2><div class="bg-yellow-100 border border-yellow-400 rounded p-4 mb-4"><p class="text-yellow-800 font-medium">⏳ Payment Pending</p><p class="text-yellow-700 text-sm mt-2">Receipt will be available after payment is confirmed.</p></div></div>`;
+                            }
                             if (!r) return `<div class="p-6 text-center text-sm text-gray-600"><h2 class="font-semibold mb-2">FUNDAMENTAL APPAREL</h2><div class="mb-2">Receipt not available.</div></div>`;
                             const items = (r.items||[]).map(it=>`<tr class="border-t"><td class="py-2">${esc(it.name||'Item')}</td><td class="py-2 text-center">${esc(it.size||'-')}</td><td class="py-2 text-center">${Number(it.quantity||1)}</td><td class="py-2 text-right">${fmt(it.price)}</td><td class="py-2 text-right">${fmt((Number(it.price)||0)*(Number(it.quantity)||1))}</td></tr>`).join('');
                             const subtotal = Number(r.subtotal||0) || (r.items||[]).reduce((s,it)=>s+((Number(it.price)||0)*(Number(it.quantity)||1)),0);
-                            const voucher = Number(r.voucherDiscount||0) || 0;
+                            const voucher = Number(r.voucherDiscount||r.discount||0) || 0;
+                            const voucherCode = r.voucherCode || r.discountCode || '';
                             const delivery = Number(r.deliveryFee||0)||0;
                             const taxable = Math.max(subtotal - voucher, 0);
                             const vat = Math.round(taxable * 0.12 * 100)/100;
                             const total = Math.round((subtotal - voucher + delivery + vat) * 100)/100;
+                            const customerName = esc(r.customerName || r.name || (r.user && r.user.name) || (r.shippingAddress && r.shippingAddress.name) || (r.shippingAddress && r.shippingAddress.contact) || 'N/A');
+                            const customerEmail = esc(r.customerEmail || r.email || (r.user && r.user.email) || '');
                             return `
                                 <div class="max-w-full">
-                                    <div class="text-center mb-2"><h1 class="text-xl font-bold">FUNDAMENTAL APPAREL</h1><div class="text-sm text-gray-600">Unit 4B, Creative Building • Makati City</div></div>
+                                    <div class="text-center mb-2"><h1 class="text-xl font-bold">FUNDAMENTAL APPAREL</h1><div class="text-sm text-gray-600">Imus, Philippines • Pasay City, Philippines</div></div>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                         <div><div class="text-sm text-gray-600">Prepared by</div><div class="font-medium">${esc(r.preparedByName||r.preparedBy||'Fundamental Apparel')}</div></div>
-                                        <div><div class="text-sm text-gray-600">Billed to</div><div class="font-medium">${esc(r.customerName||r.customerEmail||'Customer')}</div></div>
+                                        <div><div class="text-sm text-gray-600">Billed to</div><div class="font-medium">${customerName}</div>${customerEmail ? `<div class="text-sm text-gray-500">${customerEmail}</div>` : ''}</div>
                                     </div>
                                     <div class="overflow-auto"><table class="w-full text-sm border-collapse"><thead class="bg-gray-100"><tr><th class="text-left p-2">Product</th><th class="text-center p-2">Size</th><th class="text-center p-2">QTY</th><th class="text-right p-2">Unit</th><th class="text-right p-2">Amount</th></tr></thead><tbody>${items}</tbody></table></div>
-                                    <div class="mt-4 text-sm"><div class="flex justify-end"><div class="w-full md:w-1/3"><div class="flex justify-between"><span>Subtotal</span><span class="font-medium">${fmt(subtotal)}</span></div><div class="flex justify-between"><span>Voucher</span><span class="font-medium">${voucher>0?fmt(voucher):'(N/A)'}</span></div><div class="flex justify-between"><span>Delivery Fee</span><span class="font-medium">${fmt(delivery)}</span></div><div class="flex justify-between"><span>VAT (12%)</span><span class="font-medium">${fmt(vat)}</span></div><div class="flex justify-between font-semibold"><span>Total</span><span class="font-medium">${fmt(total)}</span></div></div></div></div>
+                                    <div class="mt-4 text-sm"><div class="flex justify-end"><div class="w-full md:w-1/3"><div class="flex justify-between"><span>Subtotal</span><span class="font-medium">${fmt(subtotal)}</span></div>${voucher>0?`<div class="flex justify-between text-green-600 bg-green-50 p-1 rounded"><span>Voucher${voucherCode ? ` (${voucherCode})` : ''}</span><span class="font-medium">-${fmt(voucher)}</span></div>`:''}<div class="flex justify-between"><span>Shipping Fee</span><span class="font-medium">${fmt(delivery)}</span></div><div class="flex justify-between"><span>VAT (12%)</span><span class="font-medium">${fmt(vat)}</span></div><div class="flex justify-between font-semibold border-t-2 border-gray-800 pt-2 mt-2"><span>Total Paid</span><span class="font-medium">${fmt(total)}</span></div></div></div></div>
                                 </div>`;
                         };
                     })();
@@ -1207,8 +1215,7 @@
                     } else if (order.status === 'Shipped') {
                         buttonsHtml = `<button data-order-id="${order._id}" class="btn-mark-received px-4 py-2 bg-green-600 text-white rounded text-sm">Mark Received</button>
                                        <a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>
-                                       <button data-order-id="${order._id}" class="btn-view-receipt px-4 py-2 border rounded text-sm">View Receipt</button>
-                                       <button data-order-id="${order._id}" class="btn-download-receipt px-4 py-2 bg-indigo-600 text-white rounded text-sm">Download Receipt</button>`;
+                                       <button data-order-id="${order._id}" class="btn-view-receipt px-4 py-2 border rounded text-sm">View Receipt</button>`;
                     } else if (order.status === 'Delivered' || order.status === 'Completed') {
                         const productIds = order.orderItems.map(it => it.product).filter(Boolean);
                         
@@ -1219,8 +1226,7 @@
 
                         
                         buttonsHtml = `<a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>
-                        <button data-order-id="${order._id}" class="btn-view-receipt px-4 py-2 border rounded text-sm">View Receipt</button>
-                        <button data-order-id="${order._id}" class="btn-download-receipt px-4 py-2 bg-indigo-600 text-white rounded text-sm">Download Receipt</button>`;
+                        <button data-order-id="${order._id}" class="btn-view-receipt px-4 py-2 border rounded text-sm">View Receipt</button>`;
 
                         
                         if (order.userHasReview) {

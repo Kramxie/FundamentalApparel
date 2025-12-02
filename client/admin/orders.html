@@ -2607,17 +2607,20 @@
             paidAt: order.paidAt || order.createdAt,
             // prefer explicit TIN/tax fields if present, else use receipt/order ids with a TIN prefix
             tin: order.tin || order.taxId || order.paymentIntentId || order.receiptId || `TIN-${String(order._id).slice(-8).toUpperCase()}`,
-            customerName: order.user?.name || (order.shippingAddress && order.shippingAddress.contact) || '',
-            customerEmail: order.user?.email || order.email || '',
+            customerName: order.user?.name || (order.shippingAddress && order.shippingAddress.name) || (order.shippingAddress && order.shippingAddress.contact) || order.billingName || '',
+            customerEmail: order.user?.email || order.email || order.billingEmail || '',
             customerPhone: (order.shippingAddress && order.shippingAddress.phone) || order.user?.phone || order.phone || '',
             customerAddress: addrStr,
+            shippingAddress: order.shippingAddress,
             paymentStatus: order.paymentStatus || 'Pending',
+            status: order.status || 'Pending',
             paymentMethod: order.paymentMethod || 'Online Payment',
             isPaid: order.isPaid || false,
             items: itemsArr,
             subtotal: subtotalCalc,
             deliveryFee: Number(order.deliveryFee || 0),
-            voucherDiscount: Number(order.voucherDiscount || order.voucherAmount || 0) || 0,
+            voucherCode: order.voucherCode || order.discountCode || '',
+            voucherDiscount: Number(order.voucherDiscount || order.voucherAmount || order.discount || 0) || 0,
             preparedByName: order.acceptedByName || order.preparedByName || adminNameFallback || order.acceptedBy || '-',
             total: Number(typeof order.totalPrice === 'number' ? order.totalPrice : (subtotalCalc - (Number(order.voucherDiscount||order.voucherAmount||0) || 0) + Number(order.deliveryFee||0) + 0))
           };
