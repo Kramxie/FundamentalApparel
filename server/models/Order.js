@@ -102,6 +102,15 @@ const orderSchema = new mongoose.Schema({
     acceptedBy: { type: mongoose.Schema.ObjectId, ref: 'User' },
     acceptedByName: { type: String },
 
+    // Voucher/Discount applied to order
+    voucher: {
+        code: { type: String },
+        type: { type: String, enum: ['percentage', 'fixed', 'free_shipping'] },
+        value: { type: Number },
+        description: { type: String }
+    },
+    discount: { type: Number, default: 0 },
+
     totalPrice: { type: Number, required: true, default: 0.0 },
     // Link to generated receipt (if any)
     receiptId: { type: mongoose.Schema.ObjectId, ref: 'Receipt' }
