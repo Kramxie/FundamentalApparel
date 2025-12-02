@@ -486,11 +486,21 @@
           </div>
         </div>
       </div>
-      <div class="px-5 py-3 border-t flex items-center justify-end gap-3">
-        <p id="modal-error" class="text-sm text-red-600 mr-auto"></p>
-        <button id="modal-save"
-          class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded">Save</button>
-        <button id="modal-remove" class="hidden bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded">Remove</button>
+      <div class="px-5 py-3 border-t flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <button id="modal-archive" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-medium px-4 py-2 rounded text-sm" title="Archive Order">
+            <i class="fas fa-archive mr-1"></i>Archive
+          </button>
+          <button id="modal-delete" class="hidden bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded text-sm" title="Delete Order">
+            <i class="fas fa-trash-alt mr-1"></i>Delete
+          </button>
+        </div>
+        <div class="flex items-center gap-3">
+          <p id="modal-error" class="text-sm text-red-600"></p>
+          <button id="modal-save"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded">Save</button>
+          <button id="modal-remove" class="hidden bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded">Remove</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1117,7 +1127,15 @@
       
       <!-- Modal Footer -->
       <div class="px-6 py-4 border-t bg-gray-50 flex items-center justify-between gap-3">
-        <p id="custom-modal-error" class="text-sm text-red-600 mr-auto"></p> 
+        <div class="flex items-center gap-2">
+          <button id="custom-modal-archive" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-medium px-4 py-2 rounded text-sm" title="Archive Order">
+            <i class="fas fa-archive mr-1"></i>Archive
+          </button>
+          <button id="custom-modal-delete" class="hidden bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded text-sm" title="Delete Order">
+            <i class="fas fa-trash-alt mr-1"></i>Delete
+          </button>
+          <p id="custom-modal-error" class="text-sm text-red-600 ml-2"></p>
+        </div>
         <div class="flex items-center gap-2"> 
           <button id="custom-modal-save-quote" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-2.5 rounded-lg transition">
             <i class="fas fa-paper-plane mr-2"></i>Send Quote
@@ -1421,6 +1439,8 @@
         formPaymentStatus: document.getElementById('form-paymentStatus'),
         // Order status, shipping service, tracking code removed - handled by workflow/Ship Modal
         modalSave: document.getElementById('modal-save'),
+        modalArchive: document.getElementById('modal-archive'),
+        modalDelete: document.getElementById('modal-delete'),
         modalError: document.getElementById('modal-error'),
         modalCancellationDetails: document.getElementById('modal-cancellation-details'),
         modalCancelledBy: document.getElementById('modal-cancelled-by'),
@@ -1496,6 +1516,8 @@
         customModalVerifyDp: document.getElementById('custom-modal-verify-dp'),
         customModalRequestFinal: document.getElementById('custom-modal-request-final'),
         customModalVerifyFinal: document.getElementById('custom-modal-verify-final'),
+        customModalArchive: document.getElementById('custom-modal-archive'),
+        customModalDelete: document.getElementById('custom-modal-delete'),
         formPricingNotes: document.getElementById('form-pricing-notes')
       };
 
@@ -2196,7 +2218,9 @@
           const canArchive = !o.isArchived && ['Delivered', 'Cancelled'].includes(o.status);
           const archiveButton = canArchive ? `<button data-id="${o._id}" class="archive-btn text-gray-500 hover:text-gray-700 ml-2" title="Archive Order"><i class="fas fa-archive"></i></button>` : '';
           const restoreButton = o.isArchived ? `<button data-id="${o._id}" class="restore-btn text-green-600 hover:text-green-800 ml-2" title="Restore Order"><i class="fas fa-undo"></i></button>` : '';
-          const deleteButton = o.isArchived ? `<button data-id="${o._id}" class="delete-permanent-btn text-red-600 hover:text-red-800 ml-2" title="Delete Permanently"><i class="fas fa-trash-alt"></i></button>` : '';
+          // Delete button - can delete archived OR completed/cancelled orders
+          const canDelete = o.isArchived || ['Delivered', 'Cancelled'].includes(o.status);
+          const deleteButton = canDelete ? `<button data-id="${o._id}" class="delete-permanent-btn text-red-600 hover:text-red-800 ml-2" title="Delete Order"><i class="fas fa-trash-alt"></i></button>` : '';
           
           // Show archived badge if archived
           const archivedBadge = o.isArchived ? `<span class="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-600 ml-2">Archived</span>` : '';
@@ -2387,7 +2411,9 @@
           const canArchiveCustom = !o.isArchived && ['Completed', 'Cancelled'].includes(o.status);
           const archiveCustomBtn = canArchiveCustom ? `<button data-id="${o._id}" class="archive-custom-btn text-gray-500 hover:text-gray-700 ml-2" title="Archive"><i class="fas fa-archive"></i></button>` : '';
           const restoreCustomBtn = o.isArchived ? `<button data-id="${o._id}" class="restore-custom-btn text-green-600 hover:text-green-800 ml-2" title="Restore"><i class="fas fa-undo"></i></button>` : '';
-          const deleteCustomBtn = o.isArchived ? `<button data-id="${o._id}" class="delete-custom-permanent-btn text-red-600 hover:text-red-800 ml-2" title="Delete Permanently"><i class="fas fa-trash-alt"></i></button>` : '';
+          // Delete button - can delete archived OR completed/cancelled custom orders
+          const canDeleteCustom = o.isArchived || ['Completed', 'Cancelled'].includes(o.status);
+          const deleteCustomBtn = canDeleteCustom ? `<button data-id="${o._id}" class="delete-custom-permanent-btn text-red-600 hover:text-red-800 ml-2" title="Delete Order"><i class="fas fa-trash-alt"></i></button>` : '';
           const archivedCustomBadge = o.isArchived ? `<span class="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-600 ml-1">Archived</span>` : '';
           // If this order contains team members, render a single row with Qty = order.quantity
           // and include a concise team summary in the Details column. The View/Edit button
@@ -2748,10 +2774,20 @@
         els.modalError.textContent = '';
         // Disable editing if Completed (Delivered)
         const isCompleted = order.status === 'Delivered' || order.status === 'Completed';
+        const isCancelled = order.status === 'Cancelled';
         els.formPaymentStatus.disabled = !!order.paymentIntentId || isCompleted;
         els.modalSave.style.display = isCompleted ? 'none' : '';
         const removeBtn = document.getElementById('modal-remove');
         if (removeBtn) removeBtn.style.display = isCompleted ? '' : 'none';
+
+        // Show Archive button for completed/cancelled non-archived orders
+        const canArchive = !order.isArchived && (isCompleted || isCancelled);
+        els.modalArchive.classList.toggle('hidden', !canArchive);
+        
+        // Show Delete button for completed/cancelled/archived orders
+        const canDelete = order.isArchived || isCompleted || isCancelled;
+        els.modalDelete.classList.toggle('hidden', !canDelete);
+
         els.formPaymentStatus.title = order.paymentIntentId ? 'Payment status is managed by PayMongo' : '';
         if (order.status === 'Cancelled' && order.cancellationReason) {
           els.modalCancelledBy.textContent = order.cancelledBy || 'N/A';
@@ -3770,6 +3806,18 @@
             });
           }
         }, 50);
+
+        // Show Archive/Delete buttons for completed/cancelled orders
+        const isCustomCompleted = order.status === 'Completed';
+        const isCustomCancelled = order.status === 'Cancelled';
+        
+        // Archive button - show for completed/cancelled non-archived orders
+        const canArchiveCustom = !order.isArchived && (isCustomCompleted || isCustomCancelled);
+        els.customModalArchive.classList.toggle('hidden', !canArchiveCustom);
+        
+        // Delete button - show for completed/cancelled/archived orders
+        const canDeleteCustom = order.isArchived || isCustomCompleted || isCustomCancelled;
+        els.customModalDelete.classList.toggle('hidden', !canDeleteCustom);
       }
 
       async function saveCustomQuote() {
@@ -4078,6 +4126,45 @@
       els.modalClose?.addEventListener('click', () => els.modal.classList.add('hidden'));
       els.modal?.addEventListener('click', (e) => { if (e.target === els.modal) els.modal.classList.add('hidden'); });
       els.modalSave?.addEventListener('click', saveModal);
+
+      // --- Modal Archive/Delete buttons for regular orders ---
+      els.modalArchive?.addEventListener('click', async () => {
+        if (!selectedOrder) return;
+        if (!confirm('Archive this order? It will be moved to the Archived filter.')) return;
+        try {
+          const res = await fetch(`${API}/api/orders/${selectedOrder._id}/archive`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to archive order');
+          showMessage('Order archived successfully', 'success');
+          els.modal.classList.add('hidden');
+          loadRegularOrders();
+        } catch (err) {
+          showMessage(err.message, 'error');
+        }
+      });
+
+      els.modalDelete?.addEventListener('click', async () => {
+        if (!selectedOrder) return;
+        if (!confirm('⚠️ DELETE this order? This action cannot be undone!')) return;
+        if (!confirm('Are you absolutely sure? All order data will be lost forever.')) return;
+        try {
+          const res = await fetch(`${API}/api/orders/${selectedOrder._id}/permanent`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to delete order');
+          showMessage('Order permanently deleted', 'success');
+          els.modal.classList.add('hidden');
+          loadRegularOrders();
+        } catch (err) {
+          showMessage(err.message, 'error');
+        }
+      });
+
       // Receipt controls
       if (els.modalReceiptBtn) {
         els.modalReceiptBtn?.addEventListener('click', () => {
@@ -4111,6 +4198,44 @@
       els.customModalVerifyDp?.addEventListener('click', verifyDownPayment); // Para sa Phase 4
       els.customModalRequestFinal?.addEventListener('click', requestFinalPayment); // Para sa Phase 5.1
       els.customModalVerifyFinal?.addEventListener('click', verifyFinalPayment);
+
+      // --- Custom Modal Archive/Delete buttons ---
+      els.customModalArchive?.addEventListener('click', async () => {
+        if (!selectedCustomOrder) return;
+        if (!confirm('Archive this custom order? It will be moved to the Archived filter.')) return;
+        try {
+          const res = await fetch(`${API}/api/custom-orders/${selectedCustomOrder._id}/archive`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to archive order');
+          showMessage('Custom order archived successfully', 'success');
+          els.customModal.classList.add('hidden');
+          loadCustomOrders();
+        } catch (err) {
+          showMessage(err.message, 'error');
+        }
+      });
+
+      els.customModalDelete?.addEventListener('click', async () => {
+        if (!selectedCustomOrder) return;
+        if (!confirm('⚠️ DELETE this custom order? This action cannot be undone!')) return;
+        if (!confirm('Are you absolutely sure? All order data will be lost forever.')) return;
+        try {
+          const res = await fetch(`${API}/api/custom-orders/${selectedCustomOrder._id}/permanent`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to delete order');
+          showMessage('Custom order permanently deleted', 'success');
+          els.customModal.classList.add('hidden');
+          loadCustomOrders();
+        } catch (err) {
+          showMessage(err.message, 'error');
+        }
+      });
 
       // --- NEW: Ship Modal Events ---
       els.shipModalClose?.addEventListener('click', closeShipModal);

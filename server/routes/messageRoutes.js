@@ -12,7 +12,10 @@ const {
     getUnreadCount,
     uploadImage,
     deleteMessage,
-    deleteConversation
+    deleteConversation,
+    archiveConversation,
+    restoreConversation,
+    getArchivedConversations
 } = require('../controllers/messageController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -56,6 +59,9 @@ router.get('/', getMessages);
 // Get all conversations (admin and employee)
 router.get('/conversations', authorize('admin','employee'), getConversations);
 
+// Get archived conversations (admin and employee)
+router.get('/conversations/archived', authorize('admin','employee'), getArchivedConversations);
+
 // Send a message
 router.post('/', sendMessage);
 
@@ -67,6 +73,12 @@ router.get('/unread-count', getUnreadCount);
 
 // Upload image for message
 router.post('/upload', upload.single('image'), uploadImage);
+
+// Archive conversation with a customer (admin/employee only)
+router.put('/conversation/:customerId/archive', authorize('admin', 'employee'), archiveConversation);
+
+// Restore archived conversation (admin/employee only)
+router.put('/conversation/:customerId/restore', authorize('admin', 'employee'), restoreConversation);
 
 // Delete entire conversation with a customer (admin/employee only) - MUST be before /:id
 router.delete('/conversation/:customerId', authorize('admin', 'employee'), deleteConversation);

@@ -226,7 +226,16 @@
             <div id="message-container" class="hidden mb-4 p-3 rounded-md bg-green-100 text-green-800"></div>
             <div class="flex flex-1 overflow-hidden">
                 <!-- Conversations List -->
-                <div class="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+                <div class="w-80 bg-white border-r border-gray-200 flex flex-col">
+                    <!-- Tabs for Active/Archived -->
+                    <div class="flex border-b border-gray-200">
+                        <button id="tab-active" class="flex-1 px-4 py-3 text-sm font-medium text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50">
+                            <i class="fas fa-inbox mr-2"></i>Active
+                        </button>
+                        <button id="tab-archived" class="flex-1 px-4 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50">
+                            <i class="fas fa-archive mr-2"></i>Archived
+                        </button>
+                    </div>
                     <div class="p-4 border-b border-gray-200">
                         <input 
                             type="text" 
@@ -235,7 +244,7 @@
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
-                    <div id="conversations-container">
+                    <div id="conversations-container" class="flex-1 overflow-y-auto">
                         <div class="p-8 text-center text-gray-500">
                             <i class="fas fa-inbox text-4xl mb-2"></i>
                             <p>Loading conversations...</p>
@@ -268,13 +277,29 @@
                                         <p id="customer-email" class="text-sm text-gray-500"></p>
                                     </div>
                                 </div>
-                                <button 
-                                    id="delete-conversation-btn"
-                                    class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                                    title="Delete entire conversation"
-                                >
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button 
+                                        id="archive-conversation-btn"
+                                        class="text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 p-2 rounded-lg transition-colors"
+                                        title="Archive conversation"
+                                    >
+                                        <i class="fas fa-archive"></i>
+                                    </button>
+                                    <button 
+                                        id="restore-conversation-btn"
+                                        class="hidden text-gray-400 hover:text-green-500 hover:bg-green-50 p-2 rounded-lg transition-colors"
+                                        title="Restore conversation"
+                                    >
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                    <button 
+                                        id="delete-conversation-btn"
+                                        class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                                        title="Delete entire conversation"
+                                    >
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -373,6 +398,7 @@
         let selectedCustomer = null;
         let currentMessages = [];
         let typingTimeout = null;
+        let viewingArchived = false; // Track if viewing archived conversations
 
         // Auth Check
         const token = localStorage.getItem('adminToken');
@@ -392,7 +418,32 @@
             await loadConversations();
             initSocket();
             setupEventListeners();
+            setupArchiveTabs();
         });
+
+        // Setup archive tabs
+        function setupArchiveTabs() {
+            const tabActive = document.getElementById('tab-active');
+            const tabArchived = document.getElementById('tab-archived');
+            
+            tabActive.addEventListener('click', () => {
+                viewingArchived = false;
+                tabActive.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600', 'bg-indigo-50');
+                tabActive.classList.remove('text-gray-500');
+                tabArchived.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600', 'bg-indigo-50');
+                tabArchived.classList.add('text-gray-500');
+                loadConversations();
+            });
+            
+            tabArchived.addEventListener('click', () => {
+                viewingArchived = true;
+                tabArchived.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600', 'bg-indigo-50');
+                tabArchived.classList.remove('text-gray-500');
+                tabActive.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600', 'bg-indigo-50');
+                tabActive.classList.add('text-gray-500');
+                loadConversations();
+            });
+        }
 
         // Fetch current user
         async function fetchCurrentUser() {
@@ -421,7 +472,8 @@
         // Load conversations
         async function loadConversations() {
             try {
-                const response = await fetch(`${API_BASE}/api/messages/conversations`, {
+                const archiveQuery = viewingArchived ? '?archived=true' : '';
+                const response = await fetch(`${API_BASE}/api/messages/conversations${archiveQuery}`, {
                     headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
                 });
 
@@ -513,8 +565,8 @@
             if (conversations.length === 0) {
                 container.innerHTML = `
                     <div class="p-8 text-center text-gray-500">
-                        <i class="fas fa-inbox text-4xl mb-2"></i>
-                        <p>No conversations yet</p>
+                        <i class="fas fa-${viewingArchived ? 'archive' : 'inbox'} text-4xl mb-2"></i>
+                        <p>${viewingArchived ? 'No archived conversations' : 'No conversations yet'}</p>
                     </div>
                 `;
                 return;
@@ -538,7 +590,7 @@
 
                 return `
                     <div 
-                        class="conversation-item cursor-pointer p-4 border-b border-gray-200 transition-colors ${selectedCustomer && selectedCustomer._id === customer._id ? 'active' : ''}"
+                        class="conversation-item group cursor-pointer p-4 border-b border-gray-200 transition-colors hover:bg-gray-50 ${selectedCustomer && selectedCustomer._id === customer._id ? 'active' : ''}"
                         data-customer-id="${customer._id}"
                     >
                         <div class="flex items-start space-x-3">
@@ -551,11 +603,30 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center justify-between mb-1">
                                     <h4 class="font-semibold text-gray-800 truncate">${escapeHtml(customer.name)}</h4>
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex items-center gap-1">
                                         ${conv.unreadCount > 0 ? 
                                             `<span class="bg-indigo-600 text-white text-xs rounded-full px-2 py-1">${conv.unreadCount}</span>` : 
                                             ''
                                         }
+                                        ${viewingArchived ? `
+                                            <button 
+                                                class="restore-conv-btn text-gray-400 hover:text-green-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                data-customer-id="${customer._id}"
+                                                title="Restore conversation"
+                                                onclick="event.stopPropagation(); restoreConversation('${customer._id}', '${escapeHtml(customer.name)}')"
+                                            >
+                                                <i class="fas fa-undo text-sm"></i>
+                                            </button>
+                                        ` : `
+                                            <button 
+                                                class="archive-conv-btn text-gray-400 hover:text-yellow-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                data-customer-id="${customer._id}"
+                                                title="Archive conversation"
+                                                onclick="event.stopPropagation(); archiveConversation('${customer._id}', '${escapeHtml(customer.name)}')"
+                                            >
+                                                <i class="fas fa-archive text-sm"></i>
+                                            </button>
+                                        `}
                                         <button 
                                             class="delete-conv-btn text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                             data-customer-id="${customer._id}"
@@ -596,6 +667,17 @@
             document.getElementById('active-conversation').classList.remove('hidden');
             document.getElementById('customer-name').textContent = customer.name;
             document.getElementById('customer-email').textContent = customer.email;
+
+            // Toggle archive/restore buttons based on viewing mode
+            const archiveBtn = document.getElementById('archive-conversation-btn');
+            const restoreBtn = document.getElementById('restore-conversation-btn');
+            if (viewingArchived) {
+                archiveBtn.classList.add('hidden');
+                restoreBtn.classList.remove('hidden');
+            } else {
+                archiveBtn.classList.remove('hidden');
+                restoreBtn.classList.add('hidden');
+            }
 
             // Highlight selected conversation
             renderConversations();
@@ -849,6 +931,8 @@
             const imageUploadInput = document.getElementById('image-upload-input');
             const removeImageBtn = document.getElementById('remove-image-btn');
             const deleteConversationBtn = document.getElementById('delete-conversation-btn');
+            const archiveConversationBtn = document.getElementById('archive-conversation-btn');
+            const restoreConversationBtn = document.getElementById('restore-conversation-btn');
 
             sendBtn.addEventListener('click', sendMessage);
             
@@ -877,6 +961,20 @@
             deleteConversationBtn.addEventListener('click', () => {
                 if (selectedCustomer) {
                     confirmDeleteConversation(selectedCustomer._id, selectedCustomer.name);
+                }
+            });
+
+            // Archive conversation button in header
+            archiveConversationBtn.addEventListener('click', () => {
+                if (selectedCustomer) {
+                    archiveConversation(selectedCustomer._id, selectedCustomer.name);
+                }
+            });
+
+            // Restore conversation button in header
+            restoreConversationBtn.addEventListener('click', () => {
+                if (selectedCustomer) {
+                    restoreConversation(selectedCustomer._id, selectedCustomer.name);
                 }
             });
         }
@@ -1066,6 +1164,70 @@
             } catch (error) {
                 console.error('Error deleting message:', error);
                 showToast('Failed to delete message', 'error');
+            }
+        }
+
+        // Archive conversation
+        async function archiveConversation(customerId, customerName) {
+            if (!confirm(`Archive conversation with ${customerName}?`)) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/messages/conversation/${customerId}/archive`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to archive conversation');
+                }
+
+                // Reset selected customer if it was the archived one
+                if (selectedCustomer && selectedCustomer._id === customerId) {
+                    selectedCustomer = null;
+                    currentMessages = [];
+                    document.getElementById('no-conversation').classList.remove('hidden');
+                    document.getElementById('active-conversation').classList.add('hidden');
+                }
+
+                // Refresh conversations
+                await loadConversations();
+                
+                showToast('Conversation archived successfully', 'success');
+            } catch (error) {
+                console.error('Error archiving conversation:', error);
+                showToast('Failed to archive conversation', 'error');
+            }
+        }
+
+        // Restore conversation
+        async function restoreConversation(customerId, customerName) {
+            if (!confirm(`Restore conversation with ${customerName}?`)) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/messages/conversation/${customerId}/restore`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to restore conversation');
+                }
+
+                // Reset selected customer if it was the restored one
+                if (selectedCustomer && selectedCustomer._id === customerId) {
+                    selectedCustomer = null;
+                    currentMessages = [];
+                    document.getElementById('no-conversation').classList.remove('hidden');
+                    document.getElementById('active-conversation').classList.add('hidden');
+                }
+
+                // Refresh conversations
+                await loadConversations();
+                
+                showToast('Conversation restored successfully', 'success');
+            } catch (error) {
+                console.error('Error restoring conversation:', error);
+                showToast('Failed to restore conversation', 'error');
             }
         }
 

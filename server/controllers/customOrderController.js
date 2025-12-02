@@ -2187,7 +2187,7 @@ exports.restoreCustomOrder = async (req, res) => {
   }
 };
 
-// @desc    Permanently delete an archived custom order
+// @desc    Permanently delete a custom order (archived or completed/cancelled)
 // @route   DELETE /api/custom-orders/:id/permanent
 // @access  Private/Admin
 exports.deleteCustomOrderPermanently = async (req, res) => {
@@ -2198,11 +2198,12 @@ exports.deleteCustomOrderPermanently = async (req, res) => {
       return res.status(404).json({ success: false, msg: 'Custom order not found' });
     }
     
-    // Only allow deleting archived orders
-    if (!order.isArchived) {
+    // Only allow deleting archived orders OR completed/cancelled orders
+    const canDelete = order.isArchived || ['Completed', 'Cancelled'].includes(order.status);
+    if (!canDelete) {
       return res.status(400).json({ 
         success: false, 
-        msg: 'Only archived custom orders can be permanently deleted. Archive the order first.' 
+        msg: 'Cannot delete active orders. Only completed, cancelled, or archived orders can be deleted.' 
       });
     }
     

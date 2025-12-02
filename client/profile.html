@@ -1212,6 +1212,10 @@
                     } else if (order.paymentStatus === 'Pending') {
                         buttonsHtml = `<button data-order-id="${order._id}" class="btn-pay-now px-4 py-2 bg-indigo-600 text-white rounded text-sm">Pay Now</button>
                                      <button data-order-id="${order._id}" class="btn-cancel px-4 py-2 border rounded text-sm">Cancel Order</button>`;
+                    } else if (order.status === 'Accepted' && order.paymentStatus === 'Received') {
+                        // To Ship - payment received, show receipt
+                        buttonsHtml = `<a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>
+                                       <button data-order-id="${order._id}" class="btn-view-receipt px-4 py-2 border rounded text-sm">View Receipt</button>`;
                     } else if (order.status === 'Shipped') {
                         buttonsHtml = `<button data-order-id="${order._id}" class="btn-mark-received px-4 py-2 bg-green-600 text-white rounded text-sm">Mark Received</button>
                                        <a href="order-confirmation.html?id=${order._id}" class="px-4 py-2 border rounded text-sm">View Details</a>

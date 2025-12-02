@@ -57,13 +57,24 @@ exports.getConversations = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Not authorized' });
         }
 
-        // Get unique users who have messaged admin
+        // Check if requesting archived conversations
+        const showArchived = req.query.archived === 'true';
+
+        // Get unique users who have messaged admin (exclude archived by default)
         const messages = await Message.aggregate([
             {
                 $match: {
-                    $or: [
-                        { isAdminMessage: false },
-                        { isAdminMessage: true }
+                    $and: [
+                        {
+                            $or: [
+                                { isAdminMessage: false },
+                                { isAdminMessage: true }
+                            ]
+                        },
+                        // Filter by archive status
+                        showArchived 
+                            ? { isArchivedByAdmin: true }
+                            : { $or: [{ isArchivedByAdmin: false }, { isArchivedByAdmin: { $exists: false } }] }
                     ]
                 }
             },
@@ -89,7 +100,9 @@ exports.getConversations = async (req, res) => {
                                 0
                             ]
                         }
-                    }
+                    },
+                    isArchived: { $first: '$isArchivedByAdmin' },
+                    archivedAt: { $first: '$archivedAt' }
                 }
             },
             {
@@ -357,6 +370,176 @@ exports.deleteConversation = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to delete conversation'
+        });
+    }
+};
+
+// @desc    Archive conversation with a customer
+// @route   PUT /api/messages/conversation/:customerId/archive
+// @access  Private/Admin
+exports.archiveConversation = async (req, res) => {
+    try {
+        const { customerId } = req.params;
+        
+        // Only admin/employee can archive conversations
+        if (req.user.role !== 'admin' && req.user.role !== 'employee') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to archive conversations'
+            });
+        }
+
+        // Archive all messages where sender or recipient is the customer
+        const result = await Message.updateMany(
+            {
+                $or: [
+                    { sender: customerId },
+                    { recipient: customerId }
+                ]
+            },
+            {
+                isArchivedByAdmin: true,
+                archivedAt: new Date()
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Archived ${result.modifiedCount} messages`,
+            archivedCount: result.modifiedCount
+        });
+    } catch (error) {
+        console.error('Archive Conversation Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to archive conversation'
+        });
+    }
+};
+
+// @desc    Restore archived conversation with a customer
+// @route   PUT /api/messages/conversation/:customerId/restore
+// @access  Private/Admin
+exports.restoreConversation = async (req, res) => {
+    try {
+        const { customerId } = req.params;
+        
+        // Only admin/employee can restore conversations
+        if (req.user.role !== 'admin' && req.user.role !== 'employee') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to restore conversations'
+            });
+        }
+
+        // Restore all messages where sender or recipient is the customer
+        const result = await Message.updateMany(
+            {
+                $or: [
+                    { sender: customerId },
+                    { recipient: customerId }
+                ]
+            },
+            {
+                isArchivedByAdmin: false,
+                archivedAt: null
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Restored ${result.modifiedCount} messages`,
+            restoredCount: result.modifiedCount
+        });
+    } catch (error) {
+        console.error('Restore Conversation Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to restore conversation'
+        });
+    }
+};
+
+// @desc    Get archived conversations (admin only)
+// @route   GET /api/messages/conversations/archived
+// @access  Private/Admin
+exports.getArchivedConversations = async (req, res) => {
+    try {
+        // Only admin/employee can view archived conversations
+        if (req.user.role !== 'admin' && req.user.role !== 'employee') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized'
+            });
+        }
+
+        // Get unique customers with archived conversations
+        const archivedConversations = await Message.aggregate([
+            {
+                $match: {
+                    isArchivedByAdmin: true
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $cond: [
+                            { $eq: ['$isAdminMessage', true] },
+                            '$recipient',
+                            '$sender'
+                        ]
+                    },
+                    lastMessage: { $last: '$message' },
+                    lastMessageDate: { $max: '$createdAt' },
+                    messageCount: { $sum: 1 },
+                    archivedAt: { $max: '$archivedAt' }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'customer'
+                }
+            },
+            {
+                $unwind: '$customer'
+            },
+            {
+                $match: {
+                    'customer.role': 'customer'
+                }
+            },
+            {
+                $project: {
+                    _id: {
+                        _id: '$customer._id',
+                        name: '$customer.name',
+                        email: '$customer.email',
+                        avatar: '$customer.profileImage'
+                    },
+                    lastMessage: 1,
+                    lastMessageDate: 1,
+                    messageCount: 1,
+                    archivedAt: 1,
+                    isArchived: { $literal: true }
+                }
+            },
+            {
+                $sort: { archivedAt: -1 }
+            }
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: archivedConversations
+        });
+    } catch (error) {
+        console.error('Get Archived Conversations Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get archived conversations'
         });
     }
 };

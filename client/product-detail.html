@@ -354,16 +354,18 @@
                                 <div>
                                     <div class="text-sm font-medium text-gray-900 mb-3">Quantity</div>
                                     <div class="flex items-center gap-4">
-                                        <div class="flex items-center border border-gray-300 rounded-lg">
+                                        <div id="qty-container" class="flex items-center border border-gray-300 rounded-lg transition-colors">
                                             <button id="decrease-qty" class="px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-l-lg transition">-</button>
-                                            <input id="quantity-input" type="number" inputmode="numeric" pattern="\d*" min="1" value="1" class="w-20 text-center font-medium text-gray-900 border-l border-r border-transparent focus:outline-none" />
+                                            <input id="quantity-input" type="text" inputmode="numeric" value="1" class="w-20 text-center font-medium text-gray-900 border-l border-r border-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                                             <button id="increase-qty" class="px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-r-lg transition">+</button>
                                         </div>
                                         <span id="stock-text" class="text-sm text-gray-500">${product.countInStock} items in stock</span>
                                     </div>
+                                    <p id="qty-error" class="text-red-500 text-sm mt-2 hidden"></p>
                                 </div>
                             </div>
 
+                            <p id="cart-error" class="text-red-500 text-sm mb-3 hidden"></p>
                             <button id="add-to-cart-btn" class="w-full bg-gray-900 text-white font-bold py-4 rounded-xl hover:bg-black transition shadow-lg flex items-center justify-center gap-2">
                                 <i class="fas fa-shopping-bag"></i> Add to Cart
                             </button>
@@ -496,34 +498,73 @@
                 selectedColor = btn.dataset.color;
             });
 
-            // Quantity (now using an input so users can type numbers with validation)
+            // Quantity (now using an input so users can type numbers freely with validation on Add to Cart)
             const qtyInput = document.getElementById('quantity-input');
+            const qtyContainer = document.getElementById('qty-container');
+            const qtyError = document.getElementById('qty-error');
+            const cartError = document.getElementById('cart-error');
+            
             // initialize quantity value
             let quantity = 1;
             if (qtyInput) {
-                const initial = Math.max(1, Math.floor(Number(qtyInput.value || 1)));
-                qtyInput.value = initial;
-                quantity = initial;
+                qtyInput.value = '1';
+                quantity = 1;
+            }
+
+            // Helper function to validate quantity and show/hide error
+            function validateQuantity() {
+                const val = qtyInput?.value?.trim() || '';
+                const num = parseInt(val, 10);
+                const max = (typeof currentStock !== 'undefined' ? currentStock : Number(product.countInStock || 0));
+                
+                // Clear previous errors
+                qtyContainer?.classList.remove('border-red-500');
+                qtyError?.classList.add('hidden');
+                
+                if (val === '' || isNaN(num)) {
+                    qtyContainer?.classList.add('border-red-500');
+                    qtyError.textContent = 'Please enter a quantity';
+                    qtyError?.classList.remove('hidden');
+                    return { valid: false, value: 0 };
+                }
+                
+                if (num < 1) {
+                    qtyContainer?.classList.add('border-red-500');
+                    qtyError.textContent = 'Quantity must be at least 1';
+                    qtyError?.classList.remove('hidden');
+                    return { valid: false, value: num };
+                }
+                
+                if (num > max) {
+                    qtyContainer?.classList.add('border-red-500');
+                    qtyError.textContent = `Only ${max} items in stock`;
+                    qtyError?.classList.remove('hidden');
+                    return { valid: false, value: num };
+                }
+                
+                return { valid: true, value: num };
             }
 
             document.getElementById('decrease-qty')?.addEventListener('click', () => {
                 if (!qtyInput) return;
-                let q = Math.max(1, Math.floor(Number(qtyInput.value || 1)));
+                let q = parseInt(qtyInput.value, 10) || 1;
                 if (q > 1) q = q - 1;
                 qtyInput.value = q;
                 quantity = q;
+                validateQuantity();
             });
 
             document.getElementById('increase-qty')?.addEventListener('click', () => {
                 if (!qtyInput) return;
-                let q = Math.max(1, Math.floor(Number(qtyInput.value || 1)));
+                let q = parseInt(qtyInput.value, 10) || 0;
                 const max = (typeof currentStock !== 'undefined' ? currentStock : Number(product.countInStock || 0));
                 if (q < max) q = q + 1;
                 qtyInput.value = q;
                 quantity = q;
+                validateQuantity();
             });
 
-            // Prevent non-numeric characters and clamp value on input
+            // Allow only numeric characters but don't force clamp - let user type freely
             qtyInput?.addEventListener('keydown', (ev) => {
                 // Allow control keys
                 const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'];
@@ -532,29 +573,54 @@
                 if (!/^[0-9]$/.test(ev.key)) ev.preventDefault();
             });
 
+            // On input - just strip non-digits but allow empty/low values (validation happens on Add to Cart)
             qtyInput?.addEventListener('input', (ev) => {
                 const el = ev.target;
-                let v = el.value;
-                // strip non-digits
-                v = String(v).replace(/\D+/g, '');
-                let n = Math.floor(Number(v || 0));
-                if (!Number.isFinite(n) || n < 1) n = 1;
-                const max = (typeof currentStock !== 'undefined' ? currentStock : Number(product.countInStock || 0));
-                if (n > max) n = max;
-                el.value = n;
-                quantity = n;
+                // Strip non-digits but allow empty
+                el.value = String(el.value).replace(/\D+/g, '');
+                quantity = parseInt(el.value, 10) || 0;
+                // Live validation feedback
+                validateQuantity();
+            });
+            
+            // On blur - validate but don't auto-correct
+            qtyInput?.addEventListener('blur', () => {
+                validateQuantity();
             });
 
             // Add to Cart
             const addToCartBtn = document.getElementById('add-to-cart-btn');
             addToCartBtn?.addEventListener('click', async () => {
+                // Clear previous cart error
+                cartError?.classList.add('hidden');
+                
                 // Check if size selection is required (either old sizes array or new sizesInventory)
                 const hasSizes = (product.sizes && product.sizes.length > 0) || (product.sizesInventory && Object.keys(product.sizesInventory).length > 0);
-                if (hasSizes && !selectedSize) return alert('Please select a size.');
-                if (product.colors?.length > 0 && !selectedColor) return alert('Please select a color.');
+                if (hasSizes && !selectedSize) {
+                    cartError.textContent = 'Please select a size first';
+                    cartError?.classList.remove('hidden');
+                    return;
+                }
+                if (product.colors?.length > 0 && !selectedColor) {
+                    cartError.textContent = 'Please select a color first';
+                    cartError?.classList.remove('hidden');
+                    return;
+                }
+                
+                // Validate quantity
+                const qtyValidation = validateQuantity();
+                if (!qtyValidation.valid) {
+                    cartError.textContent = 'Please enter a valid quantity';
+                    cartError?.classList.remove('hidden');
+                    return;
+                }
+                quantity = qtyValidation.value;
+                
                 if (!localStorage.getItem('token')) {
-                    alert('Please log in to continue.');
-                    return window.location.href = 'login.html';
+                    cartError.textContent = 'Please log in to continue';
+                    cartError?.classList.remove('hidden');
+                    setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+                    return;
                 }
 
                 addToCartBtn.disabled = true;
