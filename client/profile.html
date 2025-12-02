@@ -2344,6 +2344,7 @@
             }
 
             async function fetchVouchers() {
+                const vouchersList = document.getElementById('vouchers-list');
                 try {
                     // Fetch user data and loyalty progress in parallel
                     const [userJson, loyaltyJson] = await Promise.all([
@@ -2396,6 +2397,7 @@
             }
             
             function renderVouchers(vouchers) {
+                const vouchersList = document.getElementById('vouchers-list');
                 if (!vouchers || vouchers.length === 0) { 
                     vouchersList.innerHTML = '<p class="text-gray-500">You have no vouchers yet. Complete orders to earn loyalty rewards!</p>'; 
                     return; 
