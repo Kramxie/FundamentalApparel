@@ -394,17 +394,24 @@ exports.createOrderPaymentSession = async (req, res) => {
           if (v.used) {
             console.log('[PayMongo] Voucher already used, skipping');
           } else {
-            appliedVoucher = v;
-            console.log('[PayMongo] Voucher applied:', v.code, 'Type:', v.type, 'Value:', v.value);
+            // Convert Mongoose subdocument to plain object to ensure proper serialization
+            appliedVoucher = {
+              code: v.code,
+              type: v.type,
+              value: v.value,
+              description: v.description || `${v.type === 'percentage' ? v.value + '%' : '₱' + v.value} off`
+            };
+            console.log('[PayMongo] Voucher applied:', appliedVoucher.code, 'Type:', appliedVoucher.type, 'Value:', appliedVoucher.value);
             const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0);
-            if (v.type === 'percentage') {
-              discount = Math.floor(subtotal * (v.value / 100));
-            } else if (v.type === 'fixed') {
-              discount = Math.min(subtotal, v.value);
-            } else if (v.type === 'free_shipping') {
+            if (appliedVoucher.type === 'percentage') {
+              discount = Math.floor(subtotal * (appliedVoucher.value / 100));
+            } else if (appliedVoucher.type === 'fixed') {
+              discount = Math.min(subtotal, appliedVoucher.value);
+            } else if (appliedVoucher.type === 'free_shipping') {
               discount = 0;
               deliveryFee = 0;
             }
+            console.log('[PayMongo] Discount calculated:', discount);
           }
         }
       }
@@ -521,6 +528,7 @@ exports.createOrderPaymentSession = async (req, res) => {
     });
 
     await order.save();
+    console.log('[PayMongo] Order created:', order._id, 'Voucher:', order.voucher ? order.voucher.code : 'NONE', 'Discount:', order.discount || 0);
 
     // Server-side validation: ensure size was provided when the linked Inventory has per-size stock
     try {
