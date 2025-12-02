@@ -364,7 +364,7 @@ exports.createOrderPaymentSession = async (req, res) => {
     } = req.body;
 
     console.log('[PayMongo] Creating checkout session for product order, user:', userId);
-
+    console.log('[PayMongo] Received voucherCode:', voucherCode);
 
     // Validation
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -385,19 +385,26 @@ exports.createOrderPaymentSession = async (req, res) => {
     let appliedVoucher = null;
     let discount = 0;
     if (voucherCode && typeof voucherCode === 'string' && voucherCode.trim()) {
+      console.log('[PayMongo] Processing voucher code:', voucherCode.trim());
       const user = await require('../models/User').findById(userId);
       if (user) {
         const v = user.vouchers.find(v => v.code.toLowerCase() === voucherCode.trim().toLowerCase());
+        console.log('[PayMongo] Found voucher in user vouchers:', v ? v.code : 'NOT FOUND');
         if (v) {
-          appliedVoucher = v;
-          const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0);
-          if (v.type === 'percentage') {
-            discount = Math.floor(subtotal * (v.value / 100));
-          } else if (v.type === 'fixed') {
-            discount = Math.min(subtotal, v.value);
-          } else if (v.type === 'free_shipping') {
-            discount = 0;
-            deliveryFee = 0;
+          if (v.used) {
+            console.log('[PayMongo] Voucher already used, skipping');
+          } else {
+            appliedVoucher = v;
+            console.log('[PayMongo] Voucher applied:', v.code, 'Type:', v.type, 'Value:', v.value);
+            const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0);
+            if (v.type === 'percentage') {
+              discount = Math.floor(subtotal * (v.value / 100));
+            } else if (v.type === 'fixed') {
+              discount = Math.min(subtotal, v.value);
+            } else if (v.type === 'free_shipping') {
+              discount = 0;
+              deliveryFee = 0;
+            }
           }
         }
       }
