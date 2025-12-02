@@ -388,63 +388,58 @@
           const status = syncData.data.status || '';
           const paymentTypeActual = (syncData.data.paymentType || '').toString();
           
-          // Update order status display
+          // Update order status display with user-friendly text
           const statusEl = document.getElementById('order-status');
-          statusEl.innerHTML = `<span class="text-green-600">${status}</span>`;
+          // Map technical status to user-friendly display
+          let displayStatus = status;
+          if (status === 'Pending Final Verification') {
+            displayStatus = paymentTypeActual === 'full' ? 'Awaiting Verification' : 'Awaiting Final Verification';
+          }
+          statusEl.innerHTML = `<span class="text-green-600">${displayStatus}</span>`;
           const messageEl = document.getElementById('status-message');
 
           // Prefer branching by explicit paymentType returned by the server
           if (paymentTypeActual === 'full') {
-            // Full payment flow
-            if (status && status.toLowerCase().includes('pending')) {
-              messageEl.innerHTML = `
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
-                  <h3 class="font-semibold text-blue-900 mb-2 flex items-center">
-                    <i class="fas fa-check-circle mr-2"></i>
-                    Full Payment Received!
-                  </h3>
-                  <p class="text-sm text-blue-800">Your 100% payment has been received. Our admin team is verifying it now. Once verified, your order will move to production.</p>
-                  <p class="text-xs text-blue-700 mt-2">Redirecting to your orders page...</p>
-                </div>
-              `;
-            } else {
-              messageEl.innerHTML = `
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-left">
-                  <h3 class="font-semibold text-green-900 mb-2 flex items-center">
-                    <i class="fas fa-check-circle mr-2"></i>
-                    Full Payment Verified!
-                  </h3>
-                  <p class="text-sm text-green-800">Your payment has been confirmed and your order is being processed.</p>
-                  <p class="text-xs text-green-700 mt-2">Redirecting to your orders page...</p>
-                </div>
-              `;
-            }
+            // Full payment flow (100%)
+            messageEl.innerHTML = `
+              <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-left">
+                <h3 class="font-semibold text-green-900 mb-2 flex items-center">
+                  <i class="fas fa-check-circle mr-2"></i>
+                  100% Full Payment Received!
+                </h3>
+                <p class="text-sm text-green-800">Your full payment of <strong>₱${(syncData.data.paymentAmount || 0).toLocaleString()}</strong> has been received successfully!</p>
+                <p class="text-sm text-green-700 mt-2">Our admin team will verify your payment shortly. Once verified, your order will move to production.</p>
+                <p class="text-xs text-green-600 mt-3"><i class="fas fa-arrow-right mr-1"></i>Redirecting to your orders page...</p>
+              </div>
+            `;
             setTimeout(() => window.location.href = 'my-quotes.html', 3000);
           }
           else if (paymentTypeActual === 'downpayment') {
-            // Downpayment flow
+            // Downpayment flow (50%)
             messageEl.innerHTML = `
-              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
-                <h3 class="font-semibold text-blue-900 mb-2 flex items-center">
+              <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
+                <h3 class="font-semibold text-yellow-900 mb-2 flex items-center">
                   <i class="fas fa-check-circle mr-2"></i>
-                  Waiting for admin to verify your payment
+                  50% Downpayment Received!
                 </h3>
-                <p class="text-sm text-blue-800">Your 50% downpayment has been received. Please wait for the admin to verify your payment before production begins.</p>
-                <p class="text-xs text-blue-700 mt-2">Redirecting to your orders page...</p>
+                <p class="text-sm text-yellow-800">Your downpayment of <strong>₱${(syncData.data.paymentAmount || 0).toLocaleString()}</strong> has been received successfully!</p>
+                <p class="text-sm text-yellow-700 mt-2">Our admin team will verify your payment. Once verified, your order will move to production. You'll need to pay the remaining 50% balance later.</p>
+                <p class="text-xs text-yellow-600 mt-3"><i class="fas fa-arrow-right mr-1"></i>Redirecting to your orders page...</p>
               </div>
             `;
             setTimeout(() => window.location.href = 'my-quotes.html', 3000);
           }
           else if (paymentTypeActual === 'remaining' || paymentTypeActual === 'final') {
-            // Final payment / remaining balance
+            // Final payment / remaining balance (50%)
             messageEl.innerHTML = `
               <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 text-left">
                 <h3 class="font-semibold text-purple-900 mb-2 flex items-center">
                   <i class="fas fa-check-circle mr-2"></i>
-                  Final Payment Received!
+                  Remaining Balance Received!
                 </h3>
-                <p class="text-sm text-purple-800">Your final payment has been received successfully. Our admin team is verifying it now. You'll be notified once verified and your order will be ready for fulfillment.</p>
-                <p class="text-xs text-purple-700 mt-2">Redirecting to your orders page...</p>
+                <p class="text-sm text-purple-800">Your final payment of <strong>₱${(syncData.data.paymentAmount || 0).toLocaleString()}</strong> has been received successfully!</p>
+                <p class="text-sm text-purple-700 mt-2">Our admin team will verify your payment. Once verified, your order will be ready for fulfillment/delivery.</p>
+                <p class="text-xs text-purple-600 mt-3"><i class="fas fa-arrow-right mr-1"></i>Redirecting to your orders page...</p>
               </div>
             `;
             setTimeout(() => window.location.href = 'my-quotes.html', 3000);

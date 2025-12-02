@@ -401,15 +401,28 @@
         wrap.appendChild(btnPayFinal);
       }
       else if (order.status === 'Pending Final Verification') {
-        // Clarify final payment received status for PayMongo flow
+        // Differentiate between 100% full payment and remaining balance payment
+        const isFullPayment = order.paymentType === 'full';
+        const paymentTitle = isFullPayment ? 'Full Payment Received' : 'Final Payment Received';
+        const paymentMessage = isFullPayment 
+          ? 'Your 100% full payment has been received. It is now waiting for admin verification before production begins.'
+          : 'We received your remaining balance payment. It is now waiting for admin verification.';
+        const iconColor = isFullPayment ? 'text-green-600' : 'text-indigo-600';
+        const bgColor = isFullPayment ? 'bg-green-50 border-green-200' : 'bg-indigo-50 border-indigo-200';
+        const titleColor = isFullPayment ? 'text-green-800' : 'text-indigo-800';
+        
         wrap.innerHTML = `
-          <div class="p-4 bg-indigo-50 border border-indigo-200 rounded text-sm">
+          <div class="p-4 ${bgColor} border rounded text-sm">
             <div class="flex items-center gap-2 mb-2">
-              <i class="fas fa-check text-indigo-600"></i>
-              <strong class="text-indigo-800">Final Payment Received</strong>
+              <i class="fas fa-check-circle ${iconColor}"></i>
+              <strong class="${titleColor}">${paymentTitle}</strong>
             </div>
-            <p class="text-gray-700 mb-2">We received your final payment. It is now waiting for admin verification.</p>
-            <p class="text-xs text-gray-500">Reference will update once verified. Thank you!</p>
+            <p class="text-gray-700 mb-2">${paymentMessage}</p>
+            <div class="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-600">
+              <div>Payment Type: <strong>${isFullPayment ? '100% Full Payment' : 'Remaining Balance (50%)'}</strong></div>
+              <div>Amount Paid: <strong>₱${(order.paymentAmount || 0).toLocaleString()}</strong></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Your order will be processed once verified. Thank you!</p>
           </div>
         `;
       }

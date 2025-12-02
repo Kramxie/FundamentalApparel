@@ -46,7 +46,10 @@ exports.createPaymentSession = async (req, res) => {
     console.log('[PayMongo] Creating checkout session for user:', userId);
     console.log('[PayMongo] Payment option:', paymentOption);
     console.log('[PayMongo] Shipping method:', shippingMethod);
-    console.log('[PayMongo] Delivery fee:', deliveryFee);
+    console.log('[PayMongo] Client-sent amount:', amount);
+    console.log('[PayMongo] Client-sent baseAmount:', baseAmount);
+    console.log('[PayMongo] Client-sent deliveryFee:', deliveryFee);
+    console.log('[PayMongo] serviceData:', JSON.stringify(serviceData || {}, null, 2));
 
     // Validation
     if (!amount || amount <= 0) {
@@ -89,7 +92,15 @@ exports.createPaymentSession = async (req, res) => {
     }
 
     let deliveryFeeNumber = 0;
-    if ((shippingMethod || '').toString().toLowerCase() === 'pick-up') {
+    // For balance payments, delivery fee was already paid in the initial downpayment
+    // So we should NOT charge delivery again - use previousDeliveryFee for total calculation only
+    const isBalancePayment = (paymentOption === 'balance');
+    const previousDeliveryFee = Number(serviceData?.previousDeliveryFee || 0);
+    
+    if (isBalancePayment) {
+      // Balance payment: delivery already paid, don't add new delivery fee
+      deliveryFeeNumber = 0;
+    } else if ((shippingMethod || '').toString().toLowerCase() === 'pick-up') {
       deliveryFeeNumber = 0;
     } else {
       // Try to find province from shippingAddress
@@ -113,19 +124,38 @@ exports.createPaymentSession = async (req, res) => {
       finalCharge = Math.round(((taxable + deliveryFeeNumber + totalVat) * 0.5 + Number.EPSILON) * 100) / 100;
       vatForCharge = Math.round((totalVat * 0.5 + Number.EPSILON) * 100) / 100;
     } else if (rawOption === 'balance') {
-      // For remaining balance, infer alreadyPaid from serviceData or provided fields
+      // For remaining balance, use alreadyPaid and previousDeliveryFee from serviceData
       let alreadyPaid = Number(serviceData?.alreadyPaidAmount || 0);
+      const origDeliveryFee = Number(serviceData?.previousDeliveryFee || previousDeliveryFee || 0);
+      
+      // Total order value (subtotal + original delivery fee + VAT on subtotal)
+      const totalOrderValue = taxable + origDeliveryFee + totalVat;
+      
       if (!alreadyPaid || alreadyPaid <= 0) {
-        alreadyPaid = (taxable + (serviceData?.previousDeliveryFee || 0)) * 0.5;
+        // If not stored, calculate 50% of total
+        alreadyPaid = totalOrderValue * 0.5;
       }
-      const totalWithDelivery = taxable + (serviceData?.previousDeliveryFee || 0);
-      const remaining = Math.max(totalWithDelivery - alreadyPaid, 0);
-      // Proportionally compute remaining VAT
-      const denom = (totalWithDelivery) || 1;
-      const proportionPaid = Math.min(Math.max(alreadyPaid / denom, 0), 1);
+      
+      // Remaining amount is total minus what was already paid
+      const remaining = Math.max(totalOrderValue - alreadyPaid, 0);
+      
+      // For VAT, proportionally compute remaining VAT based on payment ratio
+      const proportionPaid = Math.min(Math.max(alreadyPaid / totalOrderValue, 0), 1);
       const vatPaid = Math.round((totalVat * proportionPaid + Number.EPSILON) * 100) / 100;
       vatForCharge = Math.max(Math.round((totalVat - vatPaid + Number.EPSILON) * 100) / 100, 0);
-      finalCharge = Math.round((remaining + vatForCharge + Number.EPSILON) * 100) / 100;
+      
+      // Final charge is the remaining amount (already includes proportional VAT)
+      finalCharge = Math.round((remaining + Number.EPSILON) * 100) / 100;
+      
+      console.log('[PayMongo] Balance payment calculation:', {
+        taxable,
+        origDeliveryFee,
+        totalVat,
+        totalOrderValue,
+        alreadyPaid,
+        remaining,
+        finalCharge
+      });
     } else {
       finalCharge = Math.round((taxable + deliveryFeeNumber + totalVat + Number.EPSILON) * 100) / 100;
       vatForCharge = totalVat;
@@ -133,6 +163,17 @@ exports.createPaymentSession = async (req, res) => {
 
     // Convert amount to centavos (PayMongo expects integer in cents)
     const amountInCents = Math.round(finalCharge * 100);
+    
+    console.log('[PayMongo] Final charge calculation:', {
+      paymentOption,
+      taxable,
+      deliveryFeeNumber,
+      totalVat,
+      vatForCharge,
+      finalCharge,
+      amountInCents,
+      clientSentAmount: amount
+    });
     
     // Determine payment description based on payment option
     const paymentDesc = paymentOption === 'downpayment' 
