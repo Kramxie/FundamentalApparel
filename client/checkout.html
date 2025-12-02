@@ -662,6 +662,9 @@
           };
           if (appliedVoucher && appliedVoucher.code) {
             payload.voucherCode = appliedVoucher.code;
+            console.log('[Checkout] Voucher included in payload:', appliedVoucher.code);
+          } else {
+            console.log('[Checkout] No voucher applied. appliedVoucher:', appliedVoucher);
           }
           if (itemIdsToCheckout) {
             payload.itemIds = itemIdsToCheckout;
