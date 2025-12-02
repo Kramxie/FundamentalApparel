@@ -102,10 +102,15 @@ exports.createPaymentSession = async (req, res) => {
       deliveryFeeNumber = 0;
     } else if ((shippingMethod || '').toString().toLowerCase() === 'pick-up') {
       deliveryFeeNumber = 0;
+    } else if (typeof deliveryFee === 'number' && deliveryFee > 0) {
+      // Trust the client's distance-based calculation
+      deliveryFeeNumber = deliveryFee;
+      console.log('[PayMongo Services] Using client-provided delivery fee:', deliveryFeeNumber);
     } else {
-      // Try to find province from shippingAddress
+      // Fallback: Try to find province from shippingAddress
       const prov = (shippingAddress && (shippingAddress.province || shippingAddress.city)) || '';
       deliveryFeeNumber = getRateForProvince(prov);
+      console.log('[PayMongo Services] Using province-based delivery fee:', deliveryFeeNumber);
     }
 
     // VAT applies to subtotal (base) only, not to delivery
@@ -400,7 +405,7 @@ exports.createOrderPaymentSession = async (req, res) => {
     // Compute subtotal
     const subtotal = items.reduce((s, it) => s + (it.price * it.quantity), 0);
 
-    // Load authoritative delivery rates from server config
+    // Load authoritative delivery rates from server config (for fallback)
     const cfg = deliveryRatesUtil.getRates();
     const DELIVERY_RATES = cfg.rates || {};
     const DEFAULT_RATE = cfg.defaultRate || 120;
@@ -414,12 +419,20 @@ exports.createOrderPaymentSession = async (req, res) => {
       return DELIVERY_RATES[key] || DEFAULT_RATE;
     }
 
-    // Compute authoritative delivery fee based on shipping address and method
+    // Compute delivery fee:
+    // 1. Use client-provided distance-based delivery fee if valid
+    // 2. Otherwise fallback to province-based calculation
     let deliveryFeeNumber = 0;
     if ((shippingMethod || '').toString().toLowerCase() === 'pick-up') {
       deliveryFeeNumber = 0;
+    } else if (typeof deliveryFee === 'number' && deliveryFee > 0) {
+      // Trust the client's distance-based calculation
+      deliveryFeeNumber = deliveryFee;
+      console.log('[PayMongo] Using client-provided delivery fee:', deliveryFeeNumber);
     } else {
+      // Fallback to province-based rate
       deliveryFeeNumber = getRateForProvince((shippingAddress && (shippingAddress.province || shippingAddress.city)) || '');
+      console.log('[PayMongo] Using province-based delivery fee:', deliveryFeeNumber);
     }
     // Honor voucher-based free shipping
     if (appliedVoucher && appliedVoucher.type === 'free_shipping') {

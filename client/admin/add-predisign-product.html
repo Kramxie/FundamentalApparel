@@ -497,17 +497,30 @@
     generatePriceSizesBtn?.addEventListener('click', ()=>{ const raw=(generatePriceSizesInput.value||'').trim(); if(!raw) return; const parts=raw.split(/[,;\s]+/).map(s=>s.trim()).filter(Boolean); parts.forEach(p=>{ addOptionIfMissing(p); addPriceRow(p); addSizeRow(p); }); generatePriceSizesInput.value=''; });
 
     applyQtyBtn?.addEventListener('click', ()=>{
-      const val=Number(applyQtyInput.value||0); const selected=Array.from(sizesSelect.selectedOptions).map(o=>o.value);
-      if(selected.length===0) { showMessage('Select sizes to apply quantity','error'); return; }
-      selected.forEach(sz=>{ // set or add row
-        let found=false; Array.from(sizesRowsContainer.querySelectorAll('div')).forEach(row=>{ const si=row.querySelector('[data-size-input]'); const qi=row.querySelector('[data-qty-input]'); if(si && si.value.toLowerCase()===sz.toLowerCase()){ qi.value = String(val); found=true; } }); if(!found) addSizeRow(sz, val);
+      const val=Number(applyQtyInput.value||0);
+      // Get selected sizes from the checkboxes in the rows, NOT from the dropdown
+      const selectedRows = Array.from(sizesRowsContainer.querySelectorAll('div')).filter(row => {
+        const checkbox = row.querySelector('[data-select]');
+        return checkbox && checkbox.checked;
+      });
+      if(selectedRows.length === 0) { showMessage('Please check the sizes you want to apply quantity to','error'); return; }
+      selectedRows.forEach(row => {
+        const qtyInput = row.querySelector('[data-qty-input]');
+        if(qtyInput) qtyInput.value = String(val);
       });
     });
 
     applyPriceBtn?.addEventListener('click', ()=>{
-      const val=Number(applyPriceInput.value||0); const selected=Array.from(sizesSelect.selectedOptions).map(o=>o.value);
-      if(selected.length===0) { showMessage('Select sizes to apply price','error'); return; }
-      selected.forEach(sz=>{ let found=false; Array.from(pricesRows.querySelectorAll('div')).forEach(row=>{ const si=row.querySelector('[data-price-size-input]'); const pi=row.querySelector('[data-price-input]'); if(si && si.value.toLowerCase()===sz.toLowerCase()){ pi.value = String(Number(val).toFixed(2)); found=true; } }); if(!found) addPriceRow(sz, val);
+      const val=Number(applyPriceInput.value||0);
+      // Get selected sizes from the checkboxes in the price rows, NOT from the dropdown
+      const selectedRows = Array.from(pricesRows.querySelectorAll('div')).filter(row => {
+        const checkbox = row.querySelector('[data-price-select]');
+        return checkbox && checkbox.checked;
+      });
+      if(selectedRows.length === 0) { showMessage('Please check the sizes you want to apply price to','error'); return; }
+      selectedRows.forEach(row => {
+        const priceInput = row.querySelector('[data-price-input]');
+        if(priceInput) priceInput.value = String(Number(val).toFixed(2));
       });
     });
 
