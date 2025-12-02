@@ -703,14 +703,12 @@ exports.getLoyaltyProgress = async (req, res) => {
         const monthStart = new Date(year, month, 1, 0, 0, 0, 0);
         const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
 
-        // Count completed orders this month
+        // Count completed orders this month based on createdAt (when order was placed)
+        // An order is "completed" if status is Delivered or Completed
         const completedOrdersThisMonth = await Order.countDocuments({
             user: userId,
             status: { $in: ['Delivered', 'Completed'] },
-            $or: [
-                { deliveredAt: { $gte: monthStart, $lte: monthEnd } },
-                { updatedAt: { $gte: monthStart, $lte: monthEnd } }
-            ]
+            createdAt: { $gte: monthStart, $lte: monthEnd }
         });
 
         // Check if user already has this month's loyalty voucher

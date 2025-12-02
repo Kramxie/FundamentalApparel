@@ -102,8 +102,12 @@
               <input id="ship-zip" type="text" class="mt-1 w-full border rounded-md px-3 py-2" placeholder="4103">
             </div>
             <div>
-              <label class="block text-sm text-gray-700">Phone</label>
-              <input id="ship-phone" type="text" class="mt-1 w-full border rounded-md px-3 py-2" placeholder="+63 912 345 6789">
+              <label class="block text-sm text-gray-700">Phone <span class="text-red-500">*</span></label>
+              <div class="flex mt-1">
+                <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-100 text-gray-600 text-sm">+63</span>
+                <input id="ship-phone" type="tel" class="w-full border rounded-r-md px-3 py-2" placeholder="912 345 6789" maxlength="12" pattern="[0-9\s]{10,12}">
+              </div>
+              <p id="phone-error" class="text-red-500 text-xs mt-1 hidden">Please enter a valid Philippine phone number</p>
             </div>
           </form>
         </section>
@@ -261,7 +265,8 @@
       const radioDefault = document.getElementById('addr-default');
       const radioNew = document.getElementById('addr-new');
       const shippingFormInputs = document.querySelectorAll('#shipping-form input');
-
+      const phoneInput = document.getElementById('ship-phone');
+      const phoneError = document.getElementById('phone-error');
 
       if (!token) {
         alert('Please log in to continue checkout.');
@@ -269,16 +274,85 @@
         return;
       }
       
+      // Phone number validation and formatting helper
+      function formatPhoneNumber(value) {
+        // Remove all non-digits
+        let digits = value.replace(/\D/g, '');
+        // If starts with 63, remove it (we'll add +63 prefix)
+        if (digits.startsWith('63')) digits = digits.slice(2);
+        // If starts with 0, remove it
+        if (digits.startsWith('0')) digits = digits.slice(1);
+        // Limit to 10 digits (Philippine mobile without country code)
+        digits = digits.slice(0, 10);
+        // Format with spaces: XXX XXX XXXX
+        if (digits.length > 6) {
+          return digits.slice(0, 3) + ' ' + digits.slice(3, 6) + ' ' + digits.slice(6);
+        } else if (digits.length > 3) {
+          return digits.slice(0, 3) + ' ' + digits.slice(3);
+        }
+        return digits;
+      }
+
+      function validatePhone(phone) {
+        // Remove spaces and check if it's 10 digits
+        const digits = phone.replace(/\D/g, '');
+        return digits.length === 10 && /^[89]\d{9}$/.test(digits);
+      }
+
+      function getFullPhoneNumber() {
+        const raw = phoneInput.value.replace(/\D/g, '');
+        if (!raw) return '';
+        return '+63' + raw;
+      }
+
+      // Phone input event listeners
+      phoneInput.addEventListener('input', (e) => {
+        e.target.value = formatPhoneNumber(e.target.value);
+        if (e.target.value && !validatePhone(e.target.value)) {
+          phoneError.classList.remove('hidden');
+          phoneInput.classList.add('border-red-500');
+        } else {
+          phoneError.classList.add('hidden');
+          phoneInput.classList.remove('border-red-500');
+        }
+      });
+
+      phoneInput.addEventListener('blur', () => {
+        if (phoneInput.value && !validatePhone(phoneInput.value)) {
+          phoneError.classList.remove('hidden');
+          phoneInput.classList.add('border-red-500');
+        }
+      });
+
       // ... (ang lahat ng natitirang JS functions ay pareho pa rin) ...
       function toggleFormInputs(disabled) {
           shippingFormInputs.forEach(input => {
               input.disabled = disabled;
               input.classList.remove('field-disabled'); 
           });
+          // Also handle select elements
+          const selectEls = document.querySelectorAll('#shipping-form select');
+          selectEls.forEach(sel => {
+              sel.disabled = disabled;
+          });
       }
       function populateAddressForm(address, phone) {
+          // Populate all address fields including new ones
+          document.getElementById('ship-block').value = address?.block || '';
+          document.getElementById('ship-lot').value = address?.lot || '';
           document.getElementById('ship-street').value = address?.street || '';
+          document.getElementById('ship-building').value = address?.building || '';
           document.getElementById('ship-city').value = address?.city || '';
+          document.getElementById('ship-zip').value = address?.zipCode || '';
+          
+          // Format phone number for the +63 prefix field
+          let phoneVal = address?.phone || phone || '';
+          // Remove +63 or 63 prefix if present, and leading 0
+          phoneVal = phoneVal.replace(/^\+?63/, '').replace(/^0/, '');
+          phoneInput.value = formatPhoneNumber(phoneVal);
+          phoneError.classList.add('hidden');
+          phoneInput.classList.remove('border-red-500');
+          
           // ship-province is now a select
           if (address && address.province) {
             const sel = document.getElementById('ship-province');
@@ -288,13 +362,6 @@
             else sel.value = address.province || 'Other';
           } else {
             document.getElementById('ship-province').value = '';
-          }
-          document.getElementById('ship-zip').value = address?.zipCode || '';
-          document.getElementById('ship-phone').value = phone || '';
-          if (!address) { 
-            document.getElementById('ship-block').value = '';
-            document.getElementById('ship-lot').value = '';
-            document.getElementById('ship-building').value = '';
           }
       }
       async function fetchProfileAndSetDefaults() {
@@ -308,12 +375,25 @@
                   savedUserPhone = user.contactNumber || '';
                   savedUserEmail = (user.email || '').trim().toLowerCase();
                   savedUserName = user.name || 'Customer';
+                  
                   if (user.shippingAddresses && user.shippingAddresses.length > 0) {
-                      savedDefaultAddress = user.shippingAddresses.find(addr => addr.isDefault);
+                      // Find default address, or use first one
+                      savedDefaultAddress = user.shippingAddresses.find(addr => addr.isDefault) || user.shippingAddresses[0];
+                      
+                      // If we have a saved address, use default address mode
+                      if (savedDefaultAddress) {
+                          radioDefault.checked = true;
+                          populateAddressForm(savedDefaultAddress, savedUserPhone);
+                          toggleFormInputs(false);
+                      }
+                  } else {
+                      // No saved addresses - switch to new address mode
+                      radioNew.checked = true;
+                      populateAddressForm(null, savedUserPhone);
+                      toggleFormInputs(false);
                   }
-                  populateAddressForm(savedDefaultAddress, savedUserPhone);
-                  toggleFormInputs(false); 
-                    if (typeof updateShippingFee === 'function') updateShippingFee();
+                  
+                  if (typeof updateShippingFee === 'function') updateShippingFee();
               }
           } catch (err) {
               console.error('Failed to fetch user profile for address:', err);
@@ -482,6 +562,17 @@
           placeOrderBtn.innerHTML = originalBtnHtml;
           return;
         }
+
+        // Validate phone number
+        if (!validatePhone(phoneInput.value)) {
+          phoneError.classList.remove('hidden');
+          phoneInput.classList.add('border-red-500');
+          phoneInput.focus();
+          alert('Please enter a valid Philippine phone number (e.g., 912 345 6789)');
+          placeOrderBtn.disabled = false;
+          placeOrderBtn.innerHTML = originalBtnHtml;
+          return;
+        }
         
         const shippingAddressForm = {
           block: document.getElementById('ship-block')?.value || '',
@@ -491,7 +582,7 @@
           province: document.getElementById('ship-province')?.value || '',
           city: document.getElementById('ship-city')?.value || '',
           zip: document.getElementById('ship-zip')?.value || '',
-          phone: document.getElementById('ship-phone')?.value || ''
+          phone: getFullPhoneNumber() // Use full phone with +63 prefix
         };
         
         const required = ['street','province','city','zip','phone'];
@@ -669,12 +760,20 @@
         submitOrder();
       });
       radioDefault.addEventListener('change', () => {
-          populateAddressForm(savedDefaultAddress, savedUserPhone);
+          if (savedDefaultAddress) {
+              populateAddressForm(savedDefaultAddress, savedUserPhone);
+          } else {
+              // No default address saved, switch back to new
+              radioNew.checked = true;
+              populateAddressForm(null, savedUserPhone);
+          }
           toggleFormInputs(false);
+          if (typeof updateShippingFee === 'function') updateShippingFee();
       });
       radioNew.addEventListener('change', () => {
-          populateAddressForm(null, '');
+          populateAddressForm(null, savedUserPhone);
           toggleFormInputs(false);
+          if (typeof updateShippingFee === 'function') updateShippingFee();
       });
       fetchCart();
       fetchProfileAndSetDefaults();

@@ -296,17 +296,46 @@
                                 <h3 id="address-form-title" class="text-lg font-semibold">Add New Address</h3>
                                 <div id="address-form-id" class="hidden"></div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label class="block text-sm text-gray-700">Street</label><input
+                                    <div><label class="block text-sm text-gray-700">Block</label><input
+                                            id="addr-block" class="mt-1 block w-full border px-3 py-2 rounded"
+                                            placeholder="Blk 13" /></div>
+                                    <div><label class="block text-sm text-gray-700">Lot</label><input id="addr-lot"
+                                            class="mt-1 block w-full border px-3 py-2 rounded" placeholder="Lot 41" /></div>
+                                    <div class="md:col-span-2"><label class="block text-sm text-gray-700">Street</label><input
                                             id="addr-street" class="mt-1 block w-full border px-3 py-2 rounded"
-                                            required /></div>
+                                            placeholder="Magdalo St." required /></div>
+                                    <div class="md:col-span-2"><label class="block text-sm text-gray-700">Building / Address</label><input
+                                            id="addr-building" class="mt-1 block w-full border px-3 py-2 rounded"
+                                            placeholder="De La Salle University - Dasmariñas" /></div>
+                                    <div><label class="block text-sm text-gray-700">State/Province</label>
+                                        <select id="addr-province" class="mt-1 block w-full border px-3 py-2 rounded" required>
+                                            <option value="">Select province</option>
+                                            <option>Metro Manila</option>
+                                            <option>Manila</option>
+                                            <option>Quezon City</option>
+                                            <option>Makati</option>
+                                            <option>Cavite</option>
+                                            <option>Laguna</option>
+                                            <option>Batangas</option>
+                                            <option>Bulacan</option>
+                                            <option>Pampanga</option>
+                                            <option>Rizal</option>
+                                            <option>Quezon</option>
+                                            <option>Nueva Ecija</option>
+                                            <option>Tarlac</option>
+                                            <option>Zambales</option>
+                                            <option>Bataan</option>
+                                            <option>Other</option>
+                                        </select>
+                                    </div>
                                     <div><label class="block text-sm text-gray-700">City</label><input id="addr-city"
-                                            class="mt-1 block w-full border px-3 py-2 rounded" required /></div>
-                                    <div><label class="block text-sm text-gray-700">Province</label><input
-                                            id="addr-province" class="mt-1 block w-full border px-3 py-2 rounded"
-                                            required /></div>
-                                    <div><label class="block text-sm text-gray-700">Zip Code</label><input
+                                            class="mt-1 block w-full border px-3 py-2 rounded" placeholder="Dasmariñas" required /></div>
+                                    <div><label class="block text-sm text-gray-700">Zip/Postal Code</label><input
                                             id="addr-zipCode" class="mt-1 block w-full border px-3 py-2 rounded"
-                                            required /></div>
+                                            placeholder="4103" required /></div>
+                                    <div><label class="block text-sm text-gray-700">Phone</label><input
+                                            id="addr-phone" class="mt-1 block w-full border px-3 py-2 rounded"
+                                            placeholder="+63 912 345 6789" /></div>
                                 </div>
                                 <div class="flex justify-end gap-3"><button type="button" id="cancel-address-btn"
                                         class="px-4 py-2 rounded bg-gray-200 text-gray-800">Cancel</button><button
@@ -792,13 +821,22 @@
             }
             function renderAddresses(addresses) {
                 if (!addresses || addresses.length === 0) { addressesList.innerHTML = '<p class="text-gray-500">No saved addresses found.</p>'; return; }
-                addressesList.innerHTML = addresses.map(addr => `
+                addressesList.innerHTML = addresses.map(addr => {
+                    // Build full address display
+                    const addressParts = [];
+                    if (addr.block) addressParts.push(`Blk ${addr.block}`);
+                    if (addr.lot) addressParts.push(`Lot ${addr.lot}`);
+                    if (addr.street) addressParts.push(addr.street);
+                    if (addr.building) addressParts.push(addr.building);
+                    const line1 = addressParts.join(', ') || addr.street || 'No street';
+                    
+                    return `
                 <div class="border rounded p-4">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="font-semibold">${addr.street}</p>
-                            <p class="text-sm text-gray-600">${addr.city}, ${addr.province}</p>
-                            <p class="text-sm text-gray-600">${addr.zipCode}</p>
+                            <p class="font-semibold">${line1}</p>
+                            <p class="text-sm text-gray-600">${addr.city || ''}, ${addr.province || ''} ${addr.zipCode || ''}</p>
+                            ${addr.phone ? `<p class="text-sm text-gray-500"><i class="fas fa-phone text-xs mr-1"></i>${addr.phone}</p>` : ''}
                         </div>
                         <div>
                             ${addr.isDefault
@@ -810,12 +848,15 @@
                     <div class="mt-3 text-right">
                         <button data-id="${addr._id}" class="delete-address-btn text-sm text-red-600">Delete</button>
                     </div>
-                </div>`).join('');
+                </div>`;
+                }).join('');
             }
             addAddressBtn.addEventListener('click', () => {
                 addressForm.reset();
                 document.getElementById('address-form-title').textContent = 'Add New Address';
                 document.getElementById('address-form-id').textContent = '';
+                // Reset select to default
+                document.getElementById('addr-province').value = '';
                 addressForm.classList.remove('hidden');
                 addAddressBtn.classList.add('hidden');
             });
@@ -826,11 +867,22 @@
             addressForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const data = {
-                    street: document.getElementById('addr-street').value,
-                    city: document.getElementById('addr-city').value,
+                    block: document.getElementById('addr-block').value.trim(),
+                    lot: document.getElementById('addr-lot').value.trim(),
+                    street: document.getElementById('addr-street').value.trim(),
+                    building: document.getElementById('addr-building').value.trim(),
+                    city: document.getElementById('addr-city').value.trim(),
                     province: document.getElementById('addr-province').value,
-                    zipCode: document.getElementById('addr-zipCode').value,
+                    zipCode: document.getElementById('addr-zipCode').value.trim(),
+                    phone: document.getElementById('addr-phone').value.trim()
                 };
+                
+                // Validate required fields
+                if (!data.street || !data.city || !data.province || !data.zipCode) {
+                    showMessage(addressMessageContainer, 'Please fill in all required fields (Street, City, Province, Zip Code).', 'error');
+                    return;
+                }
+                
                 try {
                     const json = await apiRequest('/api/auth/address', { method: 'POST', body: JSON.stringify(data) });
                     if (!json.success) throw new Error(json.msg || 'Failed to save address');
@@ -1252,21 +1304,31 @@
                                 const ordRes = await apiRequest(`/api/orders/${encodeURIComponent(orderId)}`);
                                 if (ordRes && ordRes.success && ordRes.data) {
                                     const order = ordRes.data;
-                                    const items = (order.orderItems || []).map(it => ({ name: it.name || it.productName || 'Item', size: it.size || '', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0, color: it.color || '' }));
+                                    const items = (order.orderItems || []).map(it => ({ name: it.name || it.productName || 'Item', size: it.size || '', color: it.color || '', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0 }));
+                                    
+                                    // Build customer info
+                                    const customerName = (order.user && order.user.name) ? order.user.name : 
+                                                         (order.shippingAddress && order.shippingAddress.contact) ? order.shippingAddress.contact : 'Customer';
+                                    const customerEmail = (order.user && order.user.email) ? order.user.email : '';
+                                    const customerPhone = (order.shippingAddress && order.shippingAddress.phone) ? order.shippingAddress.phone :
+                                                          (order.user && order.user.contactNumber) ? order.user.contactNumber : '';
+                                    
                                     return {
                                         _id: `synth-${order._id}`,
                                         createdAt: order.createdAt,
+                                        paidAt: order.paidAt || order.createdAt,
                                         items,
                                         subtotal: order.subtotal || items.reduce((s,i)=>s+((Number(i.price)||0)*(Number(i.quantity)||1)),0),
                                         deliveryFee: order.deliveryFee || 0,
                                         voucherDiscount: order.voucherDiscount || order.voucherAmount || 0,
                                         preparedByName: order.acceptedByName || '',
-                                        customerName: (order.user && order.user.name) ? order.user.name : (order.shippingAddress ? (order.shippingAddress.contact || '') : ''),
-                                        customerEmail: (order.user && order.user.email) ? order.user.email : '',
-                                        customerPhone: order.shippingAddress?.phone || (order.user && order.user.phone) || '',
+                                        customerName,
+                                        customerEmail,
+                                        customerPhone,
                                         customerAddress: order.shippingAddress || '',
                                         paymentStatus: order.paymentStatus || 'Pending',
-                                        paymentMethod: order.paymentMethod || ''
+                                        paymentMethod: order.paymentMethod || 'Online Payment',
+                                        isPaid: order.isPaid || false
                                     };
                                 }
                             } catch (e) { console.error('order fallback failed', e); }
@@ -1441,11 +1503,27 @@
                     const ordRes = await apiRequest(`/api/orders/${encodeURIComponent(orderId)}`);
                     if (!ordRes || !ordRes.success || !ordRes.data) throw new Error('Order not found');
                     const order = ordRes.data;
-                    const items = (order.orderItems || []).map(it => ({ name: it.name || it.productName || 'Item', size: it.size || '', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0 }));
+                    const items = (order.orderItems || []).map(it => ({ name: it.name || it.productName || 'Item', size: it.size || '', color: it.color || '', quantity: it.quantity || 1, price: it.price || it.unitPrice || 0 }));
+                    
+                    // Build customer name from order or user
+                    const customerName = (order.user && order.user.name) ? order.user.name : 
+                                         (order.shippingAddress && order.shippingAddress.contact) ? order.shippingAddress.contact : 'Customer';
+                    
+                    // Build customer email
+                    const customerEmail = (order.user && order.user.email) ? order.user.email : '';
+                    
+                    // Build customer phone
+                    const customerPhone = (order.shippingAddress && order.shippingAddress.phone) ? order.shippingAddress.phone :
+                                          (order.user && order.user.contactNumber) ? order.user.contactNumber : '';
+                    
+                    // Build customer address as object or string
+                    const customerAddress = order.shippingAddress || '';
+                    
                     const receipt = {
                         _id: `synth-${order._id}`,
                         tin: 'SYNTH-' + order._id.slice(-8).toUpperCase(),
                         createdAt: order.createdAt,
+                        paidAt: order.paidAt || order.createdAt,
                         logoUrl: '/images/logo.png',
                         items,
                         subtotal: order.subtotal || order.totalPrice || items.reduce((s,i)=>s+((Number(i.price)||0)*(Number(i.quantity)||1)),0),
@@ -1454,8 +1532,13 @@
                         voucherDiscount: order.voucherDiscount || order.voucher || 0,
                         total: (typeof order.totalPrice === 'number') ? order.totalPrice : undefined,
                         preparedByName: order.acceptedByName || '',
-                        customerName: (order.user && order.user.name) ? order.user.name : (order.shippingAddress ? (order.shippingAddress.contact || '') : ''),
-                        customerEmail: (order.user && order.user.email) ? order.user.email : (order.user && order.user.username) || ''
+                        customerName,
+                        customerEmail,
+                        customerPhone,
+                        customerAddress,
+                        paymentStatus: order.paymentStatus || 'Pending',
+                        paymentMethod: order.paymentMethod || 'Online Payment',
+                        isPaid: order.isPaid || false
                     };
                     return receipt;
                 } catch (err) {
@@ -1777,8 +1860,25 @@
                                         <div class="p-5 space-y-4">
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700">Reason <span class="text-red-500">*</span></label>
-                                                <input id="return-reason" type="text" class="mt-1 block w-full border rounded px-3 py-2" placeholder="e.g. Wrong size received" />
+                                                <select id="return-reason-select" class="mt-1 block w-full border rounded px-3 py-2">
+                                                    <option value="">Select a reason...</option>
+                                                    <option value="Wrong item received">Wrong item received</option>
+                                                    <option value="Item damaged upon delivery">Item damaged upon delivery</option>
+                                                    <option value="Item defective/not working">Item defective/not working</option>
+                                                    <option value="Item doesn't match description">Item doesn't match description</option>
+                                                    <option value="Wrong size/color received">Wrong size/color received</option>
+                                                    <option value="Received incomplete order">Received incomplete order</option>
+                                                    <option value="Item is counterfeit/fake">Item is counterfeit/fake</option>
+                                                    <option value="Quality not as expected">Quality not as expected</option>
+                                                    <option value="Changed my mind">Changed my mind</option>
+                                                    <option value="Other">Other (please specify)</option>
+                                                </select>
                                             </div>
+                                            <div id="return-reason-other-container" class="hidden">
+                                                <label class="block text-sm font-medium text-gray-700">Please specify your reason <span class="text-red-500">*</span></label>
+                                                <input id="return-reason-other" type="text" class="mt-1 block w-full border rounded px-3 py-2" placeholder="Enter your reason..." />
+                                            </div>
+                                            <input id="return-reason" type="hidden" />
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700">Details (optional)</label>
                                                 <textarea id="return-details" class="mt-1 block w-full border rounded px-3 py-2" rows="3" placeholder="Provide more details about your return request..."></textarea>
@@ -1865,6 +1965,24 @@
                                 document.getElementById('return-cancel').addEventListener('click', closeReturnModal);
                                 document.getElementById('return-submit').addEventListener('click', submitReturnRequest);
 
+                                // Toggle reason "Other" field
+                                document.getElementById('return-reason-select').addEventListener('change', (e) => {
+                                    const otherContainer = document.getElementById('return-reason-other-container');
+                                    const reasonHidden = document.getElementById('return-reason');
+                                    if (e.target.value === 'Other') {
+                                        otherContainer.classList.remove('hidden');
+                                        reasonHidden.value = '';
+                                    } else {
+                                        otherContainer.classList.add('hidden');
+                                        reasonHidden.value = e.target.value;
+                                    }
+                                });
+
+                                // Update hidden reason field when other input changes
+                                document.getElementById('return-reason-other')?.addEventListener('input', (e) => {
+                                    document.getElementById('return-reason').value = e.target.value;
+                                });
+
                                 // Toggle payment method fields
                                 document.querySelectorAll('input[name="refund-payment-method"]').forEach(radio => {
                                     radio.addEventListener('change', (e) => {
@@ -1894,6 +2012,9 @@
                                 }
                                 modal.dataset.orderId = orderId;
                                 // Reset form
+                                document.getElementById('return-reason-select').value = '';
+                                document.getElementById('return-reason-other').value = '';
+                                document.getElementById('return-reason-other-container').classList.add('hidden');
                                 document.getElementById('return-reason').value = '';
                                 document.getElementById('return-details').value = '';
                                 document.getElementById('return-gcash-number').value = '';

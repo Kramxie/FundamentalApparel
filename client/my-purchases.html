@@ -114,6 +114,7 @@
           _id: `synth-${order._id}`,
           tin: order.tin || ('SYNTH-' + order._id.slice(-8).toUpperCase()),
           createdAt: order.createdAt,
+          paidAt: order.paidAt || order.createdAt,
           logoUrl: '/images/logo.png',
           items: (order.items || []).map(it => ({ name: it.name || it.productName || 'Item', quantity: it.quantity || it.qty || 1, price: it.price || it.unitPrice || it.variantPrice || 0, size: it.size || '', color: it.color || '' })),
           subtotal: order.subtotal || order.totalPrice || 0,
@@ -125,7 +126,8 @@
           customerPhone: order.shippingAddress?.phone || (order.user && order.user.phone) || order.phone || '',
           customerAddress: order.shippingAddress || order.address || '',
           paymentStatus: order.paymentStatus || 'Pending',
-          paymentMethod: order.paymentMethod || ''
+          paymentMethod: order.paymentMethod || 'Online Payment',
+          isPaid: order.isPaid || false
         };
 
         if (openInline) {

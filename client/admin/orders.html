@@ -461,8 +461,6 @@
             <div>
               <label class="block text-gray-700 mb-1">Order Status</label>
               <select id="form-status" class="w-full border rounded px-3 py-2">
-                <option>Processing</option>
-                <option>Accepted</option>
                 <option>Shipped</option>
                 <option>Delivered</option>
                 <option>Cancelled</option>
@@ -1959,7 +1957,8 @@
           // build receipt object with robust fallbacks: use stored order fields or sensible defaults
           window.currentAdminReceipt = {
             _id: order._id,
-            createdAt: order.paidAt || order.updatedAt || order.createdAt,
+            createdAt: order.createdAt,
+            paidAt: order.paidAt || order.createdAt,
             // prefer explicit TIN/tax fields if present, else use receipt/order ids with a TIN prefix
             tin: order.tin || order.taxId || order.paymentIntentId || order.receiptId || `TIN-${String(order._id).slice(-8).toUpperCase()}`,
             customerName: order.user?.name || (order.shippingAddress && order.shippingAddress.contact) || '',
@@ -1967,7 +1966,8 @@
             customerPhone: (order.shippingAddress && order.shippingAddress.phone) || order.user?.phone || order.phone || '',
             customerAddress: addrStr,
             paymentStatus: order.paymentStatus || 'Pending',
-            paymentMethod: order.paymentMethod || '',
+            paymentMethod: order.paymentMethod || 'Online Payment',
+            isPaid: order.isPaid || false,
             items: itemsArr,
             subtotal: subtotalCalc,
             deliveryFee: Number(order.deliveryFee || 0),
@@ -2097,19 +2097,64 @@
               refundMediaEl.innerHTML = '';
               if (Array.isArray(rr.images)) rr.images.forEach(u => refundMediaEl.innerHTML += `<a href="${u}" target="_blank" class="text-indigo-600 text-xs mr-2">Image</a>`);
               if (Array.isArray(rr.videos)) rr.videos.forEach(u => refundMediaEl.innerHTML += `<a href="${u}" target="_blank" class="text-indigo-600 text-xs mr-2">Video</a>`);
-              // bind buttons
-              document.getElementById('btn-approve-refund').onclick = async function() {
+              
+              // Get button elements
+              const btnApprove = document.getElementById('btn-approve-refund');
+              const btnReject = document.getElementById('btn-reject-refund');
+              const btnProcessRefund = document.getElementById('btn-process-refund');
+              
+              // Enable/disable buttons based on current status
+              const canApprove = rr.status === 'Pending';
+              const canRefund = ['Approved', 'Awaiting Return', 'Received'].includes(rr.status);
+              const isFinalized = ['Refunded', 'Rejected'].includes(rr.status);
+              
+              btnApprove.disabled = !canApprove || isFinalized;
+              btnApprove.classList.toggle('opacity-50', !canApprove || isFinalized);
+              btnApprove.classList.toggle('cursor-not-allowed', !canApprove || isFinalized);
+              
+              btnReject.disabled = isFinalized;
+              btnReject.classList.toggle('opacity-50', isFinalized);
+              btnReject.classList.toggle('cursor-not-allowed', isFinalized);
+              
+              btnProcessRefund.disabled = !canRefund || isFinalized;
+              btnProcessRefund.classList.toggle('opacity-50', !canRefund || isFinalized);
+              btnProcessRefund.classList.toggle('cursor-not-allowed', !canRefund || isFinalized);
+              
+              // Show helpful message about refund button
+              if (!canRefund && !isFinalized) {
+                refundMsg.textContent = 'Note: Approve the return request first before processing refund.';
+                refundMsg.classList.remove('text-red-600');
+                refundMsg.classList.add('text-yellow-600');
+              } else {
                 refundMsg.textContent = '';
+                refundMsg.classList.remove('text-yellow-600');
+                refundMsg.classList.add('text-red-600');
+              }
+              
+              // bind buttons
+              btnApprove.onclick = async function() {
+                if (this.disabled) return;
+                refundMsg.textContent = '';
+                refundMsg.classList.remove('text-yellow-600');
+                refundMsg.classList.add('text-red-600');
                 try {
                   const resp = await fetch(`${API}/api/returns/${rr._id}/approve`, { method: 'PUT', headers: { 'Content-Type':'application/json','Authorization': `Bearer ${token}` }, body: JSON.stringify({ adminNotes: refundAdminNotes.value }) });
                   const j = await resp.json();
                   if (!resp.ok || !j.success) throw new Error(j.msg || 'Failed');
                   refundStatusEl.textContent = 'Approved';
+                  refundMsg.textContent = 'Return approved! You can now process the refund.';
+                  refundMsg.classList.remove('text-red-600');
+                  refundMsg.classList.add('text-green-600');
                   await loadRegularOrders();
+                  // Re-open modal with updated data
+                  openModal(order);
                 } catch (e) { refundMsg.textContent = e.message; }
               };
-              document.getElementById('btn-reject-refund').onclick = async function() {
+              btnReject.onclick = async function() {
+                if (this.disabled) return;
                 refundMsg.textContent = '';
+                refundMsg.classList.remove('text-yellow-600');
+                refundMsg.classList.add('text-red-600');
                 try {
                   const resp = await fetch(`${API}/api/returns/${rr._id}/reject`, { method: 'PUT', headers: { 'Content-Type':'application/json','Authorization': `Bearer ${token}` }, body: JSON.stringify({ adminNotes: refundAdminNotes.value }) });
                   const j = await resp.json();
@@ -2118,13 +2163,19 @@
                   await loadRegularOrders();
                 } catch (e) { refundMsg.textContent = e.message; }
               };
-              document.getElementById('btn-process-refund').onclick = async function() {
+              btnProcessRefund.onclick = async function() {
+                if (this.disabled) return;
                 refundMsg.textContent = '';
+                refundMsg.classList.remove('text-yellow-600', 'text-green-600');
+                refundMsg.classList.add('text-red-600');
                 try {
                   const resp = await fetch(`${API}/api/returns/${rr._id}/refund`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
                   const j = await resp.json();
                   if (!resp.ok || !j.success) throw new Error(j.msg || 'Failed to process refund');
                   refundStatusEl.textContent = 'Refunded';
+                  refundMsg.textContent = 'Refund processed successfully!';
+                  refundMsg.classList.remove('text-red-600');
+                  refundMsg.classList.add('text-green-600');
                   await loadRegularOrders();
                 } catch (e) { refundMsg.textContent = e.message; }
               };

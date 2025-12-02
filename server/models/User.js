@@ -3,10 +3,14 @@ const bcrypt = require('bcryptjs');
 
 // ... (addressSchema at voucherSchema ay walang bago) ...
 const addressSchema = new mongoose.Schema({
+    block: { type: String, default: '' },
+    lot: { type: String, default: '' },
     street: { type: String, required: true },
+    building: { type: String, default: '' },
     city: { type: String, required: true },
     province: { type: String, required: true },
     zipCode: { type: String, required: true },
+    phone: { type: String, default: '' },
     isDefault: { type: Boolean, default: false }
 });
 const voucherSchema = new mongoose.Schema({
