@@ -317,20 +317,26 @@
                         </div>
 
                         <!-- Add New Buttons -->
-                        <div class="col-span-1 flex items-end gap-2">
-                            <a
-                                id="add-new-btn"
-                                href="add-product.html"
-                                class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center text-center"
+                        <div class="col-span-1 flex items-end gap-2 flex-wrap">
+                            <button
+                                id="add-material-btn"
+                                class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center"
                             >
-                                <i class="fas fa-plus mr-2"></i>Add New Product
-                            </a>
+                                <i class="fas fa-plus mr-2"></i>Add Materials
+                            </button>
                             <button
                                 id="add-fabric-btn"
                                 class="flex-1 px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900 transition-colors flex items-center justify-center"
                             >
                                 <i class="fas fa-layer-group mr-2"></i>Add Fabric&Garment
                             </button>
+                            <a
+                                href="add-product.html"
+                                class="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center"
+                                title="Add Pre-design Product"
+                            >
+                                <i class="fas fa-box mr-1"></i>Product
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -792,6 +798,12 @@
                     modal.style.display = 'flex';
                 }
             });
+            
+            // Materials modal button handler
+            document.getElementById('add-material-btn')?.addEventListener('click', () => {
+                openMaterialsModal();
+            });
+            
             document.getElementById('open-fabric-standalone-btn')?.addEventListener('click', () => {
                 document.getElementById('fabric-modal')?.classList.add('hidden');
                 const modal = document.getElementById('fabric-modal-standalone');
@@ -815,6 +827,9 @@
                     // Also close fabric standalone modal
                     const fms = document.getElementById('fabric-modal-standalone');
                     if (fms && !fms.classList.contains('hidden')) closeFabricStandaloneModal();
+                    // Also close materials modal
+                    const mm = document.getElementById('materials-modal');
+                    if (mm && !mm.classList.contains('hidden')) closeMaterialsModal();
                 }
             });
 
@@ -1289,34 +1304,325 @@
                 closeFabricStandaloneModal();
             });
 
+            // =====================================================
+            // NEW FABRIC & GARMENT MODAL HANDLERS (REDESIGNED)
+            // =====================================================
+            
+            // Common sizes array
+            const COMMON_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
+            
+            // Helper: escape HTML
+            function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+            
+            // Create a size row for fabric or garment
+            function createSizeRow(container, size = '', price = 0, qty = 0) {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-12 gap-2 items-center p-2 bg-gray-50 border rounded';
+                row.innerHTML = `
+                    <div class="col-span-1">
+                        <input type="checkbox" class="size-row-checkbox w-4 h-4 rounded border-gray-300" />
+                    </div>
+                    <div class="col-span-3">
+                        <input type="text" class="size-name-input w-full px-2 py-1 border rounded text-sm" value="${escapeHtml(size)}" placeholder="Size name" />
+                    </div>
+                    <div class="col-span-3">
+                        <input type="number" step="0.01" min="0" class="size-price-input w-full px-2 py-1 border rounded text-sm" value="${Number(price)||0}" placeholder="0.00" />
+                    </div>
+                    <div class="col-span-3">
+                        <input type="number" min="0" class="size-qty-input w-full px-2 py-1 border rounded text-sm" value="${Number(qty)||0}" placeholder="0" />
+                    </div>
+                    <div class="col-span-2 text-right">
+                        <button type="button" class="remove-size-row-btn text-red-500 hover:text-red-700 p-1">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </div>
+                `;
+                row.querySelector('.remove-size-row-btn').addEventListener('click', () => {
+                    row.remove();
+                    updatePreview();
+                });
+                // Update preview on input changes
+                row.querySelectorAll('input').forEach(inp => {
+                    inp.addEventListener('input', updatePreview);
+                });
+                container.appendChild(row);
+                updatePreview();
+            }
+            
+            // Add common sizes to a container
+            function addCommonSizes(containerId) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                const existingSizes = new Set();
+                container.querySelectorAll('.size-name-input').forEach(inp => {
+                    const v = String(inp.value||'').trim().toUpperCase();
+                    if (v) existingSizes.add(v);
+                });
+                COMMON_SIZES.forEach(sz => {
+                    if (!existingSizes.has(sz.toUpperCase())) {
+                        createSizeRow(container, sz, 0, 0);
+                    }
+                });
+            }
+            
+            // Collect sizes from a container
+            function collectSizesFromContainer(containerId) {
+                const container = document.getElementById(containerId);
+                if (!container) return { inventory: {}, prices: {} };
+                const inventory = {};
+                const prices = {};
+                container.querySelectorAll('.grid').forEach(row => {
+                    const sizeInp = row.querySelector('.size-name-input');
+                    const priceInp = row.querySelector('.size-price-input');
+                    const qtyInp = row.querySelector('.size-qty-input');
+                    const size = String(sizeInp?.value||'').trim();
+                    if (!size) return;
+                    const price = Number(priceInp?.value) || 0;
+                    const qty = Math.max(0, Math.floor(Number(qtyInp?.value) || 0));
+                    inventory[size] = qty;
+                    if (price > 0) prices[size] = Number(price.toFixed(2));
+                });
+                return { inventory, prices };
+            }
+            
+            // Fabric Type dropdown: handle "Add New"
+            document.getElementById('fabric-type-select')?.addEventListener('change', (e) => {
+                const val = e.target.value;
+                const newBox = document.getElementById('fabric-new-type-box');
+                if (val === '__add_new__') {
+                    newBox?.classList.remove('hidden');
+                    e.target.value = ''; // Reset dropdown
+                } else {
+                    newBox?.classList.add('hidden');
+                }
+                updatePreview();
+            });
+            
+            document.getElementById('fabric-confirm-new-type')?.addEventListener('click', () => {
+                const inp = document.getElementById('fabric-new-type-input');
+                const sel = document.getElementById('fabric-type-select');
+                const val = String(inp?.value||'').trim();
+                if (!val) return;
+                // Check if already exists
+                const exists = Array.from(sel?.options||[]).some(opt => opt.value.toLowerCase() === val.toLowerCase());
+                if (!exists) {
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.text = val;
+                    // Insert before "Add New" option
+                    const addNewOpt = Array.from(sel?.options||[]).find(o => o.value === '__add_new__');
+                    if (addNewOpt) sel.insertBefore(opt, addNewOpt);
+                    else sel.add(opt);
+                }
+                sel.value = val;
+                inp.value = '';
+                document.getElementById('fabric-new-type-box')?.classList.add('hidden');
+                updatePreview();
+            });
+            
+            document.getElementById('fabric-cancel-new-type')?.addEventListener('click', () => {
+                document.getElementById('fabric-new-type-input').value = '';
+                document.getElementById('fabric-new-type-box')?.classList.add('hidden');
+            });
+            
+            // Garment Type dropdown: handle "Add New"
+            document.getElementById('garment-type-select')?.addEventListener('change', (e) => {
+                const val = e.target.value;
+                const newBox = document.getElementById('garment-new-type-box');
+                if (val === '__add_new__') {
+                    newBox?.classList.remove('hidden');
+                    e.target.value = '';
+                } else {
+                    newBox?.classList.add('hidden');
+                }
+                updatePreview();
+            });
+            
+            document.getElementById('garment-confirm-new-type')?.addEventListener('click', () => {
+                const inp = document.getElementById('garment-new-type-input');
+                const sel = document.getElementById('garment-type-select');
+                const val = String(inp?.value||'').trim();
+                if (!val) return;
+                const exists = Array.from(sel?.options||[]).some(opt => opt.value.toLowerCase() === val.toLowerCase());
+                if (!exists) {
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.text = val;
+                    const addNewOpt = Array.from(sel?.options||[]).find(o => o.value === '__add_new__');
+                    if (addNewOpt) sel.insertBefore(opt, addNewOpt);
+                    else sel.add(opt);
+                }
+                sel.value = val;
+                inp.value = '';
+                document.getElementById('garment-new-type-box')?.classList.add('hidden');
+                updatePreview();
+            });
+            
+            document.getElementById('garment-cancel-new-type')?.addEventListener('click', () => {
+                document.getElementById('garment-new-type-input').value = '';
+                document.getElementById('garment-new-type-box')?.classList.add('hidden');
+            });
+            
+            // Add size row buttons
+            document.getElementById('fabric-add-size-row-btn')?.addEventListener('click', () => {
+                createSizeRow(document.getElementById('fabric-sizes-container'), '', 0, 0);
+            });
+            
+            document.getElementById('garment-add-size-row-btn')?.addEventListener('click', () => {
+                createSizeRow(document.getElementById('garment-sizes-container'), '', 0, 0);
+            });
+            
+            // Add common sizes buttons
+            document.getElementById('fabric-add-common-sizes')?.addEventListener('click', () => {
+                addCommonSizes('fabric-sizes-container');
+            });
+            
+            document.getElementById('garment-add-common-sizes')?.addEventListener('click', () => {
+                addCommonSizes('garment-sizes-container');
+            });
+            
+            // Bulk apply price
+            document.getElementById('bulk-apply-price-btn')?.addEventListener('click', () => {
+                const price = Number(document.getElementById('bulk-price-input')?.value) || 0;
+                ['fabric-sizes-container', 'garment-sizes-container'].forEach(cid => {
+                    const container = document.getElementById(cid);
+                    container?.querySelectorAll('.grid').forEach(row => {
+                        const chk = row.querySelector('.size-row-checkbox');
+                        const priceInp = row.querySelector('.size-price-input');
+                        if (chk?.checked && priceInp) {
+                            priceInp.value = price.toFixed(2);
+                        }
+                    });
+                });
+                updatePreview();
+            });
+            
+            // Bulk apply quantity
+            document.getElementById('bulk-apply-qty-btn')?.addEventListener('click', () => {
+                const qty = Math.max(0, Math.floor(Number(document.getElementById('bulk-qty-input')?.value) || 0));
+                ['fabric-sizes-container', 'garment-sizes-container'].forEach(cid => {
+                    const container = document.getElementById(cid);
+                    container?.querySelectorAll('.grid').forEach(row => {
+                        const chk = row.querySelector('.size-row-checkbox');
+                        const qtyInp = row.querySelector('.size-qty-input');
+                        if (chk?.checked && qtyInp) {
+                            qtyInp.value = qty;
+                        }
+                    });
+                });
+                updatePreview();
+            });
+            
+            // Update preview section
+            function updatePreview() {
+                const fabricType = document.getElementById('fabric-type-select')?.value || '';
+                const garmentType = document.getElementById('garment-type-select')?.value || '';
+                const previewSection = document.getElementById('fabric-preview-section');
+                const previewList = document.getElementById('fabric-preview-list');
+                
+                if (!fabricType && !garmentType) {
+                    previewSection?.classList.add('hidden');
+                    return;
+                }
+                
+                let items = [];
+                const fabricSizes = collectSizesFromContainer('fabric-sizes-container');
+                const garmentSizes = collectSizesFromContainer('garment-sizes-container');
+                
+                // If both fabric and garment are selected, create combined entries
+                if (fabricType && garmentType) {
+                    const combinedName = `${fabricType} - ${garmentType}`;
+                    // Merge sizes (use garment sizes as primary if both have sizes)
+                    const allSizes = new Set([...Object.keys(fabricSizes.inventory), ...Object.keys(garmentSizes.inventory)]);
+                    if (allSizes.size > 0) {
+                        allSizes.forEach(sz => {
+                            const qty = garmentSizes.inventory[sz] || fabricSizes.inventory[sz] || 0;
+                            const price = garmentSizes.prices[sz] || fabricSizes.prices[sz] || 0;
+                            items.push(`• ${combinedName} (${sz}): Qty ${qty}, Price ₱${price}`);
+                        });
+                    } else {
+                        items.push(`• ${combinedName}: No sizes defined`);
+                    }
+                } else if (fabricType) {
+                    const allSizes = Object.keys(fabricSizes.inventory);
+                    if (allSizes.length > 0) {
+                        allSizes.forEach(sz => {
+                            items.push(`• ${fabricType} (${sz}): Qty ${fabricSizes.inventory[sz]}, Price ₱${fabricSizes.prices[sz]||0}`);
+                        });
+                    } else {
+                        items.push(`• ${fabricType}: No sizes defined`);
+                    }
+                } else if (garmentType) {
+                    const allSizes = Object.keys(garmentSizes.inventory);
+                    if (allSizes.length > 0) {
+                        allSizes.forEach(sz => {
+                            items.push(`• ${garmentType} (${sz}): Qty ${garmentSizes.inventory[sz]}, Price ₱${garmentSizes.prices[sz]||0}`);
+                        });
+                    } else {
+                        items.push(`• ${garmentType}: No sizes defined`);
+                    }
+                }
+                
+                if (items.length > 0) {
+                    previewSection?.classList.remove('hidden');
+                    previewList.innerHTML = items.join('<br>');
+                } else {
+                    previewSection?.classList.add('hidden');
+                }
+            }
+            
+            // Save handler for new modal
             document.getElementById('fabric-standalone-save')?.addEventListener('click', async () => {
-                const variant = String(document.getElementById('fabric-variant-standalone')?.value || '').trim();
-                const threshold = Math.max(0, Math.floor(Number(document.getElementById('fabric-threshold-standalone')?.value || 5)));
+                const fabricType = String(document.getElementById('fabric-type-select')?.value || '').trim();
+                const garmentType = String(document.getElementById('garment-type-select')?.value || '').trim();
+                const threshold = Math.max(0, Math.floor(Number(document.getElementById('fabric-threshold-standalone')?.value || 10)));
                 const supplier = String(document.getElementById('fabric-supplier-standalone')?.value || '').trim();
                 const sku = String(document.getElementById('fabric-sku-standalone')?.value || '').trim();
-
-                if (!variant) { showError('Please choose a fabric & garment variant'); return; }
-
-                // collect per-size inventory & prices from the standalone modal
-                const sizesInventory = getFabricStandaloneSizesInventory();
-                const sizesPrice = getFabricStandaloneSizesPrice();
-                // compute minimum non-zero per-size price to use as item price
-                const priceVals = Object.values(sizesPrice || {}).map(v=>Number(v||0)).filter(v=>v>0);
+                
+                if (!fabricType && !garmentType) {
+                    showError('Please select at least a Fabric Type or Garment Type');
+                    return;
+                }
+                
+                // Collect sizes from both containers
+                const fabricSizes = collectSizesFromContainer('fabric-sizes-container');
+                const garmentSizes = collectSizesFromContainer('garment-sizes-container');
+                
+                // Merge sizes: garment sizes take priority if both have same size
+                const mergedInventory = { ...fabricSizes.inventory, ...garmentSizes.inventory };
+                const mergedPrices = { ...fabricSizes.prices, ...garmentSizes.prices };
+                
+                // Build name: "Fabric - Garment" or just one
+                let itemName = '';
+                if (fabricType && garmentType) {
+                    itemName = `${fabricType} - ${garmentType}`;
+                } else if (fabricType) {
+                    itemName = fabricType;
+                } else {
+                    itemName = garmentType;
+                }
+                
+                // Calculate total quantity and min price
+                const totalQty = Object.values(mergedInventory).reduce((a,b) => a + (Number(b)||0), 0);
+                const priceVals = Object.values(mergedPrices).filter(v => v > 0);
                 const minPrice = priceVals.length ? Math.min(...priceVals) : 0;
-
+                
                 const payload = {
-                    name: `${variant}`,
+                    name: itemName,
                     type: 'fabric',
-                    quantity: Object.values(sizesInventory || {}).reduce((a,b)=>a+(Number(b)||0), 0) || 0,
+                    quantity: totalQty,
                     unit: 'pieces',
                     price: Number(isNaN(minPrice) ? 0 : minPrice),
                     lowStockThreshold: threshold,
                     supplier: supplier,
-                    sku: sku,
-                    sizesInventory: JSON.stringify(sizesInventory || {}),
-                    sizesPrice: JSON.stringify(sizesPrice || {})
+                    sku: sku || `FAB-${Date.now()}`,
+                    sizesInventory: JSON.stringify(mergedInventory),
+                    sizesPrice: JSON.stringify(mergedPrices),
+                    // Store fabric and garment types separately for filtering
+                    fabricType: fabricType,
+                    garmentType: garmentType
                 };
-
+                
                 try {
                     const res = await fetch(`${API_BASE}/api/admin/inventory`, {
                         method: 'POST',
@@ -1326,18 +1632,16 @@
                         },
                         body: JSON.stringify(payload)
                     });
-
+                    
                     if (!res.ok) {
                         const err = await res.json().catch(() => null);
                         showError((err && err.message) ? err.message : 'Failed to add inventory item');
                         return;
                     }
-
+                    
                     await res.json().catch(() => null);
-                    // Close the standalone Fabric modal and refresh inventory only.
-                    showSuccess('Inventory item added');
+                    showSuccess(`Inventory item "${itemName}" added successfully!`);
                     closeFabricStandaloneModal();
-                    // Keep main inventory modal hidden — admin stays on the inventory list.
                     loadInventory();
                 } catch (e) {
                     console.error('Fabric add error', e);
@@ -1345,184 +1649,172 @@
                 }
             });
 
-            // Helper function to close the fabric standalone modal (make global for inline onclick)
+            // Helper function to close and reset the fabric standalone modal
             window.closeFabricStandaloneModal = function() {
                 const modal = document.getElementById('fabric-modal-standalone');
                 if (modal) {
                     modal.classList.add('hidden');
                     modal.style.display = 'none';
                 }
+                // Reset form
+                document.getElementById('fabric-type-select').value = '';
+                document.getElementById('garment-type-select').value = '';
+                document.getElementById('fabric-sizes-container').innerHTML = '';
+                document.getElementById('garment-sizes-container').innerHTML = '';
+                document.getElementById('fabric-threshold-standalone').value = '10';
+                document.getElementById('fabric-supplier-standalone').value = '';
+                document.getElementById('fabric-sku-standalone').value = '';
+                document.getElementById('fabric-preview-section')?.classList.add('hidden');
+                document.getElementById('fabric-new-type-box')?.classList.add('hidden');
+                document.getElementById('garment-new-type-box')?.classList.add('hidden');
+            }
+            
+            // Open modal handler - reset and show
+            window.openFabricStandaloneModal = function() {
+                closeFabricStandaloneModal(); // Reset first
+                const modal = document.getElementById('fabric-modal-standalone');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'flex';
+                }
             }
 
-            // --- Standalone fabric modal helpers (combined rows: size + qty + price) ---
-            function createFabricRow(size = '', qty = 0, price = 0) {
-                const row = document.createElement('div');
-                row.className = 'flex items-center gap-2 p-2 bg-white border rounded-md mb-2';
-                row.innerHTML = `
-                    <input type="checkbox" class="row-checkbox w-4 h-4" />
-                    <input data-size-input type="text" value="${escapeHtml(size)}" class="px-3 py-2 border rounded w-20 sm:w-32" placeholder="Size" />
-                    <input data-qty-input type="number" min="0" value="${Number(qty)||0}" class="px-3 py-2 border rounded w-16 sm:w-24" placeholder="Qty" />
-                    <input data-price-input type="number" step="0.01" min="0" value="${Number(price)||0}" class="px-3 py-2 border rounded w-24 sm:w-36" placeholder="Price (₱)" />
-                    <button type="button" class="remove-row-btn text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button>
-                `;
-                row.querySelector('.remove-row-btn').addEventListener('click', () => row.remove());
-                // keep price map in sync when price input changes
-                const priceInput = row.querySelector('[data-price-input]');
-                const sizeInput = row.querySelector('[data-size-input]');
-                priceInput?.addEventListener('input', () => {
-                    try {
-                        const s = String(sizeInput.value||'').trim();
-                        const v = Number(priceInput.value) || 0;
-                        if (s) {
-                            if (v > 0) sizesPriceMap[s] = Number(v);
-                            else delete sizesPriceMap[s];
-                        }
-                    } catch (e) {}
-                });
-                // when size name changes, move price key if present
-                sizeInput?.addEventListener('input', () => {
-                    try {
-                        const old = row.dataset.sizeOld || '';
-                        const next = String(sizeInput.value||'').trim();
-                        if (old && old !== next) {
-                            if (sizesPriceMap[old] !== undefined) {
-                                sizesPriceMap[next] = sizesPriceMap[old];
-                                delete sizesPriceMap[old];
-                            }
-                        }
-                        row.dataset.sizeOld = next;
-                    } catch (e) {}
-                });
-                row.dataset.sizeOld = String(size||'').trim();
-                return row;
+            // =====================================================
+            // MATERIALS MODAL HANDLERS
+            // =====================================================
+            
+            window.openMaterialsModal = function() {
+                // Reset form
+                document.getElementById('material-type-select').value = '';
+                document.getElementById('material-name-input').value = '';
+                document.getElementById('material-qty-input').value = '0';
+                document.getElementById('material-unit-select').value = 'pieces';
+                document.getElementById('material-price-input').value = '0';
+                document.getElementById('material-threshold-input').value = '5';
+                document.getElementById('material-supplier-input').value = '';
+                document.getElementById('material-sku-input').value = '';
+                document.getElementById('material-notes-input').value = '';
+                document.getElementById('material-new-type-box')?.classList.add('hidden');
+                document.getElementById('material-new-type-input').value = '';
+                
+                const modal = document.getElementById('materials-modal');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'flex';
+                }
             }
-
-            function renderFabricStandaloneRows(sizesArr) {
-                const rows = document.getElementById('fabric-sizes-rows');
-                if (!rows) return;
-                rows.innerHTML = '';
-                // sizesArr may be array of strings or array of objects {size,qty,price}
-                (sizesArr || []).forEach(s => {
-                    let size = '';
-                    let qty = 0;
-                    let price = 0;
-                    if (typeof s === 'string') size = s.trim();
-                    else if (s && typeof s === 'object') { size = String(s.size||'').trim(); qty = Number(s.qty||0); price = Number(s.price||0); }
-                    if (!size) return;
-                    rows.appendChild(createFabricRow(size, qty, price));
-                });
+            
+            window.closeMaterialsModal = function() {
+                const modal = document.getElementById('materials-modal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                }
             }
-
-            function getFabricStandaloneSizesInventory() {
-                const rows = Array.from(document.querySelectorAll('#fabric-sizes-rows [data-size-input]'));
-                const obj = {};
-                rows.forEach(r => {
-                    const size = String(r.value||'').trim();
-                    if (!size) return;
-                    const parent = r.closest('div');
-                    const qtyEl = parent ? parent.querySelector('[data-qty-input]') : null;
-                    const qty = Math.max(0, Math.floor(Number(qtyEl?.value||0)));
-                    obj[size] = qty;
-                });
-                return obj;
-            }
-
-            function getFabricStandaloneSizesPrice() {
-                const rows = Array.from(document.querySelectorAll('#fabric-sizes-rows [data-size-input]'));
-                const obj = {};
-                rows.forEach(r => {
-                    const size = String(r.value||'').trim();
-                    if (!size) return;
-                    const parent = r.closest('div');
-                    const priceEl = parent ? parent.querySelector('[data-price-input]') : null;
-                    const price = Number(priceEl?.value||0) || 0;
-                    if (price > 0) obj[size] = Number(price.toFixed(2));
-                });
-                return obj;
-            }
-
-            // escape helper
-            function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-            // Buttons and interactions for standalone modal
-            document.getElementById('fabric-generate-sizes-btn')?.addEventListener('click', () => {
-                const txt = String(document.getElementById('fabric-sizes-generate')?.value||'');
-                const arr = txt.split(',').map(s=>s.trim()).filter(Boolean);
-                renderFabricStandaloneRows(arr);
+            
+            // Handle "Add New Material Type" selection
+            document.getElementById('material-type-select')?.addEventListener('change', (e) => {
+                const val = e.target.value;
+                const newBox = document.getElementById('material-new-type-box');
+                if (val === '__add_new__') {
+                    newBox?.classList.remove('hidden');
+                    document.getElementById('material-new-type-input')?.focus();
+                } else {
+                    newBox?.classList.add('hidden');
+                }
             });
-            // Fabric sizes list Add/Remove (auto-add rows)
-            const fabricSizesListBox = document.getElementById('fabric-sizes-list-box');
-            const fabricNewSizeInput = document.getElementById('fabric-new-size-input');
-            const fabricAddSizeBtn = document.getElementById('fabric-add-size-btn');
-            const fabricRemoveSizeBtn = document.getElementById('fabric-remove-size-btn');
-
-            function removeFabricRowBySizeName(sizeVal) {
-                if (!sizeVal) return;
-                const rows = Array.from(document.querySelectorAll('#fabric-sizes-rows [data-size-input]'));
-                rows.forEach(input => {
-                    if (String(input.value||'').trim().toUpperCase() === String(sizeVal||'').trim().toUpperCase()) {
-                        const parent = input.closest('div');
-                        if (parent) parent.remove();
-                    }
-                });
-            }
-
-            fabricAddSizeBtn?.addEventListener('click', () => {
-                const val = String(fabricNewSizeInput?.value||'').trim().toUpperCase();
-                if (!val) return;
-                // Prevent duplicates in list
-                const exists = Array.from((fabricSizesListBox?.options||[])).some(opt => opt.value === val);
-                if (exists) {
-                    alert('Size already exists!');
+            
+            // Confirm new material type
+            document.getElementById('material-confirm-new-type')?.addEventListener('click', () => {
+                const inp = document.getElementById('material-new-type-input');
+                const newType = String(inp?.value || '').trim();
+                if (!newType) {
+                    showError('Please enter a material type name');
                     return;
                 }
-                const opt = document.createElement('option');
-                opt.value = val;
-                opt.text = val;
-                fabricSizesListBox?.add(opt);
-                fabricNewSizeInput.value = '';
-                // Auto-add combined row
-                const rowsContainer = document.getElementById('fabric-sizes-rows');
-                if (rowsContainer) rowsContainer.appendChild(createFabricRow(val, 0, 0));
+                // Add new option to select
+                const sel = document.getElementById('material-type-select');
+                if (sel) {
+                    const addNewOpt = Array.from(sel.options || []).find(o => o.value === '__add_new__');
+                    const newOpt = document.createElement('option');
+                    newOpt.value = newType;
+                    newOpt.textContent = newType;
+                    if (addNewOpt) sel.insertBefore(newOpt, addNewOpt);
+                    else sel.appendChild(newOpt);
+                    sel.value = newType;
+                }
+                document.getElementById('material-new-type-box')?.classList.add('hidden');
+                inp.value = '';
             });
-
-            fabricRemoveSizeBtn?.addEventListener('click', () => {
-                const selected = Array.from(fabricSizesListBox?.selectedOptions || []);
-                if (selected.length === 0) return;
-                selected.forEach(opt => {
-                    const val = opt.value;
-                    opt.remove();
-                    // remove associated rows
-                    removeFabricRowBySizeName(val);
-                });
+            
+            // Cancel new material type
+            document.getElementById('material-cancel-new-type')?.addEventListener('click', () => {
+                document.getElementById('material-new-type-input').value = '';
+                document.getElementById('material-new-type-box')?.classList.add('hidden');
+                document.getElementById('material-type-select').value = '';
             });
-            document.getElementById('fabric-add-size-row')?.addEventListener('click', () => {
-                const rowsContainer = document.getElementById('fabric-sizes-rows');
-                if (!rowsContainer) return;
-                rowsContainer.appendChild(createFabricRow('', 0, 0));
-            });
-            document.getElementById('fabric-clear-sizes')?.addEventListener('click', () => {
-                document.getElementById('fabric-sizes-rows').innerHTML = '';
-            });
-            document.getElementById('fabric-apply-qty-btn')?.addEventListener('click', () => {
-                const v = Math.max(0, Math.floor(Number(document.getElementById('fabric-apply-qty-input')?.value||0)));
-                const rows = Array.from(document.querySelectorAll('#fabric-sizes-rows div'));
-                rows.forEach(r =>{
-                    const chk = r.querySelector('[data-select]') || r.querySelector('.row-checkbox');
-                    const q = r.querySelector('[data-qty-input]');
-                    if (chk && chk.checked && q) q.value = v;
-                });
-            });
-
-            // Note: per-size price generator/clear inputs removed from HTML; handlers intentionally omitted
-            document.getElementById('fabric-apply-price-btn')?.addEventListener('click', () => {
-                const v = Number(document.getElementById('fabric-apply-price-input')?.value||0) || 0;
-                const rows = Array.from(document.querySelectorAll('#fabric-sizes-rows div'));
-                rows.forEach(r =>{
-                    const chk = r.querySelector('[data-price-select]') || r.querySelector('.row-checkbox');
-                    const p = r.querySelector('[data-price-input]');
-                    if (chk && chk.checked && p) p.value = Number(v).toFixed(2);
-                });
+            
+            document.getElementById('material-cancel-btn')?.addEventListener('click', closeMaterialsModal);
+            
+            document.getElementById('material-save-btn')?.addEventListener('click', async () => {
+                const materialType = String(document.getElementById('material-type-select')?.value || '').trim();
+                const name = String(document.getElementById('material-name-input')?.value || '').trim();
+                const quantity = Math.max(0, Math.floor(Number(document.getElementById('material-qty-input')?.value) || 0));
+                const unit = String(document.getElementById('material-unit-select')?.value || 'pieces');
+                const price = Number(document.getElementById('material-price-input')?.value) || 0;
+                const threshold = Math.max(0, Math.floor(Number(document.getElementById('material-threshold-input')?.value) || 5));
+                const supplier = String(document.getElementById('material-supplier-input')?.value || '').trim();
+                const sku = String(document.getElementById('material-sku-input')?.value || '').trim();
+                const notes = String(document.getElementById('material-notes-input')?.value || '').trim();
+                
+                if (!name) {
+                    showError('Please enter a material name');
+                    return;
+                }
+                
+                // Build display name with type prefix if selected
+                let displayName = name;
+                if (materialType && materialType !== 'Other') {
+                    displayName = `${materialType} - ${name}`;
+                }
+                
+                const payload = {
+                    name: displayName,
+                    type: 'material',
+                    quantity: quantity,
+                    unit: unit,
+                    price: Number(price.toFixed(2)),
+                    lowStockThreshold: threshold,
+                    supplier: supplier,
+                    sku: sku || `MAT-${Date.now()}`,
+                    notes: notes,
+                    materialType: materialType || 'Other'
+                };
+                
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/inventory`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => null);
+                        showError((err && err.message) ? err.message : 'Failed to add material');
+                        return;
+                    }
+                    
+                    await res.json().catch(() => null);
+                    showSuccess(`Material "${displayName}" added successfully!`);
+                    closeMaterialsModal();
+                    loadInventory();
+                } catch (e) {
+                    console.error('Material add error', e);
+                    showError('Failed to add material');
+                }
             });
 
             // Inventory table: toggle full per-size list
@@ -2847,88 +3139,150 @@
         window.openCatalogAddModal = openCatalogAddModal;
     </script>
 
-    <!-- Standalone Fabric&Garment Modal (placed as direct child of body) -->
+    <!-- Standalone Fabric&Garment Modal (REDESIGNED - Separate Fabric & Garment with Dynamic Sizes) -->
     <div id="fabric-modal-standalone" class="hidden modal-overlay" onclick="if(event.target === this) closeFabricStandaloneModal()">
-        <div class="modal-content p-6" onclick="event.stopPropagation()">
+        <div class="modal-content p-6 max-w-4xl" onclick="event.stopPropagation()" style="max-height: 90vh; overflow-y: auto;">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold">Fabric & Garment</h3>
+                <h3 class="text-lg font-semibold"><i class="fas fa-layer-group text-indigo-600 mr-2"></i>Add Fabric & Garment</h3>
                 <button type="button" onclick="closeFabricStandaloneModal()" class="text-gray-400 hover:text-gray-600 p-2 rounded hover:bg-gray-100 transition-colors">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
 
-            <div class="mb-3">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Choose a Fabric with Garment</label>
-                <select id="fabric-variant-standalone" class="w-full px-3 py-2 border rounded">
-                    <option value="">Choose variant</option>
-                    <option value="Cotton - Jersey">Cotton - Jersey</option>
-                    <option value="Cotton - T-Shirt">Cotton - T-Shirt</option>
-                    <option value="Cotton - Hoodie">Cotton - Hoodie</option>
-                    <option value="Dry-Fit - Jersey">Dry-Fit - Jersey</option>
-                    <option value="Dry-Fit - T-Shirt">Dry-Fit - T-Shirt</option>
-                    <option value="Polyester - Jersey">Polyester - Jersey</option>
-                    <option value="Polyester - Hoodie">Polyester - Hoodie</option>
-                </select>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
-                    <input id="fabric-threshold-standalone" type="number" min="0" class="w-full px-3 py-2 border rounded" value="10" />
-                </div>
-            </div>
-
-            <!-- Per-size inventory & pricing (matches admin inventory modal) -->
-            <div class="mb-4 border-t pt-4">
-                <h4 class="font-semibold mb-2">Per-size inventory (optional)</h4>
-                <!-- Sizes list (matches Add Product behavior) -->
-                <div class="flex items-start gap-3 mb-4">
-                    <select id="fabric-sizes-list-box" class="flex-1 h-32 border border-gray-300 rounded-lg p-2 text-sm bg-gray-50" multiple></select>
-                    <div class="flex flex-col gap-2 w-40">
-                        <input id="fabric-new-size-input" type="text" placeholder="New size" class="w-full border border-gray-300 rounded-lg p-2 text-sm text-center" />
-                        <button id="fabric-add-size-btn" type="button" class="w-full bg-green-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-green-700 transition shadow-sm">Add</button>
-                        <button id="fabric-remove-size-btn" type="button" class="w-full bg-white text-red-600 border border-red-200 py-2 rounded-lg text-xs font-bold hover:bg-red-50 transition shadow-sm mt-auto">Remove</button>
+            <!-- FABRIC TYPE Section -->
+            <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 class="font-semibold text-blue-800 mb-3"><i class="fas fa-scroll mr-2"></i>Fabric Type</h4>
+                <div class="flex items-center gap-3 mb-3">
+                    <select id="fabric-type-select" class="flex-1 px-3 py-2 border rounded-lg bg-white">
+                        <option value="">Select Fabric Type</option>
+                        <option value="Fullmax">Fullmax</option>
+                        <option value="Polydex">Polydex</option>
+                        <option value="Synthetic">Synthetic</option>
+                        <option value="Cotton">Cotton</option>
+                        <option value="Dry-Fit">Dry-Fit</option>
+                        <option value="Polyester">Polyester</option>
+                        <option value="__add_new__">+ Add New Fabric Type</option>
+                    </select>
+                    <div id="fabric-new-type-box" class="hidden flex items-center gap-2">
+                        <input id="fabric-new-type-input" type="text" class="px-3 py-2 border rounded-lg" placeholder="Enter new fabric type" />
+                        <button id="fabric-confirm-new-type" type="button" class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button id="fabric-cancel-new-type" type="button" class="px-3 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-400">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                 </div>
-
-                <div class="flex items-center gap-2 mb-3">
-                    <input id="fabric-sizes-generate" type="text" class="flex-1 px-3 py-2 border rounded" placeholder="e.g. S, M, L, XL" />
-                    <button id="fabric-add-size-row" type="button" class="px-3 py-2 border rounded">Add Size Row</button>
-                    <button id="fabric-clear-sizes" type="button" class="px-3 py-2 border rounded">Clear</button>
+                
+                <!-- Fabric Sizes with Prices & Quantities -->
+                <div class="bg-white p-3 rounded-lg border">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-700">Fabric Sizes</span>
+                        <div class="flex items-center gap-2">
+                            <button id="fabric-add-common-sizes" type="button" class="px-2 py-1 text-xs bg-gray-100 border rounded hover:bg-gray-200">
+                                Add Common Sizes (XS-3XL)
+                            </button>
+                            <button id="fabric-add-size-row-btn" type="button" class="px-2 py-1 text-xs bg-blue-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-200">
+                                <i class="fas fa-plus mr-1"></i>Add Size
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 font-semibold mb-1 px-2">
+                        <div class="col-span-1"></div>
+                        <div class="col-span-3">Size</div>
+                        <div class="col-span-3">Price (₱)</div>
+                        <div class="col-span-3">Quantity</div>
+                        <div class="col-span-2"></div>
+                    </div>
+                    <div id="fabric-sizes-container" class="space-y-2 max-h-48 overflow-y-auto"></div>
                 </div>
-                <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
-                    <div class="flex items-center gap-2 flex-1">
-                        <input id="fabric-apply-qty-input" type="number" min="0" class="px-3 py-2 border rounded w-40" placeholder="Qty" />
-                        <button id="fabric-apply-qty-btn" type="button" class="px-3 py-2 bg-green-600 text-white rounded">Apply To Selected</button>
+            </div>
+
+            <!-- GARMENT TYPE Section -->
+            <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <h4 class="font-semibold text-green-800 mb-3"><i class="fas fa-tshirt mr-2"></i>Garment Type</h4>
+                <div class="flex items-center gap-3 mb-3">
+                    <select id="garment-type-select" class="flex-1 px-3 py-2 border rounded-lg bg-white">
+                        <option value="">Select Garment Type</option>
+                        <option value="Jersey">Jersey</option>
+                        <option value="T-Shirt">T-Shirt</option>
+                        <option value="Hoodie">Hoodie</option>
+                        <option value="Polo Shirt">Polo Shirt</option>
+                        <option value="Long Sleeve">Long Sleeve</option>
+                        <option value="Tank Top">Tank Top</option>
+                        <option value="Shorts">Shorts</option>
+                        <option value="__add_new__">+ Add New Garment Type</option>
+                    </select>
+                    <div id="garment-new-type-box" class="hidden flex items-center gap-2">
+                        <input id="garment-new-type-input" type="text" class="px-3 py-2 border rounded-lg" placeholder="Enter new garment type" />
+                        <button id="garment-confirm-new-type" type="button" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button id="garment-cancel-new-type" type="button" class="px-3 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-400">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Garment Sizes with Prices & Quantities -->
+                <div class="bg-white p-3 rounded-lg border">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-700">Garment Sizes</span>
+                        <div class="flex items-center gap-2">
+                            <button id="garment-add-common-sizes" type="button" class="px-2 py-1 text-xs bg-gray-100 border rounded hover:bg-gray-200">
+                                Add Common Sizes (XS-3XL)
+                            </button>
+                            <button id="garment-add-size-row-btn" type="button" class="px-2 py-1 text-xs bg-green-100 text-green-700 border border-green-300 rounded hover:bg-green-200">
+                                <i class="fas fa-plus mr-1"></i>Add Size
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 font-semibold mb-1 px-2">
+                        <div class="col-span-1"></div>
+                        <div class="col-span-3">Size</div>
+                        <div class="col-span-3">Price (₱)</div>
+                        <div class="col-span-3">Quantity</div>
+                        <div class="col-span-2"></div>
+                    </div>
+                    <div id="garment-sizes-container" class="space-y-2 max-h-48 overflow-y-auto"></div>
+                </div>
+            </div>
+
+            <!-- Bulk Apply Section -->
+            <div class="mb-4 p-3 bg-gray-50 border rounded-lg">
+                <h4 class="text-sm font-semibold text-gray-700 mb-2">Bulk Apply to Selected</h4>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <input id="bulk-price-input" type="number" step="0.01" min="0" class="px-3 py-2 border rounded w-32" placeholder="Price ₱" />
+                        <button id="bulk-apply-price-btn" type="button" class="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">Apply Price</button>
                     </div>
                     <div class="flex items-center gap-2">
-                        <input id="fabric-apply-price-input" type="number" step="0.01" min="0" class="px-3 py-2 border rounded w-40" placeholder="Price (₱)" />
-                        <button id="fabric-apply-price-btn" type="button" class="px-3 py-2 bg-blue-600 text-white rounded">Apply Price</button>
+                        <input id="bulk-qty-input" type="number" min="0" class="px-3 py-2 border rounded w-32" placeholder="Qty" />
+                        <button id="bulk-apply-qty-btn" type="button" class="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">Apply Qty</button>
                     </div>
                 </div>
-
-                <div class="flex items-center gap-2 text-xs text-gray-600 font-semibold mb-2">
-                    <div class="w-6"></div>
-                    <div class="w-20 sm:w-32">Size</div>
-                    <div class="w-16 sm:w-24">Qty</div>
-                    <div class="w-24 sm:w-36">Price (₱)</div>
-                    <div class="w-8"></div>
-                </div>
-
-                <div id="fabric-sizes-rows" class="space-y-2 mb-4"></div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Additional Info -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
+                    <input id="fabric-threshold-standalone" type="number" min="0" class="w-full px-3 py-2 border rounded-lg" value="10" />
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Name</label>
-                    <input id="fabric-supplier-standalone" type="text" class="w-full px-3 py-2 border rounded" />
+                    <input id="fabric-supplier-standalone" type="text" class="w-full px-3 py-2 border rounded-lg" placeholder="Optional" />
                 </div>
-
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                    <input id="fabric-sku-standalone" type="text" class="w-full px-3 py-2 border rounded-lg" placeholder="Auto-generated if empty" />
+                </div>
             </div>
 
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Keeping Unit)</label>
-                <input id="fabric-sku-standalone" type="text" class="w-full px-3 py-2 border rounded" />
+            <!-- Preview of what will be created -->
+            <div id="fabric-preview-section" class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg hidden">
+                <h4 class="text-sm font-semibold text-yellow-800 mb-2"><i class="fas fa-eye mr-1"></i>Preview: Items to be created</h4>
+                <div id="fabric-preview-list" class="text-sm text-gray-700"></div>
             </div>
 
             <div id="fabric-standalone-footer" class="flex justify-end gap-3 pt-4 border-t">
@@ -2936,12 +3290,125 @@
                     <i class="fas fa-times mr-2"></i>Cancel
                 </button>
                 <button id="fabric-standalone-save" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-                    <i class="fas fa-save mr-2"></i>Save
+                    <i class="fas fa-save mr-2"></i>Save Items
                 </button>
             </div>
         </div>
     </div>
     <!-- End Standalone Fabric&Garment Modal -->
+
+    <!-- Materials Modal (for raw materials, inks, threads, etc.) -->
+    <div id="materials-modal" class="hidden modal-overlay" onclick="if(event.target === this) closeMaterialsModal()">
+        <div class="modal-content p-6 max-w-2xl" onclick="event.stopPropagation()" style="max-height: 90vh; overflow-y: auto;">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold"><i class="fas fa-cubes text-purple-600 mr-2"></i>Add Material / Supply</h3>
+                <button type="button" onclick="closeMaterialsModal()" class="text-gray-400 hover:text-gray-600 p-2 rounded hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Material Type -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Material Type</label>
+                <div class="flex items-center gap-3">
+                    <select id="material-type-select" class="flex-1 px-3 py-2 border rounded-lg">
+                        <option value="">Select Material Type</option>
+                        <option value="Ink">Ink</option>
+                        <option value="Thread">Thread</option>
+                        <option value="Vinyl">Vinyl</option>
+                        <option value="Transfer Paper">Transfer Paper</option>
+                        <option value="Sublimation Paper">Sublimation Paper</option>
+                        <option value="Heat Press Tape">Heat Press Tape</option>
+                        <option value="Backing Material">Backing Material</option>
+                        <option value="Packaging">Packaging</option>
+                        <option value="Labels">Labels</option>
+                        <option value="Other">Other</option>
+                        <option value="__add_new__">+ Add New Material Type</option>
+                    </select>
+                    <div id="material-new-type-box" class="hidden flex items-center gap-2">
+                        <input id="material-new-type-input" type="text" class="px-3 py-2 border rounded-lg" placeholder="Enter new material type" />
+                        <button id="material-confirm-new-type" type="button" class="px-3 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button id="material-cancel-new-type" type="button" class="px-3 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-400">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Material Name -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Material Name <span class="text-red-500">*</span></label>
+                <input id="material-name-input" type="text" class="w-full px-3 py-2 border rounded-lg" placeholder="e.g., Black Sublimation Ink 100ml" required />
+            </div>
+
+            <!-- Quantity and Unit -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Quantity <span class="text-red-500">*</span></label>
+                    <input id="material-qty-input" type="number" min="0" class="w-full px-3 py-2 border rounded-lg" value="0" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                    <select id="material-unit-select" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="pieces">Pieces</option>
+                        <option value="bottles">Bottles</option>
+                        <option value="rolls">Rolls</option>
+                        <option value="sheets">Sheets</option>
+                        <option value="meters">Meters</option>
+                        <option value="yards">Yards</option>
+                        <option value="liters">Liters</option>
+                        <option value="ml">Milliliters</option>
+                        <option value="kg">Kilograms</option>
+                        <option value="grams">Grams</option>
+                        <option value="packs">Packs</option>
+                        <option value="boxes">Boxes</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Price -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Unit Price (₱)</label>
+                    <input id="material-price-input" type="number" step="0.01" min="0" class="w-full px-3 py-2 border rounded-lg" value="0" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label>
+                    <input id="material-threshold-input" type="number" min="0" class="w-full px-3 py-2 border rounded-lg" value="5" />
+                </div>
+            </div>
+
+            <!-- Supplier -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                <input id="material-supplier-input" type="text" class="w-full px-3 py-2 border rounded-lg" placeholder="Optional" />
+            </div>
+
+            <!-- SKU -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                <input id="material-sku-input" type="text" class="w-full px-3 py-2 border rounded-lg" placeholder="Auto-generated if empty" />
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea id="material-notes-input" rows="2" class="w-full px-3 py-2 border rounded-lg" placeholder="Additional notes about this material..."></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t">
+                <button id="material-cancel-btn" type="button" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-times mr-2"></i>Cancel
+                </button>
+                <button id="material-save-btn" type="button" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>Save Material
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- End Materials Modal -->
 
     <!-- Mobile Sidebar Script -->
     <script>

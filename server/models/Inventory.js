@@ -9,8 +9,14 @@ const inventorySchema = new mongoose.Schema({
     type: {
         type: String,
         required: [true, 'Item type is required'],
-        enum: ['fabric', 'product', 'pre-design-apparel'],
+        enum: ['fabric', 'product', 'pre-design-apparel', 'material'],
         lowercase: true
+    },
+    // Material sub-type for raw materials (ink, thread, vinyl, etc.)
+    materialType: {
+        type: String,
+        enum: ['ink', 'thread', 'vinyl', 'transfer-paper', 'sublimation-paper', 'heat-press-tape', 'adhesive', 'other'],
+        default: null
     },
     quantity: {
         type: Number,

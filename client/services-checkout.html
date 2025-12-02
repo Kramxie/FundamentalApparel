@@ -140,11 +140,19 @@
                   <input id="method-standard" type="radio" name="delivery-method" value="standard" class="h-4 w-4 text-indigo-600" checked>
                   <div>
                     <p class="font-medium text-sm">Standard Delivery</p>
-                    <p class="text-xs text-gray-500">3-5 days via J&T / Lalamove</p>
+                    <p class="text-xs text-gray-500" id="delivery-desc">3-5 days via J&T / Lalamove</p>
                   </div>
                 </div>
-                <div class="font-semibold text-indigo-600">₱<span id="fee-standard-services">80</span></div>
+                <div class="font-semibold text-indigo-600">
+                  <span id="shipping-loader-services" class="hidden"><i class="fas fa-spinner fa-spin text-blue-500"></i></span>
+                  <span id="shipping-fee-display-services">₱<span id="fee-standard-services">80</span></span>
+                </div>
               </label>
+              <!-- Distance info display -->
+              <div id="distance-info-services" class="hidden text-xs text-gray-500 ml-4 -mt-2">
+                <i class="fas fa-map-marker-alt mr-1"></i>
+                <span id="distance-text-services"></span>
+              </div>
               <label class="flex items-center justify-between border-2 rounded-lg p-3 cursor-pointer hover:border-green-400 transition-colors" id="delivery-pickup-option">
                 <div class="flex items-center gap-3">
                   <input id="method-pickup" type="radio" name="delivery-method" value="pickup" class="h-4 w-4 text-green-600">
@@ -161,9 +169,9 @@
                 <p class="font-semibold text-green-900 mb-2">📍 Pickup Location:</p>
                 <div class="text-sm text-gray-700 space-y-1">
                   <p class="font-medium">Fundamental Apparel Store</p>
-                  <p>123 Main Street, Barangay San Jose</p>
-                  <p>Manila, Metro Manila 1000</p>
-                  <p class="mt-2">📞 Contact: (02) 8123-4567</p>
+                  <p>Anabu Coastal</p>
+                  <p>Imus, Cavite</p>
+                  <p class="mt-2">📞 Contact: 0917-123-4567</p>
                   <p>🕒 Store Hours: Mon-Sat 9:00 AM - 6:00 PM</p>
                 </div>
               </div>
@@ -438,6 +446,10 @@
       // Recompute when province changes so the standard delivery card updates
       const provSel = document.getElementById('ship-province');
       if (provSel) provSel.addEventListener('change', ()=> updatePaymentAmounts(serviceData || {}));
+      // Also recalculate when address fields change (for distance-based calculation)
+      document.getElementById('ship-street')?.addEventListener('blur', () => updatePaymentAmounts(serviceData || {}));
+      document.getElementById('ship-city')?.addEventListener('blur', () => updatePaymentAmounts(serviceData || {}));
+      document.getElementById('ship-building')?.addEventListener('blur', () => updatePaymentAmounts(serviceData || {}));
     }
 
     /**
@@ -774,47 +786,150 @@
     /**
      * Update payment amounts display with delivery fee
      */
+    // Shipping calculation state for services checkout
+    let currentServicesShippingFee = 80;
+    let servicesLastCalculatedAddress = null;
+    let servicesIsCalculating = false;
+    let servicesCalcDebounceTimer = null;
+
     /**
-     * Update payment amounts display with delivery fee
+     * Show/hide shipping loader for services
      */
-    function updatePaymentAmounts(data) {
+    function showServicesShippingLoader(show) {
+      const loader = document.getElementById('shipping-loader-services');
+      const feeDisplay = document.getElementById('shipping-fee-display-services');
+      if (show) {
+        loader?.classList.remove('hidden');
+        feeDisplay?.classList.add('hidden');
+      } else {
+        loader?.classList.add('hidden');
+        feeDisplay?.classList.remove('hidden');
+      }
+    }
+
+    /**
+     * Update distance info display for services
+     */
+    function updateServicesDistanceInfo(distanceKm, duration) {
+      const distanceInfo = document.getElementById('distance-info-services');
+      const distanceText = document.getElementById('distance-text-services');
+      if (distanceKm && distanceInfo && distanceText) {
+        distanceText.textContent = `${distanceKm} km from store • Est. ${duration || 'N/A'}`;
+        distanceInfo.classList.remove('hidden');
+      } else if (distanceInfo) {
+        distanceInfo.classList.add('hidden');
+      }
+    }
+
+    /**
+     * Calculate distance-based shipping fee (async)
+     */
+    async function calculateServicesShippingFee() {
+      const deliveryMethod = document.querySelector('input[name="delivery-method"]:checked');
+      
+      // If pickup, no calculation needed
+      if (deliveryMethod?.value === 'pickup') {
+        currentServicesShippingFee = 0;
+        updateServicesDistanceInfo(null);
+        return 0;
+      }
+      
+      // Get address components
+      const addressComponents = {
+        block: document.getElementById('ship-block')?.value || '',
+        lot: document.getElementById('ship-lot')?.value || '',
+        street: document.getElementById('ship-street')?.value || '',
+        building: document.getElementById('ship-building')?.value || '',
+        city: document.getElementById('ship-city')?.value || '',
+        province: document.getElementById('ship-province')?.value || '',
+        isPickup: false
+      };
+      
+      // Check if address has minimum required fields
+      const hasMinAddress = addressComponents.city || addressComponents.province;
+      
+      if (!hasMinAddress) {
+        // Use quick estimate based on province
+        if (window.ShippingCalculator) {
+          const estimate = ShippingCalculator.getQuickEstimate(addressComponents.province);
+          currentServicesShippingFee = estimate.fee;
+        } else {
+          currentServicesShippingFee = 80;
+        }
+        updateServicesDistanceInfo(null);
+        return currentServicesShippingFee;
+      }
+      
+      // Create address key for comparison
+      const addressKey = JSON.stringify(addressComponents);
+      if (addressKey === servicesLastCalculatedAddress) {
+        return currentServicesShippingFee; // Same address, return cached
+      }
+      
+      // Show loader
+      servicesIsCalculating = true;
+      showServicesShippingLoader(true);
+      
+      try {
+        if (window.ShippingCalculator) {
+          const result = await ShippingCalculator.calculateShippingFee(addressComponents);
+          
+          currentServicesShippingFee = result.fee;
+          servicesLastCalculatedAddress = addressKey;
+          
+          // Show distance info if available
+          if (result.distanceKm) {
+            updateServicesDistanceInfo(result.distanceKm, result.durationText);
+          } else {
+            updateServicesDistanceInfo(null);
+          }
+          
+          // Update delivery description based on method
+          const deliveryDesc = document.getElementById('delivery-desc');
+          if (deliveryDesc) {
+            if (result.method === 'distance-based') {
+              deliveryDesc.textContent = '3-5 days via Lalamove / J&T';
+            } else {
+              deliveryDesc.textContent = '3-5 days (zone-based estimate)';
+            }
+          }
+        } else {
+          currentServicesShippingFee = 80;
+          updateServicesDistanceInfo(null);
+        }
+      } catch (error) {
+        console.error('Services shipping calculation error:', error);
+        currentServicesShippingFee = 80;
+        updateServicesDistanceInfo(null);
+      } finally {
+        servicesIsCalculating = false;
+        showServicesShippingLoader(false);
+      }
+      
+      return currentServicesShippingFee;
+    }
+
+    /**
+     * Update payment amounts display with delivery fee (async version)
+     */
+    async function updatePaymentAmounts(data) {
       const quantity = data.quantity || 1;
       const serviceFee = 0; // No additional service fee for now
       const paymentOption = data.paymentOption || 'full';
       
-      // Get delivery fee based on selected method and selected province
+      // Get delivery fee based on selected method
       const deliveryMethod = document.querySelector('input[name="delivery-method"]:checked');
-      // Province-based delivery rates (client-side mirror of server rates)
-      const PROVINCE_RATES = {
-        'metro manila': 120,
-        'manila': 120,
-        'quezon city': 120,
-        'makati': 120,
-        'cavite': 70,
-        'laguna': 80,
-        'batangas': 120,
-        'bulacan': 90,
-        'pampanga': 100,
-        'rizal': 85,
-        'quezon': 150,
-        'nueva ecija': 120,
-        'tarlac': 130,
-        'zambales': 140,
-        'bataan': 140,
-        'other': 120
-      };
-      function clientRateForProvince(prov){
-        if(!prov) return 120;
-        const key = (prov||'').toString().toLowerCase();
-        if(key.includes('cavite')) return PROVINCE_RATES['cavite'];
-        if(key.includes('laguna')) return PROVINCE_RATES['laguna'];
-        if(key.includes('batangas')) return PROVINCE_RATES['batangas'];
-        if(key.includes('metro')||key.includes('manila')||key.includes('quezon city')||key.includes('makati')) return PROVINCE_RATES['metro manila'];
-        return PROVINCE_RATES[key] || 120;
+      const isPickup = deliveryMethod?.value === 'pickup';
+      
+      // Calculate shipping fee (distance-based)
+      let selectedDeliveryFee;
+      if (isPickup) {
+        selectedDeliveryFee = 0;
+      } else {
+        // Use distance-based calculation
+        selectedDeliveryFee = await calculateServicesShippingFee();
       }
-      // For remaining-balance payment, do not add a new delivery fee; use the original fee for computation only
-      const selectedProvince = document.getElementById('ship-province')?.value || '';
-      const selectedDeliveryFee = deliveryMethod && deliveryMethod.value === 'pickup' ? 0 : clientRateForProvince(selectedProvince);
+
       const previousDeliveryFee = Number(data.previousDeliveryFee || 0);
       
       // Determine subtotal semantics:
@@ -997,17 +1112,8 @@
         } else if (deliveryMethod === 'Pick-Up') {
           deliveryFee = 0;
         } else {
-          // compute from selected province (client-side estimate)
-          const selProv = document.getElementById('ship-province')?.value || '';
-          function clientRateForProvinceSimple(prov){
-            const key = (prov||'').toString().toLowerCase();
-            if(key.includes('cavite')) return 70;
-            if(key.includes('laguna')) return 80;
-            if(key.includes('batangas')) return 120;
-            if(key.includes('metro')||key.includes('manila')||key.includes('quezon city')||key.includes('makati')) return 120;
-            return 120;
-          }
-          deliveryFee = clientRateForProvinceSimple(selProv);
+          // Use the already-calculated distance-based shipping fee
+          deliveryFee = currentServicesShippingFee || 80;
         }
         
         // Get shipping address (only if not pick-up)
@@ -1246,6 +1352,8 @@
     }
   </script>
 
+  <!-- Shipping Calculator (Distance-based) -->
+  <script src="js/shipping-calculator.js"></script>
   <!-- Socket.io Client -->
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <!-- Chat Widget -->

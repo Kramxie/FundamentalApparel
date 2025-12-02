@@ -287,10 +287,36 @@ const CustomOrderSchema = new mongoose.Schema({
         type: String,
         enum: ['card', 'gcash', 'grab_pay', 'paymaya', 'online_banking', 'manual'],
         default: null
-    }
-    ,
+    },
     // Link to generated receipt (if any)
     receiptId: { type: mongoose.Schema.Types.ObjectId, ref: 'Receipt' },
+    // Price breakdown for customer transparency
+    priceBreakdown: {
+        materials: [{
+            name: String,
+            qty: Number,
+            unit: String,
+            unitCost: Number,
+            subtotal: Number
+        }],
+        labor: {
+            printing: { type: Number, default: 0 },
+            design: { type: Number, default: 0 },
+            setup: { type: Number, default: 0 },
+            other: { type: Number, default: 0 }
+        },
+        materialsTotal: { type: Number, default: 0 },
+        laborTotal: { type: Number, default: 0 },
+        grandTotal: { type: Number, default: 0 }
+    },
+    // Materials quoted (for allocation when payment is verified)
+    quoteMaterials: [{
+        inventoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Inventory' },
+        name: String,
+        qtyUsed: Number,
+        unitCost: Number,
+        unit: String
+    }],
     // Inventory allocation tracking (for printing-only orders)
     inventoryAllocated: {
         type: Boolean,

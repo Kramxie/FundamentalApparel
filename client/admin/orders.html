@@ -786,16 +786,98 @@
           <div id="custom-modal-fp-receipt" class="text-sm"></div>
         </div>
 
-        <!-- Quote Form -->
-        <div id="custom-modal-quote-box" class="hidden bg-indigo-50 p-4 rounded-lg border border-indigo-200 space-y-3">
+        <!-- Quote Form with Materials Selection -->
+        <div id="custom-modal-quote-box" class="hidden bg-indigo-50 p-4 rounded-lg border border-indigo-200 space-y-4">
           <h4 class="font-semibold text-indigo-900 mb-2">💰 Set Quote Price</h4>
-          <div>
-            <label for="form-custom-price" class="block text-sm font-medium mb-1">Total Price (PHP)</label>
-            <input id="form-custom-price" type="number" min="0" class="w-full border rounded px-3 py-2 text-sm" placeholder="Enter total amount">
+          
+          <!-- Materials Selection Section -->
+          <div class="bg-white p-3 rounded-lg border">
+            <div class="flex items-center justify-between mb-3">
+              <h5 class="text-sm font-semibold text-gray-700">
+                <i class="fas fa-cubes text-purple-600 mr-2"></i>Materials Used
+              </h5>
+              <button type="button" id="add-material-row-btn" class="px-3 py-1 text-xs bg-purple-100 text-purple-700 border border-purple-300 rounded hover:bg-purple-200">
+                <i class="fas fa-plus mr-1"></i>Add Material
+              </button>
+            </div>
+            
+            <!-- Materials Table Header -->
+            <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 font-semibold mb-2 px-2">
+              <div class="col-span-4">Material</div>
+              <div class="col-span-2">Available</div>
+              <div class="col-span-2">Qty Used</div>
+              <div class="col-span-2">Unit Cost</div>
+              <div class="col-span-1">Subtotal</div>
+              <div class="col-span-1"></div>
+            </div>
+            
+            <!-- Materials Rows Container -->
+            <div id="quote-materials-container" class="space-y-2 max-h-48 overflow-y-auto">
+              <!-- Material rows will be added here dynamically -->
+              <div class="text-center text-sm text-gray-400 py-3" id="no-materials-msg">
+                Click "Add Material" to select materials from inventory
+              </div>
+            </div>
+            
+            <!-- Materials Subtotal -->
+            <div class="border-t mt-3 pt-2 flex justify-between text-sm">
+              <span class="text-gray-600 font-medium">Materials Subtotal:</span>
+              <span id="quote-materials-subtotal" class="font-semibold text-purple-700">₱0.00</span>
+            </div>
           </div>
+          
+          <!-- Labor/Service Cost -->
+          <div class="bg-white p-3 rounded-lg border">
+            <h5 class="text-sm font-semibold text-gray-700 mb-2">
+              <i class="fas fa-tools text-blue-600 mr-2"></i>Labor & Service Costs
+            </h5>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">Printing/Production (₱)</label>
+                <input id="quote-labor-printing" type="number" min="0" step="0.01" class="w-full border rounded px-3 py-2 text-sm" value="0" placeholder="0.00">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">Design Fee (₱)</label>
+                <input id="quote-labor-design" type="number" min="0" step="0.01" class="w-full border rounded px-3 py-2 text-sm" value="0" placeholder="0.00">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">Setup/Prep Fee (₱)</label>
+                <input id="quote-labor-setup" type="number" min="0" step="0.01" class="w-full border rounded px-3 py-2 text-sm" value="0" placeholder="0.00">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">Other Charges (₱)</label>
+                <input id="quote-labor-other" type="number" min="0" step="0.01" class="w-full border rounded px-3 py-2 text-sm" value="0" placeholder="0.00">
+              </div>
+            </div>
+            <div class="border-t mt-3 pt-2 flex justify-between text-sm">
+              <span class="text-gray-600 font-medium">Labor Subtotal:</span>
+              <span id="quote-labor-subtotal" class="font-semibold text-blue-700">₱0.00</span>
+            </div>
+          </div>
+          
+          <!-- Total Price Summary -->
+          <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg border border-green-200">
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Materials Cost:</span>
+                <span id="quote-summary-materials" class="font-medium">₱0.00</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Labor Cost:</span>
+                <span id="quote-summary-labor" class="font-medium">₱0.00</span>
+              </div>
+              <div class="flex justify-between border-t pt-2">
+                <span class="font-semibold text-gray-800">Total Quote Price:</span>
+                <span id="quote-total-price" class="font-bold text-xl text-green-700">₱0.00</span>
+              </div>
+            </div>
+            <input id="form-custom-price" type="hidden" value="0">
+          </div>
+          
+          <!-- Pricing Notes -->
           <div>
-            <label for="form-pricing-notes" class="block text-sm font-medium mb-1">Pricing Breakdown / Notes</label>
-            <textarea id="form-pricing-notes" rows="3" class="w-full border rounded px-3 py-2 text-sm" placeholder="Materials, Printing, Discounts..."></textarea>
+            <label for="form-pricing-notes" class="block text-sm font-medium mb-1">Additional Notes for Customer</label>
+            <textarea id="form-pricing-notes" rows="2" class="w-full border rounded px-3 py-2 text-sm" placeholder="Any special instructions or notes..."></textarea>
           </div>
         </div>
 
@@ -1333,6 +1415,245 @@
       // Payment modal removed; payment info is shown directly in Order Details modal
 
       // Payment Info modal removed; no modal helpers needed
+
+      // =====================================================
+      // MATERIALS SELECTION FOR QUOTE (Inventory-based)
+      // =====================================================
+      let availableMaterials = []; // Will be fetched from inventory
+      let quoteMaterialsSelected = []; // Array of { inventoryId, name, qtyUsed, unitCost, available, unit }
+      
+      // Fetch materials from inventory
+      async function loadAvailableMaterials() {
+        try {
+          const res = await fetch(`${API}/api/admin/inventory?type=material`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error('Failed to load materials');
+          const data = await res.json();
+          availableMaterials = (data.data || data || []).filter(m => m.type === 'material');
+        } catch (e) {
+          console.error('Failed to load materials:', e);
+          availableMaterials = [];
+        }
+      }
+      
+      // Create a material row in the quote form
+      function createMaterialRow(material = null) {
+        const container = document.getElementById('quote-materials-container');
+        const noMsgEl = document.getElementById('no-materials-msg');
+        if (noMsgEl) noMsgEl.remove();
+        
+        const rowId = `mat-row-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
+        const row = document.createElement('div');
+        row.className = 'grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded border';
+        row.id = rowId;
+        
+        // Build material options
+        let options = '<option value="">Select Material</option>';
+        availableMaterials.forEach(m => {
+          const displayName = m.name;
+          const avail = m.quantity || 0;
+          const unit = m.unit || 'pcs';
+          const price = m.price || 0;
+          const disabled = avail <= 0 ? 'disabled' : '';
+          const stockLabel = avail <= 0 ? ' (Out of Stock)' : '';
+          options += `<option value="${m._id}" data-avail="${avail}" data-unit="${unit}" data-price="${price}" ${disabled}>${displayName}${stockLabel}</option>`;
+        });
+        
+        row.innerHTML = `
+          <div class="col-span-4">
+            <select class="material-select w-full px-2 py-1 border rounded text-xs" data-row="${rowId}">
+              ${options}
+            </select>
+          </div>
+          <div class="col-span-2">
+            <span class="material-available text-xs text-gray-500">-</span>
+          </div>
+          <div class="col-span-2">
+            <input type="number" min="0" class="material-qty w-full px-2 py-1 border rounded text-xs" value="0" data-row="${rowId}">
+          </div>
+          <div class="col-span-2">
+            <span class="material-unit-cost text-xs text-gray-600">₱0.00</span>
+          </div>
+          <div class="col-span-1">
+            <span class="material-subtotal text-xs font-medium text-purple-700">₱0.00</span>
+          </div>
+          <div class="col-span-1">
+            <button type="button" class="remove-material-row text-red-500 hover:text-red-700 text-xs" data-row="${rowId}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        `;
+        
+        container.appendChild(row);
+        
+        // Event handlers
+        const selectEl = row.querySelector('.material-select');
+        const qtyEl = row.querySelector('.material-qty');
+        const availEl = row.querySelector('.material-available');
+        const unitCostEl = row.querySelector('.material-unit-cost');
+        const subtotalEl = row.querySelector('.material-subtotal');
+        const removeBtn = row.querySelector('.remove-material-row');
+        
+        selectEl.addEventListener('change', () => {
+          const opt = selectEl.options[selectEl.selectedIndex];
+          const avail = Number(opt?.dataset?.avail || 0);
+          const unit = opt?.dataset?.unit || 'pcs';
+          const price = Number(opt?.dataset?.price || 0);
+          
+          availEl.textContent = avail > 0 ? `${avail} ${unit}` : '-';
+          unitCostEl.textContent = `₱${price.toFixed(2)}`;
+          qtyEl.max = avail;
+          qtyEl.value = 0;
+          subtotalEl.textContent = '₱0.00';
+          recalculateQuoteTotals();
+        });
+        
+        qtyEl.addEventListener('input', () => {
+          const opt = selectEl.options[selectEl.selectedIndex];
+          const avail = Number(opt?.dataset?.avail || 0);
+          const price = Number(opt?.dataset?.price || 0);
+          let qty = Number(qtyEl.value) || 0;
+          
+          // Validate: cannot exceed available
+          if (qty > avail) {
+            qty = avail;
+            qtyEl.value = avail;
+            showQuoteMessage(`Cannot exceed available stock (${avail})`, 'warning');
+          }
+          
+          const subtotal = qty * price;
+          subtotalEl.textContent = `₱${subtotal.toFixed(2)}`;
+          recalculateQuoteTotals();
+        });
+        
+        removeBtn.addEventListener('click', () => {
+          row.remove();
+          recalculateQuoteTotals();
+          // If no rows left, show "no materials" message
+          if (container.children.length === 0) {
+            container.innerHTML = '<div class="text-center text-sm text-gray-400 py-3" id="no-materials-msg">Click "Add Material" to select materials from inventory</div>';
+          }
+        });
+        
+        if (material) {
+          selectEl.value = material.inventoryId || '';
+          selectEl.dispatchEvent(new Event('change'));
+          qtyEl.value = material.qtyUsed || 0;
+          qtyEl.dispatchEvent(new Event('input'));
+        }
+        
+        return row;
+      }
+      
+      // Recalculate all quote totals
+      function recalculateQuoteTotals() {
+        let materialsTotal = 0;
+        const container = document.getElementById('quote-materials-container');
+        const rows = container.querySelectorAll('[id^="mat-row-"]');
+        
+        rows.forEach(row => {
+          const selectEl = row.querySelector('.material-select');
+          const qtyEl = row.querySelector('.material-qty');
+          const opt = selectEl?.options[selectEl.selectedIndex];
+          const price = Number(opt?.dataset?.price || 0);
+          const qty = Number(qtyEl?.value || 0);
+          materialsTotal += price * qty;
+        });
+        
+        // Labor costs
+        const laborPrinting = Number(document.getElementById('quote-labor-printing')?.value || 0);
+        const laborDesign = Number(document.getElementById('quote-labor-design')?.value || 0);
+        const laborSetup = Number(document.getElementById('quote-labor-setup')?.value || 0);
+        const laborOther = Number(document.getElementById('quote-labor-other')?.value || 0);
+        const laborTotal = laborPrinting + laborDesign + laborSetup + laborOther;
+        
+        const grandTotal = materialsTotal + laborTotal;
+        
+        // Update displays
+        document.getElementById('quote-materials-subtotal').textContent = `₱${materialsTotal.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+        document.getElementById('quote-labor-subtotal').textContent = `₱${laborTotal.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+        document.getElementById('quote-summary-materials').textContent = `₱${materialsTotal.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+        document.getElementById('quote-summary-labor').textContent = `₱${laborTotal.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+        document.getElementById('quote-total-price').textContent = `₱${grandTotal.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+        
+        // Update hidden form field
+        document.getElementById('form-custom-price').value = grandTotal;
+        
+        return { materialsTotal, laborTotal, grandTotal };
+      }
+      
+      // Collect materials data for submission
+      function collectMaterialsData() {
+        const materials = [];
+        const container = document.getElementById('quote-materials-container');
+        const rows = container.querySelectorAll('[id^="mat-row-"]');
+        
+        rows.forEach(row => {
+          const selectEl = row.querySelector('.material-select');
+          const qtyEl = row.querySelector('.material-qty');
+          const opt = selectEl?.options[selectEl.selectedIndex];
+          
+          if (selectEl.value && Number(qtyEl.value) > 0) {
+            materials.push({
+              inventoryId: selectEl.value,
+              name: opt?.textContent?.replace(' (Out of Stock)', '') || 'Unknown',
+              qtyUsed: Number(qtyEl.value),
+              unitCost: Number(opt?.dataset?.price || 0),
+              unit: opt?.dataset?.unit || 'pcs'
+            });
+          }
+        });
+        
+        return materials;
+      }
+      
+      // Show inline quote message
+      function showQuoteMessage(msg, type = 'info') {
+        // Could add a small toast or inline message; for now use console
+        console.warn(`Quote: ${msg}`);
+      }
+      
+      // Initialize materials selection when quote box is shown
+      async function initMaterialsSelection() {
+        await loadAvailableMaterials();
+        
+        // Reset materials container
+        const container = document.getElementById('quote-materials-container');
+        if (container) {
+          container.innerHTML = '<div class="text-center text-sm text-gray-400 py-3" id="no-materials-msg">Click "Add Material" to select materials from inventory</div>';
+        }
+        
+        // Reset labor fields
+        ['quote-labor-printing', 'quote-labor-design', 'quote-labor-setup', 'quote-labor-other'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = 0;
+        });
+        
+        // Reset totals
+        recalculateQuoteTotals();
+      }
+      
+      // Add material row button handler
+      document.getElementById('add-material-row-btn')?.addEventListener('click', async () => {
+        if (availableMaterials.length === 0) {
+          await loadAvailableMaterials();
+        }
+        if (availableMaterials.length === 0) {
+          alert('No materials found in inventory. Please add materials first.');
+          return;
+        }
+        createMaterialRow();
+      });
+      
+      // Labor input handlers for recalculation
+      ['quote-labor-printing', 'quote-labor-design', 'quote-labor-setup', 'quote-labor-other'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', recalculateQuoteTotals);
+      });
+      
+      // =====================================================
+      // END MATERIALS SELECTION
+      // =====================================================
 
       function badge(text, type) {
         const map = {
@@ -2792,6 +3113,8 @@
         if (order.status === 'Pending Quote') {
           els.customModalQuoteBox.classList.remove('hidden');
           els.customModalSaveQuote.classList.remove('hidden');
+          // Initialize materials selection for quote
+          initMaterialsSelection();
         }
         else if (order.status === 'Quote Sent') {
           els.customModalInfoBox.classList.remove('hidden');
@@ -3089,7 +3412,25 @@
         if (!selectedCustomOrder) return;
         const price = els.formCustomPrice.value;
         if (!price || Number(price) <= 0) {
-          els.customModalError.textContent = 'Please enter a valid price.';
+          els.customModalError.textContent = 'Please enter a valid price. Add materials and/or labor costs.';
+          els.customModalError.classList.remove('hidden');
+          return;
+        }
+
+        // Collect materials data for the quote
+        const materialsUsed = collectMaterialsData();
+        const laborCosts = {
+          printing: Number(document.getElementById('quote-labor-printing')?.value || 0),
+          design: Number(document.getElementById('quote-labor-design')?.value || 0),
+          setup: Number(document.getElementById('quote-labor-setup')?.value || 0),
+          other: Number(document.getElementById('quote-labor-other')?.value || 0)
+        };
+        const laborTotal = laborCosts.printing + laborCosts.design + laborCosts.setup + laborCosts.other;
+        const materialsTotal = materialsUsed.reduce((sum, m) => sum + (m.qtyUsed * m.unitCost), 0);
+        
+        // Validate that at least some cost is entered
+        if (materialsTotal === 0 && laborTotal === 0) {
+          els.customModalError.textContent = 'Please add at least one material or labor cost.';
           els.customModalError.classList.remove('hidden');
           return;
         }
@@ -3130,10 +3471,30 @@
         els.customModalError.classList.add('hidden');
 
         try {
+          // Build price breakdown for customer view
+          const priceBreakdown = {
+            materials: materialsUsed.map(m => ({
+              name: m.name,
+              qty: m.qtyUsed,
+              unit: m.unit,
+              unitCost: m.unitCost,
+              subtotal: m.qtyUsed * m.unitCost
+            })),
+            labor: laborCosts,
+            materialsTotal: materialsTotal,
+            laborTotal: laborTotal,
+            grandTotal: Number(price)
+          };
+          
           const res = await fetch(`${API}/api/custom-orders/${selectedCustomOrder._id}/quote`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ price: price, notes: els.formPricingNotes.value || undefined })
+            body: JSON.stringify({ 
+              price: price, 
+              notes: els.formPricingNotes.value || undefined,
+              priceBreakdown: priceBreakdown,
+              materialsUsed: materialsUsed
+            })
           });
           const data = await res.json();
           if (!res.ok || !data.success) throw new Error(data.msg || 'Failed to send quote');

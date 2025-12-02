@@ -39,6 +39,7 @@
             <div class="border-2 border-gray-200 peer-checked:border-green-600 peer-checked:bg-green-50 rounded-lg p-4 text-center">
               <i class="fas fa-fire text-2xl text-green-600 mb-2"></i>
               <p class="font-semibold text-sm">Dye-Sublimation</p>
+              <p class="text-xs text-gray-500 mt-1">Best for full-color designs</p>
             </div>
           </label>
           <label class="cursor-pointer">
@@ -46,6 +47,7 @@
             <div class="border-2 border-gray-200 peer-checked:border-green-600 peer-checked:bg-green-50 rounded-lg p-4 text-center">
               <i class="fas fa-temperature-high text-2xl text-green-600 mb-2"></i>
               <p class="font-semibold text-sm">Heat Transfer</p>
+              <p class="text-xs text-gray-500 mt-1">Good for photos & gradients</p>
             </div>
           </label>
           <label class="cursor-pointer">
@@ -53,38 +55,78 @@
             <div class="border-2 border-gray-200 peer-checked:border-green-600 peer-checked:bg-green-50 rounded-lg p-4 text-center">
               <i class="fas fa-layer-group text-2xl text-green-600 mb-2"></i>
               <p class="font-semibold text-sm">Vinyl Print</p>
+              <p class="text-xs text-gray-500 mt-1">Durable for simple designs</p>
             </div>
           </label>
         </div>
       </section>
 
-      <!-- Fabric & Garment combined -->
-      <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="md:col-span-2">
-          <label class="block text-sm font-bold text-gray-800 mb-2">Fabric & Garment</label>
-          <select id="fabricGarment" class="w-full border rounded-lg px-3 py-2" required>
-            <option value="">Select fabric & garment</option>
-            <option value="Cotton - Jersey">Cotton - Jersey</option>
-            <option value="Cotton - T-Shirt">Cotton - T-Shirt</option>
-            <option value="Cotton - Hoodie">Cotton - Hoodie</option>
-            <option value="Dry-Fit - Jersey">Dry-Fit - Jersey</option>
-            <option value="Dry-Fit - T-Shirt">Dry-Fit - T-Shirt</option>
-            <option value="Polyester - Jersey">Polyester - Jersey</option>
-            <option value="Polyester - Hoodie">Polyester - Hoodie</option>
+      <!-- SEPARATE Fabric & Garment Selection -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Fabric Type -->
+        <div>
+          <label class="block text-sm font-bold text-gray-800 mb-2">
+            <i class="fas fa-scroll text-blue-600 mr-1"></i>Fabric Type
+          </label>
+          <select id="fabricType" class="w-full border rounded-lg px-3 py-2" required>
+            <option value="">Select fabric type</option>
+            <option value="Fullmax">Fullmax</option>
+            <option value="Polydex">Polydex</option>
+            <option value="Synthetic">Synthetic</option>
+            <option value="Cotton">Cotton</option>
+            <option value="Dry-Fit">Dry-Fit</option>
+            <option value="Polyester">Polyester</option>
           </select>
-
-          <div class="mt-3 flex items-center gap-3">
-            <button id="checkSizesBtn" type="button" class="px-3 py-2 border rounded-lg text-sm bg-white hover:bg-gray-50">
-              <i class="fas fa-search mr-2"></i>Check Available Sizes
-            </button>
-            <div id="sizesAvailability" class="flex flex-wrap gap-2"></div>
-            <span id="fabricStatusBadge" class="ml-3 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 hidden"></span>
         </div>
+        
+        <!-- Garment Type -->
+        <div>
+          <label class="block text-sm font-bold text-gray-800 mb-2">
+            <i class="fas fa-tshirt text-green-600 mr-1"></i>Garment Type
+          </label>
+          <select id="garmentType" class="w-full border rounded-lg px-3 py-2" required>
+            <option value="">Select garment type</option>
+            <option value="Jersey">Jersey</option>
+            <option value="T-Shirt">T-Shirt</option>
+            <option value="Hoodie">Hoodie</option>
+            <option value="Polo Shirt">Polo Shirt</option>
+            <option value="Long Sleeve">Long Sleeve</option>
+            <option value="Tank Top">Tank Top</option>
+            <option value="Shorts">Shorts</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Quantity & Size Guide -->
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label class="block text-sm font-bold text-gray-800 mb-2">Quantity</label>
           <input id="quantity" type="number" min="1" class="w-full border rounded-lg px-3 py-2" value="1" required />
         </div>
+        <div class="md:col-span-2 flex items-end gap-3">
+          <button id="checkSizesBtn" type="button" class="px-4 py-2 border rounded-lg text-sm bg-white hover:bg-gray-50 flex items-center gap-2">
+            <i class="fas fa-search text-green-600"></i>Check Available Sizes
+          </button>
+          <button id="sizeGuideBtn" type="button" class="px-4 py-2 border border-blue-300 bg-blue-50 rounded-lg text-sm text-blue-700 hover:bg-blue-100 flex items-center gap-2">
+            <i class="fas fa-ruler"></i>Size Guide
+          </button>
+          <span id="fabricStatusBadge" class="ml-3 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 hidden"></span>
+        </div>
       </section>
+
+      <!-- Hidden field for combined fabric & garment (for backend compatibility) -->
+      <input type="hidden" id="fabricGarment" name="fabricGarment" />
+
+      <!-- Availability Info Panel -->
+      <div id="sizesAvailability" class="hidden bg-gray-50 border rounded-lg p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-sm font-semibold text-gray-700"><i class="fas fa-boxes text-green-600 mr-2"></i>Available Stock</h4>
+          <button type="button" onclick="document.getElementById('sizesAvailability').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div id="stockInfo" class="text-sm text-gray-600"></div>
+      </div>
 
       <!-- Design Uploads -->
       <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -102,20 +144,31 @@
 
       <!-- Team Mode -->
       <section class="space-y-3">
-        <div class="flex items-center gap-3">
-          <button id="teamToggle" type="button" class="px-3 py-2 border rounded-lg text-sm flex items-center gap-2">
+        <div class="flex items-center gap-3 flex-wrap">
+          <button id="teamToggle" type="button" class="px-4 py-2 border rounded-lg text-sm flex items-center gap-2 hover:bg-gray-50">
             <i class="fas fa-users"></i><span>Team Mode: Off</span>
           </button>
-          <button id="uploadNamesBtn" type="button" class="px-3 py-2 border rounded-lg text-sm hidden">
-            <i class="fas fa-file-upload"></i> Team Names
-          </button>
+          <p class="text-xs text-gray-500">Enable for multiple jerseys with different names/numbers</p>
         </div>
-        <div id="teamBox" class="hidden bg-gray-50 border rounded-lg p-4">
-          <div class="flex items-center justify-between mb-3">
+        <div id="teamBox" class="hidden bg-gradient-to-b from-gray-50 to-white border rounded-lg p-4">
+          <div class="flex items-center justify-between mb-4">
             <h3 class="font-semibold text-gray-800"><i class="fas fa-users text-green-600 mr-2"></i>Team Members</h3>
-            <span class="text-xs text-gray-500">Auto based on quantity • Surname & Number are optional</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-500">Surname & Number are optional</span>
+              <button id="addTeamMemberBtn" type="button" class="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">
+                <i class="fas fa-plus mr-1"></i>Add Member
+              </button>
+            </div>
           </div>
-          <div id="teamContainer" class="space-y-3"></div>
+          <!-- Team Header -->
+          <div class="grid grid-cols-12 gap-2 text-xs font-semibold text-gray-500 mb-2 px-2">
+            <div class="col-span-1">#</div>
+            <div class="col-span-4">Surname / Name</div>
+            <div class="col-span-2">Jersey Number</div>
+            <div class="col-span-4">Size</div>
+            <div class="col-span-1"></div>
+          </div>
+          <div id="teamContainer" class="space-y-2 max-h-80 overflow-y-auto"></div>
         </div>
       </section>
 
@@ -145,6 +198,98 @@
     </form>
   </main>
 
+  <!-- Size Guide Modal -->
+  <div id="sizeGuideModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-xl max-w-2xl w-full mx-4 shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-ruler-combined"></i>
+          <span class="font-semibold">Size Guide</span>
+        </div>
+        <button id="sizeGuideClose" class="text-white hover:text-blue-200 text-xl">&times;</button>
+      </div>
+      <div class="p-6">
+        <p class="text-sm text-gray-600 mb-4">All measurements are in centimeters (cm). Measurements may vary slightly.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-gray-100">
+                <th class="border px-3 py-2 text-left font-semibold">Size</th>
+                <th class="border px-3 py-2 text-center font-semibold">Chest</th>
+                <th class="border px-3 py-2 text-center font-semibold">Length</th>
+                <th class="border px-3 py-2 text-center font-semibold">Shoulder</th>
+                <th class="border px-3 py-2 text-center font-semibold">Sleeve</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="hover:bg-gray-50">
+                <td class="border px-3 py-2 font-medium">XS</td>
+                <td class="border px-3 py-2 text-center">86-91</td>
+                <td class="border px-3 py-2 text-center">66</td>
+                <td class="border px-3 py-2 text-center">40</td>
+                <td class="border px-3 py-2 text-center">19</td>
+              </tr>
+              <tr class="hover:bg-gray-50 bg-gray-50">
+                <td class="border px-3 py-2 font-medium">S</td>
+                <td class="border px-3 py-2 text-center">91-96</td>
+                <td class="border px-3 py-2 text-center">69</td>
+                <td class="border px-3 py-2 text-center">42</td>
+                <td class="border px-3 py-2 text-center">20</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="border px-3 py-2 font-medium">M</td>
+                <td class="border px-3 py-2 text-center">96-101</td>
+                <td class="border px-3 py-2 text-center">72</td>
+                <td class="border px-3 py-2 text-center">44</td>
+                <td class="border px-3 py-2 text-center">21</td>
+              </tr>
+              <tr class="hover:bg-gray-50 bg-gray-50">
+                <td class="border px-3 py-2 font-medium">L</td>
+                <td class="border px-3 py-2 text-center">101-106</td>
+                <td class="border px-3 py-2 text-center">74</td>
+                <td class="border px-3 py-2 text-center">46</td>
+                <td class="border px-3 py-2 text-center">22</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="border px-3 py-2 font-medium">XL</td>
+                <td class="border px-3 py-2 text-center">106-111</td>
+                <td class="border px-3 py-2 text-center">76</td>
+                <td class="border px-3 py-2 text-center">48</td>
+                <td class="border px-3 py-2 text-center">23</td>
+              </tr>
+              <tr class="hover:bg-gray-50 bg-gray-50">
+                <td class="border px-3 py-2 font-medium">XXL</td>
+                <td class="border px-3 py-2 text-center">111-116</td>
+                <td class="border px-3 py-2 text-center">78</td>
+                <td class="border px-3 py-2 text-center">50</td>
+                <td class="border px-3 py-2 text-center">24</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="border px-3 py-2 font-medium">3XL</td>
+                <td class="border px-3 py-2 text-center">116-121</td>
+                <td class="border px-3 py-2 text-center">80</td>
+                <td class="border px-3 py-2 text-center">52</td>
+                <td class="border px-3 py-2 text-center">25</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p class="text-xs text-blue-800">
+            <i class="fas fa-info-circle mr-1"></i>
+            <strong>How to measure:</strong> Chest - measure around the fullest part. Length - from shoulder to hem. 
+            Shoulder - seam to seam. Sleeve - from shoulder seam to cuff.
+          </p>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t bg-gray-50 text-right">
+        <button id="sizeGuideCloseBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+          Got it!
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
     const API = 'https://fundamental-apparel-backend.onrender.com';
@@ -152,106 +297,224 @@
     const els = {
       form: document.getElementById('po-form'),
       teamToggle: document.getElementById('teamToggle'),
-      uploadNamesBtn: document.getElementById('uploadNamesBtn'),
       teamBox: document.getElementById('teamBox'),
       teamContainer: document.getElementById('teamContainer'),
       quantity: document.getElementById('quantity'),
-      fabricGarment: document.getElementById('fabricGarment'),
+      fabricType: document.getElementById('fabricType'),
+      garmentType: document.getElementById('garmentType'),
+      fabricGarment: document.getElementById('fabricGarment'), // hidden combined field
       checkSizesBtn: document.getElementById('checkSizesBtn'),
       sizesAvailability: document.getElementById('sizesAvailability'),
+      stockInfo: document.getElementById('stockInfo'),
       garmentSize: document.getElementById('garmentSize'),
       singleSizeRow: document.getElementById('singleSizeRow'),
-      teamNamesFileInput: document.getElementById('teamNamesFile')
+      teamNamesFileInput: document.getElementById('teamNamesFile'),
+      addTeamMemberBtn: document.getElementById('addTeamMemberBtn'),
+      sizeGuideBtn: document.getElementById('sizeGuideBtn'),
+      sizeGuideModal: document.getElementById('sizeGuideModal'),
+      sizeGuideClose: document.getElementById('sizeGuideClose'),
+      sizeGuideCloseBtn: document.getElementById('sizeGuideCloseBtn')
     };
 
     let teamMode = false;
     let availableVariants = [];
-    let currentInventory = null; // latest availability object for selected variant
+    let currentInventory = null;
     const DEFAULT_SIZE_ORDER = ['XS','S','M','L','XL','XXL','3XL'];
+    let teamMemberCounter = 0;
+
+    // Size Guide Modal handlers
+    els.sizeGuideBtn?.addEventListener('click', () => {
+      els.sizeGuideModal?.classList.remove('hidden');
+    });
+    els.sizeGuideClose?.addEventListener('click', () => {
+      els.sizeGuideModal?.classList.add('hidden');
+    });
+    els.sizeGuideCloseBtn?.addEventListener('click', () => {
+      els.sizeGuideModal?.classList.add('hidden');
+    });
+    els.sizeGuideModal?.addEventListener('click', (e) => {
+      if (e.target === els.sizeGuideModal) els.sizeGuideModal.classList.add('hidden');
+    });
+
+    // Update combined fabricGarment field when either dropdown changes
+    function updateCombinedField() {
+      const fabric = els.fabricType?.value || '';
+      const garment = els.garmentType?.value || '';
+      if (fabric && garment) {
+        els.fabricGarment.value = `${fabric} - ${garment}`;
+      } else {
+        els.fabricGarment.value = '';
+      }
+      // Try to load availability for this combination
+      if (els.fabricGarment.value) {
+        showVariantAvailability(els.fabricGarment.value);
+      } else {
+        currentInventory = null;
+        updateSizeDropdowns();
+        els.sizesAvailability?.classList.add('hidden');
+      }
+    }
+
+    els.fabricType?.addEventListener('change', updateCombinedField);
+    els.garmentType?.addEventListener('change', updateCombinedField);
+
+    // Generate team member row
+    function createTeamRow(index, name = '', number = '', size = '') {
+      const row = document.createElement('div');
+      row.className = 'grid grid-cols-12 gap-2 items-center p-2 bg-white border rounded';
+      row.dataset.index = index;
+      row.innerHTML = `
+        <div class="col-span-1 text-center text-sm text-gray-500 font-medium">${index + 1}</div>
+        <div class="col-span-4">
+          <input type="text" class="team-name w-full border rounded px-2 py-1.5 text-sm" placeholder="Surname / Name" value="${escapeHtml(name)}" />
+        </div>
+        <div class="col-span-2">
+          <input type="text" class="team-number w-full border rounded px-2 py-1.5 text-sm text-center" placeholder="#" value="${escapeHtml(number)}" />
+        </div>
+        <div class="col-span-4">
+          <select class="team-size w-full border rounded px-2 py-1.5 text-sm">
+            <option value="">Select size</option>
+          </select>
+        </div>
+        <div class="col-span-1 text-center">
+          <button type="button" class="remove-team-row text-red-500 hover:text-red-700 p-1">
+            <i class="fas fa-trash text-xs"></i>
+          </button>
+        </div>
+      `;
+      // Populate size options
+      const sizeSelect = row.querySelector('.team-size');
+      const sizes = getAvailableSizes();
+      sizes.forEach(sz => {
+        const opt = document.createElement('option');
+        opt.value = sz;
+        opt.textContent = sz;
+        sizeSelect.appendChild(opt);
+      });
+      if (size && sizes.includes(size)) {
+        sizeSelect.value = size;
+      }
+      // Remove button handler
+      row.querySelector('.remove-team-row').addEventListener('click', () => {
+        row.remove();
+        renumberTeamRows();
+        updateQuantityFromTeam();
+      });
+      return row;
+    }
+
+    function escapeHtml(s) {
+      return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function renumberTeamRows() {
+      const rows = els.teamContainer.querySelectorAll('[data-index]');
+      rows.forEach((row, idx) => {
+        row.dataset.index = idx;
+        row.querySelector('.col-span-1').textContent = idx + 1;
+      });
+    }
+
+    function updateQuantityFromTeam() {
+      const count = els.teamContainer.querySelectorAll('[data-index]').length;
+      els.quantity.value = count || 1;
+    }
 
     function genTeamRows() {
       const qty = Math.max(1, parseInt(els.quantity.value || '1', 10));
-      els.teamContainer.innerHTML = '';
-      for (let i=0;i<qty;i++){
-        const row = document.createElement('div');
-        row.className = 'grid grid-cols-3 gap-2 bg-white border rounded p-3';
-        row.innerHTML = `
-          <input class="name border rounded px-2 py-1" placeholder="Surname / Name (optional)" />
-          <input class="number border rounded px-2 py-1" placeholder="Number (optional)" />
-          <select class="size border rounded px-2 py-1">
-          </select>
-        `;
-        els.teamContainer.appendChild(row);
+      const existingRows = els.teamContainer.querySelectorAll('[data-index]');
+      const currentCount = existingRows.length;
+      
+      if (qty > currentCount) {
+        // Add more rows
+        for (let i = currentCount; i < qty; i++) {
+          els.teamContainer.appendChild(createTeamRow(i));
+        }
+      } else if (qty < currentCount) {
+        // Remove excess rows from the end
+        for (let i = currentCount - 1; i >= qty; i--) {
+          existingRows[i]?.remove();
+        }
       }
+      renumberTeamRows();
     }
 
-    function setTeamMode(on){
+    // Add team member button
+    els.addTeamMemberBtn?.addEventListener('click', () => {
+      const currentCount = els.teamContainer.querySelectorAll('[data-index]').length;
+      els.teamContainer.appendChild(createTeamRow(currentCount));
+      els.quantity.value = currentCount + 1;
+    });
+
+    function setTeamMode(on) {
       teamMode = !!on;
-      if(teamMode){
+      if (teamMode) {
         els.teamBox.classList.remove('hidden');
-        els.uploadNamesBtn.classList.remove('hidden');
         els.singleSizeRow.classList.add('hidden');
         els.teamToggle.querySelector('span').textContent = 'Team Mode: On';
+        els.teamToggle.classList.add('bg-green-50', 'border-green-300');
         genTeamRows();
-        // populate team size selects from current inventory if available
-        if(currentInventory) updateSizeDropdowns();
-      }else{
+        if (currentInventory) updateSizeDropdowns();
+      } else {
         els.teamBox.classList.add('hidden');
-        els.uploadNamesBtn.classList.add('hidden');
         els.singleSizeRow.classList.remove('hidden');
         els.teamToggle.querySelector('span').textContent = 'Team Mode: Off';
+        els.teamToggle.classList.remove('bg-green-50', 'border-green-300');
       }
     }
 
-    els.teamToggle.addEventListener('click', ()=> setTeamMode(!teamMode));
-    els.quantity.addEventListener('change', async ()=>{
-      if(teamMode) {
+    els.teamToggle.addEventListener('click', () => setTeamMode(!teamMode));
+    
+    els.quantity.addEventListener('change', async () => {
+      if (teamMode) {
         genTeamRows();
-        // ensure size selects are populated after regenerating rows
         updateSizeDropdowns();
-        // if no currentInventory yet, try to fetch availability for selected fabricGarment
-        if(!currentInventory && els.fabricGarment && els.fabricGarment.value) {
-          await showVariantAvailability(els.fabricGarment.value);
+        const combined = els.fabricGarment?.value;
+        if (!currentInventory && combined) {
+          await showVariantAvailability(combined);
           updateSizeDropdowns();
         }
       }
     });
 
-    // Optional: parse uploaded .txt/.csv into rows
-    els.teamNamesFileInput.addEventListener('change', async (e)=>{
+    // Parse uploaded .txt/.csv into rows
+    els.teamNamesFileInput?.addEventListener('change', async (e) => {
       const file = e.target.files?.[0];
-      if(!file) return;
-      try{
+      if (!file) return;
+      try {
         const text = await file.text();
         const lines = text.split(/\r?\n/).filter(Boolean);
         els.quantity.value = lines.length;
         setTeamMode(true);
-        genTeamRows();
-        // populate sizes for the newly generated rows
+        els.teamContainer.innerHTML = '';
+        lines.forEach((ln, idx) => {
+          const parts = ln.split(/[,|\t]/);
+          const name = (parts[0] || '').trim();
+          const number = (parts[1] || '').trim();
+          const size = (parts[2] || '').trim().toUpperCase();
+          els.teamContainer.appendChild(createTeamRow(idx, name, number, size));
+        });
         updateSizeDropdowns();
-        if(!currentInventory && els.fabricGarment && els.fabricGarment.value) {
-          await showVariantAvailability(els.fabricGarment.value);
+        const combined = els.fabricGarment?.value;
+        if (!currentInventory && combined) {
+          await showVariantAvailability(combined);
           updateSizeDropdowns();
         }
-        const rows = els.teamContainer.querySelectorAll('.grid');
-        lines.forEach((ln, idx)=>{
-          const parts = ln.split(/[,|\t]/);
-          const row = rows[idx]; if(!row) return;
-          row.querySelector('.name').value = (parts[0]||'').trim();
-          row.querySelector('.number').value = (parts[1]||'').trim();
-          if(parts[2]) row.querySelector('.size').value = parts[2].trim();
-        });
-      }catch(err){ console.error(err); }
+        showMessage('Team members loaded from file!', 'success');
+      } catch (err) {
+        console.error(err);
+        showMessage('Failed to parse file', 'error');
+      }
     });
 
     function collectTeamMembers(){
       const arr = [];
       if(!teamMode) return arr;
-      els.teamContainer.querySelectorAll('.grid').forEach(row=>{
+      els.teamContainer.querySelectorAll('[data-index]').forEach(row=>{
         arr.push({
-          name: row.querySelector('.name').value,
-          jerseyNumber: row.querySelector('.number').value,
-          size: row.querySelector('.size').value
+          name: row.querySelector('.team-name')?.value || '',
+          jerseyNumber: row.querySelector('.team-number')?.value || '',
+          size: row.querySelector('.team-size')?.value || ''
         });
       });
       return arr;
@@ -298,18 +561,11 @@
         if (prev && Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
         sel.disabled = sizes.length === 0;
       }
-      // Update team member size selects WITHOUT wiping existing selections unless qty changed
+      // Update team member size selects
       if(teamMode){
-        const desiredQty = Math.max(1, parseInt(els.quantity.value || '1', 10));
-        const rows = els.teamContainer.querySelectorAll('.grid');
-        if (rows.length !== desiredQty) {
-          // regenerate rows to match quantity, then populate selects
-          genTeamRows();
-        }
-        // populate each team row size select and preserve values
-        const rowsAfter = els.teamContainer.querySelectorAll('.grid');
-        rowsAfter.forEach(r=>{
-          const s = r.querySelector('.size');
+        const rows = els.teamContainer.querySelectorAll('[data-index]');
+        rows.forEach(r=>{
+          const s = r.querySelector('.team-size');
           if(!s) return;
           const prevVal = s.value;
           s.innerHTML = buildSizeOptionsHTML(sizes);
@@ -338,33 +594,82 @@
     function openSizesModal(){ const m = document.getElementById('sizesModal'); if(!m) return; m.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
     function closeSizesModal(){ const m = document.getElementById('sizesModal'); if(!m) return; m.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
 
-    // Display sizes into modal with CTA buttons
+    // Display sizes availability in the stock info panel
     function displaySizesAvailability(item, opts){
-      els.sizesAvailability.innerHTML = '';
-      if(!item) return;
+      if(!item) {
+        els.sizesAvailability?.classList.add('hidden');
+        return;
+      }
       currentInventory = item;
       updateSizeDropdowns();
-      const modal = document.getElementById('sizesModal');
-      const list = modal.querySelector('.sizes-list');
-      list.innerHTML = '';
+      
+      // Build stock info HTML
       const sizesInventory = item.sizesInventory || {};
       const sizesPrice = item.sizesPrice || {};
       const reservedSizes = item.reservedSizes || {};
-      Object.keys(sizesInventory).forEach(sz=>{
+      
+      let html = '<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">';
+      const sizeOrder = ['XS','S','M','L','XL','XXL','3XL'];
+      const keys = Object.keys(sizesInventory).sort((a,b) => {
+        const ia = sizeOrder.indexOf(a);
+        const ib = sizeOrder.indexOf(b);
+        if(ia === -1 && ib === -1) return a.localeCompare(b);
+        if(ia === -1) return 1;
+        if(ib === -1) return -1;
+        return ia - ib;
+      });
+      
+      keys.forEach(sz => {
         const total = Number(sizesInventory[sz]||0);
         const reserved = Number(reservedSizes[sz]||0);
         const available = Math.max(0, total - reserved);
-        const row = document.createElement('div');
-        row.className = 'flex items-center justify-between py-2 border-b';
-        row.innerHTML = `
-          <div class="text-sm"><strong>${sz}</strong>${sizesPrice[sz] ? ` • ₱${sizesPrice[sz]}` : ''}</div>
-          <div class="flex items-center gap-2">
-            <div class="text-xs text-gray-500">${available} available</div>
-            <button class="choose-size px-3 py-1 rounded text-sm bg-green-600 text-white" data-size="${sz}" data-available="${available}">${available>0? 'Choose' : 'Notify'}</button>
+        const price = sizesPrice[sz] ? `₱${sizesPrice[sz]}` : '';
+        const statusClass = available > 0 ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800';
+        html += `
+          <div class="p-2 rounded border ${statusClass} text-center">
+            <div class="font-semibold">${sz}</div>
+            <div class="text-xs">${available} avail</div>
+            ${price ? `<div class="text-xs">${price}</div>` : ''}
           </div>
         `;
-        list.appendChild(row);
       });
+      html += '</div>';
+      
+      // Show min price if available
+      let minPrice = item.price;
+      if (!minPrice || minPrice <= 0) {
+        const priceVals = Object.values(sizesPrice).filter(v => v > 0);
+        if (priceVals.length) minPrice = Math.min(...priceVals);
+      }
+      if (minPrice && minPrice > 0) {
+        html += `<div class="mt-2 text-xs text-gray-500">Starting from ₱${Number(minPrice).toFixed(2)}</div>`;
+      }
+      
+      els.stockInfo.innerHTML = html;
+      els.sizesAvailability?.classList.remove('hidden');
+      
+      // Also update the sizes modal if it's open
+      const modal = document.getElementById('sizesModal');
+      const list = modal?.querySelector('.sizes-list');
+      if (list) {
+        list.innerHTML = '';
+        keys.forEach(sz => {
+          const total = Number(sizesInventory[sz]||0);
+          const reserved = Number(reservedSizes[sz]||0);
+          const available = Math.max(0, total - reserved);
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between py-2 border-b';
+          row.innerHTML = `
+            <div class="text-sm"><strong>${sz}</strong>${sizesPrice[sz] ? ` • ₱${sizesPrice[sz]}` : ''}</div>
+            <div class="flex items-center gap-2">
+              <div class="text-xs text-gray-500">${available} available</div>
+              <button class="choose-size px-3 py-1 rounded text-sm ${available>0 ? 'bg-green-600' : 'bg-gray-400'} text-white" data-size="${sz}" data-available="${available}">${available>0? 'Choose' : 'Out'}</button>
+            </div>
+          `;
+          list.appendChild(row);
+        });
+      }
+      
       if(opts && opts.openModal) openSizesModal();
     }
 
@@ -383,8 +688,8 @@
       }
       // team mode: apply selected size to all members that don't yet have a size
       if(teamMode){
-        const rows = els.teamContainer.querySelectorAll('.grid');
-        rows.forEach(r=>{ const s = r.querySelector('.size'); if(s && !s.value) s.value = sz; });
+        const rows = els.teamContainer.querySelectorAll('[data-index]');
+        rows.forEach(r=>{ const s = r.querySelector('.team-size'); if(s && !s.value) s.value = sz; });
         showMessage(`Applied size ${sz} to team members (empty entries)`, 'success');
         closeSizesModal();
       }
@@ -407,23 +712,28 @@
         return;
       }
 
+      // Validate fabric and garment selection
+      const fabricVal = els.fabricType?.value || '';
+      const garmentVal = els.garmentType?.value || '';
+      if (!fabricVal) {
+        showMessage('Please select a Fabric Type', 'error');
+        return;
+      }
+      if (!garmentVal) {
+        showMessage('Please select a Garment Type', 'error');
+        return;
+      }
+
       const fd = new FormData();
       fd.append('serviceType', 'printing-only');
       fd.append('customType', 'PrintingOnly');
       fd.append('printingMethod', (document.querySelector('input[name="printingMethod"]:checked')?.value)||'dye-sublimation');
-      // split combined "Fabric - Garment" into separate fields for backend compatibility
-      const fg = (els.fabricGarment && els.fabricGarment.value) ? els.fabricGarment.value : '';
-      let fabricVal = '';
-      let garmentVal = '';
-      if(fg.includes(' - ')){
-        const parts = fg.split(' - ');
-        fabricVal = parts[0].trim();
-        garmentVal = parts[1].trim();
-      } else {
-        fabricVal = fg;
-      }
-      // Send the original combined selection as inventoryName so backend can match admin-created inventory entries
-      if (fg) fd.append('inventoryName', fg);
+      
+      // Use separate Fabric and Garment values from the new dropdowns
+      const fg = `${fabricVal} - ${garmentVal}`;
+      
+      // Send the combined selection as inventoryName so backend can match admin-created inventory entries
+      fd.append('inventoryName', fg);
       fd.append('fabricType', fabricVal);
       fd.append('garmentType', garmentVal);
       fd.append('quantity', document.getElementById('quantity').value);
@@ -565,10 +875,17 @@
       // Check Available Sizes handler
     async function checkAvailableSizesFG(){
       const token = localStorage.getItem('token');
-      const fg = (els.fabricGarment && els.fabricGarment.value) ? els.fabricGarment.value : '';
-      if(!fg){ showMessage('Please select a fabric & garment option first.', 'error'); return; }
+      const fabricVal = els.fabricType?.value || '';
+      const garmentVal = els.garmentType?.value || '';
+      
+      if(!fabricVal || !garmentVal){ 
+        showMessage('Please select both Fabric Type and Garment Type first.', 'error'); 
+        return; 
+      }
+      
       // Use the combined name as inventory 'name' for lookup
-      const nameQuery = fg;
+      const nameQuery = `${fabricVal} - ${garmentVal}`;
+      
       try{
         els.checkSizesBtn.disabled = true;
         els.checkSizesBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Checking...';
@@ -581,14 +898,16 @@
         }
         const data = await res.json().catch(()=>null);
         if(!data || !data.success) throw new Error((data && data.message) || 'Failed to fetch availability');
-        // set current inventory and show availability modal
+        // set current inventory and show availability
         currentInventory = data.data;
-        displaySizesAvailability(data.data, { openModal: true });
+        displaySizesAvailability(data.data, { openModal: false });
+        showMessage('Stock information loaded!', 'success');
       }catch(err){
         showMessage(err.message || 'Error checking sizes', 'error');
+        els.sizesAvailability?.classList.add('hidden');
       }finally{
         els.checkSizesBtn.disabled = false;
-        els.checkSizesBtn.innerHTML = '<i class="fas fa-search mr-2"></i>Check Available Sizes';
+        els.checkSizesBtn.innerHTML = '<i class="fas fa-search text-green-600"></i> Check Available Sizes';
       }
     }
 
@@ -601,99 +920,72 @@
         const json = await res.json().catch(()=>null);
         if(!json || !json.success){ console.debug('Variants API response invalid'); return; }
         availableVariants = json.data || [];
-        const sel = document.getElementById('fabricGarment');
-        if(!sel) return;
-        // clear existing options but keep placeholder
-        const placeholder = sel.querySelector('option[value=""]');
-        sel.innerHTML = '';
-        if(placeholder) sel.appendChild(placeholder);
-        // add options
+        
+        // Extract unique fabric types and garment types from available variants
+        const fabricTypes = new Set();
+        const garmentTypes = new Set();
+        
         availableVariants.forEach(v => {
-          const opt = document.createElement('option');
-          opt.value = v.name || '';
-          // compute available total across sizes
-          const sizesObj = v.sizesInventory || {};
-          const reserved = v.reservedSizes || {};
-          let totalAvail = 0;
-          Object.keys(sizesObj).forEach(k=>{ const t = Number(sizesObj[k]||0); const r = Number(reserved[k]||0); totalAvail += Math.max(0, t - r); });
-          opt.dataset.available = totalAvail;
-          if(totalAvail === 0){ opt.textContent = `${v.name || ''} — Out of stock`; opt.dataset.oos = '1'; }
-          else { opt.textContent = `${v.name || ''} (${totalAvail})`; }
-          sel.appendChild(opt);
+          const name = v.name || '';
+          if (name.includes(' - ')) {
+            const parts = name.split(' - ');
+            if (parts[0]) fabricTypes.add(parts[0].trim());
+            if (parts[1]) garmentTypes.add(parts[1].trim());
+          }
         });
-        // update badge for current selection (placeholder or first option)
-        setTimeout(()=>{ const opt = sel.selectedOptions && sel.selectedOptions[0]; if(opt) updateFabricBadge(opt); }, 50);
+        
+        // Update fabric dropdown with available options
+        if (els.fabricType && fabricTypes.size > 0) {
+          // Keep existing options and add new ones from inventory
+          const existingValues = new Set(Array.from(els.fabricType.options).map(o => o.value));
+          fabricTypes.forEach(ft => {
+            if (!existingValues.has(ft)) {
+              const opt = document.createElement('option');
+              opt.value = ft;
+              opt.textContent = ft;
+              els.fabricType.appendChild(opt);
+            }
+          });
+        }
+        
+        // Update garment dropdown with available options
+        if (els.garmentType && garmentTypes.size > 0) {
+          const existingValues = new Set(Array.from(els.garmentType.options).map(o => o.value));
+          garmentTypes.forEach(gt => {
+            if (!existingValues.has(gt)) {
+              const opt = document.createElement('option');
+              opt.value = gt;
+              opt.textContent = gt;
+              els.garmentType.appendChild(opt);
+            }
+          });
+        }
+        
       }catch(err){ console.debug('Failed to load variants:', err && err.message); }
     }
 
     // Show availability for selected variant using preloaded data or fallback to API
-    function renderStockPanel(inv){
-      els.sizesAvailability.innerHTML = '';
-      currentInventory = inv || null;
-      updateSizeDropdowns();
-      if(!inv){
-        els.sizesAvailability.innerHTML = '<div class="text-sm text-gray-500">No availability info</div>';
-        return;
-      }
-      const container = document.createElement('div');
-      container.className = 'bg-white border rounded p-3';
-      const title = document.createElement('div');
-      title.className = 'text-xs font-semibold text-gray-700 mb-2';
-      title.textContent = 'Stock by Size';
-      // show minimum price: prefer explicit inv.price when >0, otherwise derive from per-size prices
-      (function(){
-        let displayMin = null;
-        if (inv.price !== undefined && inv.price !== null && Number(inv.price) > 0) displayMin = Number(inv.price);
-        else {
-          const sizesPrice = inv.sizesPrice || {};
-          const vals = Object.values(sizesPrice || {}).map(v=>Number(v||0)).filter(v=>v>0);
-          if (vals.length) displayMin = Math.min(...vals);
-        }
-        if (displayMin !== null) {
-          const priceEl = document.createElement('div');
-          priceEl.className = 'text-xs text-gray-500 mb-2';
-          priceEl.textContent = `Minimum price: ₱${Number(displayMin).toFixed(2)}`;
-          container.appendChild(priceEl);
-        }
-      })();
-      container.appendChild(title);
-      const list = document.createElement('div');
-      list.className = 'text-sm text-gray-800 space-y-1';
-      const sizes = inv.sizesInventory || {};
-      const reserved = inv.reservedSizes || {};
-      // show in-stock sizes first
-      const sizesPrice = inv.sizesPrice || {};
-      Object.keys(sizes).sort().forEach(sz=>{
-        const total = Number(sizes[sz]||0);
-        const resv = Number(reserved[sz]||0);
-        const avail = Math.max(0, total - resv);
-        const row = document.createElement('div');
-        row.innerHTML = `<strong>${sz}</strong>: ${avail}${sizesPrice[sz] ? ` • ₱${sizesPrice[sz]}` : ''}`;
-        list.appendChild(row);
-      });
-      container.appendChild(list);
-      // footer with source and total
-      const footer = document.createElement('div');
-      footer.className = 'text-xs text-gray-500 mt-2';
-      footer.textContent = `Source: inventory/availability • invId: ${inv.id || inv._id || ''}`;
-      container.appendChild(footer);
-      els.sizesAvailability.appendChild(container);
-    }
-
     async function showVariantAvailability(name){
-      // Do not render the inline stock panel automatically; just set currentInventory and update size selects.
-      if(!name){ currentInventory = null; updateSizeDropdowns(); return; }
+      if(!name){ 
+        currentInventory = null; 
+        updateSizeDropdowns(); 
+        els.sizesAvailability?.classList.add('hidden');
+        return; 
+      }
       // try preloaded list
       const found = availableVariants.find(v => (v.name||'').toLowerCase() === name.toLowerCase());
       if(found){
         currentInventory = found;
         updateSizeDropdowns();
+        displaySizesAvailability(found);
         return;
       }
-      // fallback to API call (do not open UI modal here)
+      // fallback to API call
       try{
         const token = localStorage.getItem('token');
-        const res = await fetch(`${API}/api/admin/inventory/availability?name=${encodeURIComponent(name)}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+        const res = await fetch(`${API}/api/admin/inventory/availability?name=${encodeURIComponent(name)}`, { 
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {} 
+        });
         if(!res.ok){
           console.debug('Availability API returned', res.status);
           currentInventory = null;
@@ -703,25 +995,35 @@
         const data = await res.json().catch(()=>null);
         if(data && data.success && data.data){
           currentInventory = data.data;
+          displaySizesAvailability(data.data);
         } else {
           currentInventory = null;
         }
         updateSizeDropdowns();
-      }catch(err){ console.debug('availability fetch failed', err && err.message); currentInventory = null; updateSizeDropdowns(); }
+      }catch(err){ 
+        console.debug('availability fetch failed', err && err.message); 
+        currentInventory = null; 
+        updateSizeDropdowns(); 
+      }
     }
 
-    // wire dropdown change to show availability
-    function updateFabricBadge(option){
+    // Update fabric status badge
+    function updateFabricBadge(available){
       const badge = document.getElementById('fabricStatusBadge');
       if(!badge) return;
-      if(!option){ badge.classList.add('hidden'); return; }
-      const avail = Number(option.dataset.available||0);
-      if(option.dataset.oos === '1' || avail === 0){ badge.textContent = 'Out of stock'; badge.classList.remove('hidden'); badge.classList.remove('bg-green-100'); badge.classList.add('bg-red-50','text-red-700'); }
-      else { badge.textContent = `${avail} in stock`; badge.classList.remove('hidden'); badge.classList.remove('bg-red-50','text-red-700'); badge.classList.add('bg-green-50','text-green-700'); }
-    }
-    const fabricEl = document.getElementById('fabricGarment');
-    if(fabricEl){
-      fabricEl.addEventListener('change', (e)=>{ const val = e.target.value; const opt = e.target.selectedOptions && e.target.selectedOptions[0]; updateFabricBadge(opt); showVariantAvailability(val); });
+      if(available === null || available === undefined){ 
+        badge.classList.add('hidden'); 
+        return; 
+      }
+      if(available === 0){ 
+        badge.textContent = 'Out of stock'; 
+        badge.classList.remove('hidden', 'bg-green-50', 'text-green-700'); 
+        badge.classList.add('bg-red-50','text-red-700'); 
+      } else { 
+        badge.textContent = `${available} in stock`; 
+        badge.classList.remove('hidden', 'bg-red-50','text-red-700'); 
+        badge.classList.add('bg-green-50','text-green-700'); 
+      }
     }
 
     // load variants on page load

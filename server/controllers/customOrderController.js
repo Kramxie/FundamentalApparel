@@ -441,7 +441,7 @@ exports.getAdminCustomOrders = async (req, res) => {
 // @access  Private/Admin
 exports.updateCustomOrderQuote = async (req, res) => {
   try {
-    const { price, notes } = req.body;
+    const { price, notes, priceBreakdown, materialsUsed } = req.body;
 
     if (!price || Number(price) <= 0) {
       return res.status(400).json({
@@ -464,6 +464,17 @@ exports.updateCustomOrderQuote = async (req, res) => {
     if (typeof notes === 'string') {
       order.adminNotes = notes;
     }
+    
+    // Store price breakdown for customer view
+    if (priceBreakdown) {
+      order.priceBreakdown = priceBreakdown;
+    }
+    
+    // Store materials used (will be allocated from inventory when payment is verified)
+    if (materialsUsed && Array.isArray(materialsUsed)) {
+      order.quoteMaterials = materialsUsed;
+    }
+    
     order.status = "Quote Sent";
 
     const updatedOrder = await order.save(); // <-- Inayos ang variable name

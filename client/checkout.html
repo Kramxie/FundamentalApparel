@@ -115,22 +115,30 @@
         <section class="bg-white rounded-lg shadow p-6">
           <h2 class="text-xl font-semibold mb-4">Shipping Method</h2>
           <div class="space-y-3">
-            <label class="flex items-center justify-between border rounded-md p-4 cursor-pointer">
+            <label class="flex items-center justify-between border rounded-md p-4 cursor-pointer" id="shipping-standard-label">
               <div class="flex items-center gap-3">
                 <input id="method-standard" type="radio" name="shipping_method" class="h-4 w-4" checked>
                 <div>
                   <p class="font-medium">Standard Shipping</p>
-                  <p class="text-sm text-gray-500">3-5 days via J&T / Lalamove</p>
+                  <p class="text-sm text-gray-500" id="shipping-desc">3-5 days via J&T / Lalamove</p>
                 </div>
               </div>
-              <div class="font-semibold">₱<span id="fee-standard">80</span></div>
+              <div class="font-semibold">
+                <span id="shipping-loader" class="hidden"><i class="fas fa-spinner fa-spin text-blue-500"></i></span>
+                <span id="shipping-fee-display">₱<span id="fee-standard">80</span></span>
+              </div>
             </label>
+            <!-- Distance info display -->
+            <div id="distance-info" class="hidden text-xs text-gray-500 ml-4 -mt-2">
+              <i class="fas fa-map-marker-alt mr-1"></i>
+              <span id="distance-text"></span>
+            </div>
             <label class="flex items-center justify-between border rounded-md p-4 cursor-pointer">
               <div class="flex items-center gap-3">
                 <input id="method-pickup" type="radio" name="shipping_method" class="h-4 w-4">
                 <div>
                   <p class="font-medium">Pick-Up</p>
-                  <p class="text-sm text-gray-500">Pick-up at store</p>
+                  <p class="text-sm text-gray-500">Pick-up at store (Anabu Coastal, Imus, Cavite)</p>
                 </div>
               </div>
               <div class="font-semibold">₱<span id="fee-pickup">0</span></div>
@@ -698,63 +706,183 @@
       const methodStandard = document.getElementById('method-standard');
       const methodPickup = document.getElementById('method-pickup');
 
-      // Province-based delivery rates (example values for Luzon)
-      const PROVINCE_RATES = {
-        'metro manila': 120,
-        'manila': 120,
-        'quezon city': 120,
-        'makati': 120,
-        'cavite': 70,
-        'laguna': 80,
-        'batangas': 120,
-        'bulacan': 90,
-        'pampanga': 100,
-        'rizal': 85,
-        'quezon': 150,
-        'nueva ecija': 120,
-        'tarlac': 130,
-        'zambales': 140,
-        'bataan': 140,
-        'other': 120
-      };
-      const DEFAULT_PROVINCE_RATE = 120;
+      // Shipping calculation state
+      let currentShippingFee = 80; // Default fallback
+      let lastCalculatedAddress = null;
+      let isCalculatingShipping = false;
+      let shippingCalcDebounceTimer = null;
 
-      function getRateForProvince(prov) {
-        if (!prov) return DEFAULT_PROVINCE_RATE;
-        const key = (prov || '').toString().toLowerCase().trim();
-        // Normalize some labels (e.g., 'Calabarzon - Cavite' -> 'cavite')
-        if (key.includes('cavite')) return PROVINCE_RATES['cavite'];
-        if (key.includes('laguna')) return PROVINCE_RATES['laguna'];
-        if (key.includes('batangas')) return PROVINCE_RATES['batangas'];
-        if (key.includes('calabarzon')) return DEFAULT_PROVINCE_RATE;
-        if (key.includes('metro') || key.includes('manila') || key.includes('quezon city') || key.includes('makati')) return PROVINCE_RATES['metro manila'];
-        return PROVINCE_RATES[key] || DEFAULT_PROVINCE_RATE;
+      /**
+       * Show/hide shipping loader
+       */
+      function showShippingLoader(show) {
+        const loader = document.getElementById('shipping-loader');
+        const feeDisplay = document.getElementById('shipping-fee-display');
+        if (show) {
+          loader?.classList.remove('hidden');
+          feeDisplay?.classList.add('hidden');
+        } else {
+          loader?.classList.add('hidden');
+          feeDisplay?.classList.remove('hidden');
+        }
       }
 
-      function updateShippingFee() {
+      /**
+       * Update distance info display
+       */
+      function updateDistanceInfo(distanceKm, duration) {
+        const distanceInfo = document.getElementById('distance-info');
+        const distanceText = document.getElementById('distance-text');
+        if (distanceKm && distanceInfo && distanceText) {
+          distanceText.textContent = `${distanceKm} km from store • Est. ${duration || 'N/A'}`;
+          distanceInfo.classList.remove('hidden');
+        } else if (distanceInfo) {
+          distanceInfo.classList.add('hidden');
+        }
+      }
+
+      /**
+       * Calculate shipping fee using OpenRouteService API
+       */
+      async function calculateDistanceBasedShipping() {
+        if (isCalculatingShipping) return;
+        
+        const isPickup = methodPickup?.checked;
+        if (isPickup) {
+          currentShippingFee = 0;
+          deliveryFeeEl.textContent = '0';
+          document.getElementById('fee-standard')?.parentElement?.classList.add('text-gray-400');
+          updateDistanceInfo(null);
           const subtotal = Number(subtotalEl.textContent.replace(/,/g, ''));
-          const discount = Number(document.getElementById('discount').textContent.replace(/,/g, ''));
-          let fee = 0;
-          if (methodPickup.checked) {
-            fee = 0;
+          updateTotals(subtotal);
+          return;
+        }
+        
+        document.getElementById('fee-standard')?.parentElement?.classList.remove('text-gray-400');
+        
+        // Get address components
+        const addressComponents = {
+          block: document.getElementById('ship-block')?.value || '',
+          lot: document.getElementById('ship-lot')?.value || '',
+          street: document.getElementById('ship-street')?.value || '',
+          building: document.getElementById('ship-building')?.value || '',
+          city: document.getElementById('ship-city')?.value || '',
+          province: document.getElementById('ship-province')?.value || '',
+          isPickup: false
+        };
+        
+        // Check if address has minimum required fields for calculation
+        const hasMinAddress = addressComponents.city || addressComponents.province;
+        if (!hasMinAddress) {
+          // Use default estimate based on province dropdown only
+          if (window.ShippingCalculator) {
+            const estimate = ShippingCalculator.getQuickEstimate(addressComponents.province);
+            currentShippingFee = estimate.fee;
           } else {
-            const selectedProvince = document.getElementById('ship-province')?.value || '';
-            fee = getRateForProvince(selectedProvince);
+            currentShippingFee = 80;
           }
-          deliveryFeeEl.textContent = fee.toLocaleString();
-          // Update the shipping method card price (standard) so UI stays consistent
-          const feeStandardEl = document.getElementById('fee-standard');
-          if (feeStandardEl) feeStandardEl.textContent = fee.toLocaleString();
-          // Recompute totals (this includes VAT) instead of overwriting grand total without VAT
-          if (typeof updateTotals === 'function') {
-            updateTotals(subtotal);
+          deliveryFeeEl.textContent = currentShippingFee.toLocaleString();
+          document.getElementById('fee-standard').textContent = currentShippingFee.toLocaleString();
+          updateDistanceInfo(null);
+          const subtotal = Number(subtotalEl.textContent.replace(/,/g, ''));
+          updateTotals(subtotal);
+          return;
+        }
+        
+        // Create address key for comparison
+        const addressKey = JSON.stringify(addressComponents);
+        if (addressKey === lastCalculatedAddress) {
+          return; // Same address, no recalculation needed
+        }
+        
+        isCalculatingShipping = true;
+        showShippingLoader(true);
+        
+        try {
+          if (window.ShippingCalculator) {
+            const result = await ShippingCalculator.calculateShippingFee(addressComponents);
+            
+            currentShippingFee = result.fee;
+            lastCalculatedAddress = addressKey;
+            
+            // Update UI
+            deliveryFeeEl.textContent = currentShippingFee.toLocaleString();
+            document.getElementById('fee-standard').textContent = currentShippingFee.toLocaleString();
+            
+            // Show distance info if available
+            if (result.distanceKm) {
+              updateDistanceInfo(result.distanceKm, result.durationText);
+            } else {
+              updateDistanceInfo(null);
+            }
+            
+            // Update shipping description based on method
+            const shippingDesc = document.getElementById('shipping-desc');
+            if (shippingDesc) {
+              if (result.method === 'distance-based') {
+                shippingDesc.textContent = '3-5 days via Lalamove / J&T';
+              } else {
+                shippingDesc.textContent = '3-5 days (zone-based estimate)';
+              }
+            }
           } else {
-            grandTotalEl.textContent = (subtotal - discount + fee).toLocaleString();
+            // Fallback if calculator not loaded
+            currentShippingFee = 80;
+            deliveryFeeEl.textContent = '80';
+            document.getElementById('fee-standard').textContent = '80';
+            updateDistanceInfo(null);
           }
+          
+          // Update totals
+          const subtotal = Number(subtotalEl.textContent.replace(/,/g, ''));
+          updateTotals(subtotal);
+          
+        } catch (error) {
+          console.error('Shipping calculation error:', error);
+          // Use fallback rate
+          currentShippingFee = 80;
+          deliveryFeeEl.textContent = '80';
+          document.getElementById('fee-standard').textContent = '80';
+          updateDistanceInfo(null);
+          const subtotal = Number(subtotalEl.textContent.replace(/,/g, ''));
+          updateTotals(subtotal);
+        } finally {
+          isCalculatingShipping = false;
+          showShippingLoader(false);
+        }
+      }
+
+      /**
+       * Debounced shipping fee update (to prevent excessive API calls)
+       */
+      function updateShippingFee() {
+        // Clear existing timer
+        if (shippingCalcDebounceTimer) {
+          clearTimeout(shippingCalcDebounceTimer);
+        }
+        
+        // Quick update for pickup
+        if (methodPickup?.checked) {
+          currentShippingFee = 0;
+          deliveryFeeEl.textContent = '0';
+          updateDistanceInfo(null);
+          const subtotal = Number(subtotalEl.textContent.replace(/,/g, ''));
+          updateTotals(subtotal);
+          return;
+        }
+        
+        // Debounce the distance calculation (wait 500ms after user stops typing)
+        shippingCalcDebounceTimer = setTimeout(() => {
+          calculateDistanceBasedShipping();
+        }, 500);
       }
       methodStandard?.addEventListener('change', updateShippingFee);
       methodPickup?.addEventListener('change', updateShippingFee);
       document.getElementById('ship-province')?.addEventListener('change', updateShippingFee);
+      // Also recalculate shipping when address fields change
+      document.getElementById('ship-street')?.addEventListener('blur', updateShippingFee);
+      document.getElementById('ship-city')?.addEventListener('blur', updateShippingFee);
+      document.getElementById('ship-building')?.addEventListener('blur', updateShippingFee);
       placeOrderBtn.addEventListener('click', (e) => {
         e.preventDefault();
         submitOrder();
@@ -780,6 +908,8 @@
     });
   </script>
 
+  <!-- Shipping Calculator (Distance-based) -->
+  <script src="js/shipping-calculator.js"></script>
   <!-- Socket.io Client -->
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <!-- Chat Widget -->
