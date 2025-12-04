@@ -184,10 +184,29 @@ inventorySchema.pre('save', function(next) {
         let derivedTotal = 0;
         let hasSizesInventory = false;
         
+        // Debug logging for materials
+        console.log('[Inventory Pre-Save] Item:', this.name, '| Type:', this.type, '| Input quantity:', this.quantity);
+        console.log('[Inventory Pre-Save] sizesInventory:', sizesInv, '| instanceof Map:', sizesInv instanceof Map);
+        if (sizesInv instanceof Map) {
+            console.log('[Inventory Pre-Save] Map size:', sizesInv.size);
+        } else {
+            console.log('[Inventory Pre-Save] Object keys:', Object.keys(sizesInv));
+        }
+        
         // Clear previous size statuses
         this.sizesStatus = new Map();
 
-        if (sizesInv && typeof sizesInv === 'object' && Object.keys(sizesInv).length > 0) {
+        // Check for sizesInventory - handle both Map and plain object
+        let sizesCount = 0;
+        if (sizesInv instanceof Map) {
+            sizesCount = sizesInv.size;
+        } else if (sizesInv && typeof sizesInv === 'object') {
+            sizesCount = Object.keys(sizesInv).length;
+        }
+        
+        console.log('[Inventory Pre-Save] sizesCount:', sizesCount);
+
+        if (sizesCount > 0) {
             hasSizesInventory = true;
             const processSize = (qty, size) => {
                 derivedTotal += Number(qty || 0);
@@ -209,6 +228,9 @@ inventorySchema.pre('save', function(next) {
             }
             // Only override quantity from sizesInventory if sizes exist
             this.quantity = derivedTotal;
+            console.log('[Inventory Pre-Save] hasSizesInventory=true, overwriting quantity to derivedTotal:', derivedTotal);
+        } else {
+            console.log('[Inventory Pre-Save] hasSizesInventory=false, keeping original quantity:', this.quantity);
         }
         // If no sizesInventory, keep the original quantity value (for materials, etc.)
 

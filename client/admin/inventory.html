@@ -1860,6 +1860,10 @@
                     materialType: materialType ? materialType.toLowerCase() : 'other'
                 };
                 
+                // Debug log - check browser console
+                console.log('[Material Save] Payload being sent:', JSON.stringify(payload, null, 2));
+                console.log('[Material Save] Quantity value from input:', document.getElementById('material-qty-input')?.value);
+                
                 try {
                     // Determine if editing or creating
                     const isEditing = !!editingMaterialId;

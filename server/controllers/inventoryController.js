@@ -457,6 +457,9 @@ exports.createInventoryItem = async (req, res) => {
 
         const item = await Inventory.create(itemData);
 
+        // Debug log after creation
+        console.log('[Create Inventory] Created item:', { id: item._id, name: item.name, quantity: item.quantity, type: item.type, materialType: item.materialType });
+
         // Sync to Product collection if this is a product
         let syncedProduct = null;
         if (item.isProduct) {
