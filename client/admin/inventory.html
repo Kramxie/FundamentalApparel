@@ -2354,17 +2354,24 @@
                             ${typeBadge}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            ${item.sizesInventory && Object.keys(item.sizesInventory || {}).length > 0 ? `
-                                <div class="text-sm text-gray-900">${Object.keys(item.sizesInventory).reduce((acc, s) => acc + Number(item.sizesInventory[s]||0), 0).toLocaleString()}</div>
-                                ${sizeAlertSummary}
-                                <div class="text-xs text-gray-500 mt-1">
-                                    <span class="sizes-short block max-w-[220px] truncate">${Object.keys(item.sizesInventory).map(s => `${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}${getSizeStatusBadge(s, Number(item.sizesInventory[s]||0))}`).join(' · ')}</span>
-                                    <button type="button" class="show-sizes-btn text-indigo-600 text-xs ml-2">Show</button>
-                                    <div class="sizes-full hidden text-xs text-gray-700 mt-1">${Object.keys(item.sizesInventory).map(s => `<div class="flex items-center gap-1 py-0.5">${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}${getSizeStatusBadge(s, Number(item.sizesInventory[s]||0))}</div>`).join('')}</div>
-                                </div>
-                            ` : `
-                                <div class="text-sm text-gray-900">${(Number(item.quantity) || 0).toLocaleString()}</div>
-                            `}
+                            ${
+                                // For materials, always show the simple quantity field
+                                (String(item.type||'').toLowerCase() === 'material') ? `
+                                    <div class="text-sm text-gray-900">${(Number(item.quantity) || 0).toLocaleString()}</div>
+                                ` : (
+                                    item.sizesInventory && Object.keys(item.sizesInventory || {}).length > 0 ? `
+                                        <div class="text-sm text-gray-900">${Object.keys(item.sizesInventory).reduce((acc, s) => acc + Number(item.sizesInventory[s]||0), 0).toLocaleString()}</div>
+                                        ${sizeAlertSummary}
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            <span class="sizes-short block max-w-[220px] truncate">${Object.keys(item.sizesInventory).map(s => `${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}${getSizeStatusBadge(s, Number(item.sizesInventory[s]||0))}`).join(' · ')}</span>
+                                            <button type="button" class="show-sizes-btn text-indigo-600 text-xs ml-2">Show</button>
+                                            <div class="sizes-full hidden text-xs text-gray-700 mt-1">${Object.keys(item.sizesInventory).map(s => `<div class="flex items-center gap-1 py-0.5">${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}${getSizeStatusBadge(s, Number(item.sizesInventory[s]||0))}</div>`).join('')}</div>
+                                        </div>
+                                    ` : `
+                                        <div class="text-sm text-gray-900">${(Number(item.quantity) || 0).toLocaleString()}</div>
+                                    `
+                                )
+                            }
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             ${escapeHtml(item.unit)}
