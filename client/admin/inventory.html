@@ -297,6 +297,7 @@
                                 <option value="fabric">Fabric&Garment</option>
                                 <option value="product">Product</option>
                                 <option value="pre-design-apparel">Pre-Design</option>
+                                <option value="material">Material</option>
                             </select>
                         </div>
 
@@ -738,7 +739,7 @@
         // State management
         let currentPage = 1;
         let totalPages = 1;
-        let currentSort = { field: 'name', order: 'asc' };
+        let currentSort = { field: 'createdAt', order: 'desc' };
         let currentFilters = { type: 'all', status: 'all', search: '' };
         let editingItemId = null;
         // Per-size price map kept in memory while editing modal
@@ -2185,6 +2186,8 @@
                 const statusBadge = getStatusBadge(item.status);
                 const typeBadge = item.type === 'fabric' ? 
                     '<span class="px-2 py-1 text-xs font-semibold text-purple-700 bg-purple-100 rounded-full">Fabric</span>' :
+                    item.type === 'material' ?
+                    '<span class="px-2 py-1 text-xs font-semibold text-teal-700 bg-teal-100 rounded-full">Material</span>' :
                     (item.isPreDesign || item.type === 'pre-design-apparel') ?
                     '<span class="px-2 py-1 text-xs font-semibold text-amber-700 bg-amber-100 rounded-full">Pre-Design</span>' :
                     '<span class="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">Product</span>';

@@ -172,11 +172,13 @@ inventorySchema.pre('save', function(next) {
     try {
         const sizesInv = this.sizesInventory || {};
         let derivedTotal = 0;
+        let hasSizesInventory = false;
         
         // Clear previous size statuses
         this.sizesStatus = new Map();
 
         if (sizesInv && typeof sizesInv === 'object' && Object.keys(sizesInv).length > 0) {
+            hasSizesInventory = true;
             const processSize = (qty, size) => {
                 derivedTotal += Number(qty || 0);
                 let sizeStatus = 'in_stock';
@@ -195,8 +197,10 @@ inventorySchema.pre('save', function(next) {
                     processSize(sizesInv[size], size);
                 }
             }
+            // Only override quantity from sizesInventory if sizes exist
             this.quantity = derivedTotal;
         }
+        // If no sizesInventory, keep the original quantity value (for materials, etc.)
 
         // Set overall status based on size statuses
         const sizeStatuses = Array.from(this.sizesStatus.values());
