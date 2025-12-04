@@ -361,7 +361,7 @@
                                         Type <i class="fas fa-sort ml-1"></i>
                                     </th>
                                     <th class="sortable px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="quantity">
-                                        Sizes (qty) <i class="fas fa-sort ml-1"></i>
+                                        Stock <i class="fas fa-sort ml-1"></i>
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Unit
@@ -1716,6 +1716,69 @@
                     modal.classList.add('hidden');
                     modal.style.display = 'none';
                 }
+                // Clear editing state
+                editingMaterialId = null;
+                // Reset modal title
+                const modalTitle = document.querySelector('#materials-modal h3');
+                if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-cubes text-purple-600 mr-2"></i>Add Material / Supply';
+                // Reset save button text
+                const saveBtn = document.getElementById('material-save-btn');
+                if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Material';
+            }
+            
+            // Track editing material ID
+            let editingMaterialId = null;
+            
+            // Open materials modal for editing
+            window.openMaterialsEditModal = function(data) {
+                editingMaterialId = data._id;
+                
+                // Update modal title
+                const modalTitle = document.querySelector('#materials-modal h3');
+                if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-edit text-purple-600 mr-2"></i>Edit Material';
+                
+                // Update save button text
+                const saveBtn = document.getElementById('material-save-btn');
+                if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Update Material';
+                
+                // Parse material type from name (e.g., "Ink - Black Sublimation" -> type="Ink", name="Black Sublimation")
+                let materialType = data.materialType || '';
+                let materialName = data.name || '';
+                
+                // If materialType not set, try to extract from name
+                if (!materialType && materialName.includes(' - ')) {
+                    const parts = materialName.split(' - ');
+                    materialType = parts[0];
+                    materialName = parts.slice(1).join(' - ');
+                }
+                
+                // Populate form fields
+                document.getElementById('material-type-select').value = materialType || '';
+                document.getElementById('material-name-input').value = materialName;
+                document.getElementById('material-qty-input').value = data.quantity || 0;
+                document.getElementById('material-unit-select').value = data.unit || 'pieces';
+                document.getElementById('material-price-input').value = data.price || 0;
+                document.getElementById('material-threshold-input').value = data.lowStockThreshold || 5;
+                document.getElementById('material-supplier-input').value = data.supplier || '';
+                document.getElementById('material-sku-input').value = data.sku || '';
+                document.getElementById('material-notes-input').value = data.description || '';
+                
+                // Cost price if exists
+                const costPriceInput = document.getElementById('material-cost-price-input');
+                if (costPriceInput) costPriceInput.value = data.costPrice || 0;
+                
+                // Color if exists
+                const colorInput = document.getElementById('material-color-input');
+                if (colorInput) colorInput.value = data.color || '';
+                
+                document.getElementById('material-new-type-box')?.classList.add('hidden');
+                
+                // Show modal
+                const modal = document.getElementById('materials-modal');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'flex';
+                }
             }
             
             // Handle "Add New Material Type" selection
@@ -1798,8 +1861,15 @@
                 };
                 
                 try {
-                    const res = await fetch(`${API_BASE}/api/admin/inventory`, {
-                        method: 'POST',
+                    // Determine if editing or creating
+                    const isEditing = !!editingMaterialId;
+                    const url = isEditing 
+                        ? `${API_BASE}/api/admin/inventory/${editingMaterialId}` 
+                        : `${API_BASE}/api/admin/inventory`;
+                    const method = isEditing ? 'PATCH' : 'POST';
+                    
+                    const res = await fetch(url, {
+                        method: method,
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
@@ -1809,17 +1879,22 @@
                     
                     if (!res.ok) {
                         const err = await res.json().catch(() => null);
-                        showError((err && err.message) ? err.message : 'Failed to add material');
+                        const action = isEditing ? 'update' : 'add';
+                        showError((err && err.message) ? err.message : `Failed to ${action} material`);
                         return;
                     }
                     
                     await res.json().catch(() => null);
-                    showSuccess(`Material "${displayName}" added successfully!`);
+                    const successMsg = isEditing 
+                        ? `Material "${displayName}" updated successfully!` 
+                        : `Material "${displayName}" added successfully!`;
+                    showSuccess(successMsg);
                     closeMaterialsModal();
                     loadInventory();
                 } catch (e) {
-                    console.error('Material add error', e);
-                    showError('Failed to add material');
+                    const action = editingMaterialId ? 'update' : 'add';
+                    console.error(`Material ${action} error`, e);
+                    showError(`Failed to ${action} material`);
                 }
             });
 
@@ -2288,7 +2363,7 @@
                                     <div class="sizes-full hidden text-xs text-gray-700 mt-1">${Object.keys(item.sizesInventory).map(s => `<div class="flex items-center gap-1 py-0.5">${escapeHtml(s)} - ${Number(item.sizesInventory[s]||0)}${getSizeStatusBadge(s, Number(item.sizesInventory[s]||0))}</div>`).join('')}</div>
                                 </div>
                             ` : `
-                                <div class="text-sm text-gray-900">${item.quantity.toLocaleString()}</div>
+                                <div class="text-sm text-gray-900">${(Number(item.quantity) || 0).toLocaleString()}</div>
                             `}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -2467,7 +2542,6 @@
         // Open edit modal
         async function openEditModal(itemId) {
             editingItemId = itemId;
-            document.getElementById('modal-title').textContent = 'Edit Product Details';
 
             try {
                 const response = await fetch(`${API_BASE}/api/admin/inventory/${itemId}`, {
@@ -2482,6 +2556,15 @@
                 }
 
                 const { data } = await response.json();
+
+                // Check if this is a material - use the materials modal instead
+                const itemType = String(data.type || '').toLowerCase();
+                if (itemType === 'material') {
+                    openMaterialsEditModal(data);
+                    return;
+                }
+
+                document.getElementById('modal-title').textContent = 'Edit Product Details';
 
                 // Populate basic form fields
                 const itemNameEl = document.getElementById('item-name'); if (itemNameEl) itemNameEl.value = data.name;
@@ -2741,14 +2824,30 @@
                 // ensure variant selector hidden for edit modal
                 const variantSelectorEl = document.getElementById('variant-selector'); if (variantSelectorEl) variantSelectorEl.classList.add('hidden');
                 
+                // Check if this is a material type
+                const isMaterialItem = t === 'material';
+                
                 // Hide basic inventory fields for edit modal, focus on product details
+                // BUT for materials, show the basic fields instead
                 const fieldsToHide = ['item-type', 'item-quantity', 'item-unit', 'item-price', 'item-threshold', 'item-supplier', 'item-sku', 'item-description'];
-                fieldsToHide.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.closest('.mb-4')?.classList.add('hidden');
-                });
+                if (isMaterialItem) {
+                    // For materials: SHOW all basic fields, hide product preview stuff
+                    fieldsToHide.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.closest('.mb-4')?.classList.remove('hidden');
+                    });
+                    // Also show item-name
+                    const itemNameEl = document.getElementById('item-name');
+                    if (itemNameEl) itemNameEl.closest('.mb-4')?.classList.remove('hidden');
+                } else {
+                    // For products/fabrics: hide basic fields
+                    fieldsToHide.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.closest('.mb-4')?.classList.add('hidden');
+                    });
+                }
 
-                // Adjust UI depending on type: Product / Fabric / Pre-Design
+                // Adjust UI depending on type: Product / Fabric / Pre-Design / Material
                 const priceAssignGroup = document.getElementById('price-per-size-preview')?.closest('.col-span-2') || document.getElementById('price-per-size-preview');
                 const qtyAssignGroup = document.getElementById('qty-per-size-preview')?.closest('.col-span-2') || document.getElementById('qty-per-size-preview');
                 const assignPriceBtn = document.getElementById('open-assign-price-btn');
@@ -2756,7 +2855,26 @@
                 const placementBox = document.getElementById('placement-box');
                 const previewCompact = document.getElementById('preview-size-compact');
 
-                if (isFabricItem) {
+                if (isMaterialItem) {
+                    // Material type - show simple edit form with basic fields
+                    document.getElementById('modal-title').textContent = 'Edit Material';
+                    // Hide all product-specific stuff
+                    if (priceAssignGroup) priceAssignGroup.classList.add('hidden');
+                    if (qtyAssignGroup) qtyAssignGroup.classList.add('hidden');
+                    if (assignPriceBtn) assignPriceBtn.classList.add('hidden');
+                    if (assignStockBtn) assignStockBtn.classList.add('hidden');
+                    if (placementBox) placementBox.classList.add('hidden');
+                    if (previewCompact) previewCompact.classList.add('hidden');
+                    // Hide product fields section entirely
+                    const productFields = document.getElementById('product-fields');
+                    if (productFields) productFields.classList.add('hidden');
+                    // Hide fabric section
+                    const fabricSection = document.getElementById('fabric-section');
+                    if (fabricSection) fabricSection.classList.add('hidden');
+                    // Hide pre-design images
+                    const preImgSection = document.getElementById('predesign-images-section');
+                    if (preImgSection) preImgSection.classList.add('hidden');
+                } else if (isFabricItem) {
                     document.getElementById('modal-title').textContent = 'Edit Fabric&Garment Item';
                     // show assign controls (fabric may still use per-size editor)
                     if (priceAssignGroup) priceAssignGroup.classList.remove('hidden');

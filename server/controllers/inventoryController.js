@@ -352,6 +352,9 @@ exports.createInventoryItem = async (req, res) => {
             isProduct, category, sizes, colors, material, productDetails, faqs, sizesInventory
         } = req.body;
 
+        // Debug log to check received data
+        console.log('[Create Inventory] Received:', { name, type, quantity, unit, price });
+
         // Validation
         if (!name || !type || quantity === undefined || !unit || price === undefined) {
             return res.status(400).json({
@@ -426,9 +429,9 @@ exports.createInventoryItem = async (req, res) => {
         const itemData = {
             name,
             type,
-            quantity,
+            quantity: Number(quantity) || 0,
             unit,
-            price,
+            price: Number(price) || 0,
             lowStockThreshold: lowStockThreshold || 10,
             supplier: supplier || '',
             description: description || '',
