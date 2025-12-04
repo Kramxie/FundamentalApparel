@@ -349,11 +349,13 @@ exports.createInventoryItem = async (req, res) => {
         const { 
             name, type, quantity, unit, price, lowStockThreshold, supplier, description, sku,
             // Product fields
-            isProduct, category, sizes, colors, material, productDetails, faqs, sizesInventory
+            isProduct, category, sizes, colors, material, productDetails, faqs, sizesInventory,
+            // Material fields
+            materialType
         } = req.body;
 
         // Debug log to check received data
-        console.log('[Create Inventory] Received:', { name, type, quantity, unit, price });
+        console.log('[Create Inventory] Received:', { name, type, quantity, unit, price, materialType });
 
         // Validation
         if (!name || !type || quantity === undefined || !unit || price === undefined) {
@@ -436,6 +438,8 @@ exports.createInventoryItem = async (req, res) => {
             supplier: supplier || '',
             description: description || '',
             sku: cleanedSku || undefined,
+            // Material fields
+            materialType: materialType || null,
             // Product fields
             isProduct: isProduct === 'true' || isProduct === true,
             category: category || '',
@@ -482,8 +486,13 @@ exports.updateInventoryItem = async (req, res) => {
         const { 
             name, type, quantity, unit, price, lowStockThreshold, supplier, description, sku,
             // Product fields
-            isProduct, category, sizes, colors, material, productDetails, faqs, sizesInventory
+            isProduct, category, sizes, colors, material, productDetails, faqs, sizesInventory,
+            // Material fields
+            materialType
         } = req.body;
+
+        // Debug log to check received data
+        console.log('[Update Inventory] Received:', { name, type, quantity, unit, price, materialType, id: req.params.id });
 
         let item = await Inventory.findById(req.params.id);
         const prevStatus = item ? item.status : null;
@@ -559,12 +568,13 @@ exports.updateInventoryItem = async (req, res) => {
         // Update basic fields
         if (name !== undefined) item.name = name;
         if (type !== undefined) item.type = type;
-        if (quantity !== undefined) item.quantity = quantity;
+        if (quantity !== undefined) item.quantity = Number(quantity) || 0;
         if (unit !== undefined) item.unit = unit;
-        if (price !== undefined) item.price = price;
+        if (price !== undefined) item.price = Number(price) || 0;
         if (lowStockThreshold !== undefined) item.lowStockThreshold = lowStockThreshold;
         if (supplier !== undefined) item.supplier = supplier;
         if (description !== undefined) item.description = description;
+        if (materialType !== undefined) item.materialType = materialType || null;
         if (sku !== undefined) {
             // If client sent an empty string, clear the SKU (set to undefined so sparse index ignores it)
             if (cleanedUpdateSku === null) {
@@ -592,6 +602,15 @@ exports.updateInventoryItem = async (req, res) => {
         }
 
                 await item.save();
+
+                // Debug log after save
+                console.log('[Update Inventory] Saved item:', { 
+                    id: item._id, 
+                    name: item.name, 
+                    quantity: item.quantity, 
+                    price: item.price, 
+                    materialType: item.materialType 
+                });
 
                 // After save: if status transitioned to low_stock or out_of_stock, notify admins
                 try{
