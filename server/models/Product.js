@@ -99,6 +99,15 @@ const ProductSchema = new mongoose.Schema({
         newArrivalExpiresAt: { type: Date, default: null },
         // services keys the product belongs to, e.g. ['customizeApparel','printing']
         services: { type: [String], default: [] }
+    },
+    // Soft delete / Archive fields
+    isArchived: {
+        type: Boolean,
+        default: false
+    },
+    archivedAt: {
+        type: Date,
+        default: null
     }
 
 });

@@ -361,6 +361,43 @@ exports.updateProduct = async (req, res, next) => {
   }
 };
 
+// @desc    Check if product has pending orders
+// @route   GET /api/products/:id/pending
+// @access  Private/Admin
+exports.checkPendingOrders = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ success: false, msg: "Product not found" });
+    }
+
+    // Check for orders that are not yet delivered or cancelled
+    const pendingStatuses = ['Processing', 'Accepted', 'Shipped'];
+    const pendingOrders = await Order.find({
+      'orderItems.product': product._id,
+      status: { $in: pendingStatuses }
+    }).select('_id status createdAt user').populate('user', 'email firstName lastName').lean();
+
+    const pendingCount = pendingOrders.length;
+
+    return res.status(200).json({
+      success: true,
+      hasPending: pendingCount > 0,
+      pendingCount,
+      pendingOrders: pendingOrders.map(order => ({
+        _id: order._id,
+        status: order.status,
+        createdAt: order.createdAt,
+        customerEmail: order.user?.email || 'N/A',
+        customerName: order.user ? `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() : 'N/A'
+      }))
+    });
+  } catch (error) {
+    console.error("[Check Pending Orders] Error:", error);
+    res.status(500).json({ success: false, msg: "Server Error" });
+  }
+};
+
 // @desc    Delete a product
 // @route   DELETE /api/products/:id
 // @access  Private/Admin
@@ -371,6 +408,33 @@ exports.deleteProduct = async (req, res, next) => {
       return res.status(404).json({ success: false, msg: "Product not found" });
     }
 
+    // Check for pending orders before deletion
+    const pendingStatuses = ['Processing', 'Accepted', 'Shipped'];
+    const pendingOrders = await Order.find({
+      'orderItems.product': product._id,
+      status: { $in: pendingStatuses }
+    }).select('_id status createdAt user').populate('user', 'email firstName lastName').lean();
+
+    const pendingCount = pendingOrders.length;
+
+    if (pendingCount > 0) {
+      // Block deletion - there are pending orders
+      return res.status(400).json({
+        success: false,
+        msg: `Cannot delete this product. There ${pendingCount === 1 ? 'is' : 'are'} ${pendingCount} pending order(s) containing this product that haven't been delivered yet.`,
+        hasPendingOrders: true,
+        pendingCount,
+        pendingOrders: pendingOrders.map(order => ({
+          _id: order._id,
+          status: order.status,
+          createdAt: order.createdAt,
+          customerEmail: order.user?.email || 'N/A',
+          customerName: order.user ? `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() : 'N/A'
+        }))
+      });
+    }
+
+    // No pending orders - safe to delete
     // Delete linked inventory entry
     try {
       await Inventory.findOneAndDelete({ productId: product._id });
@@ -380,7 +444,7 @@ exports.deleteProduct = async (req, res, next) => {
 
     await product.deleteOne(); // Use deleteOne method on the document
 
-    res.status(200).json({ success: true, data: {} });
+    res.status(200).json({ success: true, data: {}, msg: "Product deleted successfully" });
   } catch (error) {
     console.error("[Delete Product Controller] Error:", error);
     res.status(500).json({ success: false, msg: "Server Error" });

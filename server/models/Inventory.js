@@ -157,6 +157,15 @@ const inventorySchema = new mongoose.Schema({
         featured: { type: Boolean, default: false },
         newArrivalExpiresAt: { type: Date, default: null },
         services: { type: [String], default: [] }
+    },
+    // Soft delete / Archive fields
+    isArchived: {
+        type: Boolean,
+        default: false
+    },
+    archivedAt: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true

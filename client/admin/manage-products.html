@@ -133,6 +133,31 @@
         </div>
     </main>
   </div>
+
+  <!-- Pending Orders Warning Modal -->
+  <div id="pending-orders-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
+      <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+          </div>
+          <h3 class="text-white font-semibold text-lg">Cannot Delete Product</h3>
+        </div>
+      </div>
+      <div class="p-6">
+        <p id="pending-modal-message" class="text-gray-700 mb-4"></p>
+        <div id="pending-orders-list" class="max-h-48 overflow-y-auto mb-4"></div>
+        <p class="text-sm text-gray-500 italic">Please deliver or cancel the pending order(s) before deleting this product.</p>
+      </div>
+      <div class="px-6 pb-6">
+        <button id="close-pending-modal" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors">
+          <i class="fas fa-check mr-2"></i>Understood
+        </button>
+      </div>
+    </div>
+  </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('adminToken');
@@ -141,6 +166,58 @@
             const tableBody = document.getElementById('products-table-body');
             const messageContainer = document.getElementById('message-container');
             document.getElementById('logout-btn').addEventListener('click', () => { localStorage.removeItem('adminToken'); window.location.href = 'login.html'; });
+
+            // Pending Orders Modal Elements
+            const pendingModal = document.getElementById('pending-orders-modal');
+            const pendingModalMessage = document.getElementById('pending-modal-message');
+            const pendingOrdersList = document.getElementById('pending-orders-list');
+            const closePendingModalBtn = document.getElementById('close-pending-modal');
+
+            function showPendingOrdersModal(result) {
+                pendingModalMessage.textContent = result.msg;
+                
+                // Build the list of pending orders
+                if (result.pendingOrders && result.pendingOrders.length > 0) {
+                    let listHtml = '<div class="space-y-2">';
+                    result.pendingOrders.forEach(order => {
+                        const orderDate = new Date(order.createdAt).toLocaleDateString('en-PH', { 
+                            year: 'numeric', month: 'short', day: 'numeric' 
+                        });
+                        const statusColor = {
+                            'Processing': 'bg-yellow-100 text-yellow-800',
+                            'Accepted': 'bg-blue-100 text-blue-800',
+                            'Shipped': 'bg-purple-100 text-purple-800'
+                        }[order.status] || 'bg-gray-100 text-gray-800';
+                        
+                        listHtml += `
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <div>
+                                    <p class="font-medium text-gray-800 text-sm">Order #${order._id.slice(-8).toUpperCase()}</p>
+                                    <p class="text-xs text-gray-500">${order.customerName} • ${orderDate}</p>
+                                </div>
+                                <span class="px-2 py-1 text-xs font-medium rounded-full ${statusColor}">${order.status}</span>
+                            </div>
+                        `;
+                    });
+                    listHtml += '</div>';
+                    pendingOrdersList.innerHTML = listHtml;
+                } else {
+                    pendingOrdersList.innerHTML = '';
+                }
+
+                pendingModal.classList.remove('hidden');
+                pendingModal.classList.add('flex');
+            }
+
+            function closePendingOrdersModal() {
+                pendingModal.classList.add('hidden');
+                pendingModal.classList.remove('flex');
+            }
+
+            closePendingModalBtn.addEventListener('click', closePendingOrdersModal);
+            pendingModal.addEventListener('click', (e) => {
+                if (e.target === pendingModal) closePendingOrdersModal();
+            });
 
             const showMessage = (message, type) => {
                 messageContainer.textContent = message;
@@ -227,7 +304,12 @@
                             if (result.success) {
                                 showMessage('Product deleted successfully!', 'success');
                                 fetchProducts(); // Refresh the table
-                            } else { throw new Error(result.msg); }
+                            } else if (result.hasPendingOrders) {
+                                // Show pending orders warning modal
+                                showPendingOrdersModal(result);
+                            } else { 
+                                throw new Error(result.msg); 
+                            }
                         } catch (error) {
                             showMessage(error.message, 'error');
                         }

@@ -147,6 +147,9 @@
             <a href="inventory.html" class="nav-link active">
                 <i class="fas fa-boxes"></i><span>Inventory</span>
             </a>
+            <a href="archived-inventory.html" class="nav-link">
+                <i class="fas fa-archive"></i><span>Archived Items</span>
+            </a>
             <a href="manage-categories.html" class="nav-link">
                 <i class="fas fa-folder"></i><span>Categories</span>
             </a>
@@ -208,6 +211,7 @@
             <a href="add-product.html" class="nav-link"><i class="fas fa-plus-circle"></i><span>Add Product</span></a>
             <a href="add-predisign-product.html" class="nav-link"><i class="fas fa-tshirt"></i><span>Add Pre-Design</span></a>
             <a href="inventory.html" class="nav-link active"><i class="fas fa-boxes"></i><span>Inventory</span></a>
+            <a href="archived-inventory.html" class="nav-link"><i class="fas fa-archive"></i><span>Archived Items</span></a>
             <a href="manage-categories.html" class="nav-link"><i class="fas fa-folder"></i><span>Categories</span></a>
             <a href="featured-products.html" class="nav-link"><i class="fas fa-star"></i><span>Featured Products</span></a>
             
@@ -603,23 +607,24 @@
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Archive Confirmation Modal -->
     <div id="delete-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div class="px-6 py-4">
-                <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                <div class="flex items-center justify-center w-12 h-12 mx-auto bg-amber-100 rounded-full mb-4">
+                    <i class="fas fa-archive text-amber-600 text-xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Delete Inventory Item?</h3>
+                <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Archive Inventory Item?</h3>
                 <p class="text-sm text-gray-500 text-center mb-2">
-                    Are you sure you want to delete "<span id="delete-item-name" class="font-semibold"></span>"?
+                    Are you sure you want to archive "<span id="delete-item-name" class="font-semibold"></span>"?
                 </p>
-                <p id="product-sync-warning" class="hidden text-xs text-red-600 text-center mb-6">
+                <p id="product-sync-warning" class="hidden text-xs text-amber-600 text-center mb-4">
                     <i class="fas fa-exclamation-circle mr-1"></i>
-                    This will also remove the product from customer catalog.
+                    This will also hide the product from customer catalog.
                 </p>
                 <p class="text-sm text-gray-500 text-center mb-6">
-                    This action cannot be undone.
+                    <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                    You can restore this item later from the Archived tab.
                 </p>
                 <div class="flex justify-center gap-3">
                     <button 
@@ -630,9 +635,9 @@
                     </button>
                     <button 
                         id="confirm-delete-btn" 
-                        class="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                        class="px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium"
                     >
-                        <i class="fas fa-trash mr-2"></i>Delete
+                        <i class="fas fa-archive mr-2"></i>Archive
                     </button>
                 </div>
             </div>
@@ -2139,7 +2144,8 @@
                     status: currentFilters.status,
                     search: currentFilters.search,
                     sortBy: currentSort.field,
-                    sortOrder: currentSort.order
+                    sortOrder: currentSort.order,
+                    archived: 'false'
                 });
 
                 const response = await fetch(`${API_BASE}/api/admin/inventory?${params}`, {
@@ -2325,11 +2331,11 @@
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button 
-                                onclick="openDeleteModal('${item._id}', '${escapeHtml(item.name)}', ${item.isProduct || false})" 
+                                onclick="openDeleteModal('${item._id}', '${escapeHtml(item.name).replace(/'/g, "\\'")}', ${item.isProduct || false})" 
                                 class="text-red-600 hover:text-red-900"
-                                aria-label="Delete item"
+                                title="Archive item"
                             >
-                                <i class="fas fa-trash"></i>
+                                <i class="fas fa-archive"></i>
                             </button>
                         </td>
                     </tr>
@@ -2994,7 +3000,7 @@
             }
         }
 
-        // Open delete modal
+        // Open delete modal (now archive)
         function openDeleteModal(itemId, itemName, isProduct) {
             editingItemId = itemId;
             document.getElementById('delete-item-name').textContent = itemName;
@@ -3018,7 +3024,7 @@
             editingItemId = null;
         }
 
-        // Handle delete
+        // Handle delete (now archive)
         async function handleDelete() {
             if (!editingItemId) return;
 
@@ -3033,16 +3039,16 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.message || 'Failed to delete item');
+                    throw new Error(error.message || 'Failed to archive item');
                 }
 
-                showSuccess('Item deleted successfully');
+                showSuccess('Item archived successfully');
                 closeDeleteModal();
                 loadInventory();
 
             } catch (error) {
-                console.error('Error deleting item:', error);
-                showError(error.message || 'Failed to delete item');
+                console.error('Error archiving item:', error);
+                showError(error.message || 'Failed to archive item');
             }
         }
 

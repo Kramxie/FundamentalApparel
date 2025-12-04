@@ -1,5 +1,6 @@
 const Inventory = require('../models/Inventory');
 const Product = require('../models/Product');
+const Order = require('../models/Order');
 const { notifyLowStock } = require('./notificationController');
 
 // Helper function to sync inventory to product
@@ -65,15 +66,56 @@ async function syncToProduct(inventoryItem) {
     }
 }
 
+// Helper function to check if a product has pending orders
+async function checkProductPendingOrders(productId) {
+    if (!productId) return { hasPending: false, pendingCount: 0, pendingOrders: [] };
+    
+    const pendingStatuses = ['Processing', 'Accepted', 'Shipped'];
+    const pendingOrders = await Order.find({
+        'orderItems.product': productId,
+        status: { $in: pendingStatuses }
+    }).select('_id status createdAt user').populate('user', 'email firstName lastName').lean();
+
+    return {
+        hasPending: pendingOrders.length > 0,
+        pendingCount: pendingOrders.length,
+        pendingOrders: pendingOrders.map(order => ({
+            _id: order._id,
+            status: order.status,
+            createdAt: order.createdAt,
+            customerEmail: order.user?.email || 'N/A',
+            customerName: order.user ? `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() : 'N/A'
+        }))
+    };
+}
+
 // Helper function to delete product when inventory is deleted
-async function deleteProductIfLinked(inventoryItem) {
+// Returns { success: boolean, blocked?: boolean, pendingCount?: number, pendingOrders?: array }
+async function deleteProductIfLinked(inventoryItem, skipPendingCheck = false) {
     try {
-        if (inventoryItem.productId) {
-            await Product.findByIdAndDelete(inventoryItem.productId);
+        if (!inventoryItem.productId) {
+            return { success: true };
         }
+        
+        // Check for pending orders before deletion
+        if (!skipPendingCheck) {
+            const pendingCheck = await checkProductPendingOrders(inventoryItem.productId);
+            if (pendingCheck.hasPending) {
+                return { 
+                    success: false, 
+                    blocked: true, 
+                    pendingCount: pendingCheck.pendingCount,
+                    pendingOrders: pendingCheck.pendingOrders
+                };
+            }
+        }
+        
+        await Product.findByIdAndDelete(inventoryItem.productId);
+        return { success: true };
     } catch (error) {
         console.error('Delete Product Error:', error);
         // Continue even if product deletion fails
+        return { success: false, error: error.message };
     }
 }
 
@@ -82,10 +124,10 @@ async function deleteProductIfLinked(inventoryItem) {
 // @access  Private/Admin
 exports.getAllInventory = async (req, res) => {
     try {
-        const { type, status, search, page = 1, limit = 10, sortBy = 'name', sortOrder = 'asc' } = req.query;
+        const { type, status, search, page = 1, limit = 10, sortBy = 'name', sortOrder = 'asc', archived } = req.query;
 
-        // Build query
-        let query = {};
+        // Build query - exclude archived items by default
+        let query = { isArchived: archived === 'true' ? true : { $ne: true } };
         let filterBySizeStatus = null; // Will be used for post-query filtering
 
         if (type && type !== 'all') {
@@ -576,8 +618,17 @@ exports.updateInventoryItem = async (req, res) => {
         if (item.isProduct) {
             syncedProduct = await syncToProduct(item);
         } else if (item.productId) {
-            // If isProduct was set to false, delete the linked product
-            await deleteProductIfLinked(item);
+            // If isProduct was set to false, delete the linked product (but check for pending orders first)
+            const deleteResult = await deleteProductIfLinked(item);
+            if (deleteResult.blocked) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Cannot unlink product from inventory. There ${deleteResult.pendingCount === 1 ? 'is' : 'are'} ${deleteResult.pendingCount} pending order(s) containing this product that haven't been delivered yet.`,
+                    hasPendingOrders: true,
+                    pendingCount: deleteResult.pendingCount,
+                    pendingOrders: deleteResult.pendingOrders
+                });
+            }
             item.productId = null;
             await item.save();
         }
@@ -597,7 +648,7 @@ exports.updateInventoryItem = async (req, res) => {
     }
 };
 
-// @desc    Delete inventory item
+// @desc    Archive inventory item (soft delete)
 // @route   DELETE /api/admin/inventory/:id
 // @access  Private/Admin
 exports.deleteInventoryItem = async (req, res) => {
@@ -611,20 +662,119 @@ exports.deleteInventoryItem = async (req, res) => {
             });
         }
 
-        // Delete linked product if exists
-        await deleteProductIfLinked(item);
+        // Soft delete - archive the item instead of deleting
+        item.isArchived = true;
+        item.archivedAt = new Date();
+        await item.save();
+
+        // Also archive linked product if exists (hide from catalog)
+        if (item.productId) {
+            const Product = require('../models/Product');
+            await Product.findByIdAndUpdate(item.productId, { 
+                isArchived: true, 
+                archivedAt: new Date() 
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Item archived successfully'
+        });
+    } catch (error) {
+        console.error('Archive Inventory Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to archive inventory item'
+        });
+    }
+};
+
+// @desc    Restore archived inventory item
+// @route   PATCH /api/admin/inventory/:id/restore
+// @access  Private/Admin
+exports.restoreInventoryItem = async (req, res) => {
+    try {
+        const item = await Inventory.findById(req.params.id);
+
+        if (!item) {
+            return res.status(404).json({
+                success: false,
+                message: 'Inventory item not found'
+            });
+        }
+
+        if (!item.isArchived) {
+            return res.status(400).json({
+                success: false,
+                message: 'Item is not archived'
+            });
+        }
+
+        // Restore the item
+        item.isArchived = false;
+        item.archivedAt = null;
+        await item.save();
+
+        // Also restore linked product if exists
+        if (item.productId) {
+            const Product = require('../models/Product');
+            await Product.findByIdAndUpdate(item.productId, { 
+                isArchived: false, 
+                archivedAt: null 
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Item restored successfully',
+            data: item
+        });
+    } catch (error) {
+        console.error('Restore Inventory Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to restore inventory item'
+        });
+    }
+};
+
+// @desc    Permanently delete inventory item
+// @route   DELETE /api/admin/inventory/:id/permanent
+// @access  Private/Admin
+exports.permanentDeleteInventoryItem = async (req, res) => {
+    try {
+        const item = await Inventory.findById(req.params.id);
+
+        if (!item) {
+            return res.status(404).json({
+                success: false,
+                message: 'Inventory item not found'
+            });
+        }
+
+        // Delete linked product if exists (with pending orders check)
+        const deleteResult = await deleteProductIfLinked(item);
+        if (deleteResult.blocked) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot delete this inventory item. There ${deleteResult.pendingCount === 1 ? 'is' : 'are'} ${deleteResult.pendingCount} pending order(s) containing this product that haven't been delivered yet.`,
+                hasPendingOrders: true,
+                pendingCount: deleteResult.pendingCount,
+                pendingOrders: deleteResult.pendingOrders
+            });
+        }
 
         await item.deleteOne();
 
         res.status(200).json({
             success: true,
-            message: 'Inventory item deleted successfully'
+            message: 'Item permanently deleted'
         });
     } catch (error) {
-        console.error('Delete Inventory Error:', error);
+        console.error('Permanent Delete Inventory Error:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to delete inventory item'
+            message: 'Failed to permanently delete inventory item'
         });
     }
 };

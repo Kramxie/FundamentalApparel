@@ -12,7 +12,9 @@ const {
     deleteInventoryItem,
     bulkUpdateQuantities,
     getInventoryStats,
-    getPublicVariants
+    getPublicVariants,
+    restoreInventoryItem,
+    permanentDeleteInventoryItem
 } = require('../controllers/inventoryController');
 const { decrementStock } = require('../controllers/inventoryController');
 
@@ -79,6 +81,12 @@ router.route('/:id')
         { name: 'galleryImages', maxCount: 10 }
     ]), updateInventoryItem)
     .delete(requirePermission('manage_inventory'), deleteInventoryItem);
+
+// Restore archived item
+router.patch('/:id/restore', requirePermission('manage_inventory'), restoreInventoryItem);
+
+// Permanently delete item
+router.delete('/:id/permanent', requirePermission('manage_inventory'), permanentDeleteInventoryItem);
 
 // Decrement stock (per-size or overall) after payment verification or order processing
 router.post('/:id/decrement', requirePermission('manage_inventory'), decrementStock);

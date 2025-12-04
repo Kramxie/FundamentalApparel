@@ -11,7 +11,8 @@ const {
     getProductById,
     updateProduct,
     deleteProduct,
-    addReview
+    addReview,
+    checkPendingOrders
 } = require('../controllers/productController');
 
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -65,6 +66,9 @@ router.route('/:id')
         { name: 'galleryImages', maxCount: 8 }
     ]), updateProduct)
     .delete(protect, authorize('admin','employee'), deleteProduct);
+
+// Check pending orders for a product before deletion
+router.get('/:id/pending', protect, authorize('admin','employee'), checkPendingOrders);
 
 // Reviews
 // Configure a separate upload handler for review images (stored under uploads/reviews)
