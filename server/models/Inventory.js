@@ -15,7 +15,8 @@ const inventorySchema = new mongoose.Schema({
     // Material sub-type for raw materials (ink, thread, vinyl, etc.)
     materialType: {
         type: String,
-        enum: ['ink', 'thread', 'vinyl', 'transfer-paper', 'sublimation-paper', 'heat-press-tape', 'adhesive', 'other'],
+        trim: true,
+        lowercase: true,
         default: null
     },
     quantity: {
