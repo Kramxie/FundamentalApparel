@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/admin-responsive.css">
     <style>
       body { font-family: 'Inter', sans-serif; }
       .admin-sidebar { position: fixed; top: 0; left: 0; height: 100vh; width: 260px; background: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%); overflow-y: auto; z-index: 40; }
@@ -341,24 +340,32 @@
             const mobileMenuBtn = document.getElementById('mobile-menu-btn');
             const mobileSidebar = document.getElementById('mobile-sidebar');
             const sidebarOverlay = document.getElementById('sidebar-overlay');
-            const mobileCloseBtn = document.getElementById('mobile-sidebar-close');
-            
-            function openMobileSidebar() {
-                if (mobileSidebar) mobileSidebar.classList.add('open');
+            function openSidebar() {
+                if (!mobileSidebar) return;
+                mobileSidebar.classList.remove('-translate-x-full');
+                mobileSidebar.classList.add('translate-x-0');
                 if (sidebarOverlay) sidebarOverlay.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
+                document.body.classList.add('overflow-hidden');
             }
-            
-            function closeMobileSidebar() {
-                if (mobileSidebar) mobileSidebar.classList.remove('open');
+            function closeSidebar() {
+                if (!mobileSidebar) return;
+                mobileSidebar.classList.remove('translate-x-0');
+                mobileSidebar.classList.add('-translate-x-full');
                 if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
-                document.body.style.overflow = '';
+                document.body.classList.remove('overflow-hidden');
             }
             
-            if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openMobileSidebar);
-            if (mobileCloseBtn) mobileCloseBtn.addEventListener('click', closeMobileSidebar);
-            if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeMobileSidebar);
-            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMobileSidebar(); });
+            // Mobile sidebar functionality
+            document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+              document.getElementById('admin-sidebar').classList.add('open');
+              document.getElementById('sidebar-overlay').classList.remove('hidden');
+            });
+            document.getElementById('mobile-sidebar-close').addEventListener('click', closeMobileSidebar);
+            document.getElementById('sidebar-overlay').addEventListener('click', closeMobileSidebar);
+            function closeMobileSidebar() {
+              document.getElementById('admin-sidebar').classList.remove('open');
+              document.getElementById('sidebar-overlay').classList.add('hidden');
+            }
 
             // Logout functionality
             document.getElementById('logout-btn').addEventListener('click', () => {
