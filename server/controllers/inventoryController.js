@@ -379,22 +379,19 @@ exports.createInventoryItem = async (req, res) => {
             }
         }
 
-        // Handle uploaded images
-        const BASE_URL = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+        // Handle uploaded images (Cloudinary URLs are in file.path)
         let imageUrl = '';
         let gallery = [];
 
         if (req.files) {
-            // Main image
+            // Main image - Cloudinary stores URL in file.path
             if (req.files.mainImage && req.files.mainImage[0]) {
-                imageUrl = `${BASE_URL}/uploads/products/${req.files.mainImage[0].filename}`;
+                imageUrl = req.files.mainImage[0].path;
             }
             
             // Gallery images
             if (req.files.galleryImages && req.files.galleryImages.length > 0) {
-                gallery = req.files.galleryImages.map(file => 
-                    `${BASE_URL}/uploads/products/${file.filename}`
-                );
+                gallery = req.files.galleryImages.map(file => file.path);
             }
         }
 
@@ -521,20 +518,16 @@ exports.updateInventoryItem = async (req, res) => {
             }
         }
 
-        // Handle uploaded images
-        const BASE_URL = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
-        
+        // Handle uploaded images (Cloudinary URLs are in file.path)
         if (req.files) {
             // Main image - only update if new file uploaded
             if (req.files.mainImage && req.files.mainImage[0]) {
-                item.imageUrl = `${BASE_URL}/uploads/products/${req.files.mainImage[0].filename}`;
+                item.imageUrl = req.files.mainImage[0].path;
             }
             
             // Gallery images - append new images to existing ones
             if (req.files.galleryImages && req.files.galleryImages.length > 0) {
-                const newGalleryImages = req.files.galleryImages.map(file => 
-                    `${BASE_URL}/uploads/products/${file.filename}`
-                );
+                const newGalleryImages = req.files.galleryImages.map(file => file.path);
                 item.gallery = [...(item.gallery || []), ...newGalleryImages];
             }
         }
@@ -685,6 +678,20 @@ exports.deleteInventoryItem = async (req, res) => {
                 success: false,
                 message: 'Inventory item not found'
             });
+        }
+
+        // Check for pending orders before soft delete (archive)
+        if (item.productId) {
+            const pendingCheck = await checkProductPendingOrders(item.productId);
+            if (pendingCheck.hasPending) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Cannot delete this inventory item. There ${pendingCheck.pendingCount === 1 ? 'is' : 'are'} ${pendingCheck.pendingCount} pending order(s) containing this product that haven't been delivered yet.`,
+                    hasPendingOrders: true,
+                    pendingCount: pendingCheck.pendingCount,
+                    pendingOrders: pendingCheck.pendingOrders
+                });
+            }
         }
 
         // Soft delete - archive the item instead of deleting

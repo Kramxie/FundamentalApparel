@@ -58,12 +58,12 @@ exports.createReturnRequest = async (req, res) => {
     if (!order) return res.status(404).json({ success: false, msg: 'Order not found' });
     if (order.user.toString() !== userId.toString()) return res.status(403).json({ success: false, msg: 'Not authorized to request return for this order' });
 
-    // Collect uploaded files (videos/images)
+    // Collect uploaded files (Cloudinary URLs are in file.path)
     const videos = [];
     const images = [];
     if (req.files) {
-      if (req.files.videos) req.files.videos.forEach(f => videos.push(`/uploads/returns/${f.filename}`));
-      if (req.files.images) req.files.images.forEach(f => images.push(`/uploads/returns/${f.filename}`));
+      if (req.files.videos) req.files.videos.forEach(f => videos.push(f.path));
+      if (req.files.images) req.files.images.forEach(f => images.push(f.path));
     }
 
     const refund = new RefundRequest({

@@ -40,9 +40,9 @@ router.patch('/users/:id', protect, isAdmin, adminController.updateUser);
 router.patch('/users/:id/active', protect, isAdmin, adminController.toggleUserActive);
 router.delete('/users/:id', protect, isAdmin, adminController.deleteUser);
 
-// Settings routes
-const multer = require('multer');
-const upload = multer({ dest: 'server/uploads/' });
+// Settings routes - use Cloudinary for uploads
+const { productUpload } = require('../config/cloudinary');
+const upload = productUpload; // Reuse product upload config for settings images
 
 router.get('/settings', protect, isAdmin, settingsController.getSettings);
 router.put('/settings/store', protect, isAdmin, upload.fields([{ name: 'logo' }, { name: 'banner' }]), settingsController.updateStoreInfo);

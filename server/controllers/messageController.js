@@ -279,16 +279,13 @@ exports.uploadImage = async (req, res) => {
             });
         }
 
-        // Get the base URL from environment or construct it
-        const baseUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
-        
-        // Construct the image URL
-        const imageUrl = `${baseUrl}/uploads/message-images/${req.file.filename}`;
+        // Cloudinary stores URL in file.path
+        const imageUrl = req.file.path;
 
         res.status(200).json({
             success: true,
             imageUrl,
-            filename: req.file.filename
+            filename: req.file.filename || 'cloudinary-image'
         });
     } catch (error) {
         console.error('Upload Image Error:', error);

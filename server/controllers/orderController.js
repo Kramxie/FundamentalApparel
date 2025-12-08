@@ -176,7 +176,8 @@ exports.createOrderWithReceipt = async (req, res) => {
         const subtotal = orderItems.reduce((sum, it) => sum + (it.price * it.quantity), 0);
         const totalPrice = subtotal + deliveryFee;
 
-        const receiptUrl = `/uploads/receipts/${req.file.filename}`;
+        // Cloudinary stores URL in file.path
+        const receiptUrl = req.file.path;
 
         const order = await Order.create({
             user: userId,

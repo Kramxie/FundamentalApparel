@@ -27,11 +27,12 @@ exports.updateStoreInfo = async (req, res) => {
       'store.email': email,
       'store.aboutUs': aboutUs
     };
+    // Cloudinary stores URL in file.path
     if (req.files && req.files.logo && req.files.logo[0]) {
-      update['store.logoUrl'] = `/uploads/${req.files.logo[0].filename}`;
+      update['store.logoUrl'] = req.files.logo[0].path;
     }
     if (req.files && req.files.banner && req.files.banner[0]) {
-      update['store.bannerUrl'] = `/uploads/${req.files.banner[0].filename}`;
+      update['store.bannerUrl'] = req.files.banner[0].path;
     }
     const s = await Setting.findOneAndUpdate({}, { $set: update, $currentDate: { updatedAt: true } }, { new: true, upsert: true });
     res.json({ success: true, data: s });
@@ -51,9 +52,9 @@ exports.updateWebsiteContent = async (req, res) => {
       'websiteContent.returnsPolicy': returnsPolicy,
       'websiteContent.terms': terms
     };
-    // homepage banners optional multiple files
+    // homepage banners optional multiple files (Cloudinary)
     if (req.files && req.files.homepageBanners) {
-      const urls = req.files.homepageBanners.map(f => `/uploads/${f.filename}`);
+      const urls = req.files.homepageBanners.map(f => f.path);
       update['websiteContent.homepageBanners'] = urls;
     }
     const s = await Setting.findOneAndUpdate({}, { $set: update, $currentDate: { updatedAt: true } }, { new: true, upsert: true });

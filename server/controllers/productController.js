@@ -102,26 +102,24 @@ exports.addProduct = async (req, res, next) => {
     }
 
 
+    // Handle uploaded images (Cloudinary URLs are in file.path)
     if (req.files) {
       if (req.files.image && req.files.image[0]) {
-        payload.imageUrl =
-          `${BASE_URL}/uploads/products/${path.basename(req.files.image[0].path)}`;
+        payload.imageUrl = req.files.image[0].path;
       }
       if (req.files.gallery && req.files.gallery.length > 0) {
-        payload.gallery = req.files.gallery.map(
-          (f) => `${BASE_URL}/uploads/products/${path.basename(f.path)}`
-        );
+        payload.gallery = req.files.gallery.map(f => f.path);
       }
       // Handle predesign front/back uploads
       if (req.files.front && req.files.front[0]) {
-        const frontUrl = `${BASE_URL}/uploads/products/${path.basename(req.files.front[0].path)}`;
+        const frontUrl = req.files.front[0].path;
         payload.images = payload.images || {};
         payload.images.front = frontUrl;
         // Default main image to front if not set
         if (!payload.imageUrl) payload.imageUrl = frontUrl;
       }
       if (req.files.back && req.files.back[0]) {
-        const backUrl = `${BASE_URL}/uploads/products/${path.basename(req.files.back[0].path)}`;
+        const backUrl = req.files.back[0].path;
         payload.images = payload.images || {};
         payload.images.back = backUrl;
       }
@@ -471,27 +469,13 @@ exports.addReview = async (req, res) => {
     if (!hasPurchased) {
       return res.status(403).json({ success: false, msg: 'You can only review products you have received.' });
     }
-    // Handle uploaded review images (if any) - files provided by multer under req.files (array)
+    // Handle uploaded review images (Cloudinary URLs are in file.path)
     const uploadedImageUrls = [];
     try {
       if (req.files && Array.isArray(req.files) && req.files.length > 0) {
         for (const f of req.files) {
-          try {
-            // Optionally resize/compress if sharp is available
-            if (sharp) {
-              const tmpPath = f.path + '.tmp';
-              await sharp(f.path)
-                .resize({ width: 1600, withoutEnlargement: true })
-                .jpeg({ quality: 80 })
-                .toFile(tmpPath);
-              // replace original file with resized
-              try { fs.renameSync(tmpPath, f.path); } catch (renameErr) { /* ignore */ }
-            }
-            const url = `${BASE_URL}/uploads/reviews/${path.basename(f.path)}`;
-            uploadedImageUrls.push(url);
-          } catch (imgErr) {
-            console.warn('[Add Review] Failed to process uploaded image:', imgErr && imgErr.message);
-          }
+          // Cloudinary already handles image optimization, just use the URL
+          uploadedImageUrls.push(f.path);
         }
       }
     } catch (e) {
