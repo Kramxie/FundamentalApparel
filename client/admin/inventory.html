@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/admin-responsive.css">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .sortable:hover { cursor: pointer; background-color: #f3f4f6; }
@@ -3644,37 +3643,17 @@
     <!-- Mobile Sidebar Script -->
     <script>
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const mobileSidebar = document.getElementById('mobile-sidebar');
+        const sidebar = document.querySelector('.admin-sidebar');
         const sidebarOverlay = document.getElementById('sidebar-overlay');
-        const mobileCloseBtn = document.getElementById('mobile-sidebar-close');
         
-        function openMobileSidebar() {
-            if (mobileSidebar) mobileSidebar.classList.add('open');
-            if (sidebarOverlay) sidebarOverlay.classList.remove('hidden');
-            document.body.classList.add('overflow-hidden');
-        }
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('hidden');
+        });
         
-        function closeMobileSidebar() {
-            if (mobileSidebar) mobileSidebar.classList.remove('open');
-            if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
-            document.body.classList.remove('overflow-hidden');
-        }
-        
-        if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', openMobileSidebar);
-        }
-        
-        if (mobileCloseBtn) {
-            mobileCloseBtn.addEventListener('click', closeMobileSidebar);
-        }
-        
-        if (sidebarOverlay) {
-            sidebarOverlay.addEventListener('click', closeMobileSidebar);
-        }
-        
-        // Close on escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeMobileSidebar();
+        sidebarOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.add('hidden');
         });
         
         // Load user info
