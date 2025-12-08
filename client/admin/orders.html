@@ -8,6 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin-responsive.css">
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -99,6 +100,110 @@
       padding: 0 16px;
       margin-bottom: 8px;
       margin-top: 16px;
+    }
+    
+    /* Mobile responsive filter controls */
+    .filter-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    
+    @media (max-width: 768px) {
+      .filter-controls select,
+      .filter-controls input[type="text"],
+      .filter-controls input[type="date"] {
+        width: 100%;
+        min-width: 0;
+        font-size: 14px;
+      }
+      .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .filter-controls > * {
+        width: 100%;
+      }
+      .filter-btn-group {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .filter-btn-group button,
+      .filter-btn-group label {
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+        justify-content: center;
+      }
+      .date-range-group {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      .date-range-group input {
+        flex: 1;
+      }
+      /* Action buttons in table */
+      .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        justify-content: flex-end;
+      }
+      .action-buttons button {
+        padding: 0.5rem;
+        min-width: 32px;
+      }
+    }
+    
+    /* Pagination styles */
+    .pagination-container {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+    }
+    .pagination-info {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .pagination-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid #d1d5db;
+      background: white;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pagination-btn:hover:not(:disabled) {
+      background: #f3f4f6;
+    }
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .pagination-btn.active {
+      background: #4f46e5;
+      color: white;
+      border-color: #4f46e5;
+    }
+    @media (max-width: 640px) {
+      .pagination-container {
+        flex-direction: column;
+        text-align: center;
+      }
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -266,8 +371,9 @@
 
         <div id="tab-content-regular">
           <div class="bg-white rounded-lg shadow">
-            <div class="p-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-              <div class="flex gap-3 items-center">
+            <div class="p-4">
+              <!-- Mobile-responsive filter controls -->
+              <div class="filter-controls mb-4">
                 <select id="filter-status" class="border rounded-md px-3 py-2 text-sm">
                   <option value="">Order Status</option>
                   <option value="to-pay">To Pay</option>
@@ -288,14 +394,21 @@
                   <option value="Standard">Standard</option>
                   <option value="Pick-Up">Pick-Up</option>
                 </select>
-                <input id="search" type="text" placeholder="Search (order id, customer, tracking)..." class="border rounded-md px-3 py-2 text-sm w-full sm:w-56">
-                <input id="date-from" type="date" class="border rounded-md px-3 py-2 text-sm">
-                <input id="date-to" type="date" class="border rounded-md px-3 py-2 text-sm">
-                <button id="filter-reset" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Reset</button>
-                <button id="refresh-orders" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Refresh</button>
-                <label class="flex items-center gap-2 text-sm text-gray-600"><input id="auto-refresh-orders" type="checkbox" class="h-4 w-4"> Auto</label>
+                <input id="search" type="text" placeholder="Search orders..." class="border rounded-md px-3 py-2 text-sm">
+                <div class="date-range-group">
+                  <input id="date-from" type="date" class="border rounded-md px-3 py-2 text-sm">
+                  <span class="text-gray-400 text-xs">to</span>
+                  <input id="date-to" type="date" class="border rounded-md px-3 py-2 text-sm">
+                </div>
+                <div class="filter-btn-group">
+                  <button id="filter-reset" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Reset</button>
+                  <button id="refresh-orders" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Refresh</button>
+                  <label class="flex items-center gap-2 text-sm text-gray-600 px-2"><input id="auto-refresh-orders" type="checkbox" class="h-4 w-4"> Auto</label>
+                </div>
               </div>
-              <div class="text-sm text-gray-500"><span id="count">0</span> orders</div>
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-sm text-gray-500"><span id="count">0</span> orders</div>
+              </div>
             </div>
             <div id="orders-cards" class="sm:hidden p-4"></div>
             <div class="overflow-x-auto hidden sm:block">
@@ -316,14 +429,26 @@
                 <tbody id="orders-body" class="divide-y"></tbody>
               </table>
             </div>
+            <!-- Pagination for Regular Orders -->
+            <div id="regular-pagination" class="pagination-container">
+              <div class="pagination-info">
+                Showing <span id="regular-page-start">0</span> to <span id="regular-page-end">0</span> of <span id="regular-total">0</span> orders
+              </div>
+              <div class="pagination-controls">
+                <button id="regular-prev-btn" class="pagination-btn" disabled><i class="fas fa-chevron-left"></i> Prev</button>
+                <span class="text-sm text-gray-600">Page <span id="regular-current-page">1</span> of <span id="regular-total-pages">1</span></span>
+                <button id="regular-next-btn" class="pagination-btn">Next <i class="fas fa-chevron-right"></i></button>
+              </div>
+            </div>
           </div>
         </div>
 
         <div id="tab-content-custom" class="hidden">
           <div class="bg-white rounded-lg shadow">
-            <div class="p-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-              <div class="flex flex-wrap gap-2 items-center">
-                <input id="custom-search" type="text" placeholder="Search name, ref, courier..." class="border rounded-md px-3 py-2 text-sm w-full sm:w-56">
+            <div class="p-4">
+              <!-- Mobile-responsive filter controls for custom orders -->
+              <div class="filter-controls mb-4">
+                <input id="custom-search" type="text" placeholder="Search name, ref, courier..." class="border rounded-md px-3 py-2 text-sm">
                 <select id="custom-filter-status" class="border rounded-md px-3 py-2 text-sm">
                   <option value="">All Status</option>
                   <option value="Pending Quote">⏳ Pending Quote</option>
@@ -372,16 +497,20 @@
                   <option value="has">Has Tracking</option>
                   <option value="none">No Tracking</option>
                 </select>
-                <div class="flex items-center gap-2">
+                <div class="date-range-group">
                   <input id="custom-date-from" type="date" class="border rounded-md px-2 py-1.5 text-sm" />
                   <span class="text-gray-400 text-xs">to</span>
                   <input id="custom-date-to" type="date" class="border rounded-md px-2 py-1.5 text-sm" />
                 </div>
-                <button id="custom-filter-reset" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Reset</button>
-                <button id="refresh-custom" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Refresh</button>
-                <label class="flex items-center gap-2 text-sm text-gray-600"><input id="auto-refresh-custom" type="checkbox" class="h-4 w-4"> Auto</label>
+                <div class="filter-btn-group">
+                  <button id="custom-filter-reset" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Reset</button>
+                  <button id="refresh-custom" class="px-3 py-2 text-sm border rounded hover:bg-gray-50">Refresh</button>
+                  <label class="flex items-center gap-2 text-sm text-gray-600 px-2"><input id="auto-refresh-custom" type="checkbox" class="h-4 w-4"> Auto</label>
+                </div>
               </div>
-              <div class="text-sm text-gray-500"><span id="custom-count">0</span> custom requests</div>
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-sm text-gray-500"><span id="custom-count">0</span> custom requests</div>
+              </div>
             </div>
             <div class="overflow-x-auto">
               <table class="min-w-full text-sm">
@@ -399,6 +528,17 @@
                 </thead>
                 <tbody id="custom-orders-body" class="divide-y"></tbody>
               </table>
+            </div>
+            <!-- Pagination for Custom Orders -->
+            <div id="custom-pagination" class="pagination-container">
+              <div class="pagination-info">
+                Showing <span id="custom-page-start">0</span> to <span id="custom-page-end">0</span> of <span id="custom-total">0</span> orders
+              </div>
+              <div class="pagination-controls">
+                <button id="custom-prev-btn" class="pagination-btn" disabled><i class="fas fa-chevron-left"></i> Prev</button>
+                <span class="text-sm text-gray-600">Page <span id="custom-current-page">1</span> of <span id="custom-total-pages">1</span></span>
+                <button id="custom-next-btn" class="pagination-btn">Next <i class="fas fa-chevron-right"></i></button>
+              </div>
             </div>
           </div>
         </div>
@@ -1568,8 +1708,31 @@
         customModalVerifyFinal: document.getElementById('custom-modal-verify-final'),
         customModalArchive: document.getElementById('custom-modal-archive'),
         customModalDelete: document.getElementById('custom-modal-delete'),
-        formPricingNotes: document.getElementById('form-pricing-notes')
+        formPricingNotes: document.getElementById('form-pricing-notes'),
+        
+        // Pagination elements for Regular Orders
+        regularPrevBtn: document.getElementById('regular-prev-btn'),
+        regularNextBtn: document.getElementById('regular-next-btn'),
+        regularCurrentPage: document.getElementById('regular-current-page'),
+        regularTotalPages: document.getElementById('regular-total-pages'),
+        regularPageStart: document.getElementById('regular-page-start'),
+        regularPageEnd: document.getElementById('regular-page-end'),
+        regularTotal: document.getElementById('regular-total'),
+        
+        // Pagination elements for Custom Orders
+        customPrevBtn: document.getElementById('custom-prev-btn'),
+        customNextBtn: document.getElementById('custom-next-btn'),
+        customCurrentPage: document.getElementById('custom-current-page'),
+        customTotalPages: document.getElementById('custom-total-pages'),
+        customPageStart: document.getElementById('custom-page-start'),
+        customPageEnd: document.getElementById('custom-page-end'),
+        customTotalEl: document.getElementById('custom-total')
       };
+      
+      // Pagination state
+      const ITEMS_PER_PAGE = 10;
+      let regularPage = 1;
+      let customPage = 1;
 
       // Helper: generate a clean PDF from an element by cloning and stripping UI controls
       async function generatePdfFromElement(element, filename) {
@@ -2210,7 +2373,9 @@
         catch (e) { const pdfBlob = doc.output('blob'); const url = URL.createObjectURL(pdfBlob); const a = document.createElement('a'); a.href = url; a.download = safeName; document.body.appendChild(a); a.click(); a.remove(); }
       }
 
-      function renderRegularOrders() {
+      function renderRegularOrders(resetPage = false) {
+        if (resetPage) regularPage = 1;
+        
         const q = els.search.value.trim().toLowerCase();
         const s = els.filterStatus.value;
         const p = els.filterPayment.value;
@@ -2237,6 +2402,26 @@
           if (p && o.paymentStatus !== p) return false;
           return true;
         });
+        
+        // LIFO sorting - newest orders first (by createdAt descending)
+        filteredOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        // Pagination calculations
+        const totalOrders = filteredOrders.length;
+        const totalPages = Math.max(1, Math.ceil(totalOrders / ITEMS_PER_PAGE));
+        regularPage = Math.min(regularPage, totalPages); // Ensure page doesn't exceed max
+        const startIdx = (regularPage - 1) * ITEMS_PER_PAGE;
+        const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, totalOrders);
+        const paginatedOrders = filteredOrders.slice(startIdx, endIdx);
+        
+        // Update pagination UI
+        if (els.regularCurrentPage) els.regularCurrentPage.textContent = regularPage;
+        if (els.regularTotalPages) els.regularTotalPages.textContent = totalPages;
+        if (els.regularPageStart) els.regularPageStart.textContent = totalOrders > 0 ? startIdx + 1 : 0;
+        if (els.regularPageEnd) els.regularPageEnd.textContent = endIdx;
+        if (els.regularTotal) els.regularTotal.textContent = totalOrders;
+        if (els.regularPrevBtn) els.regularPrevBtn.disabled = regularPage <= 1;
+        if (els.regularNextBtn) els.regularNextBtn.disabled = regularPage >= totalPages;
 
         // Map backend status to user-friendly label, taking paymentStatus into account
         const statusBadge = (order) => {
@@ -2259,7 +2444,7 @@
         // Check if viewing archived
         const isViewingArchived = els.filterStatus.value === 'archived';
 
-        const rows = filteredOrders.map(o => {
+        const rows = paginatedOrders.map(o => {
           // Show Ship button for orders that are Accepted and not Pick-Up
           const canShip = o.status === 'Accepted' && o.shippingMethod !== 'Pick-Up' && o.paymentStatus === 'Received';
           const shipButton = canShip ? `<button data-id="${o._id}" class="ship-btn text-green-600 hover:text-green-800 ml-2" title="Ship Order"><i class="fas fa-shipping-fast"></i></button>` : '';
@@ -2286,7 +2471,7 @@
             <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
             <td class="px-4 py-3">${o.trackingCode ? `<span class="font-mono text-xs">${o.trackingCode}</span>` : '-'}</td>
             <td class="px-4 py-3 text-right">
-              <div class="inline-flex gap-3 items-center justify-end">
+              <div class="action-buttons">
                 ${shipButton}
                 <button data-id="${o._id}" class="edit-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
                 ${archiveButton}
@@ -2297,19 +2482,19 @@
           </tr>
         `}).join('');
         els.tbody.innerHTML = rows || '<tr><td colspan="9" class="px-4 py-6 text-center text-gray-500">No orders found.</td></tr>';
-        els.count.textContent = filteredOrders.length;
+        els.count.textContent = totalOrders;
 
-        // Render mobile cards (visible on small screens)
+        // Render mobile cards (visible on small screens) - also paginated
         try {
           if (els.ordersCards) {
-            const cards = filteredOrders.map(o => {
+            const cards = paginatedOrders.map(o => {
               return `
-                <div class="bg-white p-4 rounded-lg shadow sm:hidden">
+                <div class="bg-white p-4 rounded-lg shadow border mb-3">
                   <div class="flex items-start justify-between">
                     <div>
                       <div class="text-sm font-medium">${shortId(o._id)}</div>
                       <div class="text-xs text-gray-500">${new Date(o.createdAt).toLocaleString()}</div>
-                      <div class="mt-2">${paymentBadge(o.paymentStatus)} ${statusBadge(o)}</div>
+                      <div class="mt-2 flex flex-wrap gap-1">${paymentBadge(o.paymentStatus)} ${statusBadge(o)}</div>
                     </div>
                     <div class="text-right">
                       <div class="text-sm font-medium">${peso(o.totalPrice || 0)}</div>
@@ -2321,7 +2506,7 @@
                     <div class="mt-1"><strong>Shipping:</strong> ${o.shippingMethod || '-'}</div>
                     <div class="mt-1"><strong>Tracking:</strong> ${o.trackingCode ? `<span class="font-mono text-xs">${o.trackingCode}</span>` : '-'}</div>
                   </div>
-                  <div class="mt-3 flex items-center justify-end gap-2">
+                  <div class="mt-3 flex items-center justify-end gap-2 flex-wrap">
                     ${(o.status === 'Accepted' && o.shippingMethod !== 'Pick-Up' && o.paymentStatus === 'Received') ? `<button data-id="${o._id}" class="ship-btn px-3 py-1 text-sm bg-green-50 text-green-700 rounded flex items-center gap-1"><i class="fas fa-shipping-fast"></i> Ship</button>` : ''}
                     <button data-id="${o._id}" class="edit-btn px-3 py-1 text-sm bg-indigo-50 text-indigo-700 rounded">View</button>
                   </div>
@@ -2332,9 +2517,19 @@
           }
         } catch (e) { console.warn('Failed to render mobile cards', e); }
       }
+      
+      // Pagination event handlers for Regular Orders
+      els.regularPrevBtn?.addEventListener('click', () => {
+        if (regularPage > 1) { regularPage--; renderRegularOrders(); }
+      });
+      els.regularNextBtn?.addEventListener('click', () => {
+        regularPage++; renderRegularOrders();
+      });
 
         // --- MODIFIED: renderCustomOrders ---
-      function renderCustomOrders() {
+      function renderCustomOrders(resetPage = false) {
+        if (resetPage) customPage = 1;
+        
         const typeLabel = (t) => {
           // Prefer service-based mapping for clarity
           return function(mapObj){
@@ -2407,9 +2602,29 @@
           }
           return true;
         });
+        
+        // LIFO sorting - newest orders first (by createdAt descending)
+        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        // Pagination calculations
+        const totalOrders = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(totalOrders / ITEMS_PER_PAGE));
+        customPage = Math.min(customPage, totalPages); // Ensure page doesn't exceed max
+        const startIdx = (customPage - 1) * ITEMS_PER_PAGE;
+        const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, totalOrders);
+        const paginatedOrders = filtered.slice(startIdx, endIdx);
+        
+        // Update pagination UI
+        if (els.customCurrentPage) els.customCurrentPage.textContent = customPage;
+        if (els.customTotalPages) els.customTotalPages.textContent = totalPages;
+        if (els.customPageStart) els.customPageStart.textContent = totalOrders > 0 ? startIdx + 1 : 0;
+        if (els.customPageEnd) els.customPageEnd.textContent = endIdx;
+        if (els.customTotalEl) els.customTotalEl.textContent = totalOrders;
+        if (els.customPrevBtn) els.customPrevBtn.disabled = customPage <= 1;
+        if (els.customNextBtn) els.customNextBtn.disabled = customPage >= totalPages;
 
         const rowsArr = [];
-        filtered.forEach(o => {
+        paginatedOrders.forEach(o => {
           let details = '';
           if (o.customType === 'FileUpload') {
             details = `<a href="${o.designFileUrl}" target="_blank" class="text-indigo-600 hover:underline">View Design File</a>`;
@@ -2486,7 +2701,7 @@
                   <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
                   <td class="px-4 py-3 text-xs max-w-xs truncate">${summaryText || details}</td>
                     <td class="px-4 py-3 text-right">
-                      <div class="inline-flex gap-3 items-center justify-end">
+                      <div class="action-buttons">
                         <button data-id="${o._id}" class="edit-custom-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
                         ${archiveCustomBtn}
                         ${restoreCustomBtn}
@@ -2506,7 +2721,7 @@
                   <td class="px-4 py-3">${o.shippingMethod || '-'}</td>
                   <td class="px-4 py-3 text-xs max-w-xs truncate">${details}</td>
                     <td class="px-4 py-3 text-right">
-                      <div class="inline-flex gap-3 items-center justify-end">
+                      <div class="action-buttons">
                         <button data-id="${o._id}" class="edit-custom-btn text-indigo-600 hover:text-indigo-800" title="View / Edit"><i class="fas fa-pen"></i></button>
                         ${archiveCustomBtn}
                         ${restoreCustomBtn}
@@ -2521,9 +2736,16 @@
         const rows = rowsArr.join('');
         els.customOrdersBody.innerHTML = rows || '<tr><td colspan="8" class="px-4 py-6 text-center text-gray-500">No custom orders found.</td></tr>';
         // Count shown rows (expand team members into individual entries)
-        const displayedCount = rowsArr.length;
-        els.customCount.textContent = displayedCount;
+        els.customCount.textContent = totalOrders;
       }
+      
+      // Pagination event handlers for Custom Orders
+      els.customPrevBtn?.addEventListener('click', () => {
+        if (customPage > 1) { customPage--; renderCustomOrders(); }
+      });
+      els.customNextBtn?.addEventListener('click', () => {
+        customPage++; renderCustomOrders();
+      });
 
       // Removed: Payment Info button in table; details shown directly in modal
       // Removed: Custom Payment Info action (aligning with Orders behavior)
@@ -2598,18 +2820,20 @@
           t = setTimeout(() => fn.apply(this, args), wait);
         };
       }
-      els.filterStatus?.addEventListener('change', () => loadRegularOrders());
-      els.filterPayment?.addEventListener('change', () => loadRegularOrders());
-      els.filterShipping?.addEventListener('change', () => loadRegularOrders());
-      els.dateFrom?.addEventListener('change', () => loadRegularOrders());
-      els.dateTo?.addEventListener('change', () => loadRegularOrders());
-      els.search?.addEventListener('input', debounce(() => loadRegularOrders(), 350));
+      // Filter changes reset to page 1 and reload
+      els.filterStatus?.addEventListener('change', () => { regularPage = 1; loadRegularOrders(); });
+      els.filterPayment?.addEventListener('change', () => { regularPage = 1; loadRegularOrders(); });
+      els.filterShipping?.addEventListener('change', () => { regularPage = 1; loadRegularOrders(); });
+      els.dateFrom?.addEventListener('change', () => { regularPage = 1; loadRegularOrders(); });
+      els.dateTo?.addEventListener('change', () => { regularPage = 1; loadRegularOrders(); });
+      els.search?.addEventListener('input', debounce(() => { regularPage = 1; renderRegularOrders(true); }, 350));
       els.filterReset?.addEventListener('click', () => {
         els.filterStatus.value = '';
         els.filterPayment.value = '';
         els.search.value = '';
         els.dateFrom.value = '';
         els.dateTo.value = '';
+        regularPage = 1;
         loadRegularOrders();
       });
 
@@ -2650,17 +2874,17 @@
           allCustomOrders = data.data;
           renderCustomOrders();
           // Bind filter events once after initial load
-          const reb = renderCustomOrders;
-            els.customSearch?.addEventListener('input', reb);
-              els.customFilterStatus?.addEventListener('change', () => loadCustomOrders());
-              els.customFilterType?.addEventListener('change', reb);
-              els.customFilterShipMethod?.addEventListener('change', reb);
-              els.customFilterFulfillment?.addEventListener('change', reb);
-              els.customFilterPayment?.addEventListener('change', reb);
-              els.customFilterCourier?.addEventListener('change', reb);
-              els.customFilterTracking?.addEventListener('change', reb);
-              els.customDateFrom?.addEventListener('change', reb);
-              els.customDateTo?.addEventListener('change', reb);
+          const rebWithReset = () => { customPage = 1; renderCustomOrders(true); };
+              els.customSearch?.addEventListener('input', rebWithReset);
+              els.customFilterStatus?.addEventListener('change', () => { customPage = 1; loadCustomOrders(); });
+              els.customFilterType?.addEventListener('change', rebWithReset);
+              els.customFilterShipMethod?.addEventListener('change', rebWithReset);
+              els.customFilterFulfillment?.addEventListener('change', rebWithReset);
+              els.customFilterPayment?.addEventListener('change', rebWithReset);
+              els.customFilterCourier?.addEventListener('change', rebWithReset);
+              els.customFilterTracking?.addEventListener('change', rebWithReset);
+              els.customDateFrom?.addEventListener('change', rebWithReset);
+              els.customDateTo?.addEventListener('change', rebWithReset);
               els.customFilterReset?.addEventListener('click', () => {
             els.customSearch.value = '';
             els.customFilterStatus.value = '';
@@ -2672,7 +2896,8 @@
             els.customFilterTracking.value = '';
             els.customDateFrom.value = '';
             els.customDateTo.value = '';
-            renderCustomOrders();
+            customPage = 1;
+            renderCustomOrders(true);
           });
           // Custom orders refresh controls
           els.refreshCustomBtn?.addEventListener('click', () => loadCustomOrders());

@@ -1,0 +1,248 @@
+/* Admin Mobile Responsive Styles */
+
+/* Mobile responsive filter controls */
+.filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  /* Filter controls stack vertically on mobile */
+  .filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-controls select,
+  .filter-controls input[type="text"],
+  .filter-controls input[type="date"],
+  .filter-controls input[type="search"] {
+    width: 100%;
+    min-width: 0;
+    font-size: 14px;
+    padding: 0.625rem 0.75rem;
+  }
+  
+  .filter-controls > * {
+    width: 100%;
+  }
+  
+  /* Button groups in filters */
+  .filter-btn-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  
+  .filter-btn-group button,
+  .filter-btn-group label {
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
+    justify-content: center;
+  }
+  
+  /* Date range inputs */
+  .date-range-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .date-range-group input {
+    flex: 1;
+  }
+  
+  /* Action buttons in tables */
+  .action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    justify-content: flex-end;
+  }
+  
+  .action-buttons button {
+    padding: 0.5rem;
+    min-width: 32px;
+  }
+  
+  /* Table headers - hide some columns on mobile */
+  .table-responsive th.hide-mobile,
+  .table-responsive td.hide-mobile {
+    display: none;
+  }
+  
+  /* Card-based view for mobile */
+  .mobile-card {
+    display: block;
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+  }
+  
+  .mobile-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+  
+  .mobile-card-body {
+    font-size: 0.875rem;
+    color: #374151;
+  }
+  
+  .mobile-card-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  /* Modal adjustments */
+  .modal-content {
+    max-width: 100% !important;
+    margin: 0.5rem !important;
+    max-height: 95vh !important;
+  }
+  
+  /* Form grid adjustments */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Header adjustments */
+  .admin-header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .admin-header h1 {
+    font-size: 1.125rem;
+  }
+  
+  .admin-header .subtitle {
+    font-size: 0.75rem;
+  }
+  
+  /* Stats grid */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .stat-card {
+    padding: 0.75rem;
+  }
+  
+  .stat-card .stat-value {
+    font-size: 1.25rem;
+  }
+  
+  /* Tabs */
+  .admin-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  
+  .admin-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .admin-tab {
+    white-space: nowrap;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Pagination styles */
+.pagination-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.pagination-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagination-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-btn.active {
+  background: #4f46e5;
+  color: white;
+  border-color: #4f46e5;
+}
+
+@media (max-width: 640px) {
+  .pagination-container {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .pagination-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Toast/Alert messages - ensure visibility on mobile */
+.toast-message,
+.alert-message {
+  max-width: calc(100vw - 2rem);
+  margin: 0 auto;
+}
+
+/* Utility classes for responsive visibility */
+@media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .show-only-mobile {
+    display: none !important;
+  }
+}
