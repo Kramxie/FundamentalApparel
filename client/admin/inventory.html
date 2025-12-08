@@ -3196,9 +3196,16 @@
                     }
                 });
 
+                const result = await response.json();
+
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Failed to delete item');
+                    // Check if blocked due to pending orders
+                    if (result.hasPendingOrders) {
+                        closeDeleteModal();
+                        showPendingOrdersWarning(result.pendingOrders, result.pendingCount);
+                        return;
+                    }
+                    throw new Error(result.message || 'Failed to delete item');
                 }
 
                 showSuccess('Item deleted successfully. You can restore it from Deleted Items.');
