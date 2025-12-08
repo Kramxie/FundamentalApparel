@@ -982,18 +982,26 @@
   
   <script>
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const sidebar = document.querySelector('.admin-sidebar');
+    const mobileSidebar = document.getElementById('mobile-sidebar');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const mobileCloseBtn = document.getElementById('mobile-sidebar-close');
     
-    mobileMenuBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-      sidebarOverlay.classList.toggle('hidden');
-    });
+    function openMobileSidebar() {
+        if (mobileSidebar) mobileSidebar.classList.add('open');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
     
-    sidebarOverlay.addEventListener('click', () => {
-      sidebar.classList.remove('open');
-      sidebarOverlay.classList.add('hidden');
-    });
+    function closeMobileSidebar() {
+        if (mobileSidebar) mobileSidebar.classList.remove('open');
+        if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    
+    if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openMobileSidebar);
+    if (mobileCloseBtn) mobileCloseBtn.addEventListener('click', closeMobileSidebar);
+    if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeMobileSidebar);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMobileSidebar(); });
     
     document.addEventListener('DOMContentLoaded', async () => {
       const token = localStorage.getItem('adminToken');

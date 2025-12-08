@@ -588,16 +588,25 @@
 
   <script>
     // Mobile sidebar handlers
-    document.getElementById('mobile-menu-btn').addEventListener('click', () => {
-      document.getElementById('admin-sidebar').classList.add('open');
-      document.getElementById('sidebar-overlay').classList.remove('hidden');
-    });
-    document.getElementById('mobile-sidebar-close').addEventListener('click', closeMobileSidebar);
-    document.getElementById('sidebar-overlay').addEventListener('click', closeMobileSidebar);
-    function closeMobileSidebar() {
-      document.getElementById('admin-sidebar').classList.remove('open');
-      document.getElementById('sidebar-overlay').classList.add('hidden');
+    const mobileSidebar = document.getElementById('mobile-sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const mobileCloseBtn = document.getElementById('mobile-sidebar-close');
+    
+    function openMobileSidebar() {
+      if (mobileSidebar) mobileSidebar.classList.add('open');
+      if (sidebarOverlay) sidebarOverlay.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
     }
+    function closeMobileSidebar() {
+      if (mobileSidebar) mobileSidebar.classList.remove('open');
+      if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+    
+    document.getElementById('mobile-menu-btn')?.addEventListener('click', openMobileSidebar);
+    mobileCloseBtn?.addEventListener('click', closeMobileSidebar);
+    sidebarOverlay?.addEventListener('click', closeMobileSidebar);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMobileSidebar(); });
 
     // Logout functionality
     document.getElementById('logout-btn').addEventListener('click', () => {
